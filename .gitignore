@@ -1,0 +1,9 @@
+# Dependências e Logs
+node_modules/
+npm-debug.log
+
+# Pasta de build do React
+client/build
+
+# Arquivos de ambiente (vamos usar no futuro)
+.env
