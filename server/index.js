@@ -16,7 +16,7 @@ mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha ao conectar ao MongoDB:', err));
 
-// Schema e Modelo do Usuário (sem mudanças)
+// --- Schemas e Modelos do Banco de Dados ---
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
@@ -35,7 +35,22 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model('User', UserSchema);
 
 
-// ROTA DE CADASTRO (JÁ REFATORADA)
+// ✅ CORREÇÃO: Middleware de autenticação movido para o topo, antes das rotas.
+const autenticar = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403); // Token inválido ou expirado
+    req.userId = user.userId;
+    next();
+  });
+};
+
+
+// --- ROTAS DA API ---
+
 app.post('/api/register', async (req, res) => {
   try {
     const { nome, sobrenome, username, email, password } = req.body;
@@ -53,7 +68,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// ROTA DE LOGIN (JÁ REFATORADA)
 app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
@@ -69,7 +83,6 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// --- ROTA "ME" REFATORADA ---
 app.get('/api/me', autenticar, async (req, res) => {
   try {
     const usuario = await User.findById(req.userId).select('-password');
@@ -81,7 +94,6 @@ app.get('/api/me', autenticar, async (req, res) => {
   }
 });
 
-// --- ROTA DE ONBOARDING REFATORADA ---
 app.post('/api/onboarding', autenticar, async (req, res) => {
   try {
     const userId = req.userId;
@@ -100,21 +112,7 @@ app.post('/api/onboarding', autenticar, async (req, res) => {
   }
 });
 
-
-// As outras rotas (pesos, checklist, etc.) ainda precisam ser refatoradas.
-
-// Middleware de autenticação (sem mudanças)
-const autenticar = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  if (token == null) return res.sendStatus(401);
-  jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.userId = user.userId;
-    next();
-  });
-};
-
+// As rotas de pesos, checklist e consultas ainda precisam ser refatoradas.
 
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
