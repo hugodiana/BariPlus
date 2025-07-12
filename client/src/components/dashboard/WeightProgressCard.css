@@ -1,0 +1,37 @@
+.dashboard-card {
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+}
+
+.weight-card h3 {
+  margin-top: 0;
+  color: #37715b;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.weight-stats {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.stat-item .stat-label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.stat-item .stat-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.stat-item.eliminado .stat-value {
+  color: #007aff; /* Cor de destaque para o peso eliminado */
+}

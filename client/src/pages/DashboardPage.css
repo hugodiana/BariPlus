@@ -1,0 +1,101 @@
+.dashboard-welcome {
+  color: #333;
+  margin-bottom: 25px;
+  font-weight: 600;
+}
+
+/* Usando CSS Grid para criar o layout dos cards */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.quick-action-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background-color: #007aff;
+  color: white;
+  cursor: pointer;
+}
+
+/* Estilos para o formulário dentro do modal */
+.weight-input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 16px;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #37715b;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.quick-actions-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.quick-action-btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background-color: #007aff;
+  color: white;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.summary-card h3 {
+    margin-top: 0;
+    color: #37715b;
+}
+
+.summary-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.summary-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #eef0ef;
+    font-size: 15px;
+}
+
+.summary-list li:last-child {
+    border-bottom: none;
+}
+
+.summary-empty {
+    color: #888;
+    font-size: 14px;
+    text-align: center;
+    padding: 20px 0;
+}
+
+@media (max-width: 480px) {
+  .dashboard-welcome {
+    font-size: 22px; /* Diminui o tamanho da fonte do "Bem-vindo" */
+  }
+}

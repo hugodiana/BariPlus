@@ -1,0 +1,123 @@
+.checklist-page-container {
+    width: 100%;
+}
+
+.checklist-page-container h1 {
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+
+.checklist-page-container p {
+    color: #666;
+    margin-top: 0;
+    margin-bottom: 25px;
+}
+
+.checklist-content {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 700px;
+    padding: 20px 30px;
+}
+
+.add-item-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.add-item-form input {
+    flex-grow: 1;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.add-item-form button {
+    border: none;
+    background-color: #37715b;
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 4px;
+    width: 45px;
+    cursor: pointer;
+}
+
+.checklist-content ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.checklist-content li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #454545;
+    padding: 15px 10px;
+    border-bottom: 1px solid #eef0ef;
+    transition: background-color 0.2s;
+}
+
+.item-text {
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+.checklist-content li.concluido .item-text {
+    color: #a0a0a0;
+    text-decoration: line-through;
+}
+
+.delete-btn {
+    background: transparent;
+    border: none;
+    color: #cc0000;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0 5px;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.checklist-content li:hover .delete-btn {
+    opacity: 1;
+}
+
+/* Adicione este código no seu ChecklistPage.css */
+
+.tab-buttons {
+    display: flex;
+    border-bottom: 2px solid #eef0ef;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    font-size: 16px;
+    font-weight: 600;
+    color: #aaa;
+    position: relative;
+    top: 2px; /* Alinha com a borda de baixo */
+}
+
+.tab-btn.active {
+    color: #37715b;
+    border-bottom: 2px solid #37715b;
+}
+
+@media (max-width: 480px) {
+  .checklist-content {
+    padding: 15px; /* Diminui o espaçamento interno do card */
+  }
+
+  .checklist-page-container h1 {
+    font-size: 24px;
+  }
+}

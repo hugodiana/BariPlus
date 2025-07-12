@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
-// NOVIDADE: Importando a sua logo também nesta página
 import logo from '../assets/bariplus_logo.png';
 
 const LoginPage = () => {
@@ -13,13 +13,22 @@ const LoginPage = () => {
   
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
+  
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
 
+    // --- A CORREÇÃO ESTÁ AQUI ---
+    // 1. Definimos o "apelido" para o endereço da nossa API.
+    const apiUrl = process.env.REACT_APP_API_URL;
+    
+    // 2. Usamos esse apelido para montar a URL final.
     const isRegisterMode = isRegistering;
-    const url = isRegisterMode ? 'http://localhost:3001/api/register' : 'http://localhost:3001/api/login';
+    const url = isRegisterMode ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
+    // --- FIM DA CORREÇÃO ---
+
     const body = isRegisterMode 
         ? { nome, sobrenome, username, email, password } 
         : { identifier, password };
@@ -33,25 +42,29 @@ const LoginPage = () => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
         
-        setMessage(data.message);
-        if (!isRegisterMode) console.log('Token recebido:', data.token);
+        if (isRegisterMode) {
+            setMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
+            setIsRegistering(false);
+        } else {
+            localStorage.setItem('bariplus_token', data.token);
+            window.location.href = '/'; 
+        }
 
     } catch (error) {
         setMessage(error.message);
     }
   };
 
+  // O return com o JSX do formulário está perfeito, não precisa mudar nada.
   return (
     <div className="login-page-container">
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
-          {/* NOVIDADE: Substituindo o h1 pela imagem da logo */}
           <img src={logo} alt="BariPlus Logo" className="login-logo" />
           <p>Organize sua jornada pré e pós-bariátrica.</p>
         </div>
         <h2>{isRegistering ? 'Criar Conta' : 'Acessar Conta'}</h2>
         
-        {/* O resto do formulário continua igual... */}
         {isRegistering && (
           <>
             <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />

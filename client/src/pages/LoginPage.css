@@ -23,10 +23,10 @@
 }
 
 .login-logo {
-  height: 80px;
+  height: 60px;
   width: auto;
   margin-bottom: 10px;
-} /* ✅ A CHAVE DE FECHAMENTO FOI ADICIONADA AQUI */
+}
 
 .form-header p {
   margin: 5px 0 0;
@@ -80,4 +80,18 @@
 .message {
   margin-top: 15px;
   color: #d32f2f;
+}
+
+@media (max-width: 480px) {
+  .login-form {
+    padding: 20px;
+  }
+
+  .form-header h1 {
+    font-size: 28px;
+  }
+
+  .form-header p {
+    font-size: 14px;
+  }
 }
