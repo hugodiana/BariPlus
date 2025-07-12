@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 import logo from '../assets/bariplus_logo.png';
 
@@ -10,24 +9,20 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [identifier, setIdentifier] = useState('');
-  
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
-  
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
 
-    // --- A CORREÇÃO ESTÁ AQUI ---
-    // 1. Definimos o "apelido" para o endereço da nossa API.
-      const apiUrl = 'https://bariplus-api.onrender.com';
-    
-    // 2. Usamos esse apelido para montar a URL final.
+    const apiUrl = process.env.REACT_APP_API_URL;
     const isRegisterMode = isRegistering;
     const url = isRegisterMode ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
-    // --- FIM DA CORREÇÃO ---
+    
+    // --- ESPIÃO DENTRO DO LOGIN ---
+    console.log("A tentar enviar para o URL:", url);
+    // --- FIM DO ESPIÃO ---
 
     const body = isRegisterMode 
         ? { nome, sobrenome, username, email, password } 
@@ -49,42 +44,37 @@ const LoginPage = () => {
             localStorage.setItem('bariplus_token', data.token);
             window.location.href = '/'; 
         }
-
     } catch (error) {
         setMessage(error.message);
+        console.error("Erro no fetch do login/registo:", error);
     }
   };
 
-  // O return com o JSX do formulário está perfeito, não precisa mudar nada.
   return (
     <div className="login-page-container">
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
           <img src={logo} alt="BariPlus Logo" className="login-logo" />
-          <p>Organize sua jornada pré e pós-bariátrica.</p>
+          <p>Organize a sua jornada pré e pós-bariátrica.</p>
         </div>
-        <h2>{isRegistering ? 'Criar Conta' : 'Acessar Conta'}</h2>
-        
+        <h2>{isRegistering ? 'Criar Conta' : 'Aceder à Conta'}</h2>
         {isRegistering && (
           <>
             <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
             <input type="text" placeholder="Sobrenome" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} required />
-            <input type="text" placeholder="Nome de usuário (username)" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            <input type="text" placeholder="Nome de utilizador (username)" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </>
         )}
-
         {!isRegistering ? (
              <input type="text" placeholder="E-mail ou Username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
         ) : (
             <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
         )}
-       
         <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
-
-        <button type="submit">{isRegistering ? 'Cadastrar' : 'Entrar'}</button>
+        <button type="submit">{isRegistering ? 'Registar' : 'Entrar'}</button>
         {message && <p className="message">{message}</p>}
         <button type="button" className="toggle-button" onClick={() => setIsRegistering(!isRegistering)}>
-          {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
+          {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Registe-se'}
         </button>
       </form>
     </div>
