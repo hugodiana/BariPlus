@@ -22,7 +22,7 @@ const LoginPage = () => {
 
     // --- A CORREÇÃO ESTÁ AQUI ---
     // 1. Definimos o "apelido" para o endereço da nossa API.
-    const apiUrl = process.env.REACT_APP_API_URL;
+      const apiUrl = 'https://bariplus-api.onrender.com';
     
     // 2. Usamos esse apelido para montar a URL final.
     const isRegisterMode = isRegistering;
