@@ -114,6 +114,11 @@ app.post('/api/onboarding', autenticar, async (req, res) => {
 
 // As rotas de pesos, checklist e consultas ainda precisam ser refatoradas.
 
+// ROTA DE TESTE DE SAÚDE
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Servidor da API está no ar!' });
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
 });
