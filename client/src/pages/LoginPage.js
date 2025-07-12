@@ -15,19 +15,12 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
-
     const apiUrl = process.env.REACT_APP_API_URL;
     const isRegisterMode = isRegistering;
     const url = isRegisterMode ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
-    
-    // --- ESPIÃO DENTRO DO LOGIN ---
-    console.log("A tentar enviar para o URL:", url);
-    // --- FIM DO ESPIÃO ---
-
     const body = isRegisterMode 
         ? { nome, sobrenome, username, email, password } 
         : { identifier, password };
-
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -36,7 +29,6 @@ const LoginPage = () => {
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
-        
         if (isRegisterMode) {
             setMessage('Cadastro realizado com sucesso! Faça o login para continuar.');
             setIsRegistering(false);
@@ -46,7 +38,6 @@ const LoginPage = () => {
         }
     } catch (error) {
         setMessage(error.message);
-        console.error("Erro no fetch do login/registo:", error);
     }
   };
 
@@ -55,14 +46,14 @@ const LoginPage = () => {
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
           <img src={logo} alt="BariPlus Logo" className="login-logo" />
-          <p>Organize a sua jornada pré e pós-bariátrica.</p>
+          <p>Organize sua jornada pré e pós-bariátrica.</p>
         </div>
-        <h2>{isRegistering ? 'Criar Conta' : 'Aceder à Conta'}</h2>
+        <h2>{isRegistering ? 'Criar Conta' : 'Acessar Conta'}</h2>
         {isRegistering && (
           <>
             <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
             <input type="text" placeholder="Sobrenome" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} required />
-            <input type="text" placeholder="Nome de utilizador (username)" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            <input type="text" placeholder="Nome de usuário (username)" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </>
         )}
         {!isRegistering ? (
@@ -71,14 +62,13 @@ const LoginPage = () => {
             <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
         )}
         <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        <button type="submit">{isRegistering ? 'Registar' : 'Entrar'}</button>
+        <button type="submit">{isRegistering ? 'Cadastrar' : 'Entrar'}</button>
         {message && <p className="message">{message}</p>}
         <button type="button" className="toggle-button" onClick={() => setIsRegistering(!isRegistering)}>
-          {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Registe-se'}
+          {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
         </button>
       </form>
     </div>
   );
 };
-
 export default LoginPage;

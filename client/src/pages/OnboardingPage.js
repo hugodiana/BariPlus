@@ -13,15 +13,12 @@ const OnboardingPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
-    
     const token = localStorage.getItem('bariplus_token');
     if (!token) {
       setMessage('Erro de autenticação. Por favor, faça o login novamente.');
       return;
     }
-
     try {
-      // AQUI ESTÁ A MUDANÇA
       const apiUrl = process.env.REACT_APP_API_URL;
       const response = await fetch(`${apiUrl}/api/onboarding`, {
         method: 'POST',
@@ -31,18 +28,14 @@ const OnboardingPage = () => {
         },
         body: JSON.stringify({ fezCirurgia, dataCirurgia, altura, pesoInicial })
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
-
       window.location.href = '/';
-
     } catch (error) {
       setMessage(error.message);
     }
   };
 
-  // O return (JSX) não muda
   return (
     <div className="onboarding-container">
       <form className="onboarding-form" onSubmit={handleSubmit}>
@@ -75,5 +68,4 @@ const OnboardingPage = () => {
     </div>
   );
 };
-
 export default OnboardingPage;

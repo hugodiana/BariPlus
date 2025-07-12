@@ -13,20 +13,17 @@ const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [novoPeso, setNovoPeso] = useState('');
-
     const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL; // Definimos o "apelido" uma vez
+    const apiUrl = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // AQUI ESTÁ A MUDANÇA
                 const [resMe, resChecklist, resConsultas] = await Promise.all([
                     fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
-                // ... (resto do useEffect não muda)
                 if (!resMe.ok) throw new Error('Sessão inválida');
                 const dadosUsuario = await resMe.json();
                 const dadosChecklist = await resChecklist.json();
@@ -49,7 +46,6 @@ const DashboardPage = () => {
         e.preventDefault();
         if (!novoPeso) return;
         try {
-            // AQUI ESTÁ A MUDANÇA
             await fetch(`${apiUrl}/api/pesos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -68,7 +64,6 @@ const DashboardPage = () => {
     const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
     const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
 
-    // O return (JSX) não muda
     return (
         <div className="dashboard-container">
             <h1 className="dashboard-welcome">Bem-vindo(a) de volta, {usuario.nome}!</h1>
@@ -93,7 +88,7 @@ const DashboardPage = () => {
                     <h3>Próximas Tarefas</h3>
                     {proximasTarefas.length > 0 ? (
                         <ul className="summary-list">
-                            {proximasTarefas.map(task => <li key={task.id}>{task.descricao}</li>)}
+                            {proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}
                         </ul>
                     ) : <p className="summary-empty">Nenhuma tarefa pendente!</p>}
                 </div>
@@ -102,7 +97,7 @@ const DashboardPage = () => {
                     {proximasConsultas.length > 0 ? (
                         <ul className="summary-list">
                             {proximasConsultas.map(consulta => (
-                                <li key={consulta.id}>
+                                <li key={consulta._id}>
                                     <strong>{consulta.especialidade}</strong> - {format(new Date(consulta.data), 'dd/MM/yyyy \'às\' HH:mm')}h
                                 </li>
                             ))}
@@ -120,5 +115,4 @@ const DashboardPage = () => {
         </div>
     );
 };
-
 export default DashboardPage;
