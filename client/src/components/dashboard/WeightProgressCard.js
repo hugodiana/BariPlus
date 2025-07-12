@@ -1,7 +1,6 @@
 import React from 'react';
 import './WeightProgressCard.css';
 
-// Este componente recebe os dados de peso como "props"
 const WeightProgressCard = ({ pesoInicial, pesoAtual }) => {
   const pesoEliminado = (pesoInicial - pesoAtual).toFixed(1);
 
@@ -11,19 +10,18 @@ const WeightProgressCard = ({ pesoInicial, pesoAtual }) => {
       <div className="weight-stats">
         <div className="stat-item">
           <span className="stat-label">Inicial</span>
-          <span className="stat-value">{pesoInicial} kg</span>
+          <span className="stat-value">{pesoInicial || 0} kg</span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Atual</span>
-          <span className="stat-value">{pesoAtual} kg</span>
+          <span className="stat-value">{pesoAtual || 0} kg</span>
         </div>
         <div className="stat-item eliminado">
           <span className="stat-label">Eliminado</span>
-          <span className="stat-value">{pesoEliminado} kg</span>
+          <span className="stat-value">{pesoEliminado >= 0 ? pesoEliminado : 0} kg</span>
         </div>
       </div>
     </div>
   );
 };
-
 export default WeightProgressCard;

@@ -7,12 +7,11 @@ const ChecklistPage = () => {
     const [novaTarefa, setNovaTarefa] = useState('');
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL; // Definimos o "apelido" uma vez
+    const apiUrl = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         const fetchChecklist = async () => {
             try {
-                // AQUI ESTÁ A MUDANÇA
                 const response = await fetch(`${apiUrl}/api/checklist`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -30,7 +29,6 @@ const ChecklistPage = () => {
     const handleAdicionarTarefa = async (e) => {
         e.preventDefault();
         if (!novaTarefa.trim()) return;
-        // AQUI ESTÁ A MUDANÇA
         const response = await fetch(`${apiUrl}/api/checklist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -45,7 +43,6 @@ const ChecklistPage = () => {
     };
 
     const handleToggleConcluido = async (itemId, statusAtual) => {
-        // AQUI ESTÁ A MUDANÇA
         const response = await fetch(`${apiUrl}/api/checklist/${itemId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -54,12 +51,11 @@ const ChecklistPage = () => {
         const itemAtualizado = await response.json();
         setChecklist(prev => ({
             ...prev,
-            [activeTab]: prev[activeTab].map(item => item.id === itemId ? itemAtualizado : item)
+            [activeTab]: prev[activeTab].map(item => item.id === itemAtualizado.id ? itemAtualizado : item)
         }));
     };
     
     const handleApagarItem = async (itemId) => {
-        // AQUI ESTÁ A MUDANÇA
         await fetch(`${apiUrl}/api/checklist/${itemId}?type=${activeTab}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -70,13 +66,12 @@ const ChecklistPage = () => {
         }));
     };
 
-    if (loading) return <div>Carregando checklist...</div>;
+    if (loading) return <div>A carregar checklist...</div>;
     const itensDaAbaAtiva = checklist[activeTab] || [];
-    
-    // O return (JSX) não muda
+
     return (
         <div className="checklist-page-container">
-            <h1>Meu Checklist</h1>
+            <h1>O Meu Checklist</h1>
             <p>Acompanhe aqui todas as suas tarefas importantes.</p>
             <div className="checklist-content">
                 <div className="tab-buttons">
@@ -112,5 +107,4 @@ const ChecklistPage = () => {
         </div>
     );
 };
-
 export default ChecklistPage;
