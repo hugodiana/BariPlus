@@ -16,6 +16,7 @@ mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha ao conectar ao MongoDB:', err));
 
+// Schema e Modelo do Usuário (sem mudanças)
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
@@ -52,7 +53,7 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// ROTA DE LOGIN (AGORA REFATORADA)
+// ROTA DE LOGIN (JÁ REFATORADA)
 app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
@@ -68,8 +69,52 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+// --- ROTA "ME" REFATORADA ---
+app.get('/api/me', autenticar, async (req, res) => {
+  try {
+    const usuario = await User.findById(req.userId).select('-password');
+    if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
+    res.json(usuario);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erro no servidor.' });
+  }
+});
 
-// As outras rotas (onboarding, pesos, checklist, etc.) ainda precisam ser refatoradas.
+// --- ROTA DE ONBOARDING REFATORADA ---
+app.post('/api/onboarding', autenticar, async (req, res) => {
+  try {
+    const userId = req.userId;
+    const { fezCirurgia, dataCirurgia, altura, pesoInicial } = req.body;
+    const usuarioAtualizado = await User.findByIdAndUpdate(userId, {
+        $set: {
+          detalhesCirurgia: { fezCirurgia, dataCirurgia, altura: parseFloat(altura), pesoInicial: parseFloat(pesoInicial), pesoAtual: parseFloat(pesoInicial) },
+          onboardingCompleto: true
+        }
+      }, { new: true });
+    if (!usuarioAtualizado) return res.status(404).json({ message: 'Usuário não encontrado.' });
+    res.status(200).json({ message: 'Dados salvos com sucesso!' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Erro no servidor ao salvar detalhes.' });
+  }
+});
+
+
+// As outras rotas (pesos, checklist, etc.) ainda precisam ser refatoradas.
+
+// Middleware de autenticação (sem mudanças)
+const autenticar = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.userId = user.userId;
+    next();
+  });
+};
+
 
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
