@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-// NOVIDADE: Importando o NavLink de volta
 import { NavLink } from 'react-router-dom';
 import './Layout.css';
-// A logo continua de fora por enquanto
+// NÃO PRECISAMOS MAIS DE IMPORTAR A LOGO AQUI
 
 const Layout = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -21,11 +20,12 @@ const Layout = ({ children }) => {
       {isSidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo-placeholder">BariPlus Logo Aqui</div>
+          {/* ✅ CORREÇÃO: Usando o caminho público direto para a imagem */}
+          <img src="/bariplus_logo.png" alt="BariPlus Logo" className="sidebar-logo" />
+          
           <button className="sidebar-close-btn" onClick={toggleSidebar}>&times;</button>
         </div>
         <nav className="sidebar-nav">
-          {/* NOVIDADE: Usando o NavLink real com as rotas corretas */}
           <NavLink to="/" end>Painel</NavLink>
           <NavLink to="/checklist">Checklist</NavLink>
           <NavLink to="/progresso">Meu Progresso</NavLink>
@@ -35,6 +35,7 @@ const Layout = ({ children }) => {
         <button onClick={handleLogout} className="logout-btn">Sair</button>
       </aside>
       <main className="main-content">
+        {/* Agora vamos colocar o DashboardPage real de volta */}
         {children}
       </main>
     </div>
