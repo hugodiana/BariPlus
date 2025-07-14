@@ -97,13 +97,17 @@ const DashboardPage = () => {
 
     const handleToggleMedToma = async (medId, totalDoses) => {
         const hoje = new Date().toISOString().split('T')[0];
-        const historicoDeHoje = medicationData.historico[hoje] || {};
+        const historicoDeHoje = (medicationData.historico instanceof Map ? medicationData.historico.get(hoje) : medicationData.historico[hoje]) || {};
         const tomasAtuais = historicoDeHoje[medId] || 0;
         const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
-        const newHistoryState = { ...medicationData.historico };
-        if (!newHistoryState[hoje]) { newHistoryState[hoje] = {}; }
-        newHistoryState[hoje][medId] = novasTomas;
-        setMedicationData({ ...medicationData, historico: newHistoryState });
+        
+        const newHistoryMap = new Map(medicationData.historico);
+        const todayLog = newHistoryMap.get(hoje) || {};
+        todayLog[medId] = novasTomas;
+        newHistoryMap.set(hoje, todayLog);
+
+        setMedicationData({ ...medicationData, historico: newHistoryMap });
+        
         await fetch(`${apiUrl}/api/medication/log/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -148,7 +152,10 @@ const DashboardPage = () => {
                     pesoInicial={usuario.detalhesCirurgia.pesoInicial}
                     pesoAtual={usuario.detalhesCirurgia.pesoAtual}
                 />
+                
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
+                
+                {/* ✅ CORREÇÃO: O CARD DE MEDICAÇÃO AGORA ESTÁ AQUI, NO GRID PRINCIPAL */}
                 {medicationData && medicationData.medicamentos.length > 0 && (
                     <DailyMedicationCard 
                         medicamentos={medicationData.medicamentos}
@@ -156,12 +163,14 @@ const DashboardPage = () => {
                         onToggleToma={handleToggleMedToma}
                     />
                 )}
+
                 <div className="dashboard-card quick-actions-card">
                     <h3>Ações Rápidas</h3>
                     <button className="quick-action-btn" onClick={() => setIsWeightModalOpen(true)}>Registrar Novo Peso</button>
                     <Link to="/consultas" className="quick-action-btn">Agendar Consulta</Link>
                     <Link to="/checklist" className="quick-action-btn">Ver Checklist Completo</Link>
                 </div>
+
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Tarefas</h3>
                     {proximasTarefas.length > 0 ? (
@@ -170,6 +179,7 @@ const DashboardPage = () => {
                         <div className="summary-empty"><p>Nenhuma tarefa pendente! ✨</p><Link to="/checklist" className="summary-action-btn">Adicionar Tarefa</Link></div>
                     )}
                 </div>
+
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Consultas</h3>
                     {proximasConsultas.length > 0 ? (
@@ -179,6 +189,7 @@ const DashboardPage = () => {
                     )}
                 </div>
             </div>
+
             <Modal isOpen={isWeightModalOpen} onClose={() => setIsWeightModalOpen(false)}>
                 <h2>Registrar Novo Peso</h2>
                 <form onSubmit={handleRegistrarPeso}>
@@ -186,6 +197,7 @@ const DashboardPage = () => {
                     <button type="submit" className="submit-btn">Salvar</button>
                 </form>
             </Modal>
+
             <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
                 <h2>Registrar Data da Cirurgia</h2>
                 <form onSubmit={handleSetSurgeryDate}>
