@@ -116,20 +116,43 @@ app.get('/api/me', autenticar, async (req, res) => {
 
 app.post('/api/onboarding', autenticar, async (req, res) => {
   try {
+    const userId = req.userId;
+    // Os dados podem vir incompletos, e está tudo bem
     const { fezCirurgia, dataCirurgia, altura, pesoInicial } = req.body;
+    
     const pesoNum = parseFloat(pesoInicial);
+    
+    // Monta o objeto de detalhes com os dados que temos
+    const detalhes = {
+        fezCirurgia: fezCirurgia,
+        dataCirurgia: dataCirurgia || null, // Guarda null se a data vier vazia
+        altura: parseFloat(altura),
+        pesoInicial: pesoNum,
+        pesoAtual: pesoNum 
+    };
+
     const usuario = await User.findByIdAndUpdate(req.userId, {
         $set: {
-          detalhesCirurgia: { fezCirurgia, dataCirurgia, altura: parseFloat(altura), pesoInicial: pesoNum, pesoAtual: pesoNum },
+          detalhesCirurgia: detalhes, // Guarda o objeto de detalhes
           onboardingCompleto: true
         }
       }, { new: true });
-    if (!usuario) return res.status(404).json({ message: 'Utilizador não encontrado.' });
+
+    if (!usuario) {
+      return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    }
     
-    await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: { peso: pesoNum, data: new Date() } } });
+    // Adiciona o primeiro registo de peso ao histórico
+    await Peso.findOneAndUpdate(
+        { userId: req.userId }, 
+        { $push: { registros: { peso: pesoNum, data: new Date() } } }
+    );
 
     res.status(200).json({ message: 'Dados guardados com sucesso!' });
-  } catch (error) { res.status(500).json({ message: 'Erro no servidor ao guardar detalhes.' }); }
+  } catch (error) { 
+    console.error("Erro no onboarding:", error);
+    res.status(500).json({ message: 'Erro no servidor ao guardar detalhes.' }); 
+  }
 });
 
 // ROTAS DE PESOS
