@@ -1,0 +1,52 @@
+.daily-med-card h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #37715b;
+}
+
+.daily-med-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eef0ef;
+}
+
+.daily-med-item:last-child {
+    border-bottom: none;
+}
+
+.daily-med-info span {
+    font-size: 14px;
+    color: #666;
+}
+
+.daily-med-checks {
+    display: flex;
+    gap: 8px;
+}
+
+.med-checkbox-daily {
+    width: 25px;
+    height: 25px;
+    border: 2px solid #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: white;
+    transition: all 0.2s ease-in-out;
+}
+
+.med-checkbox-daily.taken {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.empty-meds {
+    text-align: center;
+    color: #888;
+    padding: 15px 0;
+}
