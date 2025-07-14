@@ -10,13 +10,14 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET || 'seu-segredo-super-secreto-mude-depois';
+const JWT_SECRET = process.env.JWT_SECRET;
 
+// --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha ao conectar ao MongoDB:', err));
 
-// Schemas e Modelos
+// --- SCHEMAS E MODELOS ---
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
@@ -50,6 +51,7 @@ const ConsultaSchema = new mongoose.Schema({
 });
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 
+// --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -61,7 +63,9 @@ const autenticar = (req, res, next) => {
   });
 };
 
-// ROTAS DE AUTENTICAÇÃO E USUÁRIO
+// --- ROTAS DA API ---
+app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
+
 app.post('/api/register', async (req, res) => {
   try {
     const { nome, sobrenome, username, email, password } = req.body;
@@ -113,11 +117,11 @@ app.post('/api/onboarding', autenticar, async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Erro no servidor ao guardar detalhes.' }); }
 });
 
-// ROTAS DE PESOS
 app.get('/api/pesos', autenticar, async (req, res) => {
     const pesoDoc = await Peso.findOne({ userId: req.userId });
     res.json(pesoDoc ? pesoDoc.registros : []);
 });
+
 app.post('/api/pesos', autenticar, async (req, res) => {
     const { peso } = req.body;
     const pesoNum = parseFloat(peso);
@@ -126,18 +130,19 @@ app.post('/api/pesos', autenticar, async (req, res) => {
     res.status(201).json(result.registros[result.registros.length - 1]);
 });
 
-// --- ROTAS DE CHECKLIST (AGORA REFATORADAS) ---
 app.get('/api/checklist', autenticar, async (req, res) => {
     const checklistDoc = await Checklist.findOne({ userId: req.userId });
     res.json(checklistDoc || { preOp: [], posOp: [] });
 });
+
 app.post('/api/checklist', autenticar, async (req, res) => {
     const { descricao, type } = req.body;
-    if (!descricao || !type) return res.status(400).json({ message: "Descrição e tipo são obrigatórios." });
-    const update = { $push: { [type]: { descricao, concluido: false } } };
+    const novoItem = { descricao, concluido: false };
+    const update = { $push: { [type]: novoItem  } };
     const result = await Checklist.findOneAndUpdate({ userId: req.userId }, update, { new: true });
     res.status(201).json(result[type][result[type].length - 1]);
 });
+
 app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { concluido, type } = req.body;
@@ -145,11 +150,13 @@ app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
     const result = await Checklist.findOneAndUpdate(
         { userId: req.userId, [`${type}._id`]: itemId },
         { $set: { [fieldToUpdate]: concluido } },
-        { arrayFilters: [{ "item._id": itemId }], new: true }
+        { arrayFilters: [{ "item._id": mongoose.Types.ObjectId(itemId) }], new: true }
     );
+    if (!result) return res.status(404).send('Item não encontrado');
     const updatedItem = result[type].find(item => item._id.toString() === itemId);
     res.json(updatedItem);
 });
+
 app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { type } = req.query;
@@ -157,17 +164,18 @@ app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
     res.status(204).send();
 });
 
-// --- ROTAS DE CONSULTAS (JÁ REFATORADAS) ---
 app.get('/api/consultas', autenticar, async (req, res) => {
     const consultaDoc = await Consulta.findOne({ userId: req.userId });
     res.json(consultaDoc ? consultaDoc.consultas : []);
 });
+
 app.post('/api/consultas', autenticar, async (req, res) => {
     const { especialidade, data, local, notas } = req.body;
     const novaConsulta = { especialidade, data, local, notas, status: 'Agendado' };
     const result = await Consulta.findOneAndUpdate({ userId: req.userId }, { $push: { consultas: novaConsulta } }, { new: true });
     res.status(201).json(result.consultas[result.consultas.length - 1]);
 });
+
 app.delete('/api/consultas/:consultaId', autenticar, async (req, res) => {
     const { consultaId } = req.params;
     await Consulta.findOneAndUpdate({ userId: req.userId }, { $pull: { consultas: { _id: consultaId } } });
