@@ -4,7 +4,7 @@ import './DailyMedicationCard.css';
 const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
     const hoje = new Date().toISOString().split('T')[0];
     
-    // ✅ CORREÇÃO: Verificamos se 'historico' existe antes de o usar.
+    // ✅ CORREÇÃO: Verificação de segurança. Se o histórico não existir, usa um objeto vazio.
     const historicoDeHoje = (historico && historico[hoje]) || {};
 
     return (

@@ -166,10 +166,10 @@ const DashboardPage = () => {
                 
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
                 
-                {medicationData && medicationData.medicamentos.length > 0 && (
+                {medicationData && medicationData.medicamentos && medicationData.historico && medicationData.medicamentos.length > 0 && (
                     <DailyMedicationCard 
                         medicamentos={medicationData.medicamentos}
-                        historico={medicationData.historico || {}}
+                        historico={medicationData.historico}
                         onToggleToma={handleToggleMedToma}
                     />
                 )}
