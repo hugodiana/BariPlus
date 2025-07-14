@@ -8,16 +8,13 @@ const MedicationPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Estados para o formulário (aqui estava o erro)
+    // Estados para o formulário
     const [nome, setNome] = useState('');
     const [dosagem, setDosagem] = useState('');
     const [quantidade, setQuantidade] = useState(1);
     const [unidade, setUnidade] = useState('comprimido(s)');
     const [vezesAoDia, setVezesAoDia] = useState(1);
-    
-    // ✅ A declaração que provavelmente estava em falta
-    const [frequencia, setFrequencia] = useState(''); 
-
+    // A variável 'frequencia' foi removida daqui
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -29,7 +26,6 @@ const MedicationPage = () => {
                 const res = await fetch(`${apiUrl}/api/medication`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const data = await res.json();
                 setMedicamentos(data.medicamentos || []);
-                // Garante que o histórico seja um Map
                 setHistorico(new Map(Object.entries(data.historico || {})));
             } catch (error) { console.error("Erro ao buscar medicação:", error); } 
             finally { setLoading(false); }
@@ -48,13 +44,14 @@ const MedicationPage = () => {
         const medAdicionado = await res.json();
         setMedicamentos(prev => [...prev, medAdicionado]);
         setIsModalOpen(false);
-        // Limpa todos os campos do formulário
+        // Limpeza do formulário sem o setFrequencia
         setNome(''); 
         setDosagem(''); 
         setQuantidade(1);
         setUnidade('comprimido(s)');
         setVezesAoDia(1);
     };
+
 
     const handleDeleteMedicamento = async (medId) => {
         if (!window.confirm("Tem a certeza que quer apagar este medicamento?")) return;

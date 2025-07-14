@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import './OnboardingPage.css';
 
 const OnboardingPage = () => {
@@ -11,7 +10,6 @@ const OnboardingPage = () => {
   const [altura, setAltura] = useState('');
   const [pesoInicial, setPesoInicial] = useState('');
   const [message, setMessage] = useState('');
-  const navigate = useNavigate();
 
   const handleSetFezCirurgia = (valor) => {
     setFezCirurgia(valor);
