@@ -1,105 +1,85 @@
 .dashboard-welcome {
-  color: #333;
-  margin-bottom: 25px;
-  font-weight: 600;
+    color: #333;
+    margin-bottom: 25px;
+    font-weight: 600;
 }
-
-/* Usando CSS Grid para criar o layout dos cards */
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
 }
-
-.quick-action-btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  background-color: #007aff;
-  color: white;
-  cursor: pointer;
+.special-action-card {
+    background-color: #e9f5f2;
+    border: 2px dashed #37715b;
+    text-align: center;
 }
-
-/* Estilos para o formulário dentro do modal */
-.weight-input {
-  width: 100%;
-  padding: 12px;
-  margin: 10px 0 20px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-size: 16px;
+.special-action-card h3 {
+    color: #37715b;
+    margin-top: 0;
 }
-
-.submit-btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  background-color: #37715b;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
+.special-action-card p {
+    color: #333;
+    font-size: 15px;
+    line-height: 1.5;
 }
-
+.date-input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
 .quick-actions-card {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    justify-content: center; /* Centraliza os botões */
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 20px;
 }
-
+.quick-actions-card h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #37715b;
+}
 .quick-action-btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  background-color: #007aff;
-  color: white;
-  cursor: pointer;
-  text-align: center;
-  text-decoration: none;
-  box-sizing: border-box;
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    background-color: #007aff;
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    box-sizing: border-box;
 }
-
+.quick-action-btn:hover {
+    opacity: 0.9;
+}
 .summary-card h3 {
     margin-top: 0;
     color: #37715b;
 }
-
 .summary-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
-
 .summary-list li {
     padding: 8px 0;
     border-bottom: 1px solid #eef0ef;
     font-size: 15px;
 }
-
 .summary-list li:last-child {
     border-bottom: none;
 }
-
-.summary-empty {
-    color: #888;
-    font-size: 14px;
-    text-align: center;
-    padding: 20px 0;
-}
-
-@media (max-width: 480px) {
-  .dashboard-welcome {
-    font-size: 22px; /* Diminui o tamanho da fonte do "Bem-vindo" */
-  }
-}
-
 .summary-empty {
     text-align: center;
     padding: 20px 0;
@@ -118,30 +98,8 @@
     cursor: pointer;
     text-decoration: none;
 }
-
-
-.special-action-card {
-    background-color: #e9f5f2; /* Um verde bem claro para chamar a atenção */
-    border: 2px dashed #37715b;
-    text-align: center;
-}
-.special-action-card h3 {
-    color: #37715b;
-    margin-top: 0;
-}
-.special-action-card p {
-    color: #333;
-    font-size: 15px;
-    line-height: 1.5;
-}
-
-/* Estilo para o input de data no modal */
-.date-input {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0 20px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 16px;
+@media (max-width: 480px) {
+  .dashboard-welcome {
+    font-size: 22px;
+  }
 }

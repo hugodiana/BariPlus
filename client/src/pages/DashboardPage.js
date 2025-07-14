@@ -8,18 +8,13 @@ import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DashboardPage = () => {
-    // Estados para os dados principais
     const [usuario, setUsuario] = useState(null);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    // Estados para os modais
     const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-
-    // Estados para os formulários dos modais
     const [novoPeso, setNovoPeso] = useState('');
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
 
@@ -28,10 +23,7 @@ const DashboardPage = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!token) {
-                setLoading(false);
-                return;
-            }
+            if (!token) { setLoading(false); return; }
             try {
                 const [resMe, resDailyLog, resChecklist, resConsultas] = await Promise.all([
                     fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -39,25 +31,17 @@ const DashboardPage = () => {
                     fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
-
                 if (!resMe.ok) throw new Error('Sessão inválida');
-
                 const dadosUsuario = await resMe.json();
                 const dadosLog = await resDailyLog.json();
                 const dadosChecklist = await resChecklist.json();
                 const dadosConsultas = await resConsultas.json();
-
                 setUsuario(dadosUsuario);
                 setDailyLog(dadosLog);
                 setChecklist(dadosChecklist);
                 setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
-
-            } catch (error) {
-                console.error("Erro ao buscar dados do painel:", error);
-                localStorage.removeItem('bariplus_token');
-            } finally {
-                setLoading(false);
-            }
+            } catch (error) { console.error("Erro ao buscar dados do painel:", error); } 
+            finally { setLoading(false); }
         };
         fetchData();
     }, [token, apiUrl]);
@@ -86,9 +70,7 @@ const DashboardPage = () => {
             });
             const updatedLog = await response.json();
             setDailyLog(updatedLog);
-        } catch (error) {
-            console.error(`Erro ao registar ${type}:`, error);
-        }
+        } catch (error) { console.error(`Erro ao registar ${type}:`, error); }
     };
     
     const handleSetSurgeryDate = async (e) => {
@@ -105,9 +87,7 @@ const DashboardPage = () => {
             setUsuario(usuarioAtualizado);
             setNovaDataCirurgia('');
             setIsDateModalOpen(false);
-        } catch (error) {
-            console.error("Erro ao guardar data da cirurgia:", error);
-        }
+        } catch (error) { console.error("Erro ao guardar data da cirurgia:", error); }
     };
 
     const getWelcomeMessage = () => {
@@ -116,17 +96,11 @@ const DashboardPage = () => {
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0); 
         if (fezCirurgia === 'sim' && dataCirurgia) {
-            const dataDaCirurgia = new Date(dataCirurgia);
-            const diasDePosOp = differenceInDays(hoje, dataDaCirurgia);
-            if (diasDePosOp >= 0) {
-                return `Olá, ${usuario.nome}! Você está no seu ${diasDePosOp + 1}º dia de pós-operatório.`;
-            }
+            const diasDePosOp = differenceInDays(hoje, new Date(dataCirurgia));
+            if (diasDePosOp >= 0) return `Olá, ${usuario.nome}! Você está no seu ${diasDePosOp + 1}º dia de pós-operatório.`;
         } else if (fezCirurgia === 'nao' && dataCirurgia) {
-            const dataDaCirurgia = new Date(dataCirurgia);
-            const diasParaCirurgia = differenceInDays(dataDaCirurgia, hoje);
-            if (diasParaCirurgia >= 0) {
-                return `Olá, ${usuario.nome}! Faltam ${diasParaCirurgia} dias para a sua cirurgia.`;
-            }
+            const diasParaCirurgia = differenceInDays(new Date(dataCirurgia), hoje);
+            if (diasParaCirurgia >= 0) return `Olá, ${usuario.nome}! Faltam ${diasParaCirurgia} dias para a sua cirurgia.`;
         }
         return `Bem-vindo(a) de volta, ${usuario.nome}!`;
     };
@@ -145,7 +119,7 @@ const DashboardPage = () => {
                 {mostrarCardAdicionarData && (
                     <div className="dashboard-card special-action-card">
                         <h3>Jornada a Começar!</h3>
-                        <p>Já tem a data da sua cirurgia? Registe-a para começar a contagem decrescente e receber dicas personalizadas.</p>
+                        <p>Já tem a data da sua cirurgia? Registe-a para começar a contagem decrescente!</p>
                         <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>
                             Adicionar Data da Cirurgia
                         </button>
@@ -155,7 +129,24 @@ const DashboardPage = () => {
                     pesoInicial={usuario.detalhesCirurgia.pesoInicial}
                     pesoAtual={usuario.detalhesCirurgia.pesoAtual}
                 />
+                
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
+
+                {/* --- NOVIDADE: CARD DE AÇÕES RÁPIDAS DE VOLTA --- */}
+                <div className="dashboard-card quick-actions-card">
+                    <h3>Ações Rápidas</h3>
+                    <button className="quick-action-btn" onClick={() => setIsWeightModalOpen(true)}>
+                        Registar Novo Peso
+                    </button>
+                    <Link to="/consultas" className="quick-action-btn">
+                        Agendar Consulta
+                    </Link>
+                    <Link to="/checklist" className="quick-action-btn">
+                        Ver Checklist Completo
+                    </Link>
+                </div>
+                {/* --- FIM DA NOVIDADE --- */}
+
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Tarefas</h3>
                     {proximasTarefas.length > 0 ? (
@@ -169,6 +160,7 @@ const DashboardPage = () => {
                         </div>
                     )}
                 </div>
+
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Consultas</h3>
                     {proximasConsultas.length > 0 ? (
@@ -207,5 +199,4 @@ const DashboardPage = () => {
         </div>
     );
 };
-
 export default DashboardPage;
