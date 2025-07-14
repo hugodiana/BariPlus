@@ -1,80 +1,149 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import WeightProgressCard from '../components/dashboard/WeightProgressCard';
-import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
-import Modal from '../components/Modal';
-import './DashboardPage.css';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import './ConsultasPage.css';
+import Modal from '../components/Modal';
 
-const DashboardPage = () => {
-    const [usuario, setUsuario] = useState(null);
-    const [dailyLog, setDailyLog] = useState(null);
-    const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
+const ConsultasPage = () => {
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [novoPeso, setNovoPeso] = useState('');
+
+    // Estados para o formulário do modal
+    const [especialidade, setEspecialidade] = useState('');
+    const [data, setData] = useState('');
+    const [local, setLocal] = useState('');
+    const [notas, setNotas] = useState('');
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
+    // Efeito para buscar as consultas quando a página carrega
     useEffect(() => {
-        const fetchDataSequencial = async () => {
+        const fetchConsultas = async () => {
+            if (!token) {
+                setLoading(false);
+                return;
+            }
             try {
-                console.log("1. A buscar dados do utilizador (/api/me)...");
-                const resMe = await fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!resMe.ok) throw new Error('Sessão inválida ao buscar /api/me');
-                const dadosUsuario = await resMe.json();
-                setUsuario(dadosUsuario);
-                console.log("=> Sucesso ao buscar dados do utilizador.");
-
-                console.log("2. A buscar dados do log diário (/api/dailylog/today)...");
-                const resDailyLog = await fetch(`${apiUrl}/api/dailylog/today`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!resDailyLog.ok) throw new Error('Falha ao buscar log diário');
-                const dadosLog = await resDailyLog.json();
-                setDailyLog(dadosLog);
-                console.log("=> Sucesso ao buscar log diário.");
-
-                console.log("3. A buscar dados do checklist (/api/checklist)...");
-                const resChecklist = await fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!resChecklist.ok) throw new Error('Falha ao buscar checklist');
-                const dadosChecklist = await resChecklist.json();
-                setChecklist(dadosChecklist);
-                console.log("=> Sucesso ao buscar checklist.");
-
-                console.log("4. A buscar dados das consultas (/api/consultas)...");
-                const resConsultas = await fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } });
-                if (!resConsultas.ok) throw new Error('Falha ao buscar consultas');
-                const dadosConsultas = await resConsultas.json();
-                setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
-                console.log("=> Sucesso ao buscar consultas. Todos os dados foram carregados!");
-
+                const res = await fetch(`${apiUrl}/api/consultas`, { 
+                    headers: { 'Authorization': `Bearer ${token}` } 
+                });
+                const data = await res.json();
+                setConsultas(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
             } catch (error) {
-                console.error("ERRO DURANTE O FETCH DE DADOS:", error);
-                localStorage.removeItem('bariplus_token');
-                // window.location.href = '/login'; // Comentado para podermos ver o erro
+                console.error("Erro ao buscar consultas:", error);
             } finally {
                 setLoading(false);
             }
         };
-
-        if(token) {
-            fetchDataSequencial();
-        } else {
-            setLoading(false);
-        }
+        fetchConsultas();
     }, [token, apiUrl]);
+    
+    // Função para submeter o formulário de uma nova consulta
+    const handleAgendarConsulta = async (e) => {
+        e.preventDefault();
+        const novaConsulta = { especialidade, data, local, notas };
+        
+        const res = await fetch(`${apiUrl}/api/consultas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(novaConsulta)
+        });
+        const consultaAdicionada = await res.json();
+        
+        // Adiciona a nova consulta à lista e ordena novamente
+        setConsultas(prev => [...prev, consultaAdicionada].sort((a, b) => new Date(a.data) - new Date(b.data)));
+        
+        setIsModalOpen(false);
+        // Limpa os campos do formulário
+        setEspecialidade(''); 
+        setData(''); 
+        setLocal(''); 
+        setNotas('');
+    };
+    
+    // Função para apagar uma consulta
+    const handleApagarConsulta = async (consultaId) => {
+        if (window.confirm("Tem certeza que deseja apagar esta consulta?")) {
+            await fetch(`${apiUrl}/api/consultas/${consultaId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setConsultas(consultas.filter(c => c._id !== consultaId));
+        }
+    };
 
-    // ... O resto do código (handleRegistrarPeso e o return) continua exatamente igual
-    const handleRegistrarPeso = async (e) => { /* ...código existente... */ };
-    if (loading || !usuario) return <div>A carregar painel...</div>;
-    // ... JSX existente ...
+    // Prepara os dias que terão um "marcador" no calendário
+    const diasComConsulta = consultas.map(c => new Date(c.data));
+
+    if (loading) {
+        return <div>A carregar consultas...</div>;
+    }
+
     return (
-        <div className="dashboard-container">
-            {/* ... Todo o seu JSX existente vai aqui ... */}
+        <div className="consultas-container">
+            <h1>As Minhas Consultas</h1>
+            <p>Registe e organize todos os seus compromissos médicos.</p>
+            <button className="add-consulta-btn" onClick={() => setIsModalOpen(true)}>+ Agendar Consulta</button>
+            
+            <div className="consultas-layout">
+                <div className="calendario-card">
+                    <DayPicker
+                        mode="single"
+                        modifiers={{ comConsulta: diasComConsulta }}
+                        modifiersClassNames={{ comConsulta: 'dia-com-consulta' }}
+                        locale={ptBR}
+                        showOutsideDays
+                    />
+                </div>
+                <div className="lista-consultas-card">
+                    <h3>Próximas Consultas</h3>
+                    {consultas.filter(c => new Date(c.data) >= new Date()).length > 0 ? (
+                        <ul>
+                            {consultas.filter(c => new Date(c.data) >= new Date()).map(consulta => (
+                                <li key={consulta._id}>
+                                    <div className="consulta-data">
+                                        <span>{format(new Date(consulta.data), 'dd')}</span>
+                                        <span>{format(new Date(consulta.data), 'MMM', { locale: ptBR })}</span>
+                                    </div>
+                                    <div className="consulta-info">
+                                        <strong>{consulta.especialidade}</strong>
+                                        <span>{format(new Date(consulta.data), 'p', { locale: ptBR })} - {consulta.local || 'Local não informado'}</span>
+                                        {consulta.notas && <small>Nota: {consulta.notas}</small>}
+                                    </div>
+                                    <button onClick={() => handleApagarConsulta(consulta._id)} className="delete-consulta-btn">&times;</button>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="empty-list-message">Nenhuma consulta futura agendada.</p>
+                    )}
+                </div>
+            </div>
+
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <h2>Agendar Nova Consulta</h2>
+                <form onSubmit={handleAgendarConsulta} className="consulta-form">
+                    <label>Especialidade</label>
+                    <input type="text" placeholder="Ex: Nutricionista" value={especialidade} onChange={e => setEspecialidade(e.target.value)} required />
+                    
+                    <label>Data e Hora</label>
+                    <input type="datetime-local" value={data} onChange={e => setData(e.target.value)} required />
+                    
+                    <label>Local</label>
+                    <input type="text" placeholder="Ex: Consultório Dr. Silva, Sala 10" value={local} onChange={e => setLocal(e.target.value)} />
+                    
+                    <label>Notas</label>
+                    <textarea placeholder="Ex: Levar últimos exames de sangue." value={notas} onChange={e => setNotas(e.target.value)}></textarea>
+                    
+                    <button type="submit">Guardar Consulta</button>
+                </form>
+            </Modal>
         </div>
     );
 };
 
-export default DashboardPage;
+export default ConsultasPage;
