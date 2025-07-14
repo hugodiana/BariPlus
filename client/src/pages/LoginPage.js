@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
-import logo from '../assets/bariplus_logo.png';
+// import logo from '../assets/bariplus_logo.png'; // 1. APAGUE esta linha de importação
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
@@ -45,15 +45,17 @@ const LoginPage = () => {
     <div className="login-page-container">
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
-          <img src={logo} alt="BariPlus Logo" className="login-logo" />
+          {/* 2. CORREÇÃO: Use o caminho público para a logo */}
+          <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo" />
           <p>Organize sua jornada pré e pós-bariátrica.</p>
         </div>
         <h2>{isRegistering ? 'Criar Conta' : 'Acessar Conta'}</h2>
+        
         {isRegistering && (
           <>
             <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
             <input type="text" placeholder="Sobrenome" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} required />
-            <input type="text" placeholder="Nome de usuário (username)" value={username} onChange={(e) => setUsername(e.target.value)} required />
+            <input type="text" placeholder="Nome de usuário" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </>
         )}
         {!isRegistering ? (
