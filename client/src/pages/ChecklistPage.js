@@ -35,9 +35,9 @@ const ChecklistPage = () => {
             body: JSON.stringify({ descricao: novaTarefa, type: activeTab })
         });
         const itemAdicionado = await response.json();
-        setChecklist(prevChecklist => ({
-            ...prevChecklist,
-            [activeTab]: [...prevChecklist[activeTab], itemAdicionado]
+        setChecklist(prev => ({
+            ...prev,
+            [activeTab]: [...prev[activeTab], itemAdicionado]
         }));
         setNovaTarefa('');
     };
@@ -51,18 +51,20 @@ const ChecklistPage = () => {
         const itemAtualizado = await response.json();
         setChecklist(prev => ({
             ...prev,
-            [activeTab]: prev[activeTab].map(item => item.id === itemAtualizado.id ? itemAtualizado : item)
+            [activeTab]: prev[activeTab].map(item => item._id === itemId ? itemAtualizado : item)
         }));
     };
     
     const handleApagarItem = async (itemId) => {
+        if (!window.confirm("Tem a certeza que quer apagar esta tarefa?")) return;
+        
         await fetch(`${apiUrl}/api/checklist/${itemId}?type=${activeTab}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
         setChecklist(prev => ({
             ...prev,
-            [activeTab]: prev[activeTab].filter(item => item.id !== itemId)
+            [activeTab]: prev[activeTab].filter(item => item._id !== itemId)
         }));
     };
 
@@ -94,11 +96,14 @@ const ChecklistPage = () => {
                     </form>
                     <ul>
                         {itensDaAbaAtiva.map(item => (
-                            <li key={item.id} className={item.concluido ? 'concluido' : ''}>
-                                <span className="item-text" onClick={() => handleToggleConcluido(item.id, item.concluido)}>
-                                    {item.descricao}
-                                </span>
-                                <button onClick={() => handleApagarItem(item.id)} className="delete-btn">×</button>
+                            // Usamos _id do MongoDB para a key
+                            <li key={item._id} className={item.concluido ? 'concluido' : ''}>
+                                {/* NOVIDADE: Checkbox customizada */}
+                                <div className="checkbox-container" onClick={() => handleToggleConcluido(item._id, item.concluido)}>
+                                    <span className="checkmark">✓</span>
+                                </div>
+                                <span className="item-text">{item.descricao}</span>
+                                <button onClick={() => handleApagarItem(item._id)} className="delete-btn">×</button>
                             </li>
                         ))}
                     </ul>

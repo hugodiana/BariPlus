@@ -146,22 +146,37 @@ app.post('/api/checklist', autenticar, async (req, res) => {
 app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { concluido, type } = req.body;
-    const fieldToUpdate = `${type}.$[item].concluido`;
-    const result = await Checklist.findOneAndUpdate(
-        { userId: req.userId, [`${type}._id`]: itemId },
-        { $set: { [fieldToUpdate]: concluido } },
-        { arrayFilters: [{ "item._id": mongoose.Types.ObjectId(itemId) }], new: true }
-    );
-    if (!result) return res.status(404).send('Item não encontrado');
-    const updatedItem = result[type].find(item => item._id.toString() === itemId);
-    res.json(updatedItem);
+    if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
+    
+    try {
+        const checklistDoc = await Checklist.findOne({ userId: req.userId });
+        if (!checklistDoc) return res.status(404).json({ message: "Checklist não encontrado." });
+
+        const item = checklistDoc[type].id(itemId); // Encontra o sub-documento pelo ID
+        if (!item) return res.status(404).json({ message: "Item não encontrado." });
+
+        item.concluido = concluido; // Altera a propriedade
+        await checklistDoc.save(); // Salva o documento pai
+        res.json(item);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao atualizar item." });
+    }
 });
 
 app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { type } = req.query;
-    await Checklist.findOneAndUpdate({ userId: req.userId }, { $pull: { [type]: { _id: itemId } } });
-    res.status(204).send();
+    if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
+    
+    try {
+        await Checklist.findOneAndUpdate(
+            { userId: req.userId },
+            { $pull: { [type]: { _id: itemId } } } // Usa $pull para remover o item do array
+        );
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao apagar item." });
+    }
 });
 
 app.get('/api/consultas', autenticar, async (req, res) => {
