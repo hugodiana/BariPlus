@@ -59,6 +59,20 @@ const DailyLogSchema = new mongoose.Schema({
 });
 const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 
+const MedicationSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    medicamentos: [{
+        nome: String,
+        dosagem: String, // Ex: "500mg", "1 comprimido"
+        frequencia: String, // Ex: "Diariamente", "Semanalmente"
+    }],
+    historico: [{
+        medicamentoId: mongoose.Schema.Types.ObjectId,
+        data: String // Formato YYYY-MM-DD
+    }]
+});
+const Medication = mongoose.model('Medication', MedicationSchema);
+
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
@@ -91,6 +105,7 @@ app.post('/api/register', async (req, res) => {
     await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
     // ✅ CORREÇÃO: Criação do log diário que estava em falta
     await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
+    await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', frequencia: 'Diariamente' }], historico: [] }).save();
 
     res.status(201).json({ message: 'Utilizador criado com sucesso!' });
   } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
@@ -317,6 +332,73 @@ app.put('/api/user/surgery-date', autenticar, async (req, res) => {
     res.status(500).json({ message: "Erro no servidor ao atualizar a data." });
   }
 });
+
+app.listen(PORT, () => {
+  console.log(`Servidor do BariPlus a correr na porta ${PORT}`);
+});
+
+// --- NOVIDADE: ROTAS PARA A MEDICAÇÃO ---
+app.get('/api/medication', autenticar, async (req, res) => {
+    try {
+        let doc = await Medication.findOne({ userId: req.userId });
+        if (!doc) {
+            doc = new Medication({ userId: req.userId, medicamentos: [], historico: [] });
+            await doc.save();
+        }
+        res.json(doc);
+    } catch (error) { res.status(500).json({ message: "Erro ao buscar dados de medicação." }); }
+});
+
+app.post('/api/medication', autenticar, async (req, res) => {
+    try {
+        const { nome, dosagem, frequencia } = req.body;
+        const novoMedicamento = { nome, dosagem, frequencia };
+        const result = await Medication.findOneAndUpdate(
+            { userId: req.userId },
+            { $push: { medicamentos: novoMedicamento } },
+            { new: true, upsert: true }
+        );
+        res.status(201).json(result.medicamentos[result.medicamentos.length - 1]);
+    } catch (error) { res.status(500).json({ message: "Erro ao adicionar medicamento." }); }
+});
+
+app.post('/api/medication/log', autenticar, async (req, res) => {
+    try {
+        const { medicamentoId, date } = req.body; // date no formato YYYY-MM-DD
+        const logEntry = { medicamentoId, data: date };
+        
+        // Adiciona ao histórico apenas se não existir uma entrada igual para o mesmo dia
+        const result = await Medication.findOneAndUpdate(
+            { userId: req.userId, "historico.medicamentoId": { $ne: medicamentoId }, "historico.data": { $ne: date } },
+            { $push: { historico: logEntry } },
+            { new: true }
+        );
+        res.status(201).json(result ? result.historico : []);
+    } catch (error) { res.status(500).json({ message: "Erro ao registar toma." }); }
+});
+
+app.delete('/api/medication/log', autenticar, async (req, res) => {
+    try {
+        const { medicamentoId, date } = req.body;
+        await Medication.findOneAndUpdate(
+            { userId: req.userId },
+            { $pull: { historico: { medicamentoId: medicamentoId, data: date } } }
+        );
+        res.status(204).send();
+    } catch (error) { res.status(500).json({ message: "Erro ao remover registo." }); }
+});
+
+app.delete('/api/medication/:medId', autenticar, async (req, res) => {
+    try {
+        const { medId } = req.params;
+        await Medication.findOneAndUpdate(
+            { userId: req.userId },
+            { $pull: { medicamentos: { _id: medId } } }
+        );
+        res.status(204).send();
+    } catch (error) { res.status(500).json({ message: "Erro ao apagar medicamento." }); }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus a correr na porta ${PORT}`);

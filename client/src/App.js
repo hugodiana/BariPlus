@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
+import MedicationPage from './pages/MedicationPage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -68,6 +69,7 @@ function App() {
                 <Route path="/progresso" element={<ProgressoPage />} />
                 <Route path="/checklist" element={<ChecklistPage />} />
                 <Route path="/consultas" element={<ConsultasPage />} />
+                <Route path="/medicacao" element={<MedicationPage />} />
               </Routes>
             </Layout>
           )

@@ -29,6 +29,7 @@ const Layout = ({ children }) => {
           <NavLink to="/checklist">Checklist</NavLink>
           <NavLink to="/progresso">O Meu Progresso</NavLink>
           <NavLink to="/consultas">As Minhas Consultas</NavLink>
+          <NavLink to="/medicacao">Medicação</NavLink>
         </nav>
         {/* NOVIDADE: Botão de Sair agora tem uma classe e uma função */}
         <button onClick={handleLogout} className="logout-btn">Sair</button>
