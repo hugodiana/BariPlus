@@ -205,6 +205,32 @@ app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
 });
 
 // ROTAS DE CONSULTAS
+
+// PUT /api/consultas/:consultaId - Edita uma consulta existente
+app.put('/api/consultas/:consultaId', autenticar, async (req, res) => {
+    try {
+        const { consultaId } = req.params;
+        const { especialidade, data, local, notas } = req.body;
+
+        const consultaDoc = await Consulta.findOne({ "consultas._id": consultaId, userId: req.userId });
+        if (!consultaDoc) {
+            return res.status(404).json({ message: "Consulta não encontrada." });
+        }
+
+        const itemDaConsulta = consultaDoc.consultas.id(consultaId);
+        itemDaConsulta.especialidade = especialidade;
+        itemDaConsulta.data = data;
+        itemDaConsulta.local = local;
+        itemDaConsulta.notas = notas;
+        
+        await consultaDoc.save();
+        res.json(itemDaConsulta);
+    } catch (error) {
+        console.error("Erro ao editar consulta:", error);
+        res.status(500).json({ message: "Erro no servidor ao editar consulta." });
+    }
+});
+
 app.get('/api/consultas', autenticar, async (req, res) => {
     const consultaDoc = await Consulta.findOne({ userId: req.userId });
     res.json(consultaDoc ? consultaDoc.consultas : []);

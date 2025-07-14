@@ -10,8 +10,11 @@ const ConsultasPage = () => {
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    // Estado para saber qual consulta estamos a editar
+    const [consultaEmEdicao, setConsultaEmEdicao] = useState(null);
 
-    // Estados para o formulário do modal
+    // Estados para o formulário
     const [especialidade, setEspecialidade] = useState('');
     const [data, setData] = useState('');
     const [local, setLocal] = useState('');
@@ -20,17 +23,12 @@ const ConsultasPage = () => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    // Efeito para buscar as consultas quando a página carrega
+    // Busca as consultas iniciais
     useEffect(() => {
         const fetchConsultas = async () => {
-            if (!token) {
-                setLoading(false);
-                return;
-            }
+            if (!token) { setLoading(false); return; }
             try {
-                const res = await fetch(`${apiUrl}/api/consultas`, { 
-                    headers: { 'Authorization': `Bearer ${token}` } 
-                });
+                const res = await fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const data = await res.json();
                 setConsultas(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
             } catch (error) {
@@ -41,30 +39,65 @@ const ConsultasPage = () => {
         };
         fetchConsultas();
     }, [token, apiUrl]);
-    
-    // Função para submeter o formulário de uma nova consulta
-    const handleAgendarConsulta = async (e) => {
+
+    // Preenche o formulário quando o modo de edição é ativado
+    useEffect(() => {
+        if (consultaEmEdicao) {
+            setEspecialidade(consultaEmEdicao.especialidade);
+            // Formata a data para o formato que o input 'datetime-local' espera
+            setData(format(new Date(consultaEmEdicao.data), "yyyy-MM-dd'T'HH:mm"));
+            setLocal(consultaEmEdicao.local || '');
+            setNotas(consultaEmEdicao.notas || '');
+        }
+    }, [consultaEmEdicao]);
+
+    // Abre o modal em modo "Adicionar"
+    const handleOpenModalParaAdicionar = () => {
+        setConsultaEmEdicao(null);
+        setEspecialidade('');
+        setData('');
+        setLocal('');
+        setNotas('');
+        setIsModalOpen(true);
+    };
+
+    // Abre o modal em modo "Editar"
+    const handleOpenModalParaEditar = (consulta) => {
+        setConsultaEmEdicao(consulta);
+        setIsModalOpen(true);
+    };
+
+    // Função unificada para submeter o formulário (cria ou edita)
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const novaConsulta = { especialidade, data, local, notas };
-        
-        const res = await fetch(`${apiUrl}/api/consultas`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(novaConsulta)
-        });
-        const consultaAdicionada = await res.json();
-        
-        setConsultas(prev => [...prev, consultaAdicionada].sort((a, b) => new Date(a.data) - new Date(b.data)));
+        const dadosConsulta = { especialidade, data, local, notas };
+
+        if (consultaEmEdicao) {
+            // LÓGICA DE EDITAR (PUT)
+            const res = await fetch(`${apiUrl}/api/consultas/${consultaEmEdicao._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(dadosConsulta)
+            });
+            const consultaAtualizada = await res.json();
+            setConsultas(
+                consultas.map(c => c._id === consultaAtualizada._id ? consultaAtualizada : c)
+                         .sort((a, b) => new Date(a.data) - new Date(b.data))
+            );
+        } else {
+            // LÓGICA DE ADICIONAR (POST)
+            const res = await fetch(`${apiUrl}/api/consultas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(dadosConsulta)
+            });
+            const consultaAdicionada = await res.json();
+            setConsultas(prev => [...prev, consultaAdicionada].sort((a, b) => new Date(a.data) - new Date(b.data)));
+        }
         
         setIsModalOpen(false);
-        // Limpa os campos do formulário
-        setEspecialidade(''); 
-        setData(''); 
-        setLocal(''); 
-        setNotas('');
     };
     
-    // Função para apagar uma consulta
     const handleApagarConsulta = async (consultaId) => {
         if (window.confirm("Tem certeza que deseja apagar esta consulta?")) {
             await fetch(`${apiUrl}/api/consultas/${consultaId}`, {
@@ -99,7 +132,7 @@ const ConsultasPage = () => {
                 <div className="lista-consultas-card">
                     <div className="lista-header">
                         <h3>Próximas Consultas</h3>
-                        <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Agendar</button>
+                        <button className="add-btn" onClick={handleOpenModalParaAdicionar}>+ Agendar</button>
                     </div>
                     {consultas.filter(c => new Date(c.data) >= new Date()).length > 0 ? (
                         <ul>
@@ -114,7 +147,10 @@ const ConsultasPage = () => {
                                         <span>{format(new Date(consulta.data), 'p', { locale: ptBR })} - {consulta.local || 'Local não informado'}</span>
                                         {consulta.notas && <small>Nota: {consulta.notas}</small>}
                                     </div>
-                                    <button onClick={() => handleApagarConsulta(consulta._id)} className="delete-consulta-btn">&times;</button>
+                                    <div className="consulta-actions">
+                                        <button onClick={() => handleOpenModalParaEditar(consulta)} className="action-btn edit-btn">✎</button>
+                                        <button onClick={() => handleApagarConsulta(consulta._id)} className="action-btn delete-btn">×</button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -125,8 +161,8 @@ const ConsultasPage = () => {
             </div>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>Agendar Nova Consulta</h2>
-                <form onSubmit={handleAgendarConsulta} className="consulta-form">
+                <h2>{consultaEmEdicao ? 'Editar Consulta' : 'Agendar Nova Consulta'}</h2>
+                <form onSubmit={handleSubmit} className="consulta-form">
                     <label>Especialidade</label>
                     <input type="text" placeholder="Ex: Nutricionista" value={especialidade} onChange={e => setEspecialidade(e.target.value)} required />
                     

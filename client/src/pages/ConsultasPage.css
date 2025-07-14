@@ -133,3 +133,30 @@
         grid-template-columns: 1fr;
     }
 }
+
+.consulta-actions {
+    display: flex;
+    align-items: center;
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    padding: 0 5px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.action-btn:hover {
+    opacity: 1;
+}
+
+.edit-btn {
+    color: #007aff;
+}
+
+.delete-consulta-btn {
+    color: #cc0000;
+}
