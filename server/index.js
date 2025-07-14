@@ -71,7 +71,7 @@ const MedicationSchema = new mongoose.Schema({
     }],
     historico: {
         type: Map,
-        of: Number, // "YYYY-MM-DD": { "medId": numeroDeTomas }
+        of: Number,
         default: {}
     }
 });
