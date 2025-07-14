@@ -7,7 +7,6 @@ const Layout = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
-  // NOVIDADE: Função para fazer logout
   const handleLogout = () => {
     localStorage.removeItem('bariplus_token');
     window.location.href = '/login';
@@ -27,11 +26,10 @@ const Layout = ({ children }) => {
         <nav className="sidebar-nav">
           <NavLink to="/" end>Painel</NavLink>
           <NavLink to="/checklist">Checklist</NavLink>
-          <NavLink to="/progresso">O Meu Progresso</NavLink>
-          <NavLink to="/consultas">As Minhas Consultas</NavLink>
+          <NavLink to="/progresso">Meu Progresso</NavLink>
+          <NavLink to="/consultas">Minhas Consultas</NavLink>
           <NavLink to="/medicacao">Medicação</NavLink>
         </nav>
-        {/* NOVIDADE: Botão de Sair agora tem uma classe e uma função */}
         <button onClick={handleLogout} className="logout-btn">Sair</button>
       </aside>
       <main className="main-content">
@@ -40,5 +38,4 @@ const Layout = ({ children }) => {
     </div>
   );
 };
-
 export default Layout;

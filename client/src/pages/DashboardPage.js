@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
-// ✅ CORREÇÃO: O caminho correto a partir da pasta 'pages' é este
 import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 import Modal from '../components/Modal';
 import './DashboardPage.css';
@@ -10,7 +9,6 @@ import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DashboardPage = () => {
-    // O resto do código continua exatamente o mesmo
     const [usuario, setUsuario] = useState(null);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
@@ -77,7 +75,7 @@ const DashboardPage = () => {
             });
             const updatedLog = await response.json();
             setDailyLog(updatedLog);
-        } catch (error) { console.error(`Erro ao registar ${type}:`, error); }
+        } catch (error) { console.error(`Erro ao registrar ${type}:`, error); }
     };
     
     const handleSetSurgeryDate = async (e) => {
@@ -89,12 +87,12 @@ const DashboardPage = () => {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ dataCirurgia: novaDataCirurgia })
             });
-            if (!res.ok) throw new Error('Falha ao guardar a data');
+            if (!res.ok) throw new Error('Falha ao salvar a data');
             const usuarioAtualizado = await res.json();
             setUsuario(usuarioAtualizado);
             setNovaDataCirurgia('');
             setIsDateModalOpen(false);
-        } catch (error) { console.error("Erro ao guardar data da cirurgia:", error); }
+        } catch (error) { console.error("Erro ao salvar data da cirurgia:", error); }
     };
 
     const handleToggleMedToma = async (medId, totalDoses) => {
@@ -128,7 +126,7 @@ const DashboardPage = () => {
         return `Bem-vindo(a) de volta, ${usuario.nome}!`;
     };
 
-    if (loading || !usuario) return <div style={{ padding: '40px', textAlign: 'center' }}>A carregar o seu painel...</div>;
+    if (loading || !usuario) return <div style={{ padding: '40px', textAlign: 'center' }}>Carregando seu painel...</div>;
 
     const tarefasAtivas = (usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || [];
     const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
@@ -142,91 +140,61 @@ const DashboardPage = () => {
                 {mostrarCardAdicionarData && (
                     <div className="dashboard-card special-action-card">
                         <h3>Jornada a Começar!</h3>
-                        <p>Já tem a data da sua cirurgia? Registe-a para começar a contagem decrescente!</p>
-                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>
-                            Adicionar Data da Cirurgia
-                        </button>
+                        <p>Já tem a data da sua cirurgia? Registre-a para começar a contagem regressiva!</p>
+                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>Adicionar Data da Cirurgia</button>
                     </div>
                 )}
                 <WeightProgressCard 
                     pesoInicial={usuario.detalhesCirurgia.pesoInicial}
                     pesoAtual={usuario.detalhesCirurgia.pesoAtual}
                 />
-                
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
-                
-                {medicationData.medicamentos.length > 0 && (
+                {medicationData && medicationData.medicamentos.length > 0 && (
                     <DailyMedicationCard 
                         medicamentos={medicationData.medicamentos}
                         historico={medicationData.historico}
                         onToggleToma={handleToggleMedToma}
                     />
                 )}
-
                 <div className="dashboard-card quick-actions-card">
                     <h3>Ações Rápidas</h3>
-                    <button className="quick-action-btn" onClick={() => setIsWeightModalOpen(true)}>
-                        Registar Novo Peso
-                    </button>
-                    <Link to="/consultas" className="quick-action-btn">
-                        Agendar Consulta
-                    </Link>
-                    <Link to="/checklist" className="quick-action-btn">
-                        Ver Checklist Completo
-                    </Link>
+                    <button className="quick-action-btn" onClick={() => setIsWeightModalOpen(true)}>Registrar Novo Peso</button>
+                    <Link to="/consultas" className="quick-action-btn">Agendar Consulta</Link>
+                    <Link to="/checklist" className="quick-action-btn">Ver Checklist Completo</Link>
                 </div>
-
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Tarefas</h3>
                     {proximasTarefas.length > 0 ? (
-                        <ul className="summary-list">
-                            {proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}
-                        </ul>
+                        <ul className="summary-list">{proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}</ul>
                     ) : (
-                        <div className="summary-empty">
-                            <p>Nenhuma tarefa pendente! ✨</p>
-                            <Link to="/checklist" className="summary-action-btn">Adicionar Tarefa</Link>
-                        </div>
+                        <div className="summary-empty"><p>Nenhuma tarefa pendente! ✨</p><Link to="/checklist" className="summary-action-btn">Adicionar Tarefa</Link></div>
                     )}
                 </div>
-
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Consultas</h3>
                     {proximasConsultas.length > 0 ? (
-                        <ul className="summary-list">
-                            {proximasConsultas.map(consulta => (
-                                <li key={consulta._id}>
-                                    <strong>{consulta.especialidade}</strong> - {format(new Date(consulta.data), "dd/MM/yyyy 'às' p", { locale: ptBR })}
-                                </li>
-                            ))}
-                        </ul>
+                        <ul className="summary-list">{proximasConsultas.map(consulta => (<li key={consulta._id}><strong>{consulta.especialidade}</strong> - {format(new Date(consulta.data), "dd/MM/yyyy 'às' p", { locale: ptBR })}</li>))}</ul>
                     ) : (
-                        <div className="summary-empty">
-                            <p>Nenhuma consulta agendada.</p>
-                            <Link to="/consultas" className="summary-action-btn">Agendar Consulta</Link>
-                        </div>
+                        <div className="summary-empty"><p>Nenhuma consulta agendada.</p><Link to="/consultas" className="summary-action-btn">Agendar Consulta</Link></div>
                     )}
                 </div>
             </div>
-
             <Modal isOpen={isWeightModalOpen} onClose={() => setIsWeightModalOpen(false)}>
-                <h2>Registar Novo Peso</h2>
+                <h2>Registrar Novo Peso</h2>
                 <form onSubmit={handleRegistrarPeso}>
                     <input type="number" step="0.1" className="weight-input" placeholder="Ex: 97.5" value={novoPeso} onChange={e => setNovoPeso(e.target.value)} required />
-                    <button type="submit" className="submit-btn">Guardar</button>
+                    <button type="submit" className="submit-btn">Salvar</button>
                 </form>
             </Modal>
-
             <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
-                <h2>Registar Data da Cirurgia</h2>
+                <h2>Registrar Data da Cirurgia</h2>
                 <form onSubmit={handleSetSurgeryDate}>
                     <label>Qual é a data agendada para a sua cirurgia?</label>
                     <input type="date" className="date-input" value={novaDataCirurgia} onChange={e => setNovaDataCirurgia(e.target.value)} required />
-                    <button type="submit" className="submit-btn">Guardar Data</button>
+                    <button type="submit" className="submit-btn">Salvar Data</button>
                 </form>
             </Modal>
         </div>
     );
 };
-
 export default DashboardPage;
