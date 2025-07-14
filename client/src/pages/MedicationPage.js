@@ -21,17 +21,22 @@ const MedicationPage = () => {
     const hoje = new Date().toISOString().split('T')[0];
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await fetch(`${apiUrl}/api/medication`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const data = await res.json();
-                setMedicamentos(data.medicamentos || []);
-                setHistorico(new Map(Object.entries(data.historico || {})));
-            } catch (error) { console.error("Erro ao buscar medicação:", error); } 
-            finally { setLoading(false); }
-        };
-        fetchData();
-    }, [token, apiUrl]);
+    const fetchData = async () => {
+        try {
+            const res = await fetch(`${apiUrl}/api/medication`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            setMedicamentos(data.medicamentos || []);
+            // ✅ CORREÇÃO: Garante que 'historico' é sempre um objeto antes de criar o Map
+            setHistorico(new Map(Object.entries(data.historico || {})));
+        } catch (error) { 
+            console.error("Erro ao buscar medicação:", error); 
+        } finally { 
+            setLoading(false); 
+        }
+    };
+    fetchData();
+}, [token, apiUrl]);
+
 
     const handleAddMedicamento = async (e) => {
         e.preventDefault();
@@ -69,20 +74,24 @@ const MedicationPage = () => {
     };
 
     const handleToggleToma = async (medId, totalDoses) => {
-        const logDeHoje = historico.get(hoje) || {};
-        const tomasAtuais = logDeHoje[medId] || 0;
-        const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
+    const hoje = new Date().toISOString().split('T')[0];
+    
+    // ✅ CORREÇÃO: Lógica mais segura para lidar com o Map
+    const historicoDeHoje = historico.get(hoje) || {};
+    const tomasAtuais = historicoDeHoje[medId] || 0;
+    const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
 
-        const newHistoryState = new Map(historico);
-        const newTodayLog = newHistoryState.get(hoje) || {};
-        newTodayLog[medId] = novasTomas;
-        newHistoryState.set(hoje, newTodayLog);
-        setHistorico(newHistoryState);
+    const newHistoryMap = new Map(historico);
+    const newTodayLog = newHistoryMap.get(hoje) || {};
+    newTodayLog[medId] = novasTomas;
+    newHistoryMap.set(hoje, newTodayLog);
+
+    setHistorico(newHistoryMap);
         
         await fetch(`${apiUrl}/api/medication/log/update`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
         });
     };
 

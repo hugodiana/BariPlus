@@ -3,7 +3,9 @@ import './DailyMedicationCard.css';
 
 const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
     const hoje = new Date().toISOString().split('T')[0];
-    const historicoDeHoje = historico[hoje] || {};
+    
+    // ✅ CORREÇÃO: Verificamos se 'historico' existe antes de o usar.
+    const historicoDeHoje = (historico && historico[hoje]) || {};
 
     return (
         <div className="dashboard-card daily-med-card">
@@ -21,8 +23,8 @@ const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
                         </div>
                         <div className="daily-med-checks">
                             {checks.map((checked, index) => (
-                                <div
-                                    key={index}
+                                <div 
+                                    key={index} 
                                     className={`med-checkbox-daily ${checked ? 'taken' : ''}`}
                                     onClick={() => onToggleToma(med._id, med.vezesAoDia)}
                                 >
