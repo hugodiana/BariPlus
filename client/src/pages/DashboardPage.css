@@ -118,3 +118,30 @@
     cursor: pointer;
     text-decoration: none;
 }
+
+
+.special-action-card {
+    background-color: #e9f5f2; /* Um verde bem claro para chamar a atenção */
+    border: 2px dashed #37715b;
+    text-align: center;
+}
+.special-action-card h3 {
+    color: #37715b;
+    margin-top: 0;
+}
+.special-action-card p {
+    color: #333;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+/* Estilo para o input de data no modal */
+.date-input {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 16px;
+}

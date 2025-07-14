@@ -228,6 +228,33 @@ app.post('/api/dailylog/track', autenticar, async (req, res) => {
     }
 });
 
+// --- ROTA PARA ADICIONAR/ATUALIZAR DATA DA CIRURGIA ---
+app.put('/api/user/surgery-date', autenticar, async (req, res) => {
+  try {
+    const { dataCirurgia } = req.body;
+    if (!dataCirurgia) {
+      return res.status(400).json({ message: "A data da cirurgia é obrigatória." });
+    }
+
+    // Encontra o utilizador pelo ID do token e atualiza apenas o campo da data da cirurgia
+    const usuarioAtualizado = await User.findByIdAndUpdate(
+      req.userId,
+      { $set: { "detalhesCirurgia.dataCirurgia": dataCirurgia } },
+      { new: true } // Retorna o documento atualizado
+    ).select('-password');
+
+    if (!usuarioAtualizado) {
+      return res.status(404).json({ message: "Utilizador não encontrado." });
+    }
+
+    res.json(usuarioAtualizado);
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erro no servidor ao atualizar a data." });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus a correr na porta ${PORT}`);
 });
