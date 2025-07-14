@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import './DashboardPage.css';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 
 const DashboardPage = () => {
     const [usuario, setUsuario] = useState(null);
@@ -17,6 +18,7 @@ const DashboardPage = () => {
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
     const [novoPeso, setNovoPeso] = useState('');
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
+    const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -25,20 +27,23 @@ const DashboardPage = () => {
         const fetchData = async () => {
             if (!token) { setLoading(false); return; }
             try {
-                const [resMe, resDailyLog, resChecklist, resConsultas] = await Promise.all([
+                const [resMe, resDailyLog, resChecklist, resConsultas, resMedication] = await Promise.all([
                     fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/dailylog/today`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    fetch(`${apiUrl}/api/medication`, { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
                 if (!resMe.ok) throw new Error('Sessão inválida');
                 const dadosUsuario = await resMe.json();
                 const dadosLog = await resDailyLog.json();
                 const dadosChecklist = await resChecklist.json();
                 const dadosConsultas = await resConsultas.json();
+                const dadosMedication = await resMedication.json();
                 setUsuario(dadosUsuario);
                 setDailyLog(dadosLog);
                 setChecklist(dadosChecklist);
+                setMedicationData(dadosMedication);
                 setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
             } catch (error) { console.error("Erro ao buscar dados do painel:", error); } 
             finally { setLoading(false); }
@@ -105,6 +110,23 @@ const DashboardPage = () => {
         return `Bem-vindo(a) de volta, ${usuario.nome}!`;
     };
 
+    const handleToggleMedToma = async (medId, totalDoses, tomasAtuais) => {
+        const hoje = new Date().toISOString().split('T')[0];
+        const novasTomas = tomasAtuais < totalDoses ? tomasAtuais + 1 : 0; // Se clicar de novo, zera as tomas do dia
+        
+        const newHistoryState = { ...medicationData.historico };
+        if (!newHistoryState[hoje]) newHistoryState[hoje] = {};
+        newHistoryState[hoje][medId] = novasTomas;
+
+        setMedicationData({ ...medicationData, historico: newHistoryState }); // Atualização otimista
+        
+        await fetch(`${apiUrl}/api/medication/log/update`, { // Rota nova e mais simples
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
+        });
+    };
+
     if (loading || !usuario) return <div style={{ padding: '40px', textAlign: 'center' }}>A carregar o seu painel...</div>;
 
     const tarefasAtivas = (usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || [];
@@ -123,6 +145,11 @@ const DashboardPage = () => {
                         <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>
                             Adicionar Data da Cirurgia
                         </button>
+                        <DailyMedicationCard 
+                    medicamentos={medicationData.medicamentos}
+                    historico={medicationData.historico}
+                    onToggleToma={handleToggleMedToma}
+                />
                     </div>
                 )}
                 <WeightProgressCard 

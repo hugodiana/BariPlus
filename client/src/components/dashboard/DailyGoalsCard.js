@@ -1,43 +1,40 @@
 import React from 'react';
-import './DailyGoalsCard.css';
+import './DailyMedicationCard.css';
 
-const DailyGoalsCard = ({ log, onTrack }) => {
-    const waterGoal = 2000; // 2000ml = 2L
-    const proteinGoal = 60; // 60g
-
-    const waterProgress = Math.min((log.waterConsumed / waterGoal) * 100, 100);
-    const proteinProgress = Math.min((log.proteinConsumed / proteinGoal) * 100, 100);
+const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
+    const hoje = new Date().toISOString().split('T')[0];
+    const historicoDeHoje = historico[hoje] || {};
 
     return (
-        <div className="dashboard-card daily-goals-card">
-            <h3>Metas Diárias</h3>
-            <div className="goal-item">
-                <div className="goal-info">
-                    <span>💧 Água</span>
-                    <span>{log.waterConsumed} / {waterGoal} ml</span>
-                </div>
-                <div className="progress-bar-container">
-                    <div className="progress-bar" style={{ width: `${waterProgress}%` }}></div>
-                </div>
-                <div className="goal-actions">
-                    <button onClick={() => onTrack('water', 250)}>+ 1 Copo (250ml)</button>
-                </div>
-            </div>
-            <div className="goal-item">
-                <div className="goal-info">
-                    <span>💪 Proteína</span>
-                    <span>{log.proteinConsumed} / {proteinGoal} g</span>
-                </div>
-                <div className="progress-bar-container">
-                    <div className="progress-bar" style={{ width: `${proteinProgress}%` }}></div>
-                </div>
-                <div className="goal-actions">
-                    <button onClick={() => onTrack('protein', 10)}>+ 10g</button>
-                    <button onClick={() => onTrack('protein', 20)}>+ 20g</button>
-                </div>
-            </div>
+        <div className="dashboard-card daily-med-card">
+            <h3>Medicação de Hoje</h3>
+            {medicamentos.length === 0 && <p className="empty-meds">Nenhum medicamento na sua lista.</p>}
+            {medicamentos.map(med => {
+                const tomasDeHoje = historicoDeHoje[med._id] || 0;
+                const checks = Array.from({ length: med.vezesAoDia }, (_, i) => i < tomasDeHoje);
+
+                return (
+                    <div key={med._id} className="daily-med-item">
+                        <div className="daily-med-info">
+                            <strong>{med.nome}</strong>
+                            <span>{med.quantidade} {med.unidade}</span>
+                        </div>
+                        <div className="daily-med-checks">
+                            {checks.map((checked, index) => (
+                                <div 
+                                    key={index} 
+                                    className={`med-checkbox-daily ${checked ? 'taken' : ''}`}
+                                    onClick={() => onToggleToma(med._id, med.vezesAoDia, tomasDeHoje)}
+                                >
+                                    {checked && '✓'}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     );
 };
 
-export default DailyGoalsCard;
+export default DailyMedicationCard;

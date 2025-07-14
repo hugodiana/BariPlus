@@ -17,6 +17,12 @@ const MedicationPage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
     const hoje = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
+    const [nome, setNome] = useState('');
+    const [dosagem, setDosagem] = useState('');
+    const [quantidade, setQuantidade] = useState(1);
+    const [unidade, setUnidade] = useState('comprimido(s)');
+    const [vezesAoDia, setVezesAoDia] = useState(1);
+
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -112,15 +118,40 @@ const MedicationPage = () => {
                 <form onSubmit={handleAddMedicamento} className="medication-form">
                     <label>Nome do Medicamento/Vitamina</label>
                     <input type="text" value={nome} onChange={e => setNome(e.target.value)} required />
-                    <label>Dosagem</label>
-                    <input type="text" value={dosagem} onChange={e => setDosagem(e.target.value)} placeholder="Ex: 500mg, 1 comprimido" />
-                    <label>Frequência</label>
-                    <input type="text" value={frequencia} onChange={e => setFrequencia(e.target.value)} placeholder="Ex: Diariamente, 2x ao dia" />
+                    
+                    <label>Dosagem (ex: 500mg, 1000mcg)</label>
+                    <input type="text" value={dosagem} onChange={e => setDosagem(e.target.value)} />
+
+                    <div className="form-row">
+                        <div className="form-field">
+                            <label>Quantidade</label>
+                            <input type="number" min="1" value={quantidade} onChange={e => setQuantidade(e.target.value)} required />
+                        </div>
+                        <div className="form-field">
+                            <label>Unidade</label>
+                            <select value={unidade} onChange={e => setUnidade(e.target.value)}>
+                                <option value="comprimido(s)">comprimido(s)</option>
+                                <option value="cápsula(s)">cápsula(s)</option>
+                                <option value="gota(s)">gota(s)</option>
+                                <option value="ml">ml</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <label>Frequência (quantas vezes ao dia)</label>
+                    <select value={vezesAoDia} onChange={e => setVezesAoDia(e.target.value)}>
+                        <option value="1">1 vez ao dia</option>
+                        <option value="2">2 vezes ao dia</option>
+                        <option value="3">3 vezes ao dia</option>
+                        <option value="4">4 vezes ao dia</option>
+                    </select>
+
                     <button type="submit">Adicionar à Lista</button>
                 </form>
             </Modal>
         </div>
     );
 };
+
 
 export default MedicationPage;

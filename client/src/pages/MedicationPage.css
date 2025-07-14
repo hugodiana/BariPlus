@@ -94,3 +94,14 @@
     color: white;
     border-radius: 4px;
 }
+
+.form-row { display: flex; gap: 15px; }
+.form-field { flex: 1; }
+.medication-form select {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: white;
+}

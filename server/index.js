@@ -73,6 +73,24 @@ const MedicationSchema = new mongoose.Schema({
 });
 const Medication = mongoose.model('Medication', MedicationSchema);
 
+// NOVIDADE: Schema de Medicação Refatorado
+const MedicationSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    medicamentos: [{
+        nome: String,
+        dosagem: String,       // Ex: "500mg"
+        quantidade: Number,    // Ex: 1, 2
+        unidade: String,       // Ex: "comprimido(s)"
+        vezesAoDia: Number,    // Ex: 1, 2, 3
+    }],
+    historico: {
+        type: Map,
+        of: Number, // "YYYY-MM-DD": numero de tomas
+        default: {}
+    }
+});
+const Medication = mongoose.model('Medication', MedicationSchema);
+
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
@@ -397,6 +415,50 @@ app.delete('/api/medication/:medId', autenticar, async (req, res) => {
         );
         res.status(204).send();
     } catch (error) { res.status(500).json({ message: "Erro ao apagar medicamento." }); }
+});
+
+/ --- ROTAS DE MEDICAÇÃO REFATORADAS ---
+app.get('/api/medication', autenticar, async (req, res) => {
+    let doc = await Medication.findOne({ userId: req.userId });
+    if (!doc) {
+        doc = new Medication({ userId: req.userId, medicamentos: [], historico: {} });
+        await doc.save();
+    }
+    res.json(doc);
+});
+
+app.post('/api/medication', autenticar, async (req, res) => {
+    const { nome, dosagem, quantidade, unidade, vezesAoDia } = req.body;
+    const novoMedicamento = { nome, dosagem, quantidade, unidade, vezesAoDia };
+    const result = await Medication.findOneAndUpdate(
+        { userId: req.userId },
+        { $push: { medicamentos: novoMedicamento } },
+        { new: true, upsert: true }
+    );
+    res.status(201).json(result.medicamentos[result.medicamentos.length - 1]);
+});
+
+app.post('/api/medication/log', autenticar, async (req, res) => {
+    const { date, tomas } = req.body; // YYYY-MM-DD, { medId1: 1, medId2: 2 }
+    const updateQuery = {};
+    for (const medId in tomas) {
+        updateQuery[`historico.${date}.${medId}`] = tomas[medId];
+    }
+    const updatedDoc = await Medication.findOneAndUpdate(
+        { userId: req.userId },
+        { $set: updateQuery },
+        { new: true, upsert: true }
+    );
+    res.json(updatedDoc.historico.get(date) || {});
+});
+
+app.delete('/api/medication/:medId', autenticar, async (req, res) => {
+    const { medId } = req.params;
+    await Medication.findOneAndUpdate(
+        { userId: req.userId },
+        { $pull: { medicamentos: { _id: medId } } }
+    );
+    res.status(204).send();
 });
 
 
