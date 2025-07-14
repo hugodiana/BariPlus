@@ -93,3 +93,11 @@
     font-size: 14px;
   }
 }
+
+.sub-question {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: -10px; /* Puxa para mais perto da pergunta anterior */
+    border-top: 3px solid #eef0ef;
+}
