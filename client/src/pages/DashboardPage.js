@@ -1,11 +1,11 @@
 import React from 'react';
 
-// Esta é uma versão de teste ultra-simplificada.
+// A versão de teste que já tínhamos
 const DashboardPage = () => {
   return (
-    <div style={{ padding: '20px', border: '2px solid red' }}>
+    <div style={{ padding: '20px', border: '3px solid red' }}>
       <h1>Teste do Painel</h1>
-      <p>Se você consegue ver esta mensagem, significa que o roteamento e a renderização básica do componente estão a funcionar.</p>
+      <p>Se você consegue ver esta mensagem, o roteamento básico está a funcionar.</p>
     </div>
   );
 };

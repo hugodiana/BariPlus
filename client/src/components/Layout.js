@@ -1,41 +1,16 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import './Layout.css';
-import logo from '../assets/bariplus_logo.png'; 
+import React from 'react';
 
+// Versão de teste super simples do Layout
 const Layout = ({ children }) => {
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
-
-  const handleLogout = () => {
-    localStorage.removeItem('bariplus_token');
-    window.location.href = '/login';
-  };
-
+  console.log("A renderizar o Layout de TESTE.");
   return (
-    <div className="layout-container">
-      {!isSidebarOpen && (
-        <button className="hamburger-btn" onClick={toggleSidebar}>&#9776;</button>
-      )}
-      {isSidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
-      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-header">
-          <img src={logo} alt="BariPlus Logo" className="sidebar-logo" />
-          <button className="sidebar-close-btn" onClick={toggleSidebar}>&times;</button>
-        </div>
-        <nav className="sidebar-nav">
-          <NavLink to="/" end>Painel</NavLink>
-          <NavLink to="/checklist">Checklist</NavLink>
-          <NavLink to="/progresso">Meu Progresso</NavLink>
-          <NavLink to="/consultas">Minhas Consultas</NavLink>
-          <NavLink to="/medicacao">Medicação</NavLink>
-        </nav>
-        <button onClick={handleLogout} className="logout-btn">Sair</button>
-      </aside>
-      <main className="main-content">
+    <div style={{ border: '3px solid blue', padding: '20px', margin: '20px' }}>
+      <h2 style={{color: 'blue'}}>Invólucro do Layout de Teste</h2>
+      <main>
         {children}
       </main>
     </div>
   );
 };
+
 export default Layout;
