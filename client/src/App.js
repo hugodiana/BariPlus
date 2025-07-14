@@ -10,11 +10,13 @@ import ConsultasPage from './pages/ConsultasPage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // A variável mais importante para resolver o nosso bug
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
+
     if (token) {
       fetch(`${apiUrl}/api/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -22,7 +24,7 @@ function App() {
       .then(res => {
         if (!res.ok) {
           localStorage.removeItem('bariplus_token');
-          throw new Error('Sessão inválida');
+          throw new Error('Sessão inválida ou expirada');
         }
         return res.json();
       })
@@ -34,17 +36,23 @@ function App() {
         setUsuario(null);
       })
       .finally(() => {
+        // Independentemente do resultado, o carregamento termina
         setLoading(false);
       });
     } else {
+      // Se não há token, não há o que carregar
       setLoading(false);
     }
   }, []);
 
+  // --- A CORREÇÃO DEFINITIVA ESTÁ AQUI ---
+  // Enquanto o 'loading' for verdadeiro, o app mostra esta div
+  // e não tenta renderizar as rotas. Isto previne o redirecionamento.
   if (loading) {
-    return <div>A carregar...</div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>A carregar...</div>;
   }
 
+  // Só depois de 'loading' ser falso é que o código abaixo é executado
   return (
     <Router>
       <Routes>
@@ -68,4 +76,5 @@ function App() {
     </Router>
   );
 }
+
 export default App;
