@@ -8,12 +8,16 @@ const MedicationPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // Estados para o formulário
+    // Estados para o formulário (aqui estava o erro)
     const [nome, setNome] = useState('');
     const [dosagem, setDosagem] = useState('');
     const [quantidade, setQuantidade] = useState(1);
     const [unidade, setUnidade] = useState('comprimido(s)');
     const [vezesAoDia, setVezesAoDia] = useState(1);
+    
+    // ✅ A declaração que provavelmente estava em falta
+    const [frequencia, setFrequencia] = useState(''); 
+
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -25,6 +29,7 @@ const MedicationPage = () => {
                 const res = await fetch(`${apiUrl}/api/medication`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const data = await res.json();
                 setMedicamentos(data.medicamentos || []);
+                // Garante que o histórico seja um Map
                 setHistorico(new Map(Object.entries(data.historico || {})));
             } catch (error) { console.error("Erro ao buscar medicação:", error); } 
             finally { setLoading(false); }
@@ -43,7 +48,12 @@ const MedicationPage = () => {
         const medAdicionado = await res.json();
         setMedicamentos(prev => [...prev, medAdicionado]);
         setIsModalOpen(false);
-        setNome(''); setDosagem(''); setFrequencia('');
+        // Limpa todos os campos do formulário
+        setNome(''); 
+        setDosagem(''); 
+        setQuantidade(1);
+        setUnidade('comprimido(s)');
+        setVezesAoDia(1);
     };
 
     const handleDeleteMedicamento = async (medId) => {
@@ -56,18 +66,20 @@ const MedicationPage = () => {
     };
 
     const foiTomadoHoje = (medId, tomaIndex) => {
-        const tomasDeHoje = historico.get(hoje) || {};
-        return (tomasDeHoje[medId] || 0) > tomaIndex;
+        const logDeHoje = historico.get(hoje);
+        if (!logDeHoje) return false;
+        return (logDeHoje[medId] || 0) > tomaIndex;
     };
 
-    const handleToggleToma = async (medId, vezesAoDia) => {
-        const tomasDeHoje = (historico.get(hoje) || {})[medId] || 0;
-        const novasTomas = (tomasDeHoje + 1) % (vezesAoDia + 1);
+    const handleToggleToma = async (medId, totalDoses) => {
+        const logDeHoje = historico.get(hoje) || {};
+        const tomasAtuais = logDeHoje[medId] || 0;
+        const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
 
         const newHistoryState = new Map(historico);
-        const todayLog = newHistoryState.get(hoje) || {};
-        todayLog[medId] = novasTomas;
-        newHistoryState.set(hoje, todayLog);
+        const newTodayLog = newHistoryState.get(hoje) || {};
+        newTodayLog[medId] = novasTomas;
+        newHistoryState.set(hoje, newTodayLog);
         setHistorico(newHistoryState);
         
         await fetch(`${apiUrl}/api/medication/log/update`, {
@@ -101,7 +113,11 @@ const MedicationPage = () => {
                                 </div>
                                 <div className="daily-med-checks">
                                     {checks.map((checked, index) => (
-                                        <div key={index} className={`med-checkbox-daily ${checked ? 'taken' : ''}`} onClick={() => handleToggleToma(med._id, med.vezesAoDia)}>
+                                        <div 
+                                            key={index} 
+                                            className={`med-checkbox-daily ${checked ? 'taken' : ''}`}
+                                            onClick={() => handleToggleToma(med._id, med.vezesAoDia)}
+                                        >
                                             {checked && '✓'}
                                         </div>
                                     ))}
@@ -120,15 +136,32 @@ const MedicationPage = () => {
                     <label>Dosagem (ex: 500mg, 1000mcg)</label>
                     <input type="text" value={dosagem} onChange={e => setDosagem(e.target.value)} />
                     <div className="form-row">
-                        <div className="form-field"><label>Quantidade</label><input type="number" min="1" value={quantidade} onChange={e => setQuantidade(e.target.value)} required /></div>
-                        <div className="form-field"><label>Unidade</label><select value={unidade} onChange={e => setUnidade(e.target.value)}><option value="comprimido(s)">comprimido(s)</option><option value="cápsula(s)">cápsula(s)</option><option value="gota(s)">gota(s)</option><option value="ml">ml</option></select></div>
+                        <div className="form-field">
+                            <label>Quantidade</label>
+                            <input type="number" min="1" value={quantidade} onChange={e => setQuantidade(e.target.value)} required />
+                        </div>
+                        <div className="form-field">
+                            <label>Unidade</label>
+                            <select value={unidade} onChange={e => setUnidade(e.target.value)}>
+                                <option value="comprimido(s)">comprimido(s)</option>
+                                <option value="cápsula(s)">cápsula(s)</option>
+                                <option value="gota(s)">gota(s)</option>
+                                <option value="ml">ml</option>
+                            </select>
+                        </div>
                     </div>
                     <label>Frequência (quantas vezes ao dia)</label>
-                    <select value={vezesAoDia} onChange={e => setVezesAoDia(Number(e.target.value))}><option value="1">1 vez ao dia</option><option value="2">2 vezes ao dia</option><option value="3">3 vezes ao dia</option><option value="4">4 vezes ao dia</option></select>
+                    <select value={vezesAoDia} onChange={e => setVezesAoDia(Number(e.target.value))}>
+                        <option value="1">1 vez ao dia</option>
+                        <option value="2">2 vezes ao dia</option>
+                        <option value="3">3 vezes ao dia</option>
+                        <option value="4">4 vezes ao dia</option>
+                    </select>
                     <button type="submit">Adicionar à Lista</button>
                 </form>
             </Modal>
         </div>
     );
 };
+
 export default MedicationPage;
