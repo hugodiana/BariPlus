@@ -1,3 +1,21 @@
+.consultas-container h1 {
+    display: inline-block;
+    margin-right: 20px;
+    color: #333;
+    margin-top: 0;
+    margin-bottom: 5px;
+}
+.consultas-container p {
+    color: #666;
+    margin-top: 0;
+    margin-bottom: 25px;
+}
+.empty-list-message {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+}
+
 .checklist-page-container {
     width: 100%;
 }

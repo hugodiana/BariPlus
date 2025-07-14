@@ -99,3 +99,22 @@
     font-size: 22px; /* Diminui o tamanho da fonte do "Bem-vindo" */
   }
 }
+
+.summary-empty {
+    text-align: center;
+    padding: 20px 0;
+    color: #888;
+}
+.summary-empty p {
+    margin: 0 0 15px 0;
+}
+.summary-action-btn {
+    background-color: #f0f8ff;
+    color: #007aff;
+    border: 1px solid #007aff;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
