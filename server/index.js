@@ -12,12 +12,11 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'seu-segredo-super-secreto-mude-depois';
 
-// --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha ao conectar ao MongoDB:', err));
 
-// --- SCHEMAS E MODELOS ---
+// Schemas e Modelos
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
@@ -51,7 +50,6 @@ const ConsultaSchema = new mongoose.Schema({
 });
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 
-// --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -63,13 +61,12 @@ const autenticar = (req, res, next) => {
   });
 };
 
-// --- ROTAS DA API ---
+// ROTAS DE AUTENTICAÇÃO E USUÁRIO
 app.post('/api/register', async (req, res) => {
   try {
     const { nome, sobrenome, username, email, password } = req.body;
     if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-    if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
-    
+    if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de utilizador já está em uso.' });
     const hashedPassword = await bcrypt.hash(password, 10);
     const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
     await novoUsuario.save();
@@ -78,7 +75,7 @@ app.post('/api/register', async (req, res) => {
     await new Peso({ userId: novoUsuario._id, registros: [] }).save();
     await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
 
-    res.status(201).json({ message: 'Usuário criado com sucesso!' });
+    res.status(201).json({ message: 'Utilizador criado com sucesso!' });
   } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
@@ -111,14 +108,12 @@ app.post('/api/onboarding', autenticar, async (req, res) => {
         }
       }, { new: true });
     if (!usuario) return res.status(404).json({ message: 'Utilizador não encontrado.' });
-    
     await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: { peso: pesoNum, data: new Date() } } });
-
     res.status(200).json({ message: 'Dados guardados com sucesso!' });
   } catch (error) { res.status(500).json({ message: 'Erro no servidor ao guardar detalhes.' }); }
 });
 
-// --- ROTAS DE PESOS ---
+// ROTAS DE PESOS
 app.get('/api/pesos', autenticar, async (req, res) => {
     const pesoDoc = await Peso.findOne({ userId: req.userId });
     res.json(pesoDoc ? pesoDoc.registros : []);
@@ -131,14 +126,38 @@ app.post('/api/pesos', autenticar, async (req, res) => {
     res.status(201).json(result.registros[result.registros.length - 1]);
 });
 
-// --- ROTAS DE CHECKLIST ---
+// --- ROTAS DE CHECKLIST (AGORA REFATORADAS) ---
 app.get('/api/checklist', autenticar, async (req, res) => {
     const checklistDoc = await Checklist.findOne({ userId: req.userId });
     res.json(checklistDoc || { preOp: [], posOp: [] });
 });
-// (As rotas POST, PUT, DELETE do checklist ainda não foram refatoradas para o DB)
+app.post('/api/checklist', autenticar, async (req, res) => {
+    const { descricao, type } = req.body;
+    if (!descricao || !type) return res.status(400).json({ message: "Descrição e tipo são obrigatórios." });
+    const update = { $push: { [type]: { descricao, concluido: false } } };
+    const result = await Checklist.findOneAndUpdate({ userId: req.userId }, update, { new: true });
+    res.status(201).json(result[type][result[type].length - 1]);
+});
+app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
+    const { itemId } = req.params;
+    const { concluido, type } = req.body;
+    const fieldToUpdate = `${type}.$[item].concluido`;
+    const result = await Checklist.findOneAndUpdate(
+        { userId: req.userId, [`${type}._id`]: itemId },
+        { $set: { [fieldToUpdate]: concluido } },
+        { arrayFilters: [{ "item._id": itemId }], new: true }
+    );
+    const updatedItem = result[type].find(item => item._id.toString() === itemId);
+    res.json(updatedItem);
+});
+app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
+    const { itemId } = req.params;
+    const { type } = req.query;
+    await Checklist.findOneAndUpdate({ userId: req.userId }, { $pull: { [type]: { _id: itemId } } });
+    res.status(204).send();
+});
 
-// --- ROTAS DE CONSULTAS ---
+// --- ROTAS DE CONSULTAS (JÁ REFATORADAS) ---
 app.get('/api/consultas', autenticar, async (req, res) => {
     const consultaDoc = await Consulta.findOne({ userId: req.userId });
     res.json(consultaDoc ? consultaDoc.consultas : []);
@@ -154,7 +173,6 @@ app.delete('/api/consultas/:consultaId', autenticar, async (req, res) => {
     await Consulta.findOneAndUpdate({ userId: req.userId }, { $pull: { consultas: { _id: consultaId } } });
     res.status(204).send();
 });
-
 
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus a correr na porta ${PORT}`);

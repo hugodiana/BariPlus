@@ -35,3 +35,11 @@
 .table-card th {
   color: #666;
 }
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}

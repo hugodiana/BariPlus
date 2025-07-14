@@ -12,9 +12,9 @@ const ProgressoPage = () => {
 
     useEffect(() => {
         const fetchHistorico = async () => {
+            const apiUrl = process.env.REACT_APP_API_URL;
             try {
-                // AQUI ESTÁ A MUDANÇA
-                const response = await fetch(`${process.env.REACT_APP_API_URL}/api/pesos`, {
+                const response = await fetch(`${apiUrl}/api/pesos`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
@@ -28,20 +28,47 @@ const ProgressoPage = () => {
         fetchHistorico();
     }, [token]);
 
-    const chartData = { /* ... */ }; // A lógica do chart não muda
-    const chartOptions = { /* ... */ }; // A lógica das opções não muda
+    const chartData = {
+        labels: historico.map(item => new Date(item.data).toLocaleDateString('pt-BR')),
+        datasets: [
+            {
+                label: 'Peso (kg)',
+                data: historico.map(item => item.peso),
+                borderColor: '#007aff',
+                backgroundColor: 'rgba(0, 122, 255, 0.5)',
+                tension: 0.1
+            }
+        ]
+    };
 
-    if (loading) return <div>Carregando seu progresso...</div>;
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Evolução de Peso' }
+        }
+    };
 
-    // O return (JSX) também não muda
+    if (loading) return <div>A carregar o seu progresso...</div>;
+
+    // NOVIDADE: Verificação para quando não há dados
+    if (historico.length === 0) {
+        return (
+            <div className="progresso-container">
+                <h1>O Meu Progresso</h1>
+                <p className="empty-state">Nenhum registo de peso encontrado. Comece por adicionar um no seu painel!</p>
+            </div>
+        )
+    }
+
     return (
         <div className="progresso-container">
-            <h1>Meu Progresso</h1>
+            <h1>O Meu Progresso</h1>
             <div className="progresso-card chart-card">
                 <Line options={chartOptions} data={chartData} />
             </div>
             <div className="progresso-card table-card">
-                <h3>Histórico de Registros</h3>
+                <h3>Histórico de Registos</h3>
                 <table>
                     <thead>
                         <tr>

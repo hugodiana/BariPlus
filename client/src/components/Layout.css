@@ -137,3 +137,22 @@
     color: #333;
     cursor: pointer;
   }
+
+.logout-btn {
+    margin-top: auto; /* Empurra o botão para o final da sidebar */
+    padding: 15px 20px;
+    width: 100%;
+    border: none;
+    background-color: #fceeee;
+    color: #c0392b;
+    border-radius: 8px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.logout-btn:hover {
+    background-color: #f9dcdc;
+}
