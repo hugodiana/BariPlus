@@ -12,12 +12,12 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// --- CONEXÃO COM O BANCO DE DADOS MONGODB ATLAS ---
+// --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha ao conectar ao MongoDB:', err));
 
-// --- SCHEMAS E MODELOS (A "PLANTA" DOS NOSSOS DADOS) ---
+// --- SCHEMAS E MODELOS ---
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
@@ -51,13 +51,20 @@ const ConsultaSchema = new mongoose.Schema({
 });
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 
+const DailyLogSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: String, required: true }, // Formato YYYY-MM-DD
+    waterConsumed: { type: Number, default: 0 }, // Em ml
+    proteinConsumed: { type: Number, default: 0 } // Em g
+});
+const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
+
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (token == null) return res.sendStatus(401);
-
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
     req.userId = user.userId;
@@ -65,10 +72,9 @@ const autenticar = (req, res, next) => {
   });
 };
 
-
 // --- ROTAS DA API ---
-app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
 
+// ROTA DE REGISTO (COM CORREÇÃO PARA INCLUIR DAILYLOG)
 app.post('/api/register', async (req, res) => {
   try {
     const { nome, sobrenome, username, email, password } = req.body;
@@ -83,6 +89,8 @@ app.post('/api/register', async (req, res) => {
     await new Checklist({ userId: novoUsuario._id, preOp: [ { descricao: 'Marcar consulta com cirurgião', concluido: false }, { descricao: 'Passar com nutricionista', concluido: false } ], posOp: [ { descricao: 'Tomar suplementos vitamínicos', concluido: false } ] }).save();
     await new Peso({ userId: novoUsuario._id, registros: [] }).save();
     await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
+    // ✅ CORREÇÃO: Criação do log diário que estava em falta
+    await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
 
     res.status(201).json({ message: 'Utilizador criado com sucesso!' });
   } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
@@ -152,6 +160,7 @@ app.post('/api/checklist', autenticar, async (req, res) => {
 app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { concluido, type } = req.body;
+    if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
     try {
         const checklistDoc = await Checklist.findOne({ userId: req.userId });
         if (!checklistDoc) return res.status(404).json({ message: "Checklist não encontrado." });
@@ -165,6 +174,7 @@ app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
 app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { type } = req.query;
+    if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
     try {
         await Checklist.findOneAndUpdate({ userId: req.userId }, { $pull: { [type]: { _id: itemId } } });
         res.status(204).send();
@@ -188,6 +198,35 @@ app.delete('/api/consultas/:consultaId', autenticar, async (req, res) => {
     res.status(204).send();
 });
 
+// ✅ ROTAS QUE ESTAVAM EM FALTA PARA METAS DIÁRIAS
+app.get('/api/dailylog/today', autenticar, async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        let log = await DailyLog.findOne({ userId: req.userId, date: today });
+        if (!log) {
+            log = new DailyLog({ userId: req.userId, date: today });
+            await log.save();
+        }
+        res.json(log);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar log diário." });
+    }
+});
+app.post('/api/dailylog/track', autenticar, async (req, res) => {
+    try {
+        const { type, amount } = req.body;
+        const today = new Date().toISOString().split('T')[0];
+        const fieldToUpdate = type === 'water' ? 'waterConsumed' : 'proteinConsumed';
+        const updatedLog = await DailyLog.findOneAndUpdate(
+            { userId: req.userId, date: today },
+            { $inc: { [fieldToUpdate]: amount } },
+            { new: true, upsert: true }
+        );
+        res.json(updatedLog);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao registar consumo." });
+    }
+});
 
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus a correr na porta ${PORT}`);
