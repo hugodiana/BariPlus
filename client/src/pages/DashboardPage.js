@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
-import DailyMedicationCard from '../components/dashboard/DailyMedicationCard'; // Importação correta
+// ✅ CORREÇÃO: O caminho correto a partir da pasta 'pages' é este
+import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 import Modal from '../components/Modal';
 import './DashboardPage.css';
 import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DashboardPage = () => {
+    // O resto do código continua exatamente o mesmo
     const [usuario, setUsuario] = useState(null);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
@@ -94,18 +96,16 @@ const DashboardPage = () => {
             setIsDateModalOpen(false);
         } catch (error) { console.error("Erro ao guardar data da cirurgia:", error); }
     };
-    
+
     const handleToggleMedToma = async (medId, totalDoses) => {
         const hoje = new Date().toISOString().split('T')[0];
         const historicoDeHoje = medicationData.historico[hoje] || {};
         const tomasAtuais = historicoDeHoje[medId] || 0;
         const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
-
         const newHistoryState = { ...medicationData.historico };
         if (!newHistoryState[hoje]) { newHistoryState[hoje] = {}; }
         newHistoryState[hoje][medId] = novasTomas;
         setMedicationData({ ...medicationData, historico: newHistoryState });
-        
         await fetch(`${apiUrl}/api/medication/log/update`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -139,7 +139,6 @@ const DashboardPage = () => {
         <div className="dashboard-container">
             <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
             <div className="dashboard-grid">
-                
                 {mostrarCardAdicionarData && (
                     <div className="dashboard-card special-action-card">
                         <h3>Jornada a Começar!</h3>
@@ -149,7 +148,6 @@ const DashboardPage = () => {
                         </button>
                     </div>
                 )}
-
                 <WeightProgressCard 
                     pesoInicial={usuario.detalhesCirurgia.pesoInicial}
                     pesoAtual={usuario.detalhesCirurgia.pesoAtual}
@@ -157,7 +155,6 @@ const DashboardPage = () => {
                 
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
                 
-                {/* ✅ CORREÇÃO: O CARD DE MEDICAÇÃO AGORA ESTÁ AQUI, AO LADO DOS OUTROS */}
                 {medicationData.medicamentos.length > 0 && (
                     <DailyMedicationCard 
                         medicamentos={medicationData.medicamentos}
