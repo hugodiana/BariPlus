@@ -1,211 +1,115 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import WeightProgressCard from '../components/dashboard/WeightProgressCard';
-import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
-import Modal from '../components/Modal';
-import './DashboardPage.css';
-import { format, differenceInDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import './ChecklistPage.css';
 
-const DashboardPage = () => {
-    // Estados para os dados principais
-    const [usuario, setUsuario] = useState(null);
-    const [dailyLog, setDailyLog] = useState(null);
+const ChecklistPage = () => {
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
-    const [consultas, setConsultas] = useState([]);
+    const [activeTab, setActiveTab] = useState('preOp');
+    const [novaTarefa, setNovaTarefa] = useState('');
     const [loading, setLoading] = useState(true);
-
-    // Estados para os modais
-    const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
-    const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-
-    // Estados para os formulários dos modais
-    const [novoPeso, setNovoPeso] = useState('');
-    const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
-
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (!token) {
-                setLoading(false);
-                return;
-            }
+        const fetchChecklist = async () => {
             try {
-                const [resMe, resDailyLog, resChecklist, resConsultas] = await Promise.all([
-                    fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${apiUrl}/api/dailylog/today`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } })
-                ]);
-
-                if (!resMe.ok) throw new Error('Sessão inválida');
-
-                const dadosUsuario = await resMe.json();
-                const dadosLog = await resDailyLog.json();
-                const dadosChecklist = await resChecklist.json();
-                const dadosConsultas = await resConsultas.json();
-
-                setUsuario(dadosUsuario);
-                setDailyLog(dadosLog);
-                setChecklist(dadosChecklist);
-                setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
-
+                const response = await fetch(`${apiUrl}/api/checklist`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                setChecklist(data);
             } catch (error) {
-                console.error("Erro ao buscar dados do painel:", error);
-                localStorage.removeItem('bariplus_token');
+                console.error("Erro ao buscar checklist:", error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchData();
+        fetchChecklist();
     }, [token, apiUrl]);
 
-    const handleRegistrarPeso = async (e) => {
+    const handleAdicionarTarefa = async (e) => {
         e.preventDefault();
-        if (!novoPeso) return;
-        try {
-            await fetch(`${apiUrl}/api/pesos`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ peso: novoPeso })
-            });
-            setUsuario(prev => ({ ...prev, detalhesCirurgia: { ...prev.detalhesCirurgia, pesoAtual: parseFloat(novoPeso) } }));
-            setNovoPeso('');
-            setIsWeightModalOpen(false);
-        } catch (error) { console.error(error); }
+        if (!novaTarefa.trim()) return;
+        const response = await fetch(`${apiUrl}/api/checklist`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ descricao: novaTarefa, type: activeTab })
+        });
+        const itemAdicionado = await response.json();
+        setChecklist(prev => ({
+            ...prev,
+            [activeTab]: [...prev[activeTab], itemAdicionado]
+        }));
+        setNovaTarefa('');
     };
 
-    const handleTrack = async (type, amount) => {
-        try {
-            const response = await fetch(`${apiUrl}/api/dailylog/track`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ type, amount })
-            });
-            const updatedLog = await response.json();
-            setDailyLog(updatedLog);
-        } catch (error) {
-            console.error(`Erro ao registar ${type}:`, error);
-        }
+    const handleToggleConcluido = async (itemId, statusAtual) => {
+        const response = await fetch(`${apiUrl}/api/checklist/${itemId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ concluido: !statusAtual, type: activeTab })
+        });
+        const itemAtualizado = await response.json();
+        setChecklist(prev => ({
+            ...prev,
+            [activeTab]: prev[activeTab].map(item => item._id === itemId ? itemAtualizado : item)
+        }));
     };
     
-    const handleSetSurgeryDate = async (e) => {
-        e.preventDefault();
-        if (!novaDataCirurgia) return;
-        try {
-            const res = await fetch(`${apiUrl}/api/user/surgery-date`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ dataCirurgia: novaDataCirurgia })
-            });
-            if (!res.ok) throw new Error('Falha ao guardar a data');
-            const usuarioAtualizado = await res.json();
-            setUsuario(usuarioAtualizado);
-            setNovaDataCirurgia('');
-            setIsDateModalOpen(false);
-        } catch (error) {
-            console.error("Erro ao guardar data da cirurgia:", error);
-        }
+    const handleApagarItem = async (itemId) => {
+        if (!window.confirm("Tem a certeza que quer apagar esta tarefa?")) return;
+        
+        await fetch(`${apiUrl}/api/checklist/${itemId}?type=${activeTab}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        setChecklist(prev => ({
+            ...prev,
+            [activeTab]: prev[activeTab].filter(item => item._id !== itemId)
+        }));
     };
 
-    const getWelcomeMessage = () => {
-        if (!usuario || !usuario.detalhesCirurgia) return `Bem-vindo(a) de volta, ${usuario?.nome || ''}!`;
-        const { fezCirurgia, dataCirurgia } = usuario.detalhesCirurgia;
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0); 
-        if (fezCirurgia === 'sim' && dataCirurgia) {
-            const dataDaCirurgia = new Date(dataCirurgia);
-            const diasDePosOp = differenceInDays(hoje, dataDaCirurgia);
-            if (diasDePosOp >= 0) {
-                return `Olá, ${usuario.nome}! Você está no seu ${diasDePosOp + 1}º dia de pós-operatório.`;
-            }
-        } else if (fezCirurgia === 'nao' && dataCirurgia) {
-            const dataDaCirurgia = new Date(dataCirurgia);
-            const diasParaCirurgia = differenceInDays(dataDaCirurgia, hoje);
-            if (diasParaCirurgia >= 0) {
-                return `Olá, ${usuario.nome}! Faltam ${diasParaCirurgia} dias para a sua cirurgia.`;
-            }
-        }
-        return `Bem-vindo(a) de volta, ${usuario.nome}!`;
-    };
-
-    if (loading || !usuario) return <div style={{ padding: '40px', textAlign: 'center' }}>A carregar o seu painel...</div>;
-
-    const tarefasAtivas = (usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || [];
-    const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
-    const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
-    const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && !usuario.detalhesCirurgia.dataCirurgia;
+    if (loading) return <div>A carregar checklist...</div>;
+    const itensDaAbaAtiva = checklist[activeTab] || [];
 
     return (
-        <div className="dashboard-container">
-            <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
-            <div className="dashboard-grid">
-                {mostrarCardAdicionarData && (
-                    <div className="dashboard-card special-action-card">
-                        <h3>Jornada a Começar!</h3>
-                        <p>Já tem a data da sua cirurgia? Registe-a para começar a contagem decrescente e receber dicas personalizadas.</p>
-                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>
-                            Adicionar Data da Cirurgia
-                        </button>
-                    </div>
-                )}
-                <WeightProgressCard 
-                    pesoInicial={usuario.detalhesCirurgia.pesoInicial}
-                    pesoAtual={usuario.detalhesCirurgia.pesoAtual}
-                />
-                {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
-                <div className="dashboard-card summary-card">
-                    <h3>Próximas Tarefas</h3>
-                    {proximasTarefas.length > 0 ? (
-                        <ul className="summary-list">
-                            {proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}
-                        </ul>
-                    ) : (
-                        <div className="summary-empty">
-                            <p>Nenhuma tarefa pendente! ✨</p>
-                            <Link to="/checklist" className="summary-action-btn">Adicionar Tarefa</Link>
-                        </div>
-                    )}
+        <div className="checklist-page-container">
+            <h1>O Meu Checklist</h1>
+            <p>Acompanhe aqui todas as suas tarefas importantes.</p>
+            <div className="checklist-content">
+                <div className="tab-buttons">
+                    <button className={`tab-btn ${activeTab === 'preOp' ? 'active' : ''}`} onClick={() => setActiveTab('preOp')}>
+                        Pré-Operatório
+                    </button>
+                    <button className={`tab-btn ${activeTab === 'posOp' ? 'active' : ''}`} onClick={() => setActiveTab('posOp')}>
+                        Pós-Operatório
+                    </button>
                 </div>
-                <div className="dashboard-card summary-card">
-                    <h3>Próximas Consultas</h3>
-                    {proximasConsultas.length > 0 ? (
-                        <ul className="summary-list">
-                            {proximasConsultas.map(consulta => (
-                                <li key={consulta._id}>
-                                    <strong>{consulta.especialidade}</strong> - {format(new Date(consulta.data), "dd/MM/yyyy 'às' p", { locale: ptBR })}
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div className="summary-empty">
-                            <p>Nenhuma consulta agendada.</p>
-                            <Link to="/consultas" className="summary-action-btn">Agendar Consulta</Link>
-                        </div>
-                    )}
+                <div className="tab-content">
+                    <form onSubmit={handleAdicionarTarefa} className="add-item-form">
+                        <input
+                            type="text"
+                            value={novaTarefa}
+                            onChange={(e) => setNovaTarefa(e.target.value)}
+                            placeholder="Adicionar nova tarefa..."
+                        />
+                        <button type="submit">+</button>
+                    </form>
+                    <ul>
+                        {itensDaAbaAtiva.map(item => (
+                            // Usamos _id do MongoDB para a key
+                            <li key={item._id} className={item.concluido ? 'concluido' : ''}>
+                                {/* NOVIDADE: Checkbox customizada */}
+                                <div className="checkbox-container" onClick={() => handleToggleConcluido(item._id, item.concluido)}>
+                                    <span className="checkmark">✓</span>
+                                </div>
+                                <span className="item-text">{item.descricao}</span>
+                                <button onClick={() => handleApagarItem(item._id)} className="delete-btn">×</button>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             </div>
-
-            <Modal isOpen={isWeightModalOpen} onClose={() => setIsWeightModalOpen(false)}>
-                <h2>Registar Novo Peso</h2>
-                <form onSubmit={handleRegistrarPeso}>
-                    <input type="number" step="0.1" className="weight-input" placeholder="Ex: 97.5" value={novoPeso} onChange={e => setNovoPeso(e.target.value)} required />
-                    <button type="submit" className="submit-btn">Guardar</button>
-                </form>
-            </Modal>
-
-            <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
-                <h2>Registar Data da Cirurgia</h2>
-                <form onSubmit={handleSetSurgeryDate}>
-                    <label>Qual é a data agendada para a sua cirurgia?</label>
-                    <input type="date" className="date-input" value={novaDataCirurgia} onChange={e => setNovaDataCirurgia(e.target.value)} required />
-                    <button type="submit" className="submit-btn">Guardar Data</button>
-                </form>
-            </Modal>
         </div>
     );
 };
-
-export default DashboardPage;
+export default ChecklistPage;

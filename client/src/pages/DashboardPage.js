@@ -8,22 +8,30 @@ import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DashboardPage = () => {
-    // A lógica de estados continua a mesma
+    // Estados para os dados principais
     const [usuario, setUsuario] = useState(null);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    // Estados para os modais
+    const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
+    const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+
+    // Estados para os formulários dos modais
     const [novoPeso, setNovoPeso] = useState('');
+    const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    // A lógica de busca de dados continua a mesma
     useEffect(() => {
         const fetchData = async () => {
-            if (!token) { setLoading(false); return; }
+            if (!token) {
+                setLoading(false);
+                return;
+            }
             try {
                 const [resMe, resDailyLog, resChecklist, resConsultas] = await Promise.all([
                     fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -31,17 +39,22 @@ const DashboardPage = () => {
                     fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
+
                 if (!resMe.ok) throw new Error('Sessão inválida');
+
                 const dadosUsuario = await resMe.json();
                 const dadosLog = await resDailyLog.json();
                 const dadosChecklist = await resChecklist.json();
                 const dadosConsultas = await resConsultas.json();
+
                 setUsuario(dadosUsuario);
                 setDailyLog(dadosLog);
                 setChecklist(dadosChecklist);
                 setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
+
             } catch (error) {
                 console.error("Erro ao buscar dados do painel:", error);
+                localStorage.removeItem('bariplus_token');
             } finally {
                 setLoading(false);
             }
@@ -49,18 +62,60 @@ const DashboardPage = () => {
         fetchData();
     }, [token, apiUrl]);
 
-    // A lógica das funções handle... continua a mesma
-    const handleRegistrarPeso = async (e) => { /* ...código existente... */ };
-    const handleTrack = async (type, amount) => { /* ...código existente... */ };
+    const handleRegistrarPeso = async (e) => {
+        e.preventDefault();
+        if (!novoPeso) return;
+        try {
+            await fetch(`${apiUrl}/api/pesos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ peso: novoPeso })
+            });
+            setUsuario(prev => ({ ...prev, detalhesCirurgia: { ...prev.detalhesCirurgia, pesoAtual: parseFloat(novoPeso) } }));
+            setNovoPeso('');
+            setIsWeightModalOpen(false);
+        } catch (error) { console.error(error); }
+    };
 
-    // --- NOVIDADE: FUNÇÃO PARA GERAR A MENSAGEM INTELIGENTE ---
+    const handleTrack = async (type, amount) => {
+        try {
+            const response = await fetch(`${apiUrl}/api/dailylog/track`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ type, amount })
+            });
+            const updatedLog = await response.json();
+            setDailyLog(updatedLog);
+        } catch (error) {
+            console.error(`Erro ao registar ${type}:`, error);
+        }
+    };
+    
+    const handleSetSurgeryDate = async (e) => {
+        e.preventDefault();
+        if (!novaDataCirurgia) return;
+        try {
+            const res = await fetch(`${apiUrl}/api/user/surgery-date`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ dataCirurgia: novaDataCirurgia })
+            });
+            if (!res.ok) throw new Error('Falha ao guardar a data');
+            const usuarioAtualizado = await res.json();
+            setUsuario(usuarioAtualizado);
+            setNovaDataCirurgia('');
+            setIsDateModalOpen(false);
+        } catch (error) {
+            console.error("Erro ao guardar data da cirurgia:", error);
+        }
+    };
+
     const getWelcomeMessage = () => {
-        if (!usuario || !usuario.detalhesCirurgia) return `Bem-vindo(a) de volta, ${usuario.nome}!`;
-
+        if (!usuario || !usuario.detalhesCirurgia) return `Bem-vindo(a) de volta, ${usuario?.nome || ''}!`;
         const { fezCirurgia, dataCirurgia } = usuario.detalhesCirurgia;
         const hoje = new Date();
-
-        if (fezCirurgia === 'sim') {
+        hoje.setHours(0, 0, 0, 0); 
+        if (fezCirurgia === 'sim' && dataCirurgia) {
             const dataDaCirurgia = new Date(dataCirurgia);
             const diasDePosOp = differenceInDays(hoje, dataDaCirurgia);
             if (diasDePosOp >= 0) {
@@ -75,27 +130,32 @@ const DashboardPage = () => {
         }
         return `Bem-vindo(a) de volta, ${usuario.nome}!`;
     };
-    // --- FIM DA NOVIDADE ---
 
     if (loading || !usuario) return <div style={{ padding: '40px', textAlign: 'center' }}>A carregar o seu painel...</div>;
 
     const tarefasAtivas = (usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || [];
     const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
     const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
+    const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && !usuario.detalhesCirurgia.dataCirurgia;
 
     return (
         <div className="dashboard-container">
-            {/* NOVIDADE: Usando a nova função para a mensagem de boas-vindas */}
             <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
-            
             <div className="dashboard-grid">
+                {mostrarCardAdicionarData && (
+                    <div className="dashboard-card special-action-card">
+                        <h3>Jornada a Começar!</h3>
+                        <p>Já tem a data da sua cirurgia? Registe-a para começar a contagem decrescente e receber dicas personalizadas.</p>
+                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>
+                            Adicionar Data da Cirurgia
+                        </button>
+                    </div>
+                )}
                 <WeightProgressCard 
                     pesoInicial={usuario.detalhesCirurgia.pesoInicial}
                     pesoAtual={usuario.detalhesCirurgia.pesoAtual}
                 />
-                
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
-
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Tarefas</h3>
                     {proximasTarefas.length > 0 ? (
@@ -109,7 +169,6 @@ const DashboardPage = () => {
                         </div>
                     )}
                 </div>
-
                 <div className="dashboard-card summary-card">
                     <h3>Próximas Consultas</h3>
                     {proximasConsultas.length > 0 ? (
@@ -129,11 +188,20 @@ const DashboardPage = () => {
                 </div>
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+            <Modal isOpen={isWeightModalOpen} onClose={() => setIsWeightModalOpen(false)}>
                 <h2>Registar Novo Peso</h2>
                 <form onSubmit={handleRegistrarPeso}>
                     <input type="number" step="0.1" className="weight-input" placeholder="Ex: 97.5" value={novoPeso} onChange={e => setNovoPeso(e.target.value)} required />
                     <button type="submit" className="submit-btn">Guardar</button>
+                </form>
+            </Modal>
+
+            <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
+                <h2>Registar Data da Cirurgia</h2>
+                <form onSubmit={handleSetSurgeryDate}>
+                    <label>Qual é a data agendada para a sua cirurgia?</label>
+                    <input type="date" className="date-input" value={novaDataCirurgia} onChange={e => setNovaDataCirurgia(e.target.value)} required />
+                    <button type="submit" className="submit-btn">Guardar Data</button>
                 </form>
             </Modal>
         </div>
