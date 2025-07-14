@@ -182,17 +182,31 @@ app.post('/api/checklist', autenticar, async (req, res) => {
 });
 app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
-    const { concluido, type } = req.body;
+    // Agora aceitamos tanto 'concluido' como 'descricao'
+    const { concluido, descricao, type } = req.body; 
     if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
+    
     try {
         const checklistDoc = await Checklist.findOne({ userId: req.userId });
         if (!checklistDoc) return res.status(404).json({ message: "Checklist não encontrado." });
+
         const item = checklistDoc[type].id(itemId);
         if (!item) return res.status(404).json({ message: "Item não encontrado." });
-        item.concluido = concluido;
+
+        // Atualiza a propriedade apenas se ela foi enviada na requisição
+        if (descricao !== undefined) {
+            item.descricao = descricao;
+        }
+        if (concluido !== undefined) {
+            item.concluido = concluido;
+        }
+        
         await checklistDoc.save();
         res.json(item);
-    } catch (error) { res.status(500).json({ message: "Erro ao atualizar item." }); }
+    } catch (error) {
+        console.error("Erro ao atualizar item do checklist:", error);
+        res.status(500).json({ message: "Erro ao atualizar item." });
+    }
 });
 app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;

@@ -1,63 +1,91 @@
 import React, { useState, useEffect } from 'react';
 import './ChecklistPage.css';
+import Modal from '../components/Modal'; // Precisamos do nosso Modal
 
 const ChecklistPage = () => {
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [activeTab, setActiveTab] = useState('preOp');
-    const [novaTarefa, setNovaTarefa] = useState('');
     const [loading, setLoading] = useState(true);
+    
+    // Estados para o modal
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [tarefaEmEdicao, setTarefaEmEdicao] = useState(null);
+    const [textoDaTarefa, setTextoDaTarefa] = useState('');
+
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     useEffect(() => {
         const fetchChecklist = async () => {
             try {
-                const response = await fetch(`${apiUrl}/api/checklist`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const response = await fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } });
                 const data = await response.json();
                 setChecklist(data);
-            } catch (error) {
-                console.error("Erro ao buscar checklist:", error);
-            } finally {
-                setLoading(false);
-            }
+            } catch (error) { console.error("Erro ao buscar checklist:", error); } 
+            finally { setLoading(false); }
         };
         fetchChecklist();
     }, [token, apiUrl]);
 
-    const handleAdicionarTarefa = async (e) => {
-        e.preventDefault();
-        if (!novaTarefa.trim()) return;
-        const response = await fetch(`${apiUrl}/api/checklist`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ descricao: novaTarefa, type: activeTab })
-        });
-        const itemAdicionado = await response.json();
-        setChecklist(prev => ({
-            ...prev,
-            [activeTab]: [...prev[activeTab], itemAdicionado]
-        }));
-        setNovaTarefa('');
+    const handleOpenModalParaAdicionar = () => {
+        setTarefaEmEdicao(null);
+        setTextoDaTarefa('');
+        setIsModalOpen(true);
     };
 
-    const handleToggleConcluido = async (itemId, statusAtual) => {
-        const response = await fetch(`${apiUrl}/api/checklist/${itemId}`, {
+    const handleOpenModalParaEditar = (tarefa) => {
+        setTarefaEmEdicao(tarefa);
+        setTextoDaTarefa(tarefa.descricao);
+        setIsModalOpen(true);
+    };
+
+    const handleSubmitTarefa = async (e) => {
+        e.preventDefault();
+        if (!textoDaTarefa.trim()) return;
+
+        if (tarefaEmEdicao) {
+            // LÓGICA DE EDITAR (PUT)
+            const res = await fetch(`${apiUrl}/api/checklist/${tarefaEmEdicao._id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ descricao: textoDaTarefa, type: activeTab })
+            });
+            const itemAtualizado = await res.json();
+            setChecklist(prev => ({
+                ...prev,
+                [activeTab]: prev[activeTab].map(item => item._id === itemAtualizado._id ? itemAtualizado : item)
+            }));
+        } else {
+            // LÓGICA DE ADICIONAR (POST)
+            const res = await fetch(`${apiUrl}/api/checklist`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ descricao: textoDaTarefa, type: activeTab })
+            });
+            const itemAdicionado = await res.json();
+            setChecklist(prev => ({
+                ...prev,
+                [activeTab]: [...prev[activeTab], itemAdicionado]
+            }));
+        }
+        setIsModalOpen(false);
+    };
+
+    const handleToggleConcluido = async (item) => {
+        const res = await fetch(`${apiUrl}/api/checklist/${item._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ concluido: !statusAtual, type: activeTab })
+            body: JSON.stringify({ concluido: !item.concluido, type: activeTab })
         });
-        const itemAtualizado = await response.json();
+        const itemAtualizado = await res.json();
         setChecklist(prev => ({
             ...prev,
-            [activeTab]: prev[activeTab].map(item => item._id === itemId ? itemAtualizado : item)
+            [activeTab]: prev[activeTab].map(i => i._id === itemAtualizado._id ? itemAtualizado : i)
         }));
     };
     
     const handleApagarItem = async (itemId) => {
         if (!window.confirm("Tem a certeza que quer apagar esta tarefa?")) return;
-        
         await fetch(`${apiUrl}/api/checklist/${itemId}?type=${activeTab}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
@@ -72,9 +100,11 @@ const ChecklistPage = () => {
     const itensDaAbaAtiva = checklist[activeTab] || [];
 
     return (
-        <div className="checklist-page-container">
-            <h1>O Meu Checklist</h1>
-            <p>Acompanhe aqui todas as suas tarefas importantes.</p>
+        <div className="page-container">
+            <div className="page-header">
+                <h1>O Meu Checklist</h1>
+                <p>Acompanhe aqui todas as suas tarefas importantes.</p>
+            </div>
             <div className="checklist-content">
                 <div className="tab-buttons">
                     <button className={`tab-btn ${activeTab === 'preOp' ? 'active' : ''}`} onClick={() => setActiveTab('preOp')}>
@@ -85,31 +115,41 @@ const ChecklistPage = () => {
                     </button>
                 </div>
                 <div className="tab-content">
-                    <form onSubmit={handleAdicionarTarefa} className="add-item-form">
-                        <input
-                            type="text"
-                            value={novaTarefa}
-                            onChange={(e) => setNovaTarefa(e.target.value)}
-                            placeholder="Adicionar nova tarefa..."
-                        />
-                        <button type="submit">+</button>
-                    </form>
+                    <div className="add-task-container">
+                        <button className="add-btn" onClick={handleOpenModalParaAdicionar}>+ Adicionar Nova Tarefa</button>
+                    </div>
                     <ul>
                         {itensDaAbaAtiva.map(item => (
-                            // Usamos _id do MongoDB para a key
                             <li key={item._id} className={item.concluido ? 'concluido' : ''}>
-                                {/* NOVIDADE: Checkbox customizada */}
-                                <div className="checkbox-container" onClick={() => handleToggleConcluido(item._id, item.concluido)}>
+                                <div className="checkbox-container" onClick={() => handleToggleConcluido(item)}>
                                     <span className="checkmark">✓</span>
                                 </div>
                                 <span className="item-text">{item.descricao}</span>
-                                <button onClick={() => handleApagarItem(item._id)} className="delete-btn">×</button>
+                                <div className="item-actions">
+                                    <button onClick={() => handleOpenModalParaEditar(item)} className="action-btn edit-btn">✎</button>
+                                    <button onClick={() => handleApagarItem(item._id)} className="action-btn delete-btn">×</button>
+                                </div>
                             </li>
                         ))}
                     </ul>
                 </div>
             </div>
+
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                <h2>{tarefaEmEdicao ? 'Editar Tarefa' : 'Adicionar Nova Tarefa'}</h2>
+                <form onSubmit={handleSubmitTarefa} className="checklist-form">
+                    <input
+                        type="text"
+                        value={textoDaTarefa}
+                        onChange={(e) => setTextoDaTarefa(e.target.value)}
+                        placeholder="Descrição da tarefa..."
+                        required
+                    />
+                    <button type="submit">{tarefaEmEdicao ? 'Guardar Alterações' : 'Adicionar Tarefa'}</button>
+                </form>
+            </Modal>
         </div>
     );
 };
+
 export default ChecklistPage;
