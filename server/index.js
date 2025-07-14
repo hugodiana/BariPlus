@@ -12,11 +12,12 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// --- CONEXÃO COM O BANCO DE DADOS MONGODB ATLAS ---
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha ao conectar ao MongoDB:', err));
 
-// --- SCHEMAS E MODELOS ---
+// --- SCHEMAS E MODELOS (A "PLANTA" DOS NOSSOS DADOS) ---
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
@@ -50,21 +51,13 @@ const ConsultaSchema = new mongoose.Schema({
 });
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 
-// NOVIDADE: Schema para os registos diários
-const DailyLogSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true }, // Formato YYYY-MM-DD para facilitar a busca
-    waterConsumed: { type: Number, default: 0 }, // Em ml
-    proteinConsumed: { type: Number, default: 0 } // Em g
-});
-const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
-
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (token == null) return res.sendStatus(401);
+
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) return res.sendStatus(403);
     req.userId = user.userId;
@@ -72,17 +65,22 @@ const autenticar = (req, res, next) => {
   });
 };
 
+
 // --- ROTAS DA API ---
+app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
+
 app.post('/api/register', async (req, res) => {
   try {
     const { nome, sobrenome, username, email, password } = req.body;
     if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
     if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de utilizador já está em uso.' });
+    
     const hashedPassword = await bcrypt.hash(password, 10);
     const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
     await novoUsuario.save();
 
-    await new Checklist({ userId: novoUsuario._id, preOp: [ { descricao: 'Marcar consulta com cirurgião', concluido: false } ], posOp: [ { descricao: 'Tomar suplementos vitamínicos', concluido: false } ] }).save();
+    // Cria os documentos associados para o novo utilizador
+    await new Checklist({ userId: novoUsuario._id, preOp: [ { descricao: 'Marcar consulta com cirurgião', concluido: false }, { descricao: 'Passar com nutricionista', concluido: false } ], posOp: [ { descricao: 'Tomar suplementos vitamínicos', concluido: false } ] }).save();
     await new Peso({ userId: novoUsuario._id, registros: [] }).save();
     await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
 
@@ -90,7 +88,6 @@ app.post('/api/register', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
-// ... (Rotas de login, me, onboarding, pesos, checklist, consultas continuam iguais) ...
 app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
@@ -100,6 +97,7 @@ app.post('/api/login', async (req, res) => {
         res.json({ token });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
+
 app.get('/api/me', autenticar, async (req, res) => {
   try {
     const usuario = await User.findById(req.userId).select('-password');
@@ -107,6 +105,7 @@ app.get('/api/me', autenticar, async (req, res) => {
     res.json(usuario);
   } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
+
 app.post('/api/onboarding', autenticar, async (req, res) => {
   try {
     const { fezCirurgia, dataCirurgia, altura, pesoInicial } = req.body;
@@ -118,10 +117,14 @@ app.post('/api/onboarding', autenticar, async (req, res) => {
         }
       }, { new: true });
     if (!usuario) return res.status(404).json({ message: 'Utilizador não encontrado.' });
+    
     await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: { peso: pesoNum, data: new Date() } } });
+
     res.status(200).json({ message: 'Dados guardados com sucesso!' });
   } catch (error) { res.status(500).json({ message: 'Erro no servidor ao guardar detalhes.' }); }
 });
+
+// ROTAS DE PESOS
 app.get('/api/pesos', autenticar, async (req, res) => {
     const pesoDoc = await Peso.findOne({ userId: req.userId });
     res.json(pesoDoc ? pesoDoc.registros : []);
@@ -133,6 +136,8 @@ app.post('/api/pesos', autenticar, async (req, res) => {
     const result = await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: { peso: pesoNum, data: new Date() } } }, { new: true });
     res.status(201).json(result.registros[result.registros.length - 1]);
 });
+
+// ROTAS DE CHECKLIST
 app.get('/api/checklist', autenticar, async (req, res) => {
     const checklistDoc = await Checklist.findOne({ userId: req.userId });
     res.json(checklistDoc || { preOp: [], posOp: [] });
@@ -147,7 +152,6 @@ app.post('/api/checklist', autenticar, async (req, res) => {
 app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { concluido, type } = req.body;
-    if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
     try {
         const checklistDoc = await Checklist.findOne({ userId: req.userId });
         if (!checklistDoc) return res.status(404).json({ message: "Checklist não encontrado." });
@@ -161,12 +165,13 @@ app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
 app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { type } = req.query;
-    if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
     try {
-        await Checklist.findOneAndUpdate( { userId: req.userId }, { $pull: { [type]: { _id: itemId } } } );
+        await Checklist.findOneAndUpdate({ userId: req.userId }, { $pull: { [type]: { _id: itemId } } });
         res.status(204).send();
     } catch (error) { res.status(500).json({ message: "Erro ao apagar item." }); }
 });
+
+// ROTAS DE CONSULTAS
 app.get('/api/consultas', autenticar, async (req, res) => {
     const consultaDoc = await Consulta.findOne({ userId: req.userId });
     res.json(consultaDoc ? consultaDoc.consultas : []);
@@ -181,42 +186,6 @@ app.delete('/api/consultas/:consultaId', autenticar, async (req, res) => {
     const { consultaId } = req.params;
     await Consulta.findOneAndUpdate({ userId: req.userId }, { $pull: { consultas: { _id: consultaId } } });
     res.status(204).send();
-});
-
-// --- NOVIDADE: ROTAS PARA METAS DIÁRIAS ---
-app.get('/api/dailylog/today', autenticar, async (req, res) => {
-    try {
-        const today = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
-        let log = await DailyLog.findOne({ userId: req.userId, date: today });
-
-        if (!log) {
-            // Se não existe log para hoje, cria um
-            log = new DailyLog({ userId: req.userId, date: today });
-            await log.save();
-        }
-        res.json(log);
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao buscar log diário." });
-    }
-});
-
-app.post('/api/dailylog/track', autenticar, async (req, res) => {
-    try {
-        const { type, amount } = req.body; // type pode ser 'water' ou 'protein'
-        const today = new Date().toISOString().split('T')[0];
-        
-        const fieldToUpdate = type === 'water' ? 'waterConsumed' : 'proteinConsumed';
-        
-        // Encontra o log de hoje e incrementa o valor
-        const updatedLog = await DailyLog.findOneAndUpdate(
-            { userId: req.userId, date: today },
-            { $inc: { [fieldToUpdate]: amount } },
-            { new: true, upsert: true } // upsert: true cria o documento se ele não existir
-        );
-        res.json(updatedLog);
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao registar consumo." });
-    }
 });
 
 
