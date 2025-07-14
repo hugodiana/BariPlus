@@ -88,12 +88,12 @@ const MedicationPage = () => {
 
     setHistorico(newHistoryMap);
         
-        await fetch(`${apiUrl}/api/medication/log/update`, {
+    await fetch(`${apiUrl}/api/medication/log/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
-        });
-    };
+    });
+};
 
     if (loading) return <div>A carregar...</div>;
 

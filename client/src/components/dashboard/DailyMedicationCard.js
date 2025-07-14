@@ -4,14 +4,14 @@ import './DailyMedicationCard.css';
 const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
     const hoje = new Date().toISOString().split('T')[0];
     
-    // ✅ CORREÇÃO: Verificação de segurança. Se o histórico não existir, usa um objeto vazio.
+    // ✅ CORREÇÃO CRÍTICA: Garante que 'historico' nunca é nulo ou indefinido antes de ser acedido.
     const historicoDeHoje = (historico && historico[hoje]) || {};
 
     return (
         <div className="dashboard-card daily-med-card">
             <h3>Medicação de Hoje</h3>
-            {medicamentos.length === 0 && <p className="empty-meds">Nenhum medicamento na sua lista.</p>}
-            {medicamentos.map(med => {
+            {(!medicamentos || medicamentos.length === 0) && <p className="empty-meds">Nenhum medicamento na sua lista.</p>}
+            {medicamentos && medicamentos.map(med => {
                 const tomasDeHoje = historicoDeHoje[med._id] || 0;
                 const checks = Array.from({ length: med.vezesAoDia }, (_, i) => i < tomasDeHoje);
 
@@ -38,5 +38,4 @@ const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
         </div>
     );
 };
-
 export default DailyMedicationCard;

@@ -9,14 +9,19 @@ import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DashboardPage = () => {
+    // Estados para os dados principais
     const [usuario, setUsuario] = useState(null);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
     const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
     const [loading, setLoading] = useState(true);
+
+    // Estados para os modais
     const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+
+    // Estados para os formulários dos modais
     const [novoPeso, setNovoPeso] = useState('');
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
 
@@ -108,16 +113,17 @@ const DashboardPage = () => {
 
     const handleToggleMedToma = async (medId, totalDoses) => {
         const hoje = new Date().toISOString().split('T')[0];
-        const historicoDeHoje = (medicationData.historico instanceof Map ? medicationData.historico.get(hoje) : medicationData.historico[hoje]) || {};
+        const historicoDeHoje = (medicationData.historico && medicationData.historico[hoje]) || {};
         const tomasAtuais = historicoDeHoje[medId] || 0;
         const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
-        
-        const newHistoryMap = new Map(Object.entries(medicationData.historico));
-        const newTodayLog = newHistoryMap.get(hoje) || {};
-        newTodayLog[medId] = novasTomas;
-        newHistoryMap.set(hoje, newTodayLog);
 
-        setMedicationData({ ...medicationData, historico: Object.fromEntries(newHistoryMap) });
+        const newHistoryState = { ...medicationData.historico };
+        if (!newHistoryState[hoje]) {
+            newHistoryState[hoje] = {};
+        }
+        newHistoryState[hoje][medId] = novasTomas;
+
+        setMedicationData({ ...medicationData, historico: newHistoryState });
         
         await fetch(`${apiUrl}/api/medication/log/update`, {
             method: 'POST',
@@ -141,7 +147,9 @@ const DashboardPage = () => {
         return `Bem-vindo(a) de volta, ${usuario.nome}!`;
     };
 
-    if (loading || !usuario) return <div style={{ padding: '40px', textAlign: 'center' }}>Carregando seu painel...</div>;
+    if (loading || !usuario) {
+        return <div style={{ padding: '40px', textAlign: 'center' }}>Carregando seu painel...</div>;
+    }
 
     const tarefasAtivas = (usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || [];
     const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
@@ -166,10 +174,10 @@ const DashboardPage = () => {
                 
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
                 
-                {medicationData && medicationData.medicamentos && medicationData.historico && medicationData.medicamentos.length > 0 && (
+                {medicationData && medicationData.medicamentos && medicationData.medicamentos.length > 0 && (
                     <DailyMedicationCard 
                         medicamentos={medicationData.medicamentos}
-                        historico={medicationData.historico}
+                        historico={medicationData.historico || {}}
                         onToggleToma={handleToggleMedToma}
                     />
                 )}
