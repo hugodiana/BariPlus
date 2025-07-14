@@ -12,7 +12,6 @@ app.use(express.json());
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha ao conectar ao MongoDB:', err));
@@ -51,6 +50,16 @@ const ConsultaSchema = new mongoose.Schema({
 });
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 
+// NOVIDADE: Schema para os registos diários
+const DailyLogSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: String, required: true }, // Formato YYYY-MM-DD para facilitar a busca
+    waterConsumed: { type: Number, default: 0 }, // Em ml
+    proteinConsumed: { type: Number, default: 0 } // Em g
+});
+const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
+
+
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -64,8 +73,6 @@ const autenticar = (req, res, next) => {
 };
 
 // --- ROTAS DA API ---
-app.get('/api/health', (req, res) => res.status(200).json({ status: 'ok' }));
-
 app.post('/api/register', async (req, res) => {
   try {
     const { nome, sobrenome, username, email, password } = req.body;
@@ -75,7 +82,7 @@ app.post('/api/register', async (req, res) => {
     const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
     await novoUsuario.save();
 
-    await new Checklist({ userId: novoUsuario._id, preOp: [ { descricao: 'Marcar consulta com cirurgião', concluido: false }, { descricao: 'Passar com nutricionista', concluido: false } ], posOp: [ { descricao: 'Tomar suplementos vitamínicos', concluido: false } ] }).save();
+    await new Checklist({ userId: novoUsuario._id, preOp: [ { descricao: 'Marcar consulta com cirurgião', concluido: false } ], posOp: [ { descricao: 'Tomar suplementos vitamínicos', concluido: false } ] }).save();
     await new Peso({ userId: novoUsuario._id, registros: [] }).save();
     await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
 
@@ -83,6 +90,7 @@ app.post('/api/register', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
+// ... (Rotas de login, me, onboarding, pesos, checklist, consultas continuam iguais) ...
 app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
@@ -92,7 +100,6 @@ app.post('/api/login', async (req, res) => {
         res.json({ token });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
-
 app.get('/api/me', autenticar, async (req, res) => {
   try {
     const usuario = await User.findById(req.userId).select('-password');
@@ -100,7 +107,6 @@ app.get('/api/me', autenticar, async (req, res) => {
     res.json(usuario);
   } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
-
 app.post('/api/onboarding', autenticar, async (req, res) => {
   try {
     const { fezCirurgia, dataCirurgia, altura, pesoInicial } = req.body;
@@ -116,12 +122,10 @@ app.post('/api/onboarding', autenticar, async (req, res) => {
     res.status(200).json({ message: 'Dados guardados com sucesso!' });
   } catch (error) { res.status(500).json({ message: 'Erro no servidor ao guardar detalhes.' }); }
 });
-
 app.get('/api/pesos', autenticar, async (req, res) => {
     const pesoDoc = await Peso.findOne({ userId: req.userId });
     res.json(pesoDoc ? pesoDoc.registros : []);
 });
-
 app.post('/api/pesos', autenticar, async (req, res) => {
     const { peso } = req.body;
     const pesoNum = parseFloat(peso);
@@ -129,12 +133,10 @@ app.post('/api/pesos', autenticar, async (req, res) => {
     const result = await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: { peso: pesoNum, data: new Date() } } }, { new: true });
     res.status(201).json(result.registros[result.registros.length - 1]);
 });
-
 app.get('/api/checklist', autenticar, async (req, res) => {
     const checklistDoc = await Checklist.findOne({ userId: req.userId });
     res.json(checklistDoc || { preOp: [], posOp: [] });
 });
-
 app.post('/api/checklist', autenticar, async (req, res) => {
     const { descricao, type } = req.body;
     const novoItem = { descricao, concluido: false };
@@ -142,60 +144,81 @@ app.post('/api/checklist', autenticar, async (req, res) => {
     const result = await Checklist.findOneAndUpdate({ userId: req.userId }, update, { new: true });
     res.status(201).json(result[type][result[type].length - 1]);
 });
-
 app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { concluido, type } = req.body;
     if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
-    
     try {
         const checklistDoc = await Checklist.findOne({ userId: req.userId });
         if (!checklistDoc) return res.status(404).json({ message: "Checklist não encontrado." });
-
-        const item = checklistDoc[type].id(itemId); // Encontra o sub-documento pelo ID
+        const item = checklistDoc[type].id(itemId);
         if (!item) return res.status(404).json({ message: "Item não encontrado." });
-
-        item.concluido = concluido; // Altera a propriedade
-        await checklistDoc.save(); // Salva o documento pai
+        item.concluido = concluido;
+        await checklistDoc.save();
         res.json(item);
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao atualizar item." });
-    }
+    } catch (error) { res.status(500).json({ message: "Erro ao atualizar item." }); }
 });
-
 app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
     const { itemId } = req.params;
     const { type } = req.query;
     if (type !== 'preOp' && type !== 'posOp') return res.status(400).json({ message: "Tipo de checklist inválido" });
-    
     try {
-        await Checklist.findOneAndUpdate(
-            { userId: req.userId },
-            { $pull: { [type]: { _id: itemId } } } // Usa $pull para remover o item do array
-        );
+        await Checklist.findOneAndUpdate( { userId: req.userId }, { $pull: { [type]: { _id: itemId } } } );
         res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao apagar item." });
-    }
+    } catch (error) { res.status(500).json({ message: "Erro ao apagar item." }); }
 });
-
 app.get('/api/consultas', autenticar, async (req, res) => {
     const consultaDoc = await Consulta.findOne({ userId: req.userId });
     res.json(consultaDoc ? consultaDoc.consultas : []);
 });
-
 app.post('/api/consultas', autenticar, async (req, res) => {
     const { especialidade, data, local, notas } = req.body;
     const novaConsulta = { especialidade, data, local, notas, status: 'Agendado' };
     const result = await Consulta.findOneAndUpdate({ userId: req.userId }, { $push: { consultas: novaConsulta } }, { new: true });
     res.status(201).json(result.consultas[result.consultas.length - 1]);
 });
-
 app.delete('/api/consultas/:consultaId', autenticar, async (req, res) => {
     const { consultaId } = req.params;
     await Consulta.findOneAndUpdate({ userId: req.userId }, { $pull: { consultas: { _id: consultaId } } });
     res.status(204).send();
 });
+
+// --- NOVIDADE: ROTAS PARA METAS DIÁRIAS ---
+app.get('/api/dailylog/today', autenticar, async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        let log = await DailyLog.findOne({ userId: req.userId, date: today });
+
+        if (!log) {
+            // Se não existe log para hoje, cria um
+            log = new DailyLog({ userId: req.userId, date: today });
+            await log.save();
+        }
+        res.json(log);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar log diário." });
+    }
+});
+
+app.post('/api/dailylog/track', autenticar, async (req, res) => {
+    try {
+        const { type, amount } = req.body; // type pode ser 'water' ou 'protein'
+        const today = new Date().toISOString().split('T')[0];
+        
+        const fieldToUpdate = type === 'water' ? 'waterConsumed' : 'proteinConsumed';
+        
+        // Encontra o log de hoje e incrementa o valor
+        const updatedLog = await DailyLog.findOneAndUpdate(
+            { userId: req.userId, date: today },
+            { $inc: { [fieldToUpdate]: amount } },
+            { new: true, upsert: true } // upsert: true cria o documento se ele não existir
+        );
+        res.json(updatedLog);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao registar consumo." });
+    }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Servidor do BariPlus a correr na porta ${PORT}`);
