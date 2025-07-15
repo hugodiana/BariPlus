@@ -59,9 +59,9 @@
  }
 
  .password-wrapper input {
-    width: calc(100% - 90px); /* Ajusta a largura para o botão "Ocultar" */
+    width: 100%;
+    padding-right: 80px; /* Espaço para o botão "Mostrar/Ocultar" */
     margin-bottom: 0;
-    padding-right: 90px; /* Espaço para o botão */
  }
 
  .password-toggle-btn {
@@ -69,17 +69,17 @@
     top: 50%;
     right: 10px;
     transform: translateY(-50%);
-    background-color: #37715b;
-    color: white;
+    background: none;
     border: none;
-    padding: 10px 15px;
-    border-radius: 4px;
     cursor: pointer;
+    color: #666;
     font-size: 14px;
+    font-weight: normal; /* Deixa o texto menor e menos destacado */
+    padding: 5px;
  }
 
  .password-toggle-btn:hover {
-    background-color: #2a5745;
+    text-decoration: underline;
  }
 
  .login-form button {
@@ -123,7 +123,7 @@
  .forgot-password-container {
     text-align: right;
     width: 100%;
-    margin-bottom: 15px;
+    margin-bottom: 10px; /* Reduzi um pouco a margem */
  }
 
  .forgot-password-btn {
