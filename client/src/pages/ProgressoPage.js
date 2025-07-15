@@ -6,6 +6,7 @@ import Modal from '../components/Modal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+// Registrando os componentes do Chart.js que vamos usar
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const ProgressoPage = () => {
@@ -24,6 +25,7 @@ const ProgressoPage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchHistorico = async () => {
+        setLoading(true);
         try {
             const response = await fetch(`${apiUrl}/api/pesos`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -48,7 +50,6 @@ const ProgressoPage = () => {
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
         
-        // NOVIDADE: Usando FormData para enviar texto e arquivo
         const formData = new FormData();
         formData.append('peso', novoPeso);
         formData.append('cintura', cintura);
@@ -59,25 +60,45 @@ const ProgressoPage = () => {
         }
 
         try {
-            setLoading(true);
             const response = await fetch(`${apiUrl}/api/pesos`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }, // Sem 'Content-Type', o navegador define automaticamente para FormData
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formData,
             });
 
             if (!response.ok) throw new Error("Falha ao registrar progresso.");
             
-            // Limpa o formulário e recarrega os dados
             setNovoPeso(''); setCintura(''); setAnca(''); setBraco(''); setFoto(null);
             setIsModalOpen(false);
-            fetchHistorico(); // Recarrega o histórico para mostrar o novo item
+            fetchHistorico(); 
         } catch (error) {
             console.error(error);
         }
     };
 
-    // ... (lógica do chartData e chartOptions continua igual)
+    // ✅ CORREÇÃO: A lógica para preparar os dados do gráfico estava em falta.
+    const chartData = {
+        labels: historico.map(item => new Date(item.data).toLocaleDateString('pt-BR')),
+        datasets: [
+            {
+                label: 'Peso (kg)',
+                data: historico.map(item => item.peso),
+                borderColor: '#007aff',
+                backgroundColor: 'rgba(0, 122, 255, 0.5)',
+                tension: 0.1
+            }
+        ]
+    };
+
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Evolução de Peso' }
+        }
+    };
+    // --- FIM DA CORREÇÃO ---
+
 
     if (loading) return <div>Carregando seu progresso...</div>;
 
@@ -90,50 +111,55 @@ const ProgressoPage = () => {
 
             <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar Novo Registro</button>
 
-            <div className="progresso-card chart-card">
-                <Line options={chartOptions} data={chartData} />
-            </div>
-
-            {/* NOVIDADE: Galeria de Fotos */}
-            <div className="progresso-card">
-                <h3>Galeria de Fotos da Evolução</h3>
-                <div className="photo-gallery">
-                    {historico.filter(item => item.fotoUrl).map(item => (
-                        <div key={item._id} className="photo-item">
-                            <a href={item.fotoUrl} target="_blank" rel="noopener noreferrer">
-                                <img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} />
-                            </a>
-                            <time>{format(new Date(item.data), 'dd/MM/yyyy')}</time>
-                        </div>
-                    ))}
+            {historico.length > 0 && (
+                <div className="progresso-card chart-card">
+                    <Line options={chartOptions} data={chartData} />
                 </div>
-            </div>
+            )}
 
-            <div className="progresso-card table-card">
-                <h3>Histórico de Registros</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Peso (kg)</th>
-                            <th>Cintura (cm)</th>
-                            <th>Anca (cm)</th>
-                            <th>Braço (cm)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {historico.slice(0).reverse().map(item => (
-                            <tr key={item._id}>
-                                <td>{format(new Date(item.data), 'dd/MM/yyyy')}</td>
-                                <td>{item.peso.toFixed(1)}</td>
-                                <td>{item.medidas?.cintura || '-'}</td>
-                                <td>{item.medidas?.anca || '-'}</td>
-                                <td>{item.medidas?.braco || '-'}</td>
-                            </tr>
+            {historico.filter(item => item.fotoUrl).length > 0 && (
+                <div className="progresso-card">
+                    <h3>Galeria de Fotos da Evolução</h3>
+                    <div className="photo-gallery">
+                        {historico.filter(item => item.fotoUrl).map(item => (
+                            <div key={item._id} className="photo-item">
+                                <a href={item.fotoUrl} target="_blank" rel="noopener noreferrer">
+                                    <img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} />
+                                </a>
+                                <time>{format(new Date(item.data), 'dd/MM/yyyy')}</time>
+                            </div>
                         ))}
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                </div>
+            )}
+
+            {historico.length > 0 && (
+                <div className="progresso-card table-card">
+                    <h3>Histórico de Registros</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Peso (kg)</th>
+                                <th>Cintura (cm)</th>
+                                <th>Anca (cm)</th>
+                                <th>Braço (cm)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {historico.slice(0).reverse().map(item => (
+                                <tr key={item._id}>
+                                    <td>{format(new Date(item.data), 'dd/MM/yyyy')}</td>
+                                    <td>{item.peso.toFixed(1)}</td>
+                                    <td>{item.medidas?.cintura || '-'}</td>
+                                    <td>{item.medidas?.anca || '-'}</td>
+                                    <td>{item.medidas?.braco || '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            )}
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>Novo Registro de Progresso</h2>
