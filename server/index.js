@@ -99,17 +99,20 @@ app.post('/api/forgot-password', async (req, res) => {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+      auth: {
+        user: process.env.SMTP_USER, // Usa o Login da Brevo
+        pass: process.env.SMTP_PASS, // Usa a Senha Mestra da Brevo
+      },
     });
 
     await transporter.sendMail({
-      from: `"BariPlus" <${process.env.SMTP_USER}>`,
+      from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`, // ✅ CORREÇÃO: Usa o seu e-mail validado
       to: usuario.email,
       subject: "Redefinição de Senha - BariPlus",
       html: `<p>Olá ${usuario.nome},</p><p>Para redefinir sua senha, clique no link abaixo:</p><a href="${resetLink}">Redefinir Senha</a><p>Este link é válido por 15 minutos.</p>`,
     });
 
-    res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
+    res.json({ message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." });
   } catch (error) {
     console.error("Erro no forgot-password:", error);
     res.status(500).json({ message: "Erro no servidor." });
