@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
-import logo from '/bariplus_logo.png'; // Usando o caminho público
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
