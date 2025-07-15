@@ -1,4 +1,19 @@
-import React, { useState, useEffect } from 'react';
+Com certeza\! O seu código está quase lá. Você já tem toda a base para o diário alimentar. A única coisa que falta é a lógica para calcular o resumo de calorias e macronutrientes.
+
+Vamos adicionar essa melhoria agora.
+
+-----
+
+### **Código Completo e Corrigido: `DiarioPage.js`**
+
+Aqui está a versão final e completa do seu ficheiro. Ela inclui a nova secção de "Resumo do Dia" e a lógica de cálculo para ela funcionar.
+
+  * **Ação:** Substitua todo o conteúdo do seu ficheiro `client/src/pages/DiarioPage.js` por este código.
+
+<!-- end list -->
+
+```jsx
+import React, { useState, useEffect, useMemo } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
@@ -26,6 +41,7 @@ const DiarioPage = () => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
+    // Função para buscar os dados do diário
     const fetchDiario = async () => {
         setLoading(true);
         const dataFormatada = format(dataSelecionada, 'yyyy-MM-dd');
@@ -37,13 +53,15 @@ const DiarioPage = () => {
         finally { setLoading(false); }
     };
 
+    // Efeito para buscar o diário quando a data muda
     useEffect(() => {
         if (token) {
             fetchDiario();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dataSelecionada, token, apiUrl]);
+    }, [dataSelecionada, token]);
 
+    // Efeito para buscar alimentos na API externa
     useEffect(() => {
         if (termoBusca.length < 3) {
             setResultadosBusca([]);
@@ -78,16 +96,13 @@ const DiarioPage = () => {
     const handleSaveAlimento = async (e) => {
         e.preventDefault();
         if (!alimentoSelecionado) return;
-
         const novoAlimento = {
             nome: alimentoSelecionado.product_name_pt || alimentoSelecionado.product_name,
             quantidade: quantidadeConsumida,
             calorias: alimentoSelecionado.nutriments?.['energy-kcal_100g'] || 0,
             proteinas: alimentoSelecionado.nutriments?.proteins_100g || 0,
         };
-
         const dataFormatada = format(dataSelecionada, 'yyyy-MM-dd');
-
         try {
             await fetch(`${apiUrl}/api/diario`, {
                 method: 'POST',
@@ -107,6 +122,21 @@ const DiarioPage = () => {
         }
     };
 
+    // ✅ MELHORIA: Cálculo dos totais do dia
+    const totaisDoDia = useMemo(() => {
+        const totais = { calorias: 0, proteinas: 0 };
+        if (!diarioDoDia || !diarioDoDia.refeicoes) {
+            return totais;
+        }
+        for (const tipoRefeicao in diarioDoDia.refeicoes) {
+            diarioDoDia.refeicoes[tipoRefeicao].forEach(alimento => {
+                totais.calorias += alimento.calorias || 0;
+                totais.proteinas += alimento.proteinas || 0;
+            });
+        }
+        return totais;
+    }, [diarioDoDia]);
+
     const RefeicaoCard = ({ titulo, alimentos, tipo }) => (
         <div className="refeicao-card">
             <div className="refeicao-header">
@@ -118,7 +148,7 @@ const DiarioPage = () => {
                     alimentos.map(alimento => (
                         <div key={alimento._id} className="alimento-item">
                             <span>{alimento.nome} ({alimento.quantidade})</span>
-                            <span>{alimento.proteinas || 0}g Prot.</span>
+                            <span>{alimento.proteinas ? alimento.proteinas.toFixed(1) : '0.0'}g Prot.</span>
                         </div>
                     ))
                 ) : (
@@ -142,6 +172,22 @@ const DiarioPage = () => {
                 </div>
                 <div className="diario-refeicoes">
                     <h2>Refeições de {format(dataSelecionada, 'dd/MM/yyyy')}</h2>
+                    
+                    {/* ✅ MELHORIA: O novo card de resumo nutricional */}
+                    <div className="progresso-card resumo-nutricional-card">
+                        <h3>Resumo do Dia</h3>
+                        <div className="resumo-stats">
+                            <div className="resumo-stat-item">
+                                <span>Calorias</span>
+                                <strong>{totaisDoDia.calorias.toFixed(0)} kcal</strong>
+                            </div>
+                            <div className="resumo-stat-item">
+                                <span>Proteínas</span>
+                                <strong>{totaisDoDia.proteinas.toFixed(1)} g</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div className="refeicoes-grid">
                         <RefeicaoCard titulo="Café da Manhã" alimentos={diarioDoDia?.refeicoes.cafeDaManha} tipo="cafeDaManha" />
                         <RefeicaoCard titulo="Almoço" alimentos={diarioDoDia?.refeicoes.almoco} tipo="almoco" />

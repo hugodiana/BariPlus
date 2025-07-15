@@ -137,3 +137,35 @@
     font-size: 14px;
     color: #666;
 }
+
+.resumo-nutricional-card {
+    background-color: #e9f5f2; /* Um verde bem claro para destacar */
+    border: 1px solid #d1e9e1;
+    margin-bottom: 20px;
+}
+
+.resumo-nutricional-card h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #37715b;
+}
+
+.resumo-stats {
+    display: flex;
+    justify-content: space-around;
+    text-align: center;
+}
+
+.resumo-stat-item span {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.resumo-stat-item strong {
+    display: block;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+}
