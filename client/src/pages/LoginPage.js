@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
-import Modal from '../components/Modal'; 
+import Modal from '../components/Modal'; // Precisamos do Modal
+import logo from '/bariplus_logo.png';
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
@@ -12,6 +13,8 @@ const LoginPage = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  
+  // Estados para o modal de "esqueci a senha"
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
 
@@ -44,6 +47,26 @@ const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    const apiUrl = process.env.REACT_APP_API_URL;
+    try {
+      const response = await fetch(`${apiUrl}/api/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await response.json();
+      // Mostra a mensagem de feedback para o usuário e fecha o modal
+      alert(data.message); 
+      setIsForgotModalOpen(false);
+      setForgotEmail('');
+    } catch (error) {
+      alert("Erro ao conectar com o servidor. Tente novamente.");
+    }
+  };
+
   return (
     <div className="login-page-container">
       <form className="login-form" onSubmit={handleSubmit}>
@@ -60,7 +83,6 @@ const LoginPage = () => {
             <input type="text" placeholder="Nome de usuário" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </>
         )}
-
         {!isRegistering ? (
              <input type="text" placeholder="E-mail ou Username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
         ) : (
@@ -85,43 +107,6 @@ const LoginPage = () => {
         {message && <p className="message">{message}</p>}
 
         <div className="form-footer">
-            <button type="button" className="link-button">
-                Esqueci a minha senha
-            </button>
-            <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>
-                {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
-            </button>
-        </div>
-      </form>
-    </div>
-  );
-};
-
-const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    const apiUrl = process.env.REACT_APP_API_URL;
-    try {
-      const response = await fetch(`${apiUrl}/api/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-      const data = await response.json();
-      setMessage(data.message); // Exibe a mensagem de sucesso (ou genérica)
-      setIsForgotModalOpen(false); // Fecha o modal
-    } catch (error) {
-      setMessage("Erro ao conectar com o servidor. Tente novamente.");
-    }
-  };
-
-  return (
-    <div className="login-page-container">
-      <form className="login-form" onSubmit={handleSubmit}>
-        {/* ... (todo o seu formulário de login/registro continua igual) ... */}
-
-        <div className="form-footer">
-            {/* NOVIDADE: Ação de clique para abrir o modal */}
             <button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>
                 Esqueci a minha senha
             </button>
@@ -131,7 +116,6 @@ const handleForgotPassword = async (e) => {
         </div>
       </form>
 
-      {/* NOVIDADE: O Modal para "Esqueci a Senha" */}
       <Modal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)}>
         <h2>Redefinir Senha</h2>
         <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>
