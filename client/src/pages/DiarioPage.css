@@ -1,0 +1,88 @@
+.diario-layout {
+    display: grid;
+    grid-template-columns: auto 1fr; /* Calendário com largura automática, refeições ocupam o resto */
+    gap: 30px;
+    align-items: flex-start;
+}
+
+.diario-calendario {
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.diario-refeicoes h2 {
+    margin-top: 0;
+    color: #333;
+    font-weight: 600;
+}
+
+.refeicoes-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Duas colunas */
+    gap: 20px;
+}
+
+.refeicao-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+}
+
+.refeicao-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eef0ef;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.refeicao-header h3 {
+    margin: 0;
+    color: #37715b;
+}
+
+.add-alimento-btn {
+    background-color: #f0f8ff;
+    color: #007aff;
+    border: 1px solid #007aff;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.alimentos-list .alimento-item {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    padding: 8px 0;
+}
+
+.alimentos-list .alimento-empty {
+    font-size: 14px;
+    color: #888;
+    text-align: center;
+    padding: 15px 0;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+    .diario-layout {
+        grid-template-columns: 1fr; /* Coloca o calendário em cima */
+    }
+    .diario-calendario {
+        display: flex;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .refeicoes-grid {
+        grid-template-columns: 1fr; /* Coloca os cards de refeição um em baixo do outro */
+    }
+}

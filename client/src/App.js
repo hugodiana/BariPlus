@@ -9,6 +9,7 @@ import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import DiarioPage from './pages/DiarioPage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -56,6 +57,7 @@ function App() {
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/progresso" element={<ProgressoPage />} />
                 <Route path="/checklist" element={<ChecklistPage />} />
+                <Route path="/diario" element={<DiarioPage />} /> 
                 <Route path="/consultas" element={<ConsultasPage />} />
                 <Route path="/medicacao" element={<MedicationPage />} />
               </Routes>
