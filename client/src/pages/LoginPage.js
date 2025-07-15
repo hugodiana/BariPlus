@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
 import Modal from '../components/Modal'; // Precisamos do Modal
-import logo from '/bariplus_logo.png';
+
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
