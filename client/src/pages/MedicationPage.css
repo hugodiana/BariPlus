@@ -1,107 +1,117 @@
-.medication-content {
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 20px 30px;
-}
-.medication-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eef0ef;
-    padding-bottom: 10px;
-    margin-bottom: 10px;
-}
-.medication-header h3 {
-    margin: 0;
-    color: #37715b;
-}
-.medication-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.med-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-    border: 1px solid #eef0ef;
-}
-.med-checkbox {
-    width: 28px;
-    height: 28px;
-    border: 2px solid #ccc;
-    border-radius: 50%; /* Círculo */
-    cursor: pointer;
+.login-page-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: all 0.2s;
-}
-.med-checkbox .checkmark {
-    display: none;
-    color: white;
-    font-size: 18px;
-}
-.med-item.tomado .med-checkbox {
-    background-color: #28a745; /* Verde de sucesso */
-    border-color: #28a745;
-}
-.med-item.tomado .med-checkbox .checkmark {
-    display: block;
-}
-.med-info {
-    flex-grow: 1;
-}
-.med-info strong, .med-info span {
-    display: block;
-}
-.med-info span {
-    color: #666;
-    font-size: 14px;
-}
-.delete-med-btn {
-    background: transparent;
-    border: none;
-    color: #cc0000;
-    font-size: 22px;
-    cursor: pointer;
-    opacity: 0.5;
-}
-.med-item:hover .delete-med-btn {
-    opacity: 1;
-}
-.medication-form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-}
-.medication-form input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-.medication-form button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    background-color: #37715b;
-    color: white;
-    border-radius: 4px;
+    min-height: 100vh;
+    background-color: #f4f7f6;
+    padding: 20px;
 }
 
-.form-row { display: flex; gap: 15px; }
-.form-field { flex: 1; }
-.medication-form select {
+.login-form {
+    background: white;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    box-sizing: border-box;
+}
+
+.form-header {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.login-logo {
+    width: 120px;
+    margin-bottom: 10px;
+}
+
+.form-header p {
+    color: #666;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.login-form h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+    font-weight: 600;
+}
+
+.login-form input {
     width: 100%;
     padding: 12px;
     margin-bottom: 15px;
     border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: white;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.password-wrapper input {
+    /* padding-right para não deixar o texto ir para baixo do ícone */
+    padding-right: 40px; 
+    margin-bottom: 0;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #888;
+    user-select: none; /* Impede que o ícone seja selecionado como texto */
+}
+
+.submit-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #37715b;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.submit-button:hover {
+    background-color: #2a5745;
+}
+
+.message {
+    color: #d93025;
+    margin-top: 15px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.form-footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    flex-wrap: wrap; /* Permite que os links quebrem a linha em telas muito pequenas */
+}
+
+.link-button {
+    background: none;
+    border: none;
+    color: #007aff;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.link-button:hover {
+    text-decoration: underline;
 }

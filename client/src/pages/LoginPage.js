@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
+import logo from '/bariplus_logo.png'; // Usando o caminho da pasta 'public'
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
@@ -10,7 +11,7 @@ const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
-  const [showPassword, setShowPassword] = useState(false); // Você já tinha adicionado isto, perfeito!
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -57,44 +58,41 @@ const LoginPage = () => {
             <input type="text" placeholder="Nome de usuário" value={username} onChange={(e) => setUsername(e.target.value)} required />
           </>
         )}
+
         {!isRegistering ? (
              <input type="text" placeholder="E-mail ou Username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
         ) : (
             <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
         )}
         
-        {/* ✅ CORREÇÃO: Envolvemos o input e o botão num wrapper para posicionamento */}
         <div className="password-wrapper">
             <input 
-                type={showPassword ? 'text' : 'password'} // O tipo muda com base no estado
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Senha" 
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
             />
-            <button 
-                type="button" 
-                className="password-toggle-btn" 
-                onClick={() => setShowPassword(!showPassword)} // Ação de clique para alternar
-            >
-                {showPassword ? 'Ocultar' : 'Mostrar'}
+            <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? '👁️' : '👁️'}
+            </span>
+        </div>
+
+        <button type="submit" className="submit-button">{isRegistering ? 'Cadastrar' : 'Entrar'}</button>
+        
+        {message && <p className="message">{message}</p>}
+
+        <div className="form-footer">
+            <button type="button" className="link-button">
+                Esqueci a minha senha
+            </button>
+            <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>
+                {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
             </button>
         </div>
-        
-        {/* Adicionando o link de "Esqueci a senha" (ainda não funcional) */}
-        {!isRegistering && (
-             <div className="forgot-password-container">
-                <button type="button" className="forgot-password-btn">Esqueci a minha senha</button>
-            </div>
-        )}
-
-        <button type="submit">{isRegistering ? 'Cadastrar' : 'Entrar'}</button>
-        {message && <p className="message">{message}</p>}
-        <button type="button" className="toggle-button" onClick={() => setIsRegistering(!isRegistering)}>
-          {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
-        </button>
       </form>
     </div>
   );
 };
+
 export default LoginPage;
