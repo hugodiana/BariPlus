@@ -169,3 +169,65 @@
     font-weight: 600;
     color: #333;
 }
+
+.alimento-info-direita {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.delete-alimento-btn {
+    background: transparent;
+    border: none;
+    color: #cc0000;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.alimento-item:hover .delete-alimento-btn {
+    opacity: 1;
+}
+
+/* Estilos para o Modal de Busca */
+.cesta-container {
+    margin-top: 15px;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.cesta-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background-color: #e9f5f2;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.cesta-item span {
+    flex-grow: 1;
+}
+
+.quantidade-input {
+    width: 80px;
+    text-align: right;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-left: 10px;
+}
+
+.submit-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: #37715b;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 15px;
+}

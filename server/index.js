@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const cors =require('cors');
+const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
@@ -29,22 +29,75 @@ mongoose.connect(process.env.DATABASE_URL)
   .catch(err => console.error('Falha na conexão:', err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, required: true, unique: true }, email: { type: String, required: true, unique: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number } });
-const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
-const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
-const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
-const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, date: { type: String, required: true }, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
-const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Number, default: {} } });
+const UserSchema = new mongoose.Schema({
+    nome: { type: String, required: true },
+    sobrenome: { type: String, required: true },
+    username: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    onboardingCompleto: { type: Boolean, default: false },
+    detalhesCirurgia: {
+        fezCirurgia: String, dataCirurgia: Date, altura: Number,
+        pesoInicial: Number, pesoAtual: Number
+    }
+});
+
+const ChecklistSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    preOp: [{ descricao: String, concluido: Boolean }],
+    posOp: [{ descricao: String, concluido: Boolean }]
+});
+
+const PesoSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    registros: [{
+        peso: Number,
+        data: Date,
+        fotoUrl: String,
+        medidas: { cintura: Number, quadril: Number, braco: Number }
+    }]
+});
+
+const ConsultaSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }]
+});
+
+const DailyLogSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: String, required: true },
+    waterConsumed: { type: Number, default: 0 },
+    proteinConsumed: { type: Number, default: 0 }
+});
+
+const MedicationSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    medicamentos: [{
+        nome: String,
+        dosagem: String,
+        quantidade: Number,
+        unidade: String,
+        vezesAoDia: Number,
+    }],
+    historico: {
+        type: Map,
+        of: Number,
+        default: {}
+    }
+});
+
 const AlimentoSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     quantidade: { type: String, required: true },
     calorias: { type: Number, default: 0 },
     proteinas: { type: Number, default: 0 },
+    gorduras: { type: Number, default: 0 },
+    carboidratos: { type: Number, default: 0 },
 });
 
 const DiarioAlimentarSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true }, // Formato YYYY-MM-DD
+    date: { type: String, required: true },
     refeicoes: {
         cafeDaManha: [AlimentoSchema],
         almoco: [AlimentoSchema],
@@ -53,13 +106,14 @@ const DiarioAlimentarSchema = new mongoose.Schema({
     }
 });
 
-const DiarioAlimentar = mongoose.model('DiarioAlimentar', DiarioAlimentarSchema);
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
 const Peso = mongoose.model('Peso', PesoSchema);
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
+const DiarioAlimentar = mongoose.model('DiarioAlimentar', DiarioAlimentarSchema);
+
 
 // --- MIDDLEWARE DE AUTENTICAÇÃO ---
 const autenticar = (req, res, next) => {
@@ -83,11 +137,15 @@ app.post('/api/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
         await novoUsuario.save();
+        
+        // Cria todos os documentos associados para o novo usuário
         await new Checklist({ userId: novoUsuario._id, preOp: [{ descricao: 'Marcar consulta com cirurgião', concluido: false }], posOp: [{ descricao: 'Tomar suplementos vitamínicos', concluido: false }] }).save();
         await new Peso({ userId: novoUsuario._id, registros: [] }).save();
         await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
         await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
         await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', quantidade: 1, unidade: 'comprimido', vezesAoDia: 1 }], historico: {} }).save();
+        await new DiarioAlimentar({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
+
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
@@ -103,31 +161,24 @@ app.post('/api/login', async (req, res) => {
 });
 
 app.post('/api/forgot-password', async (req, res) => {
-  const { email } = req.body;
-  try {
-    const usuario = await User.findOne({ email });
-    if (!usuario) {
-      return res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
-    }
-    const resetSecret = JWT_SECRET + usuario.password;
-    const resetToken = jwt.sign({ userId: usuario._id }, resetSecret, { expiresIn: '15m' });
-    const resetLink = `${process.env.CLIENT_URL}/reset-password/${usuario._id}/${resetToken}`;
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    });
-    await transporter.sendMail({
-      from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
-      to: usuario.email,
-      subject: "Redefinição de Senha - BariPlus",
-      html: `<p>Olá ${usuario.nome},</p><p>Para redefinir sua senha, clique no link abaixo:</p><a href="${resetLink}">Redefinir Senha</a><p>Este link é válido por 15 minutos.</p>`,
-    });
-    res.json({ message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." });
-  } catch (error) {
-    console.error("Erro no forgot-password:", error);
-    res.status(500).json({ message: "Erro no servidor." });
-  }
+    const { email } = req.body;
+    try {
+        const usuario = await User.findOne({ email });
+        if (!usuario) {
+            return res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
+        }
+        const resetSecret = JWT_SECRET + usuario.password;
+        const resetToken = jwt.sign({ userId: usuario._id }, resetSecret, { expiresIn: '15m' });
+        const resetLink = `${process.env.CLIENT_URL}/reset-password/${usuario._id}/${resetToken}`;
+        const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+        await transporter.sendMail({
+            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+            to: usuario.email,
+            subject: "Redefinição de Senha - BariPlus",
+            html: `<p>Olá ${usuario.nome},</p><p>Para redefinir sua senha, clique no link abaixo:</p><a href="${resetLink}">Redefinir Senha</a><p>Este link é válido por 15 minutos.</p>`,
+        });
+        res.json({ message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." });
+    } catch (error) { res.status(500).json({ message: "Erro no servidor." }); }
 });
 
 app.post('/api/reset-password/:userId/:token', async (req, res) => {
@@ -142,9 +193,7 @@ app.post('/api/reset-password/:userId/:token', async (req, res) => {
         usuario.password = hashedPassword;
         await usuario.save();
         res.json({ message: "Senha redefinida com sucesso!" });
-    } catch (error) {
-        res.status(400).json({ message: "Link inválido ou expirado." });
-    }
+    } catch (error) { res.status(400).json({ message: "Link inválido ou expirado." }); }
 });
 
 app.get('/api/me', autenticar, async (req, res) => {
@@ -312,45 +361,35 @@ app.delete('/api/medication/:medId', autenticar, async (req, res) => {
     res.status(204).send();
 });
 
-// --- ROTAS DO DIÁRIO ALIMENTAR ---
-
-// Busca o diário de um dia específico
 app.get('/api/diario/:date', autenticar, async (req, res) => {
     try {
-        const { date } = req.params; // Formato YYYY-MM-DD
+        const { date } = req.params;
         let diario = await DiarioAlimentar.findOne({ userId: req.userId, date: date });
-
         if (!diario) {
-            // Se não existe diário para este dia, cria um vazio
             diario = new DiarioAlimentar({ userId: req.userId, date: date });
             await diario.save();
         }
         res.json(diario);
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao buscar diário alimentar." });
-    }
+    } catch (error) { res.status(500).json({ message: "Erro ao buscar diário alimentar." }); }
 });
 
-// Adiciona um alimento a uma refeição
 app.post('/api/diario', autenticar, async (req, res) => {
     try {
-        const { date, tipoRefeicao, alimento } = req.body;
-        // tipoRefeicao deve ser 'cafeDaManha', 'almoco', 'jantar', ou 'lanches'
-
-        if (!date || !tipoRefeicao || !alimento) {
-            return res.status(400).json({ message: "Dados incompletos." });
-        }
-
+        const { date, tipoRefeicao, alimentos } = req.body;
+        if (!date || !tipoRefeicao || !alimentos || !Array.isArray(alimentos)) return res.status(400).json({ message: "Dados incompletos." });
         const campoParaAtualizar = `refeicoes.${tipoRefeicao}`;
-        const diario = await DiarioAlimentar.findOneAndUpdate(
-            { userId: req.userId, date: date },
-            { $push: { [campoParaAtualizar]: alimento } },
-            { new: true, upsert: true } // Cria o diário do dia se ele não existir
-        );
+        const diario = await DiarioAlimentar.findOneAndUpdate({ userId: req.userId, date: date }, { $push: { [campoParaAtualizar]: { $each: alimentos } } }, { new: true, upsert: true });
         res.status(201).json(diario);
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao adicionar alimento." });
-    }
+    } catch (error) { res.status(500).json({ message: "Erro ao adicionar alimento." }); }
+});
+
+app.delete('/api/diario/:date/:tipoRefeicao/:alimentoId', autenticar, async (req, res) => {
+    try {
+        const { date, tipoRefeicao, alimentoId } = req.params;
+        const campoParaAtualizar = `refeicoes.${tipoRefeicao}`;
+        await DiarioAlimentar.findOneAndUpdate({ userId: req.userId, date: date }, { $pull: { [campoParaAtualizar]: { _id: alimentoId } } });
+        res.status(204).send();
+    } catch (error) { res.status(500).json({ message: "Erro ao apagar alimento." }); }
 });
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));

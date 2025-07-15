@@ -10,14 +10,16 @@ const DiarioPage = () => {
     const [dataSelecionada, setDataSelecionada] = useState(new Date());
     const [diarioDoDia, setDiarioDoDia] = useState(null);
     const [loading, setLoading] = useState(true);
+    
+    // Estados para o modal de busca
     const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
     const [tipoRefeicaoAtual, setTipoRefeicaoAtual] = useState('');
     const [termoBusca, setTermoBusca] = useState('');
     const [resultadosBusca, setResultadosBusca] = useState([]);
     const [loadingBusca, setLoadingBusca] = useState(false);
-    const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
-    const [alimentoSelecionado, setAlimentoSelecionado] = useState(null);
-    const [quantidadeConsumida, setQuantidadeConsumida] = useState('100g');
+
+    // NOVIDADE: Cesta de alimentos para adicionar múltiplos de uma vez
+    const [cestaDeAlimentos, setCestaDeAlimentos] = useState([]);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -34,10 +36,8 @@ const DiarioPage = () => {
     };
 
     useEffect(() => {
-        if (token) {
-            fetchDiario();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        if (token) { fetchDiario(); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dataSelecionada]);
 
     useEffect(() => {
@@ -62,25 +62,34 @@ const DiarioPage = () => {
         setTipoRefeicaoAtual(tipoRefeicao);
         setTermoBusca('');
         setResultadosBusca([]);
+        setCestaDeAlimentos([]); // Limpa a cesta sempre que abrir o modal
         setIsFoodModalOpen(true);
     };
-
-    const handleSelectAlimento = (alimento) => {
-        setAlimentoSelecionado(alimento);
-        setIsFoodModalOpen(false);
-        setIsQuantityModalOpen(true);
+    
+    const handleAddAlimentoNaCesta = (alimento) => {
+        // Adiciona um campo de quantidade padrão
+        const novoItemNaCesta = { ...alimento, quantidade: '100g' };
+        setCestaDeAlimentos(prev => [...prev, novoItemNaCesta]);
+    };
+    
+    const handleUpdateQuantidadeNaCesta = (index, novaQuantidade) => {
+        const novaCesta = [...cestaDeAlimentos];
+        novaCesta[index].quantidade = novaQuantidade;
+        setCestaDeAlimentos(novaCesta);
     };
 
-    const handleSaveAlimento = async (e) => {
-        e.preventDefault();
-        if (!alimentoSelecionado) return;
-        const novoAlimento = {
-            nome: alimentoSelecionado.product_name_pt || alimentoSelecionado.product_name,
-            quantidade: quantidadeConsumida,
-            calorias: alimentoSelecionado.nutriments?.['energy-kcal_100g'] || 0,
-            proteinas: alimentoSelecionado.nutriments?.proteins_100g || 0,
-        };
+    const handleSaveCesta = async () => {
+        if (cestaDeAlimentos.length === 0) return;
+
+        const alimentosParaSalvar = cestaDeAlimentos.map(alimento => ({
+            nome: alimento.product_name_pt || alimento.product_name,
+            quantidade: alimento.quantidade,
+            calorias: alimento.nutriments?.['energy-kcal_100g'] || 0,
+            proteinas: alimento.nutriments?.proteins_100g || 0,
+        }));
+
         const dataFormatada = format(dataSelecionada, 'yyyy-MM-dd');
+
         try {
             await fetch(`${apiUrl}/api/diario`, {
                 method: 'POST',
@@ -88,26 +97,36 @@ const DiarioPage = () => {
                 body: JSON.stringify({
                     date: dataFormatada,
                     tipoRefeicao: tipoRefeicaoAtual,
-                    alimento: novoAlimento,
+                    alimentos: alimentosParaSalvar,
                 }),
             });
-            setIsQuantityModalOpen(false);
-            setAlimentoSelecionado(null);
-            setQuantidadeConsumida('100g');
+            setIsFoodModalOpen(false);
             fetchDiario();
         } catch (error) {
-            console.error("Erro ao salvar alimento:", error);
+            console.error("Erro ao salvar alimentos:", error);
+        }
+    };
+
+    const handleDeleteAlimento = async (tipoRefeicao, alimentoId) => {
+        if (!window.confirm("Tem certeza que quer apagar este alimento?")) return;
+        const dataFormatada = format(dataSelecionada, 'yyyy-MM-dd');
+        try {
+            await fetch(`${apiUrl}/api/diario/${dataFormatada}/${tipoRefeicao}/${alimentoId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` },
+            });
+            fetchDiario();
+        } catch (error) {
+            console.error("Erro ao apagar alimento:", error);
         }
     };
 
     const totaisDoDia = useMemo(() => {
         const totais = { calorias: 0, proteinas: 0 };
-        if (!diarioDoDia || !diarioDoDia.refeicoes) {
-            return totais;
-        }
-        for (const tipoRefeicao in diarioDoDia.refeicoes) {
-            if (Array.isArray(diarioDoDia.refeicoes[tipoRefeicao])) {
-                diarioDoDia.refeicoes[tipoRefeicao].forEach(alimento => {
+        if (!diarioDoDia?.refeicoes) return totais;
+        for (const tipo of Object.keys(diarioDoDia.refeicoes)) {
+            if(Array.isArray(diarioDoDia.refeicoes[tipo])) {
+                diarioDoDia.refeicoes[tipo].forEach(alimento => {
                     totais.calorias += alimento.calorias || 0;
                     totais.proteinas += alimento.proteinas || 0;
                 });
@@ -120,19 +139,20 @@ const DiarioPage = () => {
         <div className="refeicao-card">
             <div className="refeicao-header">
                 <h3>{titulo}</h3>
-                <button className="add-alimento-btn" onClick={() => handleOpenFoodModal(tipo)}>+ Adicionar Alimento</button>
+                <button className="add-alimento-btn" onClick={() => handleOpenFoodModal(tipo)}>+ Adicionar</button>
             </div>
             <div className="alimentos-list">
                 {alimentos && alimentos.length > 0 ? (
                     alimentos.map(alimento => (
                         <div key={alimento._id} className="alimento-item">
                             <span>{alimento.nome} ({alimento.quantidade})</span>
-                            <span>{alimento.proteinas ? alimento.proteinas.toFixed(1) : '0.0'}g Prot.</span>
+                            <div className="alimento-info-direita">
+                                <span>{alimento.proteinas ? alimento.proteinas.toFixed(1) : '0.0'}g Prot.</span>
+                                <button onClick={() => handleDeleteAlimento(tipo, alimento._id)} className="delete-alimento-btn">×</button>
+                            </div>
                         </div>
                     ))
-                ) : (
-                    <p className="alimento-empty">Nenhum alimento registrado.</p>
-                )}
+                ) : <p className="alimento-empty">Nenhum alimento registrado.</p>}
             </div>
         </div>
     );
@@ -154,14 +174,8 @@ const DiarioPage = () => {
                     <div className="progresso-card resumo-nutricional-card">
                         <h3>Resumo do Dia</h3>
                         <div className="resumo-stats">
-                            <div className="resumo-stat-item">
-                                <span>Calorias</span>
-                                <strong>{totaisDoDia.calorias.toFixed(0)} kcal</strong>
-                            </div>
-                            <div className="resumo-stat-item">
-                                <span>Proteínas</span>
-                                <strong>{totaisDoDia.proteinas.toFixed(1)} g</strong>
-                            </div>
+                            <div className="resumo-stat-item"><span>Calorias</span><strong>{totaisDoDia.calorias.toFixed(0)} kcal</strong></div>
+                            <div className="resumo-stat-item"><span>Proteínas</span><strong>{totaisDoDia.proteinas.toFixed(1)} g</strong></div>
                         </div>
                     </div>
                     <div className="refeicoes-grid">
@@ -173,50 +187,32 @@ const DiarioPage = () => {
                 </div>
             </div>
             <Modal isOpen={isFoodModalOpen} onClose={() => setIsFoodModalOpen(false)}>
-                <h2>Buscar Alimento</h2>
-                <div className="food-search-form">
-                    <input
-                        type="text"
-                        placeholder="Digite o nome do alimento..."
-                        value={termoBusca}
-                        onChange={(e) => setTermoBusca(e.target.value)}
-                        autoFocus
-                    />
+                <h2>Buscar e Adicionar Alimentos</h2>
+                <div className="food-search-form"><input type="text" placeholder="Digite para buscar..." value={termoBusca} onChange={(e) => setTermoBusca(e.target.value)} autoFocus /></div>
+                
+                <div className="cesta-container">
+                    <h3>Cesta ({cestaDeAlimentos.length})</h3>
+                    {cestaDeAlimentos.length === 0 && <p className="cesta-empty">Selecione os alimentos da busca abaixo para adicioná-los à sua cesta.</p>}
+                    {cestaDeAlimentos.map((item, index) => (
+                        <div key={item.code} className="cesta-item">
+                            <span>{item.product_name_pt || item.product_name}</span>
+                            <input type="text" value={item.quantidade} onChange={(e) => handleUpdateQuantidadeNaCesta(index, e.target.value)} className="quantidade-input"/>
+                        </div>
+                    ))}
+                    {cestaDeAlimentos.length > 0 && <button className="submit-button" onClick={handleSaveCesta}>Adicionar {cestaDeAlimentos.length} Itens à Refeição</button>}
                 </div>
+                
                 <div className="search-results">
                     {loadingBusca && <p>Buscando...</p>}
-                    {!loadingBusca && resultadosBusca.length === 0 && termoBusca.length >= 3 && <p>Nenhum resultado encontrado.</p>}
                     <ul>
                         {resultadosBusca.map(alimento => (
-                            <li key={alimento.code} onClick={() => handleSelectAlimento(alimento)}>
+                            <li key={alimento.code} onClick={() => handleAddAlimentoNaCesta(alimento)}>
                                 <img src={alimento.image_small_url || '/placeholder-image.png'} alt={alimento.product_name_pt || alimento.product_name} />
-                                <div className="result-info">
-                                    <strong>{alimento.product_name_pt || alimento.product_name}</strong>
-                                    <span>{alimento.brands || 'Marca não informada'}</span>
-                                </div>
+                                <div className="result-info"><strong>{alimento.product_name_pt || alimento.product_name}</strong><span>{alimento.brands || 'Marca não informada'}</span></div>
                             </li>
                         ))}
                     </ul>
                 </div>
-            </Modal>
-            <Modal isOpen={isQuantityModalOpen} onClose={() => setIsQuantityModalOpen(false)}>
-                <h2>Adicionar Alimento</h2>
-                {alimentoSelecionado && (
-                    <>
-                        <p>Qual a quantidade de <strong>{alimentoSelecionado.product_name_pt || alimentoSelecionado.product_name}</strong> você consumiu?</p>
-                        <form onSubmit={handleSaveAlimento} className="modal-form">
-                            <label>Quantidade</label>
-                            <input
-                                type="text"
-                                value={quantidadeConsumida}
-                                onChange={(e) => setQuantidadeConsumida(e.target.value)}
-                                placeholder="Ex: 100g, 1 unidade, 2 fatias..."
-                                required
-                            />
-                            <button type="submit" className="submit-button">Salvar Alimento</button>
-                        </form>
-                    </>
-                )}
             </Modal>
         </div>
     );
