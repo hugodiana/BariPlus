@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { format } from 'date-fns';
@@ -11,54 +11,55 @@ const DiarioPage = () => {
     const [diarioDoDia, setDiarioDoDia] = useState(null);
     const [loading, setLoading] = useState(true);
     
-    // NOVIDADE: Estados para o modal de busca
+    // Estados para o modal de busca
     const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
-    const [tipoRefeicaoAtual, setTipoRefeicaoAtual] = useState(''); // Ex: 'cafeDaManha'
+    const [tipoRefeicaoAtual, setTipoRefeicaoAtual] = useState('');
     const [termoBusca, setTermoBusca] = useState('');
     const [resultadosBusca, setResultadosBusca] = useState([]);
     const [loadingBusca, setLoadingBusca] = useState(false);
 
+    // Estados para o modal de quantidade
+    const [isQuantityModalOpen, setIsQuantityModalOpen] = useState(false);
+    const [alimentoSelecionado, setAlimentoSelecionado] = useState(null);
+    const [quantidadeConsumida, setQuantidadeConsumida] = useState('100g');
+
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    // Busca o diário do dia selecionado
+    const fetchDiario = async () => {
+        setLoading(true);
+        const dataFormatada = format(dataSelecionada, 'yyyy-MM-dd');
+        try {
+            const res = await fetch(`${apiUrl}/api/diario/${dataFormatada}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            setDiarioDoDia(data);
+        } catch (error) { console.error("Erro ao buscar diário:", error); } 
+        finally { setLoading(false); }
+    };
+
     useEffect(() => {
-        const fetchDiario = async () => {
-            setLoading(true);
-            const dataFormatada = format(dataSelecionada, 'yyyy-MM-dd');
-            try {
-                const res = await fetch(`${apiUrl}/api/diario/${dataFormatada}`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const data = await res.json();
-                setDiarioDoDia(data);
-            } catch (error) { console.error("Erro ao buscar diário:", error); } 
-            finally { setLoading(false); }
-        };
-        if (token) { fetchDiario(); }
+        if (token) {
+            fetchDiario();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dataSelecionada, token, apiUrl]);
 
-    // NOVIDADE: Efeito para buscar na API externa quando o usuário digita
     useEffect(() => {
         if (termoBusca.length < 3) {
             setResultadosBusca([]);
             return;
         }
-
         const handler = setTimeout(async () => {
             setLoadingBusca(true);
-            // API do Open Food Facts para o Brasil
             const urlBusca = `https://br.openfoodfacts.org/cgi/search.pl?search_terms=${termoBusca}&search_simple=1&action=process&json=1&page_size=20`;
             try {
                 const response = await fetch(urlBusca);
                 const data = await response.json();
                 setResultadosBusca(data.products || []);
-            } catch (error) {
-                console.error("Erro ao buscar alimentos:", error);
-            } finally {
-                setLoadingBusca(false);
-            }
-        }, 500); // Espera 500ms após o usuário parar de digitar
-
-        return () => clearTimeout(handler); // Limpa o timeout se o usuário continuar a digitar
+            } catch (error) { console.error("Erro ao buscar alimentos:", error); } 
+            finally { setLoadingBusca(false); }
+        }, 500);
+        return () => clearTimeout(handler);
     }, [termoBusca]);
 
     const handleOpenFoodModal = (tipoRefeicao) => {
@@ -69,10 +70,41 @@ const DiarioPage = () => {
     };
 
     const handleSelectAlimento = (alimento) => {
-        // Lógica para adicionar o alimento virá no próximo passo
-        console.log("Alimento selecionado:", alimento);
-        alert(`Você selecionou: ${alimento.product_name_pt || alimento.product_name}. Próximo passo: salvar!`);
+        setAlimentoSelecionado(alimento);
         setIsFoodModalOpen(false);
+        setIsQuantityModalOpen(true);
+    };
+
+    const handleSaveAlimento = async (e) => {
+        e.preventDefault();
+        if (!alimentoSelecionado) return;
+
+        const novoAlimento = {
+            nome: alimentoSelecionado.product_name_pt || alimentoSelecionado.product_name,
+            quantidade: quantidadeConsumida,
+            calorias: alimentoSelecionado.nutriments?.['energy-kcal_100g'] || 0,
+            proteinas: alimentoSelecionado.nutriments?.proteins_100g || 0,
+        };
+
+        const dataFormatada = format(dataSelecionada, 'yyyy-MM-dd');
+
+        try {
+            await fetch(`${apiUrl}/api/diario`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    date: dataFormatada,
+                    tipoRefeicao: tipoRefeicaoAtual,
+                    alimento: novoAlimento,
+                }),
+            });
+            setIsQuantityModalOpen(false);
+            setAlimentoSelecionado(null);
+            setQuantidadeConsumida('100g');
+            fetchDiario();
+        } catch (error) {
+            console.error("Erro ao salvar alimento:", error);
+        }
     };
 
     const RefeicaoCard = ({ titulo, alimentos, tipo }) => (
@@ -119,7 +151,6 @@ const DiarioPage = () => {
                 </div>
             </div>
 
-            {/* NOVIDADE: Modal para buscar e adicionar alimentos */}
             <Modal isOpen={isFoodModalOpen} onClose={() => setIsFoodModalOpen(false)}>
                 <h2>Buscar Alimento</h2>
                 <div className="food-search-form">
@@ -146,6 +177,26 @@ const DiarioPage = () => {
                         ))}
                     </ul>
                 </div>
+            </Modal>
+
+            <Modal isOpen={isQuantityModalOpen} onClose={() => setIsQuantityModalOpen(false)}>
+                <h2>Adicionar Alimento</h2>
+                {alimentoSelecionado && (
+                    <>
+                        <p>Qual a quantidade de <strong>{alimentoSelecionado.product_name_pt || alimentoSelecionado.product_name}</strong> você consumiu?</p>
+                        <form onSubmit={handleSaveAlimento} className="modal-form">
+                            <label>Quantidade</label>
+                            <input
+                                type="text"
+                                value={quantidadeConsumida}
+                                onChange={(e) => setQuantidadeConsumida(e.target.value)}
+                                placeholder="Ex: 100g, 1 unidade, 2 fatias..."
+                                required
+                            />
+                            <button type="submit" className="submit-button">Salvar Alimento</button>
+                        </form>
+                    </>
+                )}
             </Modal>
         </div>
     );
