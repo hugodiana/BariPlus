@@ -17,26 +17,20 @@ function App() {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
     if (token) {
-      fetch(`${apiUrl}/api/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => {
         if (!res.ok) {
           localStorage.removeItem('bariplus_token');
-          throw new Error('Sessão inválida ou expirada');
+          throw new Error('Sessão inválida');
         }
         return res.json();
       })
-      .then(dadosCompletos => {
-        setUsuario(dadosCompletos);
-      })
+      .then(dadosCompletos => setUsuario(dadosCompletos))
       .catch(error => {
         console.error(error);
         setUsuario(null);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }

@@ -9,19 +9,14 @@ import { format, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const DashboardPage = () => {
-    // Estados para os dados principais
     const [usuario, setUsuario] = useState(null);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
     const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
     const [loading, setLoading] = useState(true);
-
-    // Estados para os modais
     const [isWeightModalOpen, setIsWeightModalOpen] = useState(false);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
-
-    // Estados para os formulários dos modais
     const [novoPeso, setNovoPeso] = useState('');
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
 
@@ -122,7 +117,6 @@ const DashboardPage = () => {
             newHistoryState[hoje] = {};
         }
         newHistoryState[hoje][medId] = novasTomas;
-
         setMedicationData({ ...medicationData, historico: newHistoryState });
         
         await fetch(`${apiUrl}/api/medication/log/update`, {
@@ -174,10 +168,10 @@ const DashboardPage = () => {
                 
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
                 
-                {medicationData && medicationData.medicamentos && medicationData.medicamentos.length > 0 && (
+                {medicationData && medicationData.medicamentos && medicationData.historico && medicationData.medicamentos.length > 0 && (
                     <DailyMedicationCard 
                         medicamentos={medicationData.medicamentos}
-                        historico={medicationData.historico || {}}
+                        historico={medicationData.historico}
                         onToggleToma={handleToggleMedToma}
                     />
                 )}
