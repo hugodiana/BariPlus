@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
-// import logo from '../assets/bariplus_logo.png'; // 1. APAGUE esta linha de importação
+import logo from '/bariplus_logo.png'; // Usando o caminho público
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
@@ -11,6 +11,7 @@ const LoginPage = () => {
   const [identifier, setIdentifier] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // Você já tinha adicionado isto, perfeito!
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,7 +46,6 @@ const LoginPage = () => {
     <div className="login-page-container">
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
-          {/* 2. CORREÇÃO: Use o caminho público para a logo */}
           <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo" />
           <p>Organize sua jornada pré e pós-bariátrica.</p>
         </div>
@@ -63,7 +63,32 @@ const LoginPage = () => {
         ) : (
             <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
         )}
-        <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        
+        {/* ✅ CORREÇÃO: Envolvemos o input e o botão num wrapper para posicionamento */}
+        <div className="password-wrapper">
+            <input 
+                type={showPassword ? 'text' : 'password'} // O tipo muda com base no estado
+                placeholder="Senha" 
+                value={password} 
+                onChange={(e) => setPassword(e.target.value)} 
+                required 
+            />
+            <button 
+                type="button" 
+                className="password-toggle-btn" 
+                onClick={() => setShowPassword(!showPassword)} // Ação de clique para alternar
+            >
+                {showPassword ? 'Ocultar' : 'Mostrar'}
+            </button>
+        </div>
+        
+        {/* Adicionando o link de "Esqueci a senha" (ainda não funcional) */}
+        {!isRegistering && (
+             <div className="forgot-password-container">
+                <button type="button" className="forgot-password-btn">Esqueci a minha senha</button>
+            </div>
+        )}
+
         <button type="submit">{isRegistering ? 'Cadastrar' : 'Entrar'}</button>
         {message && <p className="message">{message}</p>}
         <button type="button" className="toggle-button" onClick={() => setIsRegistering(!isRegistering)}>

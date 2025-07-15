@@ -95,3 +95,30 @@
     font-size: 14px;
   }
 }
+
+/* Adicione este código ao final do LoginPage.css */
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px; /* Mantém o espaçamento que o input tinha */
+}
+
+.password-wrapper input {
+    width: 100%;
+    /* Remove a margem de baixo do input para o wrapper a controlar */
+    margin-bottom: 0; 
+}
+
+.password-toggle-btn {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    font-weight: 600;
+    padding: 5px;
+}
