@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
+import Modal from '../components/Modal'; 
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
@@ -11,6 +12,8 @@ const LoginPage = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -90,6 +93,60 @@ const LoginPage = () => {
             </button>
         </div>
       </form>
+    </div>
+  );
+};
+
+const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setMessage('');
+    const apiUrl = process.env.REACT_APP_API_URL;
+    try {
+      const response = await fetch(`${apiUrl}/api/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      const data = await response.json();
+      setMessage(data.message); // Exibe a mensagem de sucesso (ou genérica)
+      setIsForgotModalOpen(false); // Fecha o modal
+    } catch (error) {
+      setMessage("Erro ao conectar com o servidor. Tente novamente.");
+    }
+  };
+
+  return (
+    <div className="login-page-container">
+      <form className="login-form" onSubmit={handleSubmit}>
+        {/* ... (todo o seu formulário de login/registro continua igual) ... */}
+
+        <div className="form-footer">
+            {/* NOVIDADE: Ação de clique para abrir o modal */}
+            <button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>
+                Esqueci a minha senha
+            </button>
+            <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>
+                {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
+            </button>
+        </div>
+      </form>
+
+      {/* NOVIDADE: O Modal para "Esqueci a Senha" */}
+      <Modal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)}>
+        <h2>Redefinir Senha</h2>
+        <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>
+        <form onSubmit={handleForgotPassword} className="modal-form">
+          <label>E-mail</label>
+          <input
+            type="email"
+            value={forgotEmail}
+            onChange={(e) => setForgotEmail(e.target.value)}
+            placeholder="seu-email@exemplo.com"
+            required
+          />
+          <button type="submit" className="submit-button">Enviar Link de Redefinição</button>
+        </form>
+      </Modal>
     </div>
   );
 };

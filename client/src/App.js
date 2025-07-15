@@ -8,6 +8,7 @@ import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -43,6 +44,7 @@ function App() {
   return (
     <Router>
       <Routes>
+         <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
         <Route path="/login" element={!usuario ? <LoginPage /> : <Navigate to="/" />} />
         <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
         <Route path="/*" element={
