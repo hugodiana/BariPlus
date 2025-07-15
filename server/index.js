@@ -35,7 +35,25 @@ const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.O
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
 const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, date: { type: String, required: true }, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Number, default: {} } });
+const AlimentoSchema = new mongoose.Schema({
+    nome: { type: String, required: true },
+    quantidade: { type: String, required: true },
+    calorias: { type: Number, default: 0 },
+    proteinas: { type: Number, default: 0 },
+});
 
+const DiarioAlimentarSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: String, required: true }, // Formato YYYY-MM-DD
+    refeicoes: {
+        cafeDaManha: [AlimentoSchema],
+        almoco: [AlimentoSchema],
+        jantar: [AlimentoSchema],
+        lanches: [AlimentoSchema],
+    }
+});
+
+const DiarioAlimentar = mongoose.model('DiarioAlimentar', DiarioAlimentarSchema);
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
 const Peso = mongoose.model('Peso', PesoSchema);
@@ -292,6 +310,47 @@ app.delete('/api/medication/:medId', autenticar, async (req, res) => {
     const { medId } = req.params;
     await Medication.findOneAndUpdate({ userId: req.userId }, { $pull: { medicamentos: { _id: medId } } });
     res.status(204).send();
+});
+
+// --- ROTAS DO DIÁRIO ALIMENTAR ---
+
+// Busca o diário de um dia específico
+app.get('/api/diario/:date', autenticar, async (req, res) => {
+    try {
+        const { date } = req.params; // Formato YYYY-MM-DD
+        let diario = await DiarioAlimentar.findOne({ userId: req.userId, date: date });
+
+        if (!diario) {
+            // Se não existe diário para este dia, cria um vazio
+            diario = new DiarioAlimentar({ userId: req.userId, date: date });
+            await diario.save();
+        }
+        res.json(diario);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar diário alimentar." });
+    }
+});
+
+// Adiciona um alimento a uma refeição
+app.post('/api/diario', autenticar, async (req, res) => {
+    try {
+        const { date, tipoRefeicao, alimento } = req.body;
+        // tipoRefeicao deve ser 'cafeDaManha', 'almoco', 'jantar', ou 'lanches'
+
+        if (!date || !tipoRefeicao || !alimento) {
+            return res.status(400).json({ message: "Dados incompletos." });
+        }
+
+        const campoParaAtualizar = `refeicoes.${tipoRefeicao}`;
+        const diario = await DiarioAlimentar.findOneAndUpdate(
+            { userId: req.userId, date: date },
+            { $push: { [campoParaAtualizar]: alimento } },
+            { new: true, upsert: true } // Cria o diário do dia se ele não existir
+        );
+        res.status(201).json(diario);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao adicionar alimento." });
+    }
 });
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
