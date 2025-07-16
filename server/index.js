@@ -384,28 +384,35 @@ app.delete('/api/diario/:date/:tipoRefeicao/:alimentoId', autenticar, async (req
 // --- ROTA DO STRIPE ---
 app.post('/api/create-checkout-session', autenticar, async (req, res) => {
     try {
-        const userId = req.userId;
-        const usuario = await User.findById(userId);
+        const usuario = await User.findById(req.userId);
         let stripeCustomerId = usuario.stripeCustomerId;
+
         if (!stripeCustomerId) {
-            const customer = await stripe.customers.create({ email: usuario.email, name: `${usuario.nome} ${usuario.sobrenome}`, metadata: { mongoId: userId } });
+            const customer = await stripe.customers.create({
+                email: usuario.email,
+                name: `${usuario.nome} ${usuario.sobrenome}`
+            });
             stripeCustomerId = customer.id;
-            usuario.stripeCustomerId = stripeCustomerId;
-            await usuario.save();
+            await User.findByIdAndUpdate(req.userId, { stripeCustomerId: stripeCustomerId });
         }
+
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card', 'boleto'],
             mode: 'payment',
             customer: stripeCustomerId,
             line_items: [{
-                price: process.env.STRIPE_PRICE_ID, // Usando variável de ambiente
+                // ✅ Garanta que esta linha está a usar a variável de ambiente correta
+                price: process.env.STRIPE_PRICE_ID,
                 quantity: 1,
             }],
             success_url: `${process.env.CLIENT_URL}/pagamento-sucesso`,
-            cancel_url: `${process.env.CLIENT_URL}/planos`,
+            cancel_url: `${process.env.CLIENT_URL}/planos`, // Redireciona de volta para a página de planos
         });
+
         res.json({ url: session.url });
+
     } catch (error) {
+        console.error("Erro ao criar sessão de checkout:", error);
         res.status(500).json({ error: { message: error.message } });
     }
 });
