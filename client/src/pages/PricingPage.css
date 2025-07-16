@@ -1,0 +1,105 @@
+.pricing-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f4f7f6;
+    padding: 20px;
+}
+
+.pricing-card, .feedback-card {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+}
+
+.pricing-title {
+    color: #37715b;
+    margin-bottom: 10px;
+}
+
+.pricing-description {
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.price-tag {
+    background-color: #e9f5f2;
+    border: 2px solid #37715b;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.price-amount {
+    display: block;
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.price-term {
+    color: #37715b;
+    font-weight: 600;
+}
+
+.features-list {
+    list-style: none;
+    padding: 0;
+    text-align: left;
+    margin-bottom: 30px;
+    display: inline-block;
+}
+
+.features-list li {
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.checkout-button {
+    display: inline-block;
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 8px;
+    background-color: #007aff;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.checkout-button:hover {
+    background-color: #0056b3;
+}
+
+.checkout-button:disabled {
+    background-color: #ccc;
+}
+
+.error-message {
+    color: #d93025;
+    margin-top: 15px;
+}
+
+/* Estilos para o spinner */
+.spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border-left-color: #007aff;
+    margin: 20px auto;
+    animation: spin 1s ease infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

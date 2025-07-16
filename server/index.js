@@ -40,7 +40,9 @@ const UserSchema = new mongoose.Schema({
     detalhesCirurgia: {
         fezCirurgia: String, dataCirurgia: Date, altura: Number,
         pesoInicial: Number, pesoAtual: Number
-    }
+    },
+    stripeCustomerId: String,
+    pagamentoEfetuado: { type: Boolean, default: false },
 });
 
 const ChecklistSchema = new mongoose.Schema({
@@ -74,42 +76,15 @@ const DailyLogSchema = new mongoose.Schema({
 const MedicationSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     medicamentos: [{
-        nome: String,
-        dosagem: String,
-        quantidade: Number,
-        unidade: String,
-        vezesAoDia: Number,
+        nome: String, dosagem: String, quantidade: Number,
+        unidade: String, vezesAoDia: Number,
     }],
-    historico: {
-        type: Map,
-        of: Number,
-        default: {}
-    }
-});
-
-const AlimentoSchema = new mongoose.Schema({
-    nome: { type: String, required: true },
-    quantidade: { type: String, required: true },
-    calorias: { type: Number, default: 0 },
-    proteinas: { type: Number, default: 0 },
-    gorduras: { type: Number, default: 0 },
-    carboidratos: { type: Number, default: 0 },
-});
-
-const DiarioAlimentarSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true },
-    refeicoes: {
-        cafeDaManha: [AlimentoSchema],
-        almoco: [AlimentoSchema],
-        jantar: [AlimentoSchema],
-        lanches: [AlimentoSchema],
-    }
+    historico: { type: Map, of: Number, default: {} }
 });
 
 const FoodLogSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true }, // YYYY-MM-DD
+    date: { type: String, required: true },
     refeicoes: {
         cafeDaManha: [mongoose.Schema.Types.Mixed],
         almoco: [mongoose.Schema.Types.Mixed],
@@ -117,7 +92,6 @@ const FoodLogSchema = new mongoose.Schema({
         lanches: [mongoose.Schema.Types.Mixed]
     }
 });
-const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -125,10 +99,9 @@ const Peso = mongoose.model('Peso', PesoSchema);
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
-const DiarioAlimentar = mongoose.model('DiarioAlimentar', DiarioAlimentarSchema);
+const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 
-
-// --- MIDDLEWARE DE AUTENTICAÇÃO ---
+// --- MIDDLEWARE ---
 const autenticar = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -140,8 +113,16 @@ const autenticar = (req, res, next) => {
     });
 };
 
-// --- ROTAS DA API ---
+const verificarAcessoPago = async (req, res, next) => {
+    const usuario = await User.findById(req.userId);
+    if (usuario && usuario.pagamentoEfetuado) {
+        next();
+    } else {
+        res.status(403).json({ message: "Acesso exclusivo para assinantes." });
+    }
+};
 
+// --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
@@ -151,14 +132,13 @@ app.post('/api/register', async (req, res) => {
         const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
         await novoUsuario.save();
         
-        // Cria todos os documentos associados para o novo usuário
         await new Checklist({ userId: novoUsuario._id, preOp: [{ descricao: 'Marcar consulta com cirurgião', concluido: false }], posOp: [{ descricao: 'Tomar suplementos vitamínicos', concluido: false }] }).save();
         await new Peso({ userId: novoUsuario._id, registros: [] }).save();
         await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
         await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
         await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', quantidade: 1, unidade: 'comprimido', vezesAoDia: 1 }], historico: {} }).save();
-        await new DiarioAlimentar({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
-
+        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: { cafeDaManha:[], almoco:[], jantar:[], lanches:[] } }).save();
+        
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
@@ -185,7 +165,7 @@ app.post('/api/forgot-password', async (req, res) => {
         const resetLink = `${process.env.CLIENT_URL}/reset-password/${usuario._id}/${resetToken}`;
         const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
         await transporter.sendMail({
-            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+            from: `"BariPlus" <${process.env.SMTP_USER}>`,
             to: usuario.email,
             subject: "Redefinição de Senha - BariPlus",
             html: `<p>Olá ${usuario.nome},</p><p>Para redefinir sua senha, clique no link abaixo:</p><a href="${resetLink}">Redefinir Senha</a><p>Este link é válido por 15 minutos.</p>`,
@@ -193,6 +173,7 @@ app.post('/api/forgot-password', async (req, res) => {
         res.json({ message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." });
     } catch (error) { res.status(500).json({ message: "Erro no servidor." }); }
 });
+
 
 app.post('/api/reset-password/:userId/:token', async (req, res) => {
     const { userId, token } = req.params;
@@ -405,63 +386,49 @@ app.delete('/api/diario/:date/:tipoRefeicao/:alimentoId', autenticar, async (req
     } catch (error) { res.status(500).json({ message: "Erro ao apagar alimento." }); }
 });
 
-// --- NOVIDADE: ROTAS DA API FATSECRET ---
-
-const getFatSecretToken = async () => {
-    const credentials = `${process.env.FATSECRET_CLIENT_ID}:${process.env.FATSECRET_CLIENT_SECRET}`;
-    const encodedCredentials = Buffer.from(credentials).toString('base64');
-    try {
-        const response = await axios.post('https://oauth.fatsecret.com/connect/token', 'grant_type=client_credentials', {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': `Basic ${encodedCredentials}`
-            }
-        });
-        return response.data.access_token;
-    } catch (error) {
-        console.error("Erro ao obter token da FatSecret:", error.response?.data);
-        return null;
-    }
-};
-
+/ ROTA PARA PESQUISAR ALIMENTOS USANDO OPEN FOOD FACTS
 app.get('/api/foods/search', autenticar, async (req, res) => {
     const { query } = req.query;
-    if (!query) {
-        return res.status(400).json({ message: "É necessário um termo de busca." });
-    }
-    const token = await getFatSecretToken();
-    if (!token) {
-        return res.status(500).json({ message: "Não foi possível autenticar com o serviço de alimentos." });
-    }
+    if (!query) return res.status(400).json({ message: "É necessário um termo de busca." });
+    const searchUrl = `https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`;
     try {
-        const response = await axios.get('https://platform.fatsecret.com/rest/server.api', {
-            params: {
-                method: 'foods.search',
-                search_expression: query,
-                format: 'json'
-            },
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const foods = response.data.foods?.food || []; // Garante que retorna um array vazio se não houver 'food'
-        res.json(foods);
+        const response = await axios.get(searchUrl);
+        if (response.data.products && response.data.products.length > 0) {
+            const formattedFoods = response.data.products.map(food => ({
+                id: food.id,
+                name: food.product_name_pt || food.product_name,
+                brand: food.brands || 'Marca não informada',
+                imageUrl: food.image_front_url || null,
+                nutrients: {
+                    calories: food.nutriments.energy_kcal_100g || 'N/A',
+                    proteins: food.nutriments.proteins_100g || 'N/A',
+                    carbs: food.nutriments.carbohydrates_100g || 'N/A',
+                    fats: food.nutriments.fat_100g || 'N/A'
+                }
+            }));
+            res.json(formattedFoods);
+        } else {
+            res.json([]);
+        }
     } catch (error) {
-        console.error("Erro ao pesquisar alimentos:", error.response?.data);
+        console.error("Erro ao pesquisar na Open Food Facts:", error);
         res.status(500).json({ message: "Erro ao buscar alimentos." });
     }
 });
 
+// ROTAS PARA O DIÁRIO ALIMENTAR
 app.get('/api/food-diary/today', autenticar, async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     let log = await FoodLog.findOne({ userId: req.userId, date: today });
     if (!log) {
-        log = new FoodLog({ userId: req.userId, date: today, refeicoes: { cafeDaManha:[], almoco:[], jantar:[], lanches:[] } });
+        log = new FoodLog({ userId: req.userId, date: today, refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } });
         await log.save();
     }
     res.json(log);
 });
 
 app.post('/api/food-diary/log', autenticar, async (req, res) => {
-    const { food, mealType, date } = req.body; // mealType: 'cafeDaManha', 'almoco', etc.
+    const { food, mealType, date } = req.body;
     const fieldToUpdate = `refeicoes.${mealType}`;
     const result = await FoodLog.findOneAndUpdate(
         { userId: req.userId, date: date },
@@ -470,20 +437,5 @@ app.post('/api/food-diary/log', autenticar, async (req, res) => {
     );
     res.status(201).json(result);
 });
-
-// Rota para buscar detalhes de um alimento específico
-app.get('/api/foods/details/:foodId', autenticar, async (req, res) => {
-    const { foodId } = req.params;
-    const token = await getFatSecretToken();
-    if (!token) return res.status(500).json({ message: "Falha na autenticação com o serviço de alimentos." });
-    try {
-        const response = await axios.get('https://platform.fatsecret.com/rest/server.api', {
-            params: { method: 'food.get.v2', food_id: foodId, format: 'json' },
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        res.json(response.data.food);
-    } catch (error) { res.status(500).json({ message: "Erro ao buscar detalhes do alimento." }); }
-});
-
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
