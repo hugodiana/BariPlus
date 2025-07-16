@@ -1,86 +1,110 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './FoodDiaryPage.css';
+import Modal from '../components/Modal';
 
 const FoodDiaryPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState('Pesquise por um alimento para ver os detalhes nutricionais.');
+    const [message, setMessage] = useState('Pesquise por um alimento para começar.');
+    
+    // Estados para o diário
+    const [diarioDeHoje, setDiarioDeHoje] = useState(null);
+    const [loadingDiario, setLoadingDiario] = useState(true);
+
+    // Estados para o modal de detalhes
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedFood, setSelectedFood] = useState(null);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
+    const hoje = new Date().toISOString().split('T')[0];
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchTerm) return;
+    // Busca o diário do dia ao carregar a página
+    useEffect(() => {
+        const fetchDiary = async () => {
+            try {
+                const res = await fetch(`${apiUrl}/api/food-diary/today`, { headers: { 'Authorization': `Bearer ${token}` } });
+                const data = await res.json();
+                setDiarioDeHoje(data);
+            } catch (error) { console.error("Erro ao buscar diário:", error); } 
+            finally { setLoadingDiario(false); }
+        };
+        fetchDiary();
+    }, [token, apiUrl]);
 
-        setLoading(true);
-        setSearchResults([]);
-        setMessage('');
-
+    const handleSearch = async (e) => { /* ... sua função de busca continua igual ... */ };
+    
+    const handleSelectFood = async (foodId) => {
+        // Abre o modal com os detalhes do alimento clicado
         try {
-            const response = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const res = await fetch(`${apiUrl}/api/foods/details/${foodId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const data = await res.json();
+            setSelectedFood(data);
+            setIsModalOpen(true);
+        } catch (error) { console.error("Erro ao buscar detalhes:", error); }
+    };
+    
+    const handleLogFood = async (mealType) => {
+        // Lógica para salvar o alimento na refeição escolhida
+        if (!selectedFood) return;
+        try {
+            const res = await fetch(`${apiUrl}/api/food-diary/log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ food: selectedFood, mealType, date: hoje })
             });
-
-            if (!response.ok) {
-                throw new Error('Erro ao buscar alimentos.');
-            }
-
-            const data = await response.json();
-
-            if (data.length === 0) {
-                setMessage(`Nenhum resultado encontrado para "${searchTerm}".`);
-            } else {
-                setSearchResults(data);
-            }
-        } catch (error) {
-            console.error("Erro na pesquisa:", error);
-            setMessage("Ocorreu um erro ao conectar com o serviço. Tente novamente.");
-        } finally {
-            setLoading(false);
-        }
+            const data = await res.json();
+            setDiarioDeHoje(data); // Atualiza o diário na tela
+            setIsModalOpen(false);
+            setSelectedFood(null);
+        } catch (error) { console.error("Erro ao registrar refeição:", error); }
     };
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <h1>Diário Alimentar</h1>
-                <p>Pesquise e registre suas refeições diárias.</p>
-            </div>
-
-            <div className="search-container">
-                <form onSubmit={handleSearch}>
-                    <input
-                        type="text"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        placeholder="Ex: Frango grelhado"
-                        className="search-input"
-                    />
-                    <button type="submit" className="search-button" disabled={loading}>
-                        {loading ? 'Buscando...' : 'Pesquisar'}
-                    </button>
-                </form>
-            </div>
-
+            {/* ... cabeçalho da página e formulário de busca ... */}
             <div className="results-container">
-                {loading && <p>Carregando...</p>}
-                {message && !loading && <p className="info-message">{message}</p>}
-                
-                {searchResults.length > 0 && (
-                    <ul className="results-list">
-                        {searchResults.map(food => (
-                            <li key={food.food_id} className="result-item">
-                                <div className="food-name">{food.food_name}</div>
-                                <div className="food-description">{food.food_description}</div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
+                {/* ... lógica de loading, mensagem e resultados da busca ... */}
+                {searchResults.map(food => (
+                    <li key={food.food_id} className="result-item" onClick={() => handleSelectFood(food.food_id)}>
+                        {/* ... */}
+                    </li>
+                ))}
             </div>
+
+            {/* NOVIDADE: Visualização do Diário */}
+            <div className="diary-view">
+                <h2>Refeições de Hoje</h2>
+                {/* Aqui renderizamos cada refeição, por exemplo: */}
+                <div className="meal-section">
+                    <h4>Café da Manhã</h4>
+                    <ul>{diarioDeHoje?.refeicoes.cafeDaManha.map((item, i) => <li key={i}>{item.food_name}</li>)}</ul>
+                </div>
+                {/* ... seções para almoço, jantar e lanches ... */}
+            </div>
+            
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+                {selectedFood && (
+                    <div className="food-details-modal">
+                        <h2>{selectedFood.food_name}</h2>
+                        {/* Mostra os detalhes nutricionais */}
+                        <p>{selectedFood.servings.serving[0].serving_description}</p>
+                        <p>Calorias: {selectedFood.servings.serving[0].calories}</p>
+                        <p>Proteínas: {selectedFood.servings.serving[0].protein}g</p>
+                        {/* ... outros detalhes ... */}
+
+                        <h4>Adicionar em qual refeição?</h4>
+                        <div className="meal-log-buttons">
+                            <button onClick={() => handleLogFood('cafeDaManha')}>Café da Manhã</button>
+                            <button onClick={() => handleLogFood('almoco')}>Almoço</button>
+                            <button onClick={() => handleLogFood('jantar')}>Jantar</button>
+                            <button onClick={() => handleLogFood('lanches')}>Lanches</button>
+                        </div>
+                    </div>
+                )}
+            </Modal>
         </div>
     );
 };
-
 export default FoodDiaryPage;

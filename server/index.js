@@ -107,6 +107,18 @@ const DiarioAlimentarSchema = new mongoose.Schema({
     }
 });
 
+const FoodLogSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: String, required: true }, // YYYY-MM-DD
+    refeicoes: {
+        cafeDaManha: [mongoose.Schema.Types.Mixed],
+        almoco: [mongoose.Schema.Types.Mixed],
+        jantar: [mongoose.Schema.Types.Mixed],
+        lanches: [mongoose.Schema.Types.Mixed]
+    }
+});
+const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
+
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
 const Peso = mongoose.model('Peso', PesoSchema);
@@ -437,5 +449,41 @@ app.get('/api/foods/search', autenticar, async (req, res) => {
         res.status(500).json({ message: "Erro ao buscar alimentos." });
     }
 });
+
+app.get('/api/food-diary/today', autenticar, async (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    let log = await FoodLog.findOne({ userId: req.userId, date: today });
+    if (!log) {
+        log = new FoodLog({ userId: req.userId, date: today, refeicoes: { cafeDaManha:[], almoco:[], jantar:[], lanches:[] } });
+        await log.save();
+    }
+    res.json(log);
+});
+
+app.post('/api/food-diary/log', autenticar, async (req, res) => {
+    const { food, mealType, date } = req.body; // mealType: 'cafeDaManha', 'almoco', etc.
+    const fieldToUpdate = `refeicoes.${mealType}`;
+    const result = await FoodLog.findOneAndUpdate(
+        { userId: req.userId, date: date },
+        { $push: { [fieldToUpdate]: food } },
+        { new: true, upsert: true }
+    );
+    res.status(201).json(result);
+});
+
+// Rota para buscar detalhes de um alimento específico
+app.get('/api/foods/details/:foodId', autenticar, async (req, res) => {
+    const { foodId } = req.params;
+    const token = await getFatSecretToken();
+    if (!token) return res.status(500).json({ message: "Falha na autenticação com o serviço de alimentos." });
+    try {
+        const response = await axios.get('https://platform.fatsecret.com/rest/server.api', {
+            params: { method: 'food.get.v2', food_id: foodId, format: 'json' },
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        res.json(response.data.food);
+    } catch (error) { res.status(500).json({ message: "Erro ao buscar detalhes do alimento." }); }
+});
+
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
