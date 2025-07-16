@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -390,6 +391,51 @@ app.delete('/api/diario/:date/:tipoRefeicao/:alimentoId', autenticar, async (req
         await DiarioAlimentar.findOneAndUpdate({ userId: req.userId, date: date }, { $pull: { [campoParaAtualizar]: { _id: alimentoId } } });
         res.status(204).send();
     } catch (error) { res.status(500).json({ message: "Erro ao apagar alimento." }); }
+});
+
+// --- NOVIDADE: ROTAS DA API FATSECRET ---
+
+const getFatSecretToken = async () => {
+    const credentials = `${process.env.FATSECRET_CLIENT_ID}:${process.env.FATSECRET_CLIENT_SECRET}`;
+    const encodedCredentials = Buffer.from(credentials).toString('base64');
+    try {
+        const response = await axios.post('https://oauth.fatsecret.com/connect/token', 'grant_type=client_credentials', {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': `Basic ${encodedCredentials}`
+            }
+        });
+        return response.data.access_token;
+    } catch (error) {
+        console.error("Erro ao obter token da FatSecret:", error.response?.data);
+        return null;
+    }
+};
+
+app.get('/api/foods/search', autenticar, async (req, res) => {
+    const { query } = req.query;
+    if (!query) {
+        return res.status(400).json({ message: "É necessário um termo de busca." });
+    }
+    const token = await getFatSecretToken();
+    if (!token) {
+        return res.status(500).json({ message: "Não foi possível autenticar com o serviço de alimentos." });
+    }
+    try {
+        const response = await axios.get('https://platform.fatsecret.com/rest/server.api', {
+            params: {
+                method: 'foods.search',
+                search_expression: query,
+                format: 'json'
+            },
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const foods = response.data.foods?.food || []; // Garante que retorna um array vazio se não houver 'food'
+        res.json(foods);
+    } catch (error) {
+        console.error("Erro ao pesquisar alimentos:", error.response?.data);
+        res.status(500).json({ message: "Erro ao buscar alimentos." });
+    }
 });
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
