@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Importe o useCallback
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import './ProgressoPage.css';
 import Modal from '../components/Modal';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale'; // Agora será usado
+import { ptBR } from 'date-fns/locale';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -21,24 +21,25 @@ const ProgressoPage = () => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
+    // ✅ CORREÇÃO: Definimos a função fetchHistorico aqui fora
+    const fetchHistorico = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/pesos`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            setHistorico(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
+        } catch (error) {
+            console.error("Erro ao buscar histórico de peso:", error);
+        } finally {
+            setLoading(false);
+        }
+    }, [token, apiUrl]); // Usamos useCallback para otimização
+
     useEffect(() => {
-        // ✅ CORREÇÃO: Função movida para dentro do useEffect
-        const fetchHistorico = async () => {
-            setLoading(true);
-            try {
-                const response = await fetch(`${apiUrl}/api/pesos`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const data = await response.json();
-                setHistorico(data.sort((a, b) => new Date(a.data) - new Date(b.data)));
-            } catch (error) {
-                console.error("Erro ao buscar histórico de peso:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchHistorico();
-    }, [token, apiUrl]); // O array de dependências agora está correto
+        fetchHistorico(); // O useEffect agora apenas chama a função
+    }, [fetchHistorico]);
 
     const handleFileChange = (e) => { setFoto(e.target.files[0]); };
 
@@ -50,6 +51,7 @@ const ProgressoPage = () => {
         formData.append('quadril', quadril);
         formData.append('braco', braco);
         if (foto) { formData.append('foto', foto); }
+
         try {
             await fetch(`${apiUrl}/api/pesos`, {
                 method: 'POST',
@@ -58,11 +60,13 @@ const ProgressoPage = () => {
             });
             setNovoPeso(''); setCintura(''); setQuadril(''); setBraco(''); setFoto(null);
             setIsModalOpen(false);
-            // Chama a função fetchHistorico diretamente para atualizar a lista
-            const fetchUpdatedData = async () => { await fetchHistorico(); };
-            fetchUpdatedData();
-        } catch (error) { console.error(error); }
+            fetchHistorico(); // ✅ Agora esta chamada funciona perfeitamente
+        } catch (error) {
+            console.error(error);
+        }
     };
+    
+    // ... O resto do seu código (chartData, chartOptions e o return) continua igual
 
     const chartData = {
         labels: historico.map(item => new Date(item.data).toLocaleDateString('pt-BR')),
@@ -97,7 +101,6 @@ const ProgressoPage = () => {
                                         <a href={item.fotoUrl} target="_blank" rel="noopener noreferrer">
                                             <img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} />
                                         </a>
-                                        {/* ✅ CORREÇÃO: Usando a localização ptBR */}
                                         <time>{format(new Date(item.data), 'dd MMM yyyy', { locale: ptBR })}</time>
                                     </div>
                                 ))}
@@ -142,4 +145,5 @@ const ProgressoPage = () => {
         </div>
     );
 };
+
 export default ProgressoPage;
