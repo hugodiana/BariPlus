@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Layout.css';
-// NÃO PRECISAMOS MAIS DE IMPORTAR A LOGO AQUI
 
 const Layout = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -20,9 +19,7 @@ const Layout = ({ children }) => {
       {isSidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          {/* ✅ CORREÇÃO: Usando o caminho público direto para a imagem */}
           <img src="/bariplus_logo.png" alt="BariPlus Logo" className="sidebar-logo" />
-          
           <button className="sidebar-close-btn" onClick={toggleSidebar}>&times;</button>
         </div>
         <nav className="sidebar-nav">
@@ -31,11 +28,11 @@ const Layout = ({ children }) => {
           <NavLink to="/progresso">Meu Progresso</NavLink>
           <NavLink to="/consultas">Minhas Consultas</NavLink>
           <NavLink to="/medicacao">Medicação</NavLink>
+          <NavLink to="/diario-alimentar">Diário Alimentar</NavLink>
         </nav>
         <button onClick={handleLogout} className="logout-btn">Sair</button>
       </aside>
       <main className="main-content">
-        {/* Agora vamos colocar o DashboardPage real de volta */}
         {children}
       </main>
     </div>
