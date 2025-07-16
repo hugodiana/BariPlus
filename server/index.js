@@ -8,6 +8,7 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 app.use(cors());
@@ -37,12 +38,9 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: {
-        fezCirurgia: String, dataCirurgia: Date, altura: Number,
-        pesoInicial: Number, pesoAtual: Number
-    },
+    detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number },
     stripeCustomerId: String,
-    pagamentoEfetuado: { type: Boolean, default: false },
+    pagamentoEfetuado: { type: Boolean, default: false }
 });
 
 const ChecklistSchema = new mongoose.Schema({
@@ -436,6 +434,35 @@ app.post('/api/food-diary/log', autenticar, async (req, res) => {
         { new: true, upsert: true }
     );
     res.status(201).json(result);
+});
+
+// --- ROTA DO STRIPE ---
+app.post('/api/create-checkout-session', autenticar, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const usuario = await User.findById(userId);
+        let stripeCustomerId = usuario.stripeCustomerId;
+        if (!stripeCustomerId) {
+            const customer = await stripe.customers.create({ email: usuario.email, name: `${usuario.nome} ${usuario.sobrenome}`, metadata: { mongoId: userId } });
+            stripeCustomerId = customer.id;
+            usuario.stripeCustomerId = stripeCustomerId;
+            await usuario.save();
+        }
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card', 'boleto'],
+            mode: 'payment',
+            customer: stripeCustomerId,
+            line_items: [{
+                price: process.env.STRIPE_PRICE_ID, // Usando variável de ambiente
+                quantity: 1,
+            }],
+            success_url: `${process.env.CLIENT_URL}/pagamento-sucesso`,
+            cancel_url: `${process.env.CLIENT_URL}/planos`,
+        });
+        res.json({ url: session.url });
+    } catch (error) {
+        res.status(500).json({ error: { message: error.message } });
+    }
 });
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
