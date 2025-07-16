@@ -26,6 +26,7 @@ const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL)
   .then(() => console.log('Conectado ao MongoDB com sucesso!'))
   .catch(err => console.error('Falha na conexão:', err));
@@ -38,9 +39,12 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number },
+    detalhesCirurgia: {
+        fezCirurgia: String, dataCirurgia: Date, altura: Number,
+        pesoInicial: Number, pesoAtual: Number
+    },
     stripeCustomerId: String,
-    pagamentoEfetuado: { type: Boolean, default: false }
+    pagamentoEfetuado: { type: Boolean, default: false },
 });
 
 const ChecklistSchema = new mongoose.Schema({
@@ -112,11 +116,15 @@ const autenticar = (req, res, next) => {
 };
 
 const verificarAcessoPago = async (req, res, next) => {
-    const usuario = await User.findById(req.userId);
-    if (usuario && usuario.pagamentoEfetuado) {
-        next();
-    } else {
-        res.status(403).json({ message: "Acesso exclusivo para assinantes." });
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.pagamentoEfetuado) {
+            next();
+        } else {
+            res.status(403).json({ message: "Acesso exclusivo para assinantes." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro no servidor" });
     }
 };
 
@@ -126,10 +134,11 @@ app.post('/api/register', async (req, res) => {
         const { nome, sobrenome, username, email, password } = req.body;
         if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
         if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+        
         const hashedPassword = await bcrypt.hash(password, 10);
         const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
         await novoUsuario.save();
-        
+
         await new Checklist({ userId: novoUsuario._id, preOp: [{ descricao: 'Marcar consulta com cirurgião', concluido: false }], posOp: [{ descricao: 'Tomar suplementos vitamínicos', concluido: false }] }).save();
         await new Peso({ userId: novoUsuario._id, registros: [] }).save();
         await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
@@ -171,7 +180,6 @@ app.post('/api/forgot-password', async (req, res) => {
         res.json({ message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." });
     } catch (error) { res.status(500).json({ message: "Erro no servidor." }); }
 });
-
 
 app.post('/api/reset-password/:userId/:token', async (req, res) => {
     const { userId, token } = req.params;
