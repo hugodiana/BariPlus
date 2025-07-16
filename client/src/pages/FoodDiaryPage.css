@@ -1,0 +1,68 @@
+.search-container {
+    margin-bottom: 20px;
+}
+
+.search-container form {
+    display: flex;
+    gap: 10px;
+}
+
+.search-input {
+    flex-grow: 1;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.search-button {
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    background-color: #37715b;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.search-button:disabled {
+    background-color: #aaa;
+}
+
+.results-container {
+    margin-top: 20px;
+}
+
+.info-message {
+    text-align: center;
+    color: #666;
+    font-size: 1.1rem;
+    padding: 20px;
+}
+
+.results-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.result-item {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-left: 5px solid #37715b;
+}
+
+.food-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #333;
+}
+
+.food-description {
+    font-size: 0.9rem;
+    color: #777;
+    margin-top: 5px;
+}

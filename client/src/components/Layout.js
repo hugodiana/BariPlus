@@ -27,7 +27,7 @@ const Layout = ({ children }) => {
         </div>
         <nav className="sidebar-nav">
           <NavLink to="/" end>Painel</NavLink>
-          <NavLink to="/diario">Diário Alimentar</NavLink>
+          <NavLink to="/diario-alimentar">Diário Alimentar</NavLink>
           <NavLink to="/checklist">Checklist</NavLink>
           <NavLink to="/progresso">Meu Progresso</NavLink>
           <NavLink to="/consultas">Minhas Consultas</NavLink>
