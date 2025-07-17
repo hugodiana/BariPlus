@@ -434,18 +434,17 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
             payment_method_types: ['card', 'boleto'],
             mode: 'payment',
             customer: stripeCustomerId,
+            allow_promotion_codes: true,
             line_items: [{
                 // ✅ Esta linha precisa da variável de ambiente para funcionar
                 price: process.env.STRIPE_PRICE_ID,
                 quantity: 1,
             }],
-             allow_promotion_codes: true,
             success_url: `${process.env.CLIENT_URL}/pagamento-sucesso`,
             cancel_url: `${process.env.CLIENT_URL}/planos`,
             
         });
 
-        res.json({ url: session.url });
         res.json({ id: session.id }); // Enviando o ID da sessão para o front-end
 
     } catch (error) {
