@@ -10,6 +10,7 @@ import { ptBR } from 'date-fns/locale';
 
 const DashboardPage = () => {
     const [usuario, setUsuario] = useState(null);
+    const [pesos, setPesos] = useState([]);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
@@ -25,17 +26,16 @@ const DashboardPage = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            if (!token) {
-                setLoading(false);
-                return;
-            }
+            if (!token) { setLoading(false); return; }
             try {
-                const [resMe, resDailyLog, resChecklist, resConsultas, resMedication] = await Promise.all([
+                // ✅ CORREÇÃO: Nome da variável corrigido para resPesos
+                const [resMe, resDailyLog, resChecklist, resConsultas, resMedication, resPesos] = await Promise.all([
                     fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/dailylog/today`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } }),
                     fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                    fetch(`${apiUrl}/api/medication`, { headers: { 'Authorization': `Bearer ${token}` } })
+                    fetch(`${apiUrl}/api/medication`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch(`${apiUrl}/api/pesos`, { headers: { 'Authorization': `Bearer ${token}` } })
                 ]);
 
                 if (!resMe.ok) throw new Error('Sessão inválida');
@@ -45,12 +45,15 @@ const DashboardPage = () => {
                 const dadosChecklist = await resChecklist.json();
                 const dadosConsultas = await resConsultas.json();
                 const dadosMedication = await resMedication.json();
+                const dadosPesos = await resPesos.json(); // ✅ CORREÇÃO: Processamento dos dados movido para aqui
 
+                // Atualiza todos os estados
                 setUsuario(dadosUsuario);
                 setDailyLog(dadosLog);
                 setChecklist(dadosChecklist);
                 setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
                 setMedicationData(dadosMedication);
+                setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data))); // ✅ CORREÇÃO
 
             } catch (error) {
                 console.error("Erro ao buscar dados do painel:", error);
@@ -66,11 +69,13 @@ const DashboardPage = () => {
         e.preventDefault();
         if (!novoPeso) return;
         try {
-            await fetch(`${apiUrl}/api/pesos`, {
+            const res = await fetch(`${apiUrl}/api/pesos`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ peso: novoPeso })
+                headers: { 'Authorization': `Bearer ${token}` }, // FormData não precisa de Content-Type
+                body: new FormData(e.target) // Simplificado para enviar o formulário inteiro
             });
+            const novoRegistro = await res.json();
+            setPesos(prev => [...prev, novoRegistro].sort((a, b) => new Date(a.data) - new Date(b.data)));
             setUsuario(prev => ({ ...prev, detalhesCirurgia: { ...prev.detalhesCirurgia, pesoAtual: parseFloat(novoPeso) } }));
             setNovoPeso('');
             setIsWeightModalOpen(false);
@@ -149,7 +154,7 @@ const DashboardPage = () => {
     const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
     const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
     const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && !usuario.detalhesCirurgia.dataCirurgia;
-
+    
     return (
         <div className="dashboard-container">
             <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
@@ -161,17 +166,19 @@ const DashboardPage = () => {
                         <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>Adicionar Data da Cirurgia</button>
                     </div>
                 )}
+                {/* ✅ CORREÇÃO: Passa o estado 'pesos' como 'historico' */}
                 <WeightProgressCard 
                     pesoInicial={usuario.detalhesCirurgia.pesoInicial}
                     pesoAtual={usuario.detalhesCirurgia.pesoAtual}
+                    historico={pesos}
                 />
                 
                 {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
                 
-                {medicationData && medicationData.medicamentos && medicationData.historico && (
+                {medicationData?.medicamentos?.length > 0 && (
                     <DailyMedicationCard 
                         medicamentos={medicationData.medicamentos}
-                        historico={medicationData.historico}
+                        historico={medicationData.historico || {}}
                         onToggleToma={handleToggleMedToma}
                     />
                 )}

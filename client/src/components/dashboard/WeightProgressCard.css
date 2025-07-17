@@ -35,3 +35,20 @@
 .stat-item.eliminado .stat-value {
   color: #007aff; /* Cor de destaque para o peso eliminado */
 }
+
+.mini-chart-container {
+    height: 80px; /* Altura do nosso mini-gráfico */
+    margin-top: 20px;
+}
+
+.chart-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    color: #aaa;
+    font-size: 13px;
+    text-align: center;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+}
