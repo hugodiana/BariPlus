@@ -441,6 +441,7 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
             }],
             success_url: `${process.env.CLIENT_URL}/pagamento-sucesso`,
             cancel_url: `${process.env.CLIENT_URL}/planos`,
+            sessionOptions.allow_promotion_codes = true;
         });
 
         res.json({ id: session.id }); // Enviando o ID da sessão para o front-end
