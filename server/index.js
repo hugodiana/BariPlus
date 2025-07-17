@@ -738,11 +738,24 @@ app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (
 app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     try {
         const affiliateUser = await User.findById(req.userId);
+        
+        // ✅ INÍCIO DA DEPURAÇÃO
+        if (!affiliateUser) {
+            return res.status(404).json({ message: "Usuário afiliado não encontrado no banco de dados." });
+        }
+
         const couponCode = affiliateUser.affiliateCouponCode;
-        if (!couponCode) return res.status(400).json({ message: "Nenhum código de cupom associado." });
+
+        if (!couponCode) {
+            // A nova mensagem de erro que nos ajudará a depurar
+            return res.status(400).json({ 
+                message: `Nenhum código de cupom associado para o usuário: ${affiliateUser.email}. Por favor, verifique os dados no MongoDB.` 
+            });
+        }
+        // ✅ FIM DA DEPURAÇÃO
 
         const promotionCodes = await stripe.promotionCodes.list({ code: couponCode, expand: ['data.coupon'], limit: 1 });
-        if (promotionCodes.data.length === 0) return res.status(404).json({ message: "Código de cupom não encontrado no Stripe." });
+        if (promotionCodes.data.length === 0) return res.status(404).json({ message: `Cupom "${couponCode}" não encontrado no Stripe.` });
         
         const couponId = promotionCodes.data[0].coupon.id;
         const sessions = await stripe.checkout.sessions.list({ expand: ['data.customer'], limit: 100 });
@@ -761,7 +774,9 @@ app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
         }));
 
         res.json({ couponCode, salesCount, totalRevenueInCents, salesDetails });
-    } catch (error) { res.status(500).json({ message: "Erro ao buscar estatísticas." }); }
+    } catch (error) {
+        console.error("Erro ao buscar estatísticas de afiliado:", error);
+        res.status(500).json({ message: "Erro ao buscar estatísticas." });
+    }
 });
-
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
