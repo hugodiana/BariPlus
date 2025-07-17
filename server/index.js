@@ -739,6 +739,11 @@ app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     try {
         const affiliateUser = await User.findById(req.userId);
         
+        console.log("--- INICIANDO DEPURAÇÃO DE AFILIADO ---");
+        console.log("ID do usuário logado:", req.userId);
+        console.log("Documento completo encontrado no MongoDB:", JSON.stringify(affiliateUser, null, 2));
+        console.log("--- FIM DA DEPURAÇÃO ---");
+        
         // ✅ INÍCIO DA DEPURAÇÃO
         if (!affiliateUser) {
             return res.status(404).json({ message: "Usuário afiliado não encontrado no banco de dados." });
