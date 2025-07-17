@@ -3,15 +3,13 @@ import './WeightProgressCard.css';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip } from 'chart.js';
 
-// Registrando os componentes do Chart.js que vamos usar
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip);
 
-// ✅ NOVIDADE: O componente agora recebe o 'historico'
 const WeightProgressCard = ({ pesoInicial, pesoAtual, historico }) => {
-  const pesoEliminado = (pesoInicial - pesoAtual).toFixed(1);
+  const pesoEliminado = (pesoInicial && pesoAtual) ? (pesoInicial - pesoAtual).toFixed(1) : 0;
 
   // Prepara os últimos 7 registros para o gráfico
-  const ultimosRegistros = historico.slice(-7);
+  const ultimosRegistros = historico ? historico.slice(-7) : [];
 
   const chartData = {
     labels: ultimosRegistros.map(item => new Date(item.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })),
@@ -22,19 +20,20 @@ const WeightProgressCard = ({ pesoInicial, pesoAtual, historico }) => {
         backgroundColor: 'rgba(0, 122, 255, 0.1)',
         fill: true,
         tension: 0.4,
-        pointRadius: 0, // Esconde os pontos
+        pointRadius: 0,
     }]
   };
 
   const chartOptions = {
     responsive: true,
-    maintainAspectRatio: false, // Permite que o gráfico se ajuste à altura do container
+    // ✅ CORREÇÃO: Esta opção é crucial para o gráfico se ajustar ao contêiner
+    maintainAspectRatio: false, 
     plugins: {
-      legend: { display: false }, // Esconde a legenda
+      legend: { display: false },
     },
     scales: {
-        x: { display: false }, // Esconde o eixo X
-        y: { display: false }  // Esconde o eixo Y
+        x: { display: false },
+        y: { display: false }
     }
   };
 
@@ -56,7 +55,6 @@ const WeightProgressCard = ({ pesoInicial, pesoAtual, historico }) => {
         </div>
       </div>
       
-      {/* ✅ NOVIDADE: O contêiner do gráfico */}
       <div className="mini-chart-container">
         {historico && historico.length > 1 ? (
           <Line data={chartData} options={chartOptions} />
