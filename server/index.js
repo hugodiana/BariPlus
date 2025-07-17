@@ -11,7 +11,26 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
-app.use(cors());
+const whitelist = [
+    'https://bariplus.vercel.app',      // O seu app principal
+    'https://bariplus-admin.vercel.app', // O seu novo painel de admin
+    'http://localhost:3000',           // Para testes locais do app principal
+    'http://localhost:3001'            // Para testes locais do admin
+];
+
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (whitelist.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+};
+
+app.use(cors(corsOptions));
+// ✅ FIM DA CORREÇÃO DE CORS
+
 
 app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
