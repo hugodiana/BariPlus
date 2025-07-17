@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+// NOVIDADE: Imports da biblioteca de notificações
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 function AdminApp() {
@@ -62,7 +65,6 @@ function AdminApp() {
     setUsers([]);
   };
   
-  // ✅ NOVIDADE: Função para liberar o acesso de um usuário
   const handleGrantAccess = async (userId) => {
       if (!window.confirm("Tem certeza que quer liberar o acesso para este usuário sem pagamento?")) return;
 
@@ -74,82 +76,88 @@ function AdminApp() {
         const updatedUser = await response.json();
         if (!response.ok) throw new Error(updatedUser.message || 'Falha ao liberar acesso.');
 
-        // Atualiza a lista de usuários na tela para refletir a mudança
         setUsers(prevUsers => prevUsers.map(user => 
             user._id === updatedUser._id ? updatedUser : user
         ));
+        
+        // ✅ CORREÇÃO: Usando uma notificação de sucesso
+        toast.success('Acesso liberado com sucesso!');
 
       } catch(err) {
-          alert(`Erro: ${err.message}`);
+          // ✅ CORREÇÃO: Usando uma notificação de erro
+          toast.error(err.message || "Ocorreu um erro.");
       }
   };
 
-  // Se não houver token, mostra o formulário de login
   if (!token) {
     return (
-      <div className="admin-login-container">
-        <form onSubmit={handleLogin}>
-          <h2>Painel de Administração - BariPlus</h2>
-          <input type="text" placeholder="Email ou Username" value={identifier} onChange={e => setIdentifier(e.target.value)} required />
-          <div className="password-wrapper">
-            <input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
-            <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>👁️</span>
-          </div>
-          <button type="submit" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
-          {error && <p className="error-message">{error}</p>}
-        </form>
-      </div>
+      <>
+        {/* O ToastContainer também precisa estar aqui para mostrar erros de login */}
+        <ToastContainer position="top-right" autoClose={4000} />
+        <div className="admin-login-container">
+          <form onSubmit={handleLogin}>
+            <h2>Painel de Administração - BariPlus</h2>
+            <input type="text" placeholder="Email ou Username" value={identifier} onChange={e => setIdentifier(e.target.value)} required />
+            <div className="password-wrapper">
+              <input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
+              <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>👁️</span>
+            </div>
+            <button type="submit" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
+            {error && <p className="error-message">{error}</p>}
+          </form>
+        </div>
+      </>
     );
   }
 
-  // Se houver token, mostra a lista de usuários
   return (
-    <div className="admin-container">
-      <header className="admin-header">
-        <h1>Painel de Usuários ({users.length})</h1>
-        <button onClick={handleLogout}>Sair</button>
-      </header>
-      {loading && <p>Carregando usuários...</p>}
-      {error && <p className="error-message">{error}</p>}
-      
-      {!loading && !error && (
-        <div className="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                      <th>Nome</th>
-                      <th>Email</th>
-                      <th>Status Pagamento</th>
-                      <th>Onboarding Completo</th>
-                      <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {users.map(user => (
-                      <tr key={user._id}>
-                        <td>{user.nome} {user.sobrenome}</td>
-                        <td>{user.email}</td>
-                        {/* ✅ NOVIDADE: Estilo para o status */}
-                        <td>
-                          {user.pagamentoEfetuado 
-                            ? <span className="status status-pago">Sim</span> 
-                            : <span className="status status-pendente">Não</span>
-                          }
-                        </td>
-                        <td>{user.onboardingCompleto ? '✅ Sim' : '❌ Não'}</td>
-                        <td>
-                          {/* ✅ NOVIDADE: Botão agora é funcional */}
-                          <button onClick={() => handleGrantAccess(user._id)} disabled={user.pagamentoEfetuado}>
-                            Liberar Acesso
-                          </button>
-                        </td>
+    <>
+      <ToastContainer position="top-right" autoClose={4000} />
+      <div className="admin-container">
+        <header className="admin-header">
+          <h1>Painel de Usuários ({users.length})</h1>
+          <button onClick={handleLogout}>Sair</button>
+        </header>
+        {loading && <p>Carregando usuários...</p>}
+        {error && <p className="error-message">{error}</p>}
+        
+        {!loading && !error && (
+          <div className="table-wrapper">
+              <table>
+                  <thead>
+                      <tr>
+                        <th>Nome</th>
+                        <th>Email</th>
+                        <th>Status Pagamento</th>
+                        <th>Onboarding Completo</th>
+                        <th>Ações</th>
                       </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
-      )}
-    </div>
+                  </thead>
+                  <tbody>
+                      {users.map(user => (
+                        <tr key={user._id}>
+                          <td>{user.nome} {user.sobrenome}</td>
+                          <td>{user.email}</td>
+                          <td>
+                            {user.pagamentoEfetuado 
+                              ? <span className="status status-pago">Sim</span> 
+                              : <span className="status status-pendente">Não</span>
+                            }
+                          </td>
+                          <td>{user.onboardingCompleto ? '✅ Sim' : '❌ Não'}</td>
+                          <td>
+                            <button onClick={() => handleGrantAccess(user._id)} disabled={user.pagamentoEfetuado}>
+                              Liberar Acesso
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+              </table>
+          </div>
+        )}
+      </div>
+    </>
   );
 }
 
