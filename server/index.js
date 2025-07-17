@@ -11,6 +11,40 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 app.use(cors());
+
+app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
+    } catch (err) {
+        console.log(`⚠️  Webhook signature verification failed.`, err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Lidar com o evento
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const stripeCustomerId = session.customer;
+
+        try {
+            // Encontra o nosso usuário pelo ID de cliente do Stripe e atualiza o status de pagamento
+            await User.findOneAndUpdate(
+                { stripeCustomerId: stripeCustomerId },
+                { pagamentoEfetuado: true }
+            );
+            console.log(`Pagamento bem-sucedido para o cliente Stripe ID: ${stripeCustomerId}`);
+        } catch (err) {
+            console.error("Erro ao atualizar status de pagamento do usuário:", err);
+            return res.status(500).json({ error: "Erro ao atualizar dados do usuário." });
+        }
+    }
+
+    res.json({received: true});
+});
+
 app.use(express.json());
 
 // --- CONFIGURAÇÕES ---
