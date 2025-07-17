@@ -505,4 +505,27 @@ app.get('/api/admin/users', autenticar, isAdmin, async (req, res) => {
     }
 });
 
+app.post('/api/admin/grant-access/:userId', autenticar, isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params; // ID do usuário que receberá o acesso
+
+        const usuario = await User.findByIdAndUpdate(
+            userId,
+            { $set: { pagamentoEfetuado: true } },
+            { new: true } // Retorna o documento atualizado
+        ).select('-password');
+
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuário a ser atualizado não foi encontrado." });
+        }
+
+        console.log(`Acesso concedido ao usuário ${usuario.email} pelo administrador.`);
+        res.json(usuario); // Retorna o usuário atualizado
+
+    } catch (error) {
+        console.error("Erro ao conceder acesso:", error);
+        res.status(500).json({ message: "Erro no servidor." });
+    }
+});
+
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));

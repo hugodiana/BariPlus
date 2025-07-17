@@ -123,3 +123,18 @@ td button:disabled {
 .table-wrapper {
     overflow-x: auto; /* Adiciona scroll horizontal em telas pequenas */
 }
+
+.status {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 12px;
+}
+.status-pago {
+    background-color: #e9f5f2;
+    color: #37715b;
+}
+.status-pendente {
+    background-color: #fceeee;
+    color: #c0392b;
+}
