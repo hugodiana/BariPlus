@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import './PricingPage.css';
 import { loadStripe } from '@stripe/stripe-js';
 
-// Carregue a sua chave publicável do Stripe
-const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY);
+// ✅ CORREÇÃO: Verificamos se a chave existe antes de carregar o Stripe
+const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
+let stripePromise;
+if (stripePublishableKey) {
+    stripePromise = loadStripe(stripePublishableKey);
+}
 
 const PricingPage = () => {
     const [loading, setLoading] = useState(false);
@@ -12,11 +16,18 @@ const PricingPage = () => {
     const handleCheckout = async () => {
         setLoading(true);
         setError(null);
+
+        // ✅ CORREÇÃO: Mostra um erro amigável se a chave não foi carregada
+        if (!stripePromise) {
+            setError("A configuração de pagamento não foi carregada corretamente. Por favor, contacte o suporte.");
+            setLoading(false);
+            return;
+        }
+
         const token = localStorage.getItem('bariplus_token');
         const apiUrl = process.env.REACT_APP_API_URL;
 
         try {
-            // 1. Chame seu back-end para criar a sessão de checkout
             const response = await fetch(`${apiUrl}/api/create-checkout-session`, {
                 method: 'POST',
                 headers: {
@@ -28,14 +39,11 @@ const PricingPage = () => {
             const session = await response.json();
 
             if (response.ok) {
-                // 2. Redirecione o usuário para a página de pagamento do Stripe
                 const stripe = await stripePromise;
                 const { error } = await stripe.redirectToCheckout({
                     sessionId: session.id,
                 });
-                if (error) {
-                    throw new Error(error.message);
-                }
+                if (error) throw new Error(error.message);
             } else {
                 throw new Error(session.error?.message || 'Falha ao iniciar o pagamento.');
             }
