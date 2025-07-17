@@ -401,15 +401,15 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
             mode: 'payment',
             customer: stripeCustomerId,
             line_items: [{
-                // ✅ Garanta que esta linha está a usar a variável de ambiente correta
+                // ✅ Esta linha precisa da variável de ambiente para funcionar
                 price: process.env.STRIPE_PRICE_ID,
                 quantity: 1,
             }],
             success_url: `${process.env.CLIENT_URL}/pagamento-sucesso`,
-            cancel_url: `${process.env.CLIENT_URL}/planos`, // Redireciona de volta para a página de planos
+            cancel_url: `${process.env.CLIENT_URL}/planos`,
         });
 
-        res.json({ url: session.url });
+        res.json({ id: session.id }); // Enviando o ID da sessão para o front-end
 
     } catch (error) {
         console.error("Erro ao criar sessão de checkout:", error);
