@@ -20,6 +20,7 @@ import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
 import ProfilePage from './pages/ProfilePage';
+import FoodDiaryPage from './pages/FoodDiaryPage';
 
 // Componente auxiliar para organizar as rotas protegidas
 function AppRoutes() {
@@ -32,6 +33,7 @@ function AppRoutes() {
         <Route path="/consultas" element={<ConsultasPage />} />
         <Route path="/medicacao" element={<MedicationPage />} />
         <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
 
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

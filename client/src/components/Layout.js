@@ -29,6 +29,7 @@ const Layout = ({ children }) => {
           <NavLink to="/checklist">Checklist</NavLink>
           <NavLink to="/progresso">Meu Progresso</NavLink>
           <NavLink to="/consultas">Minhas Consultas</NavLink>
+          <NavLink to="/diario-alimentar">Diário Alimentar</NavLink>
           <NavLink to="/medicacao">Medicação</NavLink>
           <NavLink to="/perfil">Meu Perfil</NavLink>
         </nav>
