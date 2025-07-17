@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './ProfilePage.css';
 import { toast } from 'react-toastify';
+import { messaging } from '../firebase'; // Importa a nossa configuração do Firebase
+import { getToken } from 'firebase/messaging';
 
 const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
@@ -35,27 +37,50 @@ const ProfilePage = () => {
             toast.error("A nova senha e a confirmação não coincidem.");
             return;
         }
-
         try {
             const response = await fetch(`${apiUrl}/api/user/change-password`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ currentPassword, newPassword })
             });
-
             const data = await response.json();
-
             if (!response.ok) {
                 throw new Error(data.message || "Não foi possível alterar a senha.");
             }
-
             toast.success("Senha alterada com sucesso!");
-            // Limpa os campos
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (error) {
             toast.error(error.message);
+        }
+    };
+
+    // ✅ NOVIDADE: Função para ativar as notificações
+    const handleEnableNotifications = async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                toast.info("Obtendo o token de notificação...");
+                
+                // Lembre-se de colar a sua chave VAPID aqui
+                const vapidKey = BO6r0_2ceNtjYoYOFxjpWTQ9kziRPGXtIK4kSGYaN25nMJIhvpcpDECYte0NFvhnJPbcgVKeFj-vcYOH_2CXHTQ	;
+
+                const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
+
+                if (fcmToken) {
+                    console.log("Token de notificação (FCM Token):", fcmToken);
+                    toast.success("Notificações ativadas com sucesso neste dispositivo!");
+                    // No próximo passo, enviaremos este token para o nosso back-end
+                } else {
+                    toast.warn("Não foi possível obter o token de notificação. Verifique as configurações do navegador.");
+                }
+            } else {
+                toast.error("Permissão para notificações foi negada.");
+            }
+        } catch (error) {
+            console.error('Erro ao obter token de notificação:', error);
+            toast.error("Ocorreu um erro ao ativar as notificações.");
         }
     };
 
@@ -73,18 +98,16 @@ const ProfilePage = () => {
             <div className="profile-grid">
                 <div className="profile-card">
                     <h3>Meus Dados</h3>
-                    <div className="profile-info">
-                        <strong>Nome Completo:</strong>
-                        <span>{usuario.nome} {usuario.sobrenome}</span>
-                    </div>
-                    <div className="profile-info">
-                        <strong>Nome de Usuário:</strong>
-                        <span>{usuario.username}</span>
-                    </div>
-                    <div className="profile-info">
-                        <strong>Email:</strong>
-                        <span>{usuario.email}</span>
-                    </div>
+                    <div className="profile-info"><strong>Nome Completo:</strong><span>{usuario.nome} {usuario.sobrenome}</span></div>
+                    <div className="profile-info"><strong>Nome de Usuário:</strong><span>{usuario.username}</span></div>
+                    <div className="profile-info"><strong>Email:</strong><span>{usuario.email}</span></div>
+                </div>
+
+                {/* ✅ NOVIDADE: Card para gerir notificações */}
+                <div className="profile-card">
+                    <h3>Notificações</h3>
+                    <p>Receba lembretes sobre consultas, medicamentos e metas diárias diretamente no seu navegador ou celular.</p>
+                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar Notificações</button>
                 </div>
 
                 <div className="profile-card">
@@ -92,13 +115,10 @@ const ProfilePage = () => {
                     <form onSubmit={handleChangePassword} className="password-form">
                         <label>Senha Atual</label>
                         <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
-                        
                         <label>Nova Senha</label>
                         <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
-
                         <label>Confirmar Nova Senha</label>
                         <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-
                         <button type="submit">Salvar Nova Senha</button>
                     </form>
                 </div>
