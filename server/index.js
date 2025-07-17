@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
@@ -136,7 +137,7 @@ const Peso = mongoose.model('Peso', PesoSchema);
 const Consulta = mongoose.model('Consulta', ConsultaSchema);
 const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
-
+const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 
 // --- MIDDLEWARE ---
 const autenticar = (req, res, next) => {
@@ -192,8 +193,7 @@ app.post('/api/register', async (req, res) => {
         await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
         await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
         await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', quantidade: 1, unidade: 'comprimido', vezesAoDia: 1 }], historico: {} }).save();
-        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: {} }).save();
-
+        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } }).save();        
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
@@ -590,18 +590,30 @@ app.get('/api/admin/stats', autenticar, isAdmin, async (req, res) => {
 });
 
 // Buscar o diário alimentar de uma data específica
-app.get('/api/food-diary/:date', autenticar, async (req, res) => {
+app.get('/api/foods/search', autenticar, async (req, res) => {
+    const { query } = req.query;
+    if (!query) {
+        return res.status(400).json({ message: "É necessário um termo de busca." });
+    }
+    const searchUrl = `https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`;
     try {
-        const { date } = req.params;
-        let log = await FoodLog.findOne({ userId: req.userId, date: date });
-        if (!log) {
-            // Se não existir, cria um diário vazio para aquele dia
-            log = new FoodLog({ userId: req.userId, date: date, refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } });
-            await log.save();
-        }
-        res.json(log);
+        const response = await axios.get(searchUrl);
+        const products = (response.data.products || []).map(food => ({
+            id: food.id,
+            name: food.product_name_pt || food.product_name || 'Nome não disponível',
+            brand: food.brands || 'Marca não informada',
+            imageUrl: food.image_front_small_url || food.image_front_url || null,
+            nutrients: {
+                calories: food.nutriments.energy_kcal_100g || 'N/A',
+                proteins: food.nutriments.proteins_100g || 'N/A',
+                carbs: food.nutriments.carbohydrates_100g || 'N/A',
+                fats: food.nutriments.fat_100g || 'N/A'
+            }
+        }));
+        res.json(products);
     } catch (error) {
-        res.status(500).json({ message: "Erro ao buscar diário alimentar." });
+        console.error("Erro ao buscar na Open Food Facts:", error);
+        res.status(500).json({ message: "Erro ao buscar alimentos." });
     }
 });
 
