@@ -1,4 +1,4 @@
-import React, 'useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
@@ -18,7 +18,7 @@ function AdminApp() {
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [userToPromote, setUserToPromote] = useState(null);
   const [couponCode, setCouponCode] = useState('');
-  const [commissionPercent, setCommissionPercent] = useState(20); // Valor padrão
+  const [commissionPercent, setCommissionPercent] = useState(20);
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
@@ -46,6 +46,8 @@ function AdminApp() {
         setToken(null);
       })
       .finally(() => setLoading(false));
+    } else {
+        setLoading(false);
     }
   }, [token, apiUrl]);
 
@@ -61,7 +63,6 @@ function AdminApp() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Falha no login');
-      
       localStorage.setItem('bariplus_admin_token', data.token);
       setToken(data.token);
     } catch (err) {
@@ -146,10 +147,8 @@ function AdminApp() {
           <h1>Painel de Administração</h1>
           <button onClick={handleLogout}>Sair</button>
         </header>
-
         {loading && <p>Carregando...</p>}
         {error && <p className="error-message">{error}</p>}
-        
         {!loading && stats && (
             <div className="stats-grid">
                 <div className="stat-card"><h2>{stats.totalUsers}</h2><p>Usuários Totais</p></div>
@@ -157,7 +156,6 @@ function AdminApp() {
                 <div className="stat-card"><h2>{stats.newUsersLast7Days}</h2><p>Novos nos últimos 7 dias</p></div>
             </div>
         )}
-        
         <div className="user-table-container">
             <h2>Usuários Cadastrados ({users.length})</h2>
             {!loading && !error && (
@@ -195,12 +193,11 @@ function AdminApp() {
             )}
         </div>
       </div>
-
       <Modal isOpen={isPromoteModalOpen} onClose={() => setIsPromoteModalOpen(false)}>
         <h2>Promover a Afiliado</h2>
         {userToPromote && (
             <form onSubmit={handlePromoteToAffiliate} className="modal-form">
-                <p>Você está a promover <strong>{userToPromote.nome} {userToPromote.sobrenome}</strong>.</p>
+                <p>Você está promovendo <strong>{userToPromote.nome} {userToPromote.sobrenome}</strong>.</p>
                 <label>Código do Cupom de Desconto</label>
                 <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} required />
                 <label>Percentagem de Desconto (%)</label>
