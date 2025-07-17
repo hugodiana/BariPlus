@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'; // Importe o useCallback
+import React, { useState, useEffect, useCallback } from 'react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import './ProgressoPage.css';
@@ -21,7 +21,7 @@ const ProgressoPage = () => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    // ✅ CORREÇÃO: Definimos a função fetchHistorico aqui fora
+    // ✅ CORREÇÃO: A função agora é "memorizada" com useCallback
     const fetchHistorico = useCallback(async () => {
         setLoading(true);
         try {
@@ -35,13 +35,15 @@ const ProgressoPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, apiUrl]); // Usamos useCallback para otimização
+    }, [token, apiUrl]);
 
     useEffect(() => {
-        fetchHistorico(); // O useEffect agora apenas chama a função
+        fetchHistorico();
     }, [fetchHistorico]);
 
-    const handleFileChange = (e) => { setFoto(e.target.files[0]); };
+    const handleFileChange = (e) => {
+        setFoto(e.target.files[0]);
+    };
 
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
@@ -51,7 +53,6 @@ const ProgressoPage = () => {
         formData.append('quadril', quadril);
         formData.append('braco', braco);
         if (foto) { formData.append('foto', foto); }
-
         try {
             await fetch(`${apiUrl}/api/pesos`, {
                 method: 'POST',
@@ -60,13 +61,11 @@ const ProgressoPage = () => {
             });
             setNovoPeso(''); setCintura(''); setQuadril(''); setBraco(''); setFoto(null);
             setIsModalOpen(false);
-            fetchHistorico(); // ✅ Agora esta chamada funciona perfeitamente
+            fetchHistorico(); // ✅ Agora esta chamada funciona corretamente
         } catch (error) {
             console.error(error);
         }
     };
-    
-    // ... O resto do seu código (chartData, chartOptions e o return) continua igual
 
     const chartData = {
         labels: historico.map(item => new Date(item.data).toLocaleDateString('pt-BR')),
@@ -115,7 +114,7 @@ const ProgressoPage = () => {
                                 {historico.slice(0).reverse().map(item => (
                                     <tr key={item._id}>
                                         <td>{format(new Date(item.data), 'dd/MM/yyyy')}</td>
-                                        <td>{item.peso.toFixed(1)}</td>
+                                        <td>{item.peso ? item.peso.toFixed(1) : '-'}</td>
                                         <td>{item.medidas?.cintura || '-'}</td>
                                         <td>{item.medidas?.quadril || '-'}</td>
                                         <td>{item.medidas?.braco || '-'}</td>

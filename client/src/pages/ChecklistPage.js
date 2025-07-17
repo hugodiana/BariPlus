@@ -72,17 +72,21 @@ const ChecklistPage = () => {
     };
 
     const handleToggleConcluido = async (item) => {
-        const res = await fetch(`${apiUrl}/api/checklist/${item._id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ concluido: !item.concluido, type: activeTab })
-        });
-        const itemAtualizado = await res.json();
-        setChecklist(prev => ({
-            ...prev,
-            [activeTab]: prev[activeTab].map(i => i._id === itemAtualizado._id ? itemAtualizado : i)
-        }));
-    };
+    // ✅ CORREÇÃO: Usamos item._id diretamente do objeto recebido
+    const itemId = item._id; 
+    const statusAtual = item.concluido;
+
+    const res = await fetch(`${apiUrl}/api/checklist/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ concluido: !statusAtual, type: activeTab })
+    });
+    const itemAtualizado = await res.json();
+    setChecklist(prev => ({
+        ...prev,
+        [activeTab]: prev[activeTab].map(i => i._id === itemId ? itemAtualizado : i)
+    }));
+};
     
     const handleApagarItem = async (itemId) => {
         if (!window.confirm("Tem a certeza que quer apagar esta tarefa?")) return;

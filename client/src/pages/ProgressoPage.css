@@ -109,3 +109,19 @@ SS
   cursor: pointer;
   margin-top: 10px;
 }
+
+.empty-state-container {
+    text-align: center;
+    padding: 40px 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+.empty-state-container h3 {
+    margin: 0 0 10px 0;
+    color: #333;
+}
+.empty-state-container p {
+    color: #666;
+    margin-bottom: 20px;
+}
