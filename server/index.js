@@ -80,7 +80,7 @@ const UserSchema = new mongoose.Schema({
     // ✅ CORREÇÃO: Campos movidos para dentro do objeto principal do Schema
     stripeCustomerId: String,
     pagamentoEfetuado: { type: Boolean, default: false },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' }
+    role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
 }, { timestamps: true }); // A opção timestamps agora está no sítio certo
 
 const ChecklistSchema = new mongoose.Schema({
@@ -175,6 +175,12 @@ const isAdmin = async (req, res, next) => {
     } catch (error) {
         res.status(500).json({ message: "Erro no servidor" });
     }
+};
+
+const isAffiliate = async (req, res, next) => {
+    const usuario = await User.findById(req.userId);
+    if (usuario && usuario.role === 'affiliate') { next(); } 
+    else { res.status(403).json({ message: "Acesso negado. Rota exclusiva para afiliados." }); }
 };
 
 // --- ROTAS DA API ---
@@ -646,6 +652,95 @@ app.delete('/api/food-diary/log/:date/:mealType/:itemId', autenticar, async (req
     } catch (error) {
         res.status(500).json({ message: "Erro ao apagar alimento." });
     }
+});
+
+// ROTA DE ADMIN: Promover um usuário a afiliado e criar o seu cupom no Stripe
+app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { couponCode, commissionPercent } = req.body;
+
+        // 1. Cria o cupom no Stripe
+        const coupon = await stripe.coupons.create({
+            percent_off: commissionPercent,
+            duration: 'once',
+            name: `Cupom para Afiliado: ${couponCode}`,
+        });
+
+        // 2. Cria o código promocional que o cliente vai usar
+        const promotionCode = await stripe.promotionCodes.create({
+            coupon: coupon.id,
+            code: couponCode,
+        });
+
+        // 3. Atualiza o usuário no nosso banco de dados
+        const usuario = await User.findByIdAndUpdate(userId, {
+            $set: {
+                role: 'affiliate',
+                affiliateCouponCode: promotionCode.code
+            }
+        }, { new: true }).select('-password');
+        
+        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
+
+    } catch (error) {
+        console.error("Erro ao promover afiliado:", error);
+        res.status(500).json({ message: "Erro ao criar cupom ou promover usuário." });
+    }
+});
+
+
+// ✅ NOVIDADE: ROTAS DE ADMIN E AFILIADOS
+app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { couponCode } = req.body;
+        if (!couponCode) return res.status(400).json({ message: "O código do cupom é obrigatório." });
+
+        // Verifica se o cupom já existe no Stripe para evitar duplicados
+        const promotionCodes = await stripe.promotionCodes.list({ code: couponCode });
+        if (promotionCodes.data.length > 0) {
+            return res.status(400).json({ message: "Este código de cupom já está em uso." });
+        }
+        
+        const coupon = await stripe.coupons.create({ percent_off: 20, duration: 'once', name: `Cupom para Afiliado: ${couponCode}` }); // Ex: 20% de desconto
+        const promotionCode = await stripe.promotionCodes.create({ coupon: coupon.id, code: couponCode });
+
+        const usuario = await User.findByIdAndUpdate(userId, {
+            $set: { role: 'affiliate', affiliateCouponCode: promotionCode.code }
+        }, { new: true }).select('-password');
+        
+        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
+    } catch (error) { res.status(500).json({ message: "Erro ao promover afiliado." }); }
+});
+
+app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
+    try {
+        const affiliateUser = await User.findById(req.userId);
+        const couponCode = affiliateUser.affiliateCouponCode;
+        if (!couponCode) return res.status(400).json({ message: "Nenhum código de cupom associado." });
+
+        const promotionCodes = await stripe.promotionCodes.list({ code: couponCode, expand: ['data.coupon'], limit: 1 });
+        if (promotionCodes.data.length === 0) return res.status(404).json({ message: "Código de cupom não encontrado no Stripe." });
+        
+        const couponId = promotionCodes.data[0].coupon.id;
+        const sessions = await stripe.checkout.sessions.list({ expand: ['data.customer'], limit: 100 });
+
+        const affiliateSales = sessions.data.filter(s =>
+            s.payment_status === 'paid' &&
+            s.total_details?.discount?.some(d => d.discount.coupon.id === couponId)
+        );
+        
+        const salesCount = affiliateSales.length;
+        const totalRevenueInCents = affiliateSales.reduce((sum, s) => sum + s.amount_total, 0);
+        const salesDetails = affiliateSales.map(s => ({
+            customerEmail: s.customer.email,
+            amount: (s.amount_total / 100).toFixed(2),
+            date: new Date(s.created * 1000).toLocaleDateString('pt-BR')
+        }));
+
+        res.json({ couponCode, salesCount, totalRevenueInCents, salesDetails });
+    } catch (error) { res.status(500).json({ message: "Erro ao buscar estatísticas." }); }
 });
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
