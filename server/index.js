@@ -78,6 +78,7 @@ const UserSchema = new mongoose.Schema({
     },
     stripeCustomerId: String,
     pagamentoEfetuado: { type: Boolean, default: false },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' }
 });
 
 const ChecklistSchema = new mongoose.Schema({
@@ -146,6 +147,19 @@ const verificarAcessoPago = async (req, res, next) => {
             next();
         } else {
             res.status(403).json({ message: "Acesso exclusivo para assinantes." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro no servidor" });
+    }
+};
+
+const isAdmin = async (req, res, next) => {
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.role === 'admin') {
+            next(); // Se for admin, pode passar
+        } else {
+            res.status(403).json({ message: "Acesso negado. Rota exclusiva para administradores." });
         }
     } catch (error) {
         res.status(500).json({ message: "Erro no servidor" });
@@ -477,6 +491,17 @@ app.post('/api/verify-payment-session', async (req, res) => {
     } catch (error) {
         console.error("Erro ao verificar sessão de pagamento:", error);
         res.status(500).json({ message: "Erro ao verificar pagamento." });
+    }
+});
+
+// --- ROTAS DE ADMINISTRAÇÃO ---
+app.get('/api/admin/users', autenticar, isAdmin, async (req, res) => {
+    try {
+        // Busca todos os usuários e remove a senha do retorno
+        const todosOsUsuarios = await User.find().select('-password');
+        res.json(todosOsUsuarios);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar usuários.' });
     }
 });
 
