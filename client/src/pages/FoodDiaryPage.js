@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, 'useState, useEffect, useCallback } from 'react';
 import './FoodDiaryPage.css';
 import Modal from '../components/Modal';
 import { format } from 'date-fns';
@@ -10,13 +10,10 @@ const FoodDiaryPage = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [loadingSearch, setLoadingSearch] = useState(false);
     const [message, setMessage] = useState('Use a barra de pesquisa para encontrar alimentos.');
-    
     const [diary, setDiary] = useState(null);
     const [loadingDiary, setLoadingDiary] = useState(true);
-
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
-
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -28,7 +25,6 @@ const FoodDiaryPage = () => {
             const data = await res.json();
             setDiary(data);
         } catch (error) {
-            console.error("Erro ao buscar diário:", error);
             toast.error(error.message);
         } finally {
             setLoadingDiary(false);
@@ -90,7 +86,7 @@ const FoodDiaryPage = () => {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            fetchDiary(selectedDate); // Recarrega o diário para refletir a remoção
+            fetchDiary(selectedDate);
             toast.info("Item removido do diário.");
         } catch (error) {
             toast.error("Erro ao apagar item.");
@@ -117,24 +113,18 @@ const FoodDiaryPage = () => {
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <h1>Diário Alimentar</h1>
-                <p>Pesquise e registre suas refeições diárias.</p>
-            </div>
-
+            <div className="page-header"><h1>Diário Alimentar</h1><p>Pesquise e registre suas refeições diárias.</p></div>
             <div className="food-diary-content">
                 <div className="date-selector">
                     <label htmlFor="diary-date">Selecione a data:</label>
                     <input type="date" id="diary-date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
                 </div>
-
                 <div className="search-container">
                     <form onSubmit={handleSearch}>
                         <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Ex: Frango grelhado, maçã, etc." className="search-input"/>
                         <button type="submit" className="search-button" disabled={loadingSearch}>{loadingSearch ? 'Buscando...' : 'Pesquisar'}</button>
                     </form>
                 </div>
-
                 <div className="results-container">
                     {loadingSearch && <p className="info-message">Carregando...</p>}
                     {message && !loadingSearch && searchResults.length === 0 && <p className="info-message">{message}</p>}
@@ -151,11 +141,10 @@ const FoodDiaryPage = () => {
                         </ul>
                     )}
                 </div>
-
                 <div className="diary-view">
-                    <h2>Refeições de {format(new Date(selectedDate.replace(/-/g, '\/')), 'dd/MM/yyyy')}</h2>
+                    {/* ✅ CORREÇÃO: Removida a barra '\' desnecessária */}
+                    <h2>Refeições de {format(new Date(selectedDate.replace(/-/g, '/')), 'dd/MM/yyyy')}</h2>
                     {loadingDiary ? <p>Carregando diário...</p> : (
-                        // ✅ CORREÇÃO: Verificação para garantir que 'diary' e 'refeicoes' existem
                         diary && diary.refeicoes ? (
                             <div className="meals-grid">
                                 {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
@@ -167,7 +156,6 @@ const FoodDiaryPage = () => {
                     )}
                 </div>
             </div>
-            
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 {selectedFood ? (
                     <div className="food-details-modal">
@@ -192,5 +180,4 @@ const FoodDiaryPage = () => {
         </div>
     );
 };
-
 export default FoodDiaryPage;

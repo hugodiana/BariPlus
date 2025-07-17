@@ -6,7 +6,7 @@ import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 import Modal from '../components/Modal';
 import './DashboardPage.css';
 import { format, differenceInDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
 
 const DashboardPage = () => {
     const [usuario, setUsuario] = useState(null);
