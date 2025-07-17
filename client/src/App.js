@@ -19,7 +19,7 @@ import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
 import AffiliatePortalPage from './pages/AffiliatePortalPage';
 import ProfilePage from './pages/ProfilePage';
-
+import FoodDiaryPage from './pages/FoodDiaryPage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
