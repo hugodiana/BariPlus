@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-
-// Imports da biblioteca de notificações
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -19,30 +17,9 @@ import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
-import ProfilePage from './pages/ProfilePage';
-import FoodDiaryPage from './pages/FoodDiaryPage';
 import AffiliatePortalPage from './pages/AffiliatePortalPage';
+import ProfilePage from './pages/ProfilePage';
 
-
-// Componente auxiliar para organizar as rotas protegidas
-function AppRoutes() {
-  return (
-    <Layout
-      usuario={usuario}> {/* ✅ NOVIDADE: Passamos o usuário para o Layout */}
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/progresso" element={<ProgressoPage />} />
-        <Route path="/checklist" element={<ChecklistPage />} />
-        <Route path="/consultas" element={<ConsultasPage />} />
-        <Route path="/medicacao" element={<MedicationPage />} />
-        <Route path="/perfil" element={<ProfilePage />} />
-        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
-        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Layout>
-  );
-}
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -71,12 +48,31 @@ function App() {
     }
   }, []);
 
+  // ✅ CORREÇÃO: O componente auxiliar agora está DENTRO do App
+  // Assim, ele consegue aceder à variável 'usuario'
+  const AppRoutes = () => {
+    return (
+      <Layout usuario={usuario}>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/progresso" element={<ProgressoPage />} />
+          <Route path="/checklist" element={<ChecklistPage />} />
+          <Route path="/consultas" element={<ConsultasPage />} />
+          <Route path="/medicacao" element={<MedicationPage />} />
+          <Route path="/perfil" element={<ProfilePage />} />
+          <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
+          <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Layout>
+    );
+  };
+  
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
   }
 
   return (
-    // ✅ CORREÇÃO: Adicionamos o <ToastContainer> aqui fora para que ele funcione em todo o app
     <>
       <ToastContainer
         position="top-right"

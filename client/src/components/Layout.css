@@ -157,3 +157,9 @@
 .logout-btn:hover {
     background-color: #f9dcdc;
 }
+
+.affiliate-link {
+    background-color: #dbeafe;
+    color: #1e40af !important; /* !important para sobrepor outros estilos de hover */
+    font-weight: bold;
+}
