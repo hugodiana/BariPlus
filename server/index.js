@@ -76,10 +76,11 @@ const UserSchema = new mongoose.Schema({
         fezCirurgia: String, dataCirurgia: Date, altura: Number,
         pesoInicial: Number, pesoAtual: Number
     },
+    // ✅ CORREÇÃO: Campos movidos para dentro do objeto principal do Schema
     stripeCustomerId: String,
     pagamentoEfetuado: { type: Boolean, default: false },
     role: { type: String, enum: ['user', 'admin'], default: 'user' }
-});
+}, { timestamps: true }); // A opção timestamps agora está no sítio certo
 
 const ChecklistSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -554,6 +555,27 @@ app.put('/api/user/change-password', autenticar, async (req, res) => {
     } catch (error) {
         console.error("Erro ao alterar senha:", error);
         res.status(500).json({ message: "Erro interno no servidor." });
+    }
+});
+
+// Rota para buscar estatísticas do admin
+app.get('/api/admin/stats', autenticar, isAdmin, async (req, res) => {
+    try {
+        const totalUsers = await User.countDocuments();
+        const paidUsers = await User.countDocuments({ pagamentoEfetuado: true });
+        
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const newUsersLast7Days = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+
+        res.json({
+            totalUsers,
+            paidUsers,
+            newUsersLast7Days
+        });
+    } catch (error) {
+        console.error("Erro ao buscar estatísticas:", error);
+        res.status(500).json({ message: "Erro no servidor" });
     }
 });
 

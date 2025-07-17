@@ -7,7 +7,8 @@ import './App.css';
 function AdminApp() {
   const [token, setToken] = useState(localStorage.getItem('bariplus_admin_token'));
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -15,19 +16,25 @@ function AdminApp() {
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-  useEffect(() => {
+    useEffect(() => {
     if (token) {
       setLoading(true);
       setError('');
-      fetch(`${apiUrl}/api/admin/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      // ✅ CORREÇÃO: Usando Promise.all para buscar usuários e stats ao mesmo tempo
+      Promise.all([
+        fetch(`${apiUrl}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
+        fetch(`${apiUrl}/api/admin/stats`, { headers: { 'Authorization': `Bearer ${token}` } })
+      ])
+      .then(async ([usersRes, statsRes]) => {
+        if (usersRes.status === 403 || statsRes.status === 403) throw new Error('Acesso negado. Você não é um administrador.');
+        if (!usersRes.ok || !statsRes.ok) throw new Error('Erro de rede ou no servidor.');
+        
+        const usersData = await usersRes.json();
+        const statsData = await statsRes.json();
+        
+        setUsers(usersData);
+        setStats(statsData);
       })
-      .then(res => {
-        if (res.status === 403) throw new Error('Acesso negado. Você não é um administrador.');
-        if (!res.ok) throw new Error('Erro de rede ou no servidor.');
-        return res.json();
-      })
-      .then(data => setUsers(data))
       .catch(err => {
         setError(err.message);
         localStorage.removeItem('bariplus_admin_token');
@@ -65,9 +72,8 @@ function AdminApp() {
     setUsers([]);
   };
   
-  const handleGrantAccess = async (userId) => {
+  cconst handleGrantAccess = async (userId) => {
       if (!window.confirm("Tem certeza que quer liberar o acesso para este usuário sem pagamento?")) return;
-
       try {
         const response = await fetch(`${apiUrl}/api/admin/grant-access/${userId}`, {
             method: 'POST',
@@ -75,90 +81,57 @@ function AdminApp() {
         });
         const updatedUser = await response.json();
         if (!response.ok) throw new Error(updatedUser.message || 'Falha ao liberar acesso.');
-
         setUsers(prevUsers => prevUsers.map(user => 
             user._id === updatedUser._id ? updatedUser : user
         ));
-        
-        // ✅ CORREÇÃO: Usando uma notificação de sucesso
         toast.success('Acesso liberado com sucesso!');
-
       } catch(err) {
-          // ✅ CORREÇÃO: Usando uma notificação de erro
           toast.error(err.message || "Ocorreu um erro.");
       }
   };
 
   if (!token) {
     return (
-      <>
-        {/* O ToastContainer também precisa estar aqui para mostrar erros de login */}
-        <ToastContainer position="top-right" autoClose={4000} />
-        <div className="admin-login-container">
-          <form onSubmit={handleLogin}>
-            <h2>Painel de Administração - BariPlus</h2>
-            <input type="text" placeholder="Email ou Username" value={identifier} onChange={e => setIdentifier(e.target.value)} required />
-            <div className="password-wrapper">
-              <input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
-              <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>👁️</span>
-            </div>
-            <button type="submit" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
-            {error && <p className="error-message">{error}</p>}
-          </form>
-        </div>
-      </>
-    );
-  }
-
-  return (
     <>
       <ToastContainer position="top-right" autoClose={4000} />
       <div className="admin-container">
         <header className="admin-header">
-          <h1>Painel de Usuários ({users.length})</h1>
+          <h1>Painel de Administração</h1>
           <button onClick={handleLogout}>Sair</button>
         </header>
-        {loading && <p>Carregando usuários...</p>}
+
+        {/* ✅ CORREÇÃO: Exibindo os cards de estatísticas */}
+        {loading && <p>Carregando...</p>}
         {error && <p className="error-message">{error}</p>}
-        
-        {!loading && !error && (
-          <div className="table-wrapper">
-              <table>
-                  <thead>
-                      <tr>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Status Pagamento</th>
-                        <th>Onboarding Completo</th>
-                        <th>Ações</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-                      {users.map(user => (
-                        <tr key={user._id}>
-                          <td>{user.nome} {user.sobrenome}</td>
-                          <td>{user.email}</td>
-                          <td>
-                            {user.pagamentoEfetuado 
-                              ? <span className="status status-pago">Sim</span> 
-                              : <span className="status status-pendente">Não</span>
-                            }
-                          </td>
-                          <td>{user.onboardingCompleto ? '✅ Sim' : '❌ Não'}</td>
-                          <td>
-                            <button onClick={() => handleGrantAccess(user._id)} disabled={user.pagamentoEfetuado}>
-                              Liberar Acesso
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-              </table>
-          </div>
+        {!loading && stats && (
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <h2>{stats.totalUsers}</h2>
+                    <p>Usuários Totais</p>
+                </div>
+                <div className="stat-card">
+                    <h2>{stats.paidUsers}</h2>
+                    <p>Contas Pagas</p>
+                </div>
+                <div className="stat-card">
+                    <h2>{stats.newUsersLast7Days}</h2>
+                    <p>Novos nos últimos 7 dias</p>
+                </div>
+            </div>
         )}
+        
+        <div className="user-table-container">
+            <h2>Usuários Cadastrados ({users.length})</h2>
+            {!loading && !error && (
+              <div className="table-wrapper">
+                  <table>
+                      {/* ... (sua tabela de usuários continua igual) ... */}
+                  </table>
+              </div>
+            )}
+        </div>
       </div>
     </>
   );
 }
-
 export default AdminApp;
