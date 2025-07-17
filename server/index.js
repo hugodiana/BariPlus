@@ -33,8 +33,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // --- ROTA DE WEBHOOK DO STRIPE (DEVE VIR ANTES DE express.json()) ---
-app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
-    const sig = req.headers['stripe-signature'];
+app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {    const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     let event;
     try {
