@@ -12,14 +12,16 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
 const whitelist = [
-    'https://bariplus.vercel.app',      // O seu app principal
-    'https://bariplus-admin.vercel.app', // O seu novo painel de admin
+    'https://bariplus.vercel.app',      // O seu app principal (verifique se este link está correto)
+    'https://bari-plus.vercel.app',     // Adicionando a versão que apareceu no erro
+    'https://bariplus-admin.vercel.app', // O seu painel de admin
     'http://localhost:3000',           // Para testes locais do app principal
     'http://localhost:3001'            // Para testes locais do admin
 ];
 
 const corsOptions = {
     origin: function (origin, callback) {
+        // Permite pedidos sem 'origin' (como apps mobile ou Postman) ou se a origem estiver na whitelist
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
