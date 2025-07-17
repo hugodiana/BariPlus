@@ -1,0 +1,148 @@
+.landing-page {
+    font-family: 'Inter', sans-serif;
+    color: #333;
+}
+
+.landing-header {
+    background: #fff;
+    padding: 15px 40px;
+    border-bottom: 1px solid #e0e0e0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.landing-nav-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.landing-logo {
+    height: 40px;
+}
+
+.landing-nav a {
+    margin: 0 15px;
+    text-decoration: none;
+    color: #555;
+    font-weight: 600;
+}
+
+.nav-login-btn {
+    background-color: #37715b;
+    color: white !important;
+    padding: 8px 16px;
+    border-radius: 8px;
+}
+
+.hero-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 80px 20px;
+    background-color: #f4f7f6;
+}
+
+.hero-content {
+    max-width: 800px;
+}
+
+.hero-content h1 {
+    font-size: 3rem;
+    line-height: 1.2;
+    margin-bottom: 20px;
+}
+
+.hero-subtitle {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.hero-cta-btn {
+    background-color: #007aff;
+    color: white;
+    padding: 15px 30px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-size: 1.1rem;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.hero-cta-btn:hover {
+    background-color: #0056b3;
+}
+
+.features-section, .pricing-section {
+    padding: 80px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.features-section h2, .pricing-section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 50px;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 30px;
+    text-align: left;
+}
+
+.feature-card {
+    background: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.feature-card h3 {
+    margin-top: 0;
+    color: #37715b;
+}
+
+.pricing-card-public {
+    max-width: 500px;
+    margin: 0 auto;
+    background-color: #fff;
+    border: 2px solid #37715b;
+    border-radius: 12px;
+    padding: 40px;
+}
+
+.price-tag-public {
+    margin: 20px 0;
+}
+
+.price-amount-public {
+    font-size: 3rem;
+    font-weight: bold;
+}
+
+.price-term-public {
+    color: #666;
+}
+
+.landing-footer {
+    text-align: center;
+    padding: 40px 20px;
+    background-color: #333;
+    color: #aaa;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .landing-nav {
+        display: none; /* Simplificação para mobile, o botão "Entrar" continua visível */
+    }
+    .hero-content h1 { font-size: 2.2rem; }
+    .features-section h2, .pricing-section h2 { font-size: 2rem; }
+}

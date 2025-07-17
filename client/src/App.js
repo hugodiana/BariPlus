@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LandingPage from './pages/LandingPage'; 
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
 import Layout from './components/Layout';
@@ -61,6 +62,19 @@ function App() {
     // Se passou por todas as verificações, renderiza o app principal
     return (
         <Layout>
+          <Routes>
+        {/* ✅ CORREÇÃO: Lógica de Roteamento Atualizada */}
+        
+        {/* Se o usuário NÃO está logado, estas são as rotas disponíveis */}
+        {!usuario && (
+          <>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
+            {/* Qualquer outra rota para um usuário deslogado volta para a Landing Page */}
+            <Route path="*" element={<Navigate to="/" />} />
+          </>
+        )}
             <Routes>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/progresso" element={<ProgressoPage />} />
