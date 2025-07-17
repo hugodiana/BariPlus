@@ -11,17 +11,18 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app = express();
-const whitelist = [
-    'https://bariplus.vercel.app',      // O seu app principal (verifique se este link está correto)
-    'http://localhost:3002',
-    'https://bariplus-admin.vercel.app', // O seu painel de admin
-    'http://localhost:3000',           // Para testes locais do app principal
-    'http://localhost:3001'            // Para testes locais do admin
-];
 
+// --- CONFIGURAÇÃO DE CORS ---
+const whitelist = [
+    'https://bariplus.vercel.app',
+    'https://bari-plus.vercel.app',
+    'https://bariplus-admin.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002'
+];
 const corsOptions = {
     origin: function (origin, callback) {
-        // Permite pedidos sem 'origin' (como apps mobile ou Postman) ou se a origem estiver na whitelist
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
@@ -29,11 +30,9 @@ const corsOptions = {
         }
     }
 };
-
 app.use(cors(corsOptions));
-// ✅ FIM DA CORREÇÃO DE CORS
 
-
+// --- ROTA DE WEBHOOK DO STRIPE (DEVE VIR ANTES DE express.json()) ---
 app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -41,7 +40,6 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err) {
-        console.log(`⚠️  Webhook signature verification failed.`, err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
     if (event.type === 'checkout.session.completed') {
@@ -56,111 +54,26 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
     res.json({received: true});
 });
 
-    // Lidar com o evento
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        const stripeCustomerId = session.customer;
-
-        try {
-            // Encontra o nosso usuário pelo ID de cliente do Stripe e atualiza o status de pagamento
-            await User.findOneAndUpdate(
-                { stripeCustomerId: stripeCustomerId },
-                { pagamentoEfetuado: true }
-            );
-            console.log(`Pagamento bem-sucedido para o cliente Stripe ID: ${stripeCustomerId}`);
-        } catch (err) {
-            console.error("Erro ao atualizar status de pagamento do usuário:", err);
-            return res.status(500).json({ error: "Erro ao atualizar dados do usuário." });
-        }
-    }
-
-    res.json({received: true});
-});
-
 app.use(express.json());
 
-// --- CONFIGURAÇÕES ---
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// --- OUTRAS CONFIGURAÇÕES ---
+cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- CONEXÃO COM O BANCO DE DADOS ---
-mongoose.connect(process.env.DATABASE_URL)
-  .then(() => console.log('Conectado ao MongoDB com sucesso!'))
-  .catch(err => console.error('Falha na conexão:', err));
+mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({
-    nome: { type: String, required: true },
-    sobrenome: { type: String, required: true },
-    username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: {
-        fezCirurgia: String, dataCirurgia: Date, altura: Number,
-        pesoInicial: Number, pesoAtual: Number
-    },
-    // ✅ CORREÇÃO: Campos movidos para dentro do objeto principal do Schema
-    stripeCustomerId: String,
-    pagamentoEfetuado: { type: Boolean, default: false },
-    role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
-}, { timestamps: true }); // A opção timestamps agora está no sítio certo
-
-const ChecklistSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    preOp: [{ descricao: String, concluido: Boolean }],
-    posOp: [{ descricao: String, concluido: Boolean }]
-});
-
-const PesoSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    registros: [{
-        peso: Number,
-        data: Date,
-        fotoUrl: String,
-        medidas: { cintura: Number, quadril: Number, braco: Number }
-    }]
-});
-
-const ConsultaSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }]
-});
-
-const DailyLogSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true },
-    waterConsumed: { type: Number, default: 0 },
-    proteinConsumed: { type: Number, default: 0 }
-});
-
-const MedicationSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    medicamentos: [{
-        nome: String, dosagem: String, quantidade: Number,
-        unidade: String, vezesAoDia: Number,
-    }],
-    historico: { type: Map, of: Number, default: {} }
-});
-
-const FoodLogSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: { type: String, required: true }, // Formato "YYYY-MM-DD"
-    refeicoes: {
-        cafeDaManha: [mongoose.Schema.Types.Mixed],
-        almoco: [mongoose.Schema.Types.Mixed],
-        jantar: [mongoose.Schema.Types.Mixed],
-        lanches: [mongoose.Schema.Types.Mixed]
-    }
-});
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, required: true, unique: true }, email: { type: String, required: true, unique: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String }, { timestamps: true });
+const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
+const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
+const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
+const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
+const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
+const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -170,7 +83,7 @@ const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 
-// --- MIDDLEWARE ---
+// --- MIDDLEWARES ---
 const autenticar = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -181,56 +94,32 @@ const autenticar = (req, res, next) => {
         next();
     });
 };
-
-const verificarAcessoPago = async (req, res, next) => {
-    try {
-        const usuario = await User.findById(req.userId);
-        if (usuario && usuario.pagamentoEfetuado) {
-            next();
-        } else {
-            res.status(403).json({ message: "Acesso exclusivo para assinantes." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Erro no servidor" });
-    }
-};
-
 const isAdmin = async (req, res, next) => {
-    try {
-        const usuario = await User.findById(req.userId);
-        if (usuario && usuario.role === 'admin') {
-            next(); // Se for admin, pode passar
-        } else {
-            res.status(403).json({ message: "Acesso negado. Rota exclusiva para administradores." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Erro no servidor" });
-    }
+    const usuario = await User.findById(req.userId);
+    if (usuario && usuario.role === 'admin') { next(); }
+    else { res.status(403).json({ message: "Acesso negado." }); }
 };
-
 const isAffiliate = async (req, res, next) => {
     const usuario = await User.findById(req.userId);
-    if (usuario && usuario.role === 'affiliate') { next(); } 
-    else { res.status(403).json({ message: "Acesso negado. Rota exclusiva para afiliados." }); }
+    if (usuario && usuario.role === 'affiliate') { next(); }
+    else { res.status(403).json({ message: "Acesso negado." }); }
 };
 
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
-        if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-        if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
-        
+        if (await User.findOne({ email })) return res.status(400).json({ message: 'E-mail já em uso.' });
+        if (await User.findOne({ username })) return res.status(400).json({ message: 'Nome de usuário já em uso.' });
         const hashedPassword = await bcrypt.hash(password, 10);
         const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
         await novoUsuario.save();
-
         await new Checklist({ userId: novoUsuario._id, preOp: [{ descricao: 'Marcar consulta com cirurgião', concluido: false }], posOp: [{ descricao: 'Tomar suplementos vitamínicos', concluido: false }] }).save();
         await new Peso({ userId: novoUsuario._id, registros: [] }).save();
         await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
         await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
         await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', quantidade: 1, unidade: 'comprimido', vezesAoDia: 1 }], historico: {} }).save();
-        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } }).save();        
+        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: { cafeDaManha:[], almoco:[], jantar:[], lanches:[] } }).save();
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
