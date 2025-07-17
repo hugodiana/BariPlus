@@ -453,13 +453,17 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
     }
 });
 
-app.post('/api/verify-payment-session', autenticar, async (req, res) => {
+app.post('/api/verify-payment-session', async (req, res) => {
     try {
         const { sessionId } = req.body;
+        if (!sessionId) {
+            return res.status(400).json({ message: "ID da sessão não fornecido." });
+        }
+
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-        // Se a sessão foi paga, atualizamos nosso banco de dados na hora
-        if (session.payment_status === 'paid') {
+        // Se a sessão foi paga, atualizamos nosso banco de dados
+        if (session.payment_status === 'paid' && session.customer) {
             const stripeCustomerId = session.customer;
             await User.findOneAndUpdate(
                 { stripeCustomerId: stripeCustomerId },
@@ -468,6 +472,7 @@ app.post('/api/verify-payment-session', autenticar, async (req, res) => {
             console.log(`Pagamento verificado e confirmado para ${stripeCustomerId}`);
             return res.json({ paymentVerified: true });
         }
+        
         return res.json({ paymentVerified: false });
     } catch (error) {
         console.error("Erro ao verificar sessão de pagamento:", error);
