@@ -58,31 +58,44 @@ const ProfilePage = () => {
 
     // ✅ NOVIDADE: Função para ativar as notificações
     const handleEnableNotifications = async () => {
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                toast.info("Obtendo o token de notificação...");
-                
-                // Lembre-se de colar a sua chave VAPID aqui
-                const vapidKey = "BO6r0_2ceNtjYoYOFxjpWTQ9kziRPGXtIK4kSGYaN25nMJIhvpcpDECYte0NFvhnJPbcgVKeFj-vcYOH_2CXHTQ"	;
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            const vapidKey = "SUA_CHAVE_VAPID_AQUI";
+            const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
 
-                const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
-
-                if (fcmToken) {
-                    console.log("Token de notificação (FCM Token):", fcmToken);
-                    toast.success("Notificações ativadas com sucesso neste dispositivo!");
-                    // No próximo passo, enviaremos este token para o nosso back-end
-                } else {
-                    toast.warn("Não foi possível obter o token de notificação. Verifique as configurações do navegador.");
-                }
-            } else {
-                toast.error("Permissão para notificações foi negada.");
+            if (fcmToken) {
+                // ✅ NOVIDADE: Enviando o token para o back-end
+                await fetch(`${apiUrl}/api/user/save-fcm-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ fcmToken })
+                });
+                toast.success("Notificações ativadas com sucesso!");
             }
-        } catch (error) {
-            console.error('Erro ao obter token de notificação:', error);
-            toast.error("Ocorreu um erro ao ativar as notificações.");
+        } else {
+            toast.error("Permissão para notificações foi negada.");
         }
-    };
+    } catch (error) {
+        toast.error("Ocorreu um erro ao ativar as notificações.");
+    }
+};
+
+// ✅ NOVIDADE: Função para chamar a rota de teste
+const handleSendTestNotification = async () => {
+    try {
+        await fetch(`${apiUrl}/api/user/send-test-notification`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        toast.info("Pedido de notificação de teste enviado!");
+    } catch (error) {
+        toast.error("Erro ao enviar notificação de teste.");
+    }
+};
 
     if (loading || !usuario) {
         return <div>Carregando perfil...</div>;
@@ -105,10 +118,13 @@ const ProfilePage = () => {
 
                 {/* ✅ NOVIDADE: Card para gerir notificações */}
                 <div className="profile-card">
-                    <h3>Notificações</h3>
-                    <p>Receba lembretes sobre consultas, medicamentos e metas diárias diretamente no seu navegador ou celular.</p>
-                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar Notificações</button>
-                </div>
+    <h3>Notificações</h3>
+    <p>Receba lembretes sobre consultas, medicamentos e metas diárias.</p>
+    <div className="notification-actions">
+        <button onClick={handleEnableNotifications} className="notification-btn">Ativar Notificações</button>
+        <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+    </div>
+</div>
 
                 <div className="profile-card">
                     <h3>Alterar Senha</h3>

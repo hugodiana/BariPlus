@@ -9,13 +9,17 @@ const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const admin = require('firebase-admin');
 
 const app = express();
 
+const serviceAccount = require('.\Dev\BariPlus\bariplus-app-firebase-adminsdk-fbsvc-e6d98f3d96.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
-    'https://bariplus-app.onrender.com',
-    'https://bariplus-admin.onrender.com',
     'https://bariplus.vercel.app',
     'https://bari-plus.vercel.app',
     'https://bariplus-admin.vercel.app',
@@ -34,8 +38,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// --- ROTA DE WEBHOOK DO STRIPE (DEVE VIR ANTES DE express.json()) ---
-app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {    const sig = req.headers['stripe-signature'];
+// --- ROTA DE WEBHOOK DO STRIPE (ANTES DE express.json()) ---
+app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     let event;
     try {
@@ -677,6 +682,40 @@ app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     } catch (error) {
         console.error("Erro ao buscar estatísticas de afiliado:", error);
         res.status(500).json({ message: "Erro ao buscar estatísticas." });
+    }
+});
+
+app.post('/api/user/save-fcm-token', autenticar, async (req, res) => {
+    try {
+        const { fcmToken } = req.body;
+        await User.findByIdAndUpdate(req.userId, { fcmToken: fcmToken });
+        res.status(200).json({ message: 'Token de notificação salvo com sucesso.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao salvar token.' });
+    }
+});
+
+// Rota para enviar uma notificação de teste
+app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.fcmToken) {
+            const message = {
+                notification: {
+                    title: 'Olá do BariPlus! 👋',
+                    body: 'Este é um teste para confirmar que as suas notificações estão a funcionar.'
+                },
+                token: usuario.fcmToken
+            };
+
+            await admin.messaging().send(message);
+            res.status(200).json({ message: "Notificação de teste enviada!" });
+        } else {
+            res.status(404).json({ message: "Usuário ou token de notificação não encontrado." });
+        }
+    } catch (error) {
+        console.error("Erro ao enviar notificação:", error);
+        res.status(500).json({ message: "Erro ao enviar notificação." });
     }
 });
 

@@ -71,3 +71,41 @@
     font-weight: bold;
     cursor: pointer;
 }
+
+.quick-actions-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+}
+
+.quick-actions-card h3 {
+    margin-top: 0;
+    text-align: center;
+    color: #37715b;
+}
+
+/* ✅ ESTE É O ESTILO PRINCIPAL DO BOTÃO */
+.quick-action-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    background-color: #007aff; /* Cor azul de ação */
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none; /* Remove o sublinhado do link */
+    box-sizing: border-box;
+    transition: opacity 0.2s;
+}
+
+.quick-action-btn:hover {
+    opacity: 0.9;
+}
