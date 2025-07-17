@@ -13,6 +13,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const whitelist = [
     'https://bariplus.vercel.app',      // O seu app principal (verifique se este link está correto)
+    'http://localhost:3002'
     'https://bari-plus.vercel.app',     // Adicionando a versão que apareceu no erro
     'https://bariplus-admin.vercel.app', // O seu painel de admin
     'http://localhost:3000',           // Para testes locais do app principal
@@ -37,7 +38,6 @@ app.use(cors(corsOptions));
 app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
     let event;
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
@@ -45,6 +45,17 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
         console.log(`⚠️  Webhook signature verification failed.`, err.message);
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
+    if (event.type === 'checkout.session.completed') {
+        const session = event.data.object;
+        const stripeCustomerId = session.customer;
+        try {
+            await User.findOneAndUpdate({ stripeCustomerId: stripeCustomerId }, { pagamentoEfetuado: true });
+        } catch (err) {
+            return res.status(500).json({ error: "Erro ao atualizar status do usuário." });
+        }
+    }
+    res.json({received: true});
+});
 
     // Lidar com o evento
     if (event.type === 'checkout.session.completed') {
