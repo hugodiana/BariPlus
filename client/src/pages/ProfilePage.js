@@ -64,7 +64,7 @@ const ProfilePage = () => {
                 toast.info("Obtendo o token de notificação...");
                 
                 // Lembre-se de colar a sua chave VAPID aqui
-                const vapidKey = BO6r0_2ceNtjYoYOFxjpWTQ9kziRPGXtIK4kSGYaN25nMJIhvpcpDECYte0NFvhnJPbcgVKeFj-vcYOH_2CXHTQ	;
+                const vapidKey = "BO6r0_2ceNtjYoYOFxjpWTQ9kziRPGXtIK4kSGYaN25nMJIhvpcpDECYte0NFvhnJPbcgVKeFj-vcYOH_2CXHTQ"	;
 
                 const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
 
