@@ -36,10 +36,10 @@
     color: #007aff;
 }
 
-/* --- ✅ INÍCIO DA CORREÇÃO --- */
+/* Estilos para o mini-gráfico */
 .mini-chart-container {
-    position: relative; /* Necessário para o gráfico se ajustar */
-    height: 80px;      /* Altura fixa para o nosso mini-gráfico */
+    position: relative; 
+    height: 80px;      
     margin-top: 20px;
 }
 
@@ -53,5 +53,5 @@
     text-align: center;
     background-color: #f9f9f9;
     border-radius: 8px;
+    padding: 0 10px;
 }
-/* --- FIM DA CORREÇÃO --- */
