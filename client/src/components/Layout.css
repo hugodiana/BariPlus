@@ -75,6 +75,7 @@
   .main-content {
     margin-left: 0;
     padding: 20px; /* NOVIDADE: Reduz o espaçamento nas laterais */
+    padding-top: 80px; 
   }
   
   /* Esconde a sidebar fora da tela por padrão */
