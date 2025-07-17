@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import LandingPage from './pages/LandingPage'; 
+
+// Importação de todas as páginas
+import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import PricingPage from './pages/PricingPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import OnboardingPage from './pages/OnboardingPage';
 import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
@@ -9,10 +15,23 @@ import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
-import PricingPage from './pages/PricingPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentCancelPage from './pages/PaymentCancelPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+
+// Componente auxiliar para organizar as rotas protegidas
+function AppRoutes() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/progresso" element={<ProgressoPage />} />
+        <Route path="/checklist" element={<ChecklistPage />} />
+        <Route path="/consultas" element={<ConsultasPage />} />
+        <Route path="/medicacao" element={<MedicationPage />} />
+        {/* Se o usuário logado tentar acessar uma rota desconhecida, volta para o painel */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Layout>
+  );
+}
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -22,13 +41,11 @@ function App() {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
     if (token) {
-      fetch(`${apiUrl}/api/me`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      })
+      fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
       .then(res => {
         if (!res.ok) {
           localStorage.removeItem('bariplus_token');
-          throw new Error('Sessão inválida ou expirada');
+          throw new Error('Sessão inválida');
         }
         return res.json();
       })
@@ -47,61 +64,36 @@ function App() {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
   }
 
-  // Componente interno para gerir rotas protegidas
-  const ProtectedRoutes = () => {
-    if (!usuario) {
-      return <Navigate to="/login" replace />;
-    }
-    if (!usuario.pagamentoEfetuado) {
-        return <Navigate to="/planos" replace />;
-    }
-    if (!usuario.onboardingCompleto) {
-        return <Navigate to="/bem-vindo" replace />;
-    }
-    
-    // Se passou por todas as verificações, renderiza o app principal
-    return (
-        <Layout>
-          <Routes>
-        {/* ✅ CORREÇÃO: Lógica de Roteamento Atualizada */}
-        
-        {/* Se o usuário NÃO está logado, estas são as rotas disponíveis */}
-        {!usuario && (
-          <>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
-            {/* Qualquer outra rota para um usuário deslogado volta para a Landing Page */}
-            <Route path="*" element={<Navigate to="/" />} />
-          </>
-        )}
-            <Routes>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/progresso" element={<ProgressoPage />} />
-                <Route path="/checklist" element={<ChecklistPage />} />
-                <Route path="/consultas" element={<ConsultasPage />} />
-                <Route path="/medicacao" element={<MedicationPage />} />
-                <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-        </Layout>
-    );
-  };
-
   return (
     <Router>
       <Routes>
-        {/* Rotas Públicas */}
-        <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
-        <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
-        <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
-        <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
-        
-        {/* Rotas que precisam de um usuário logado para serem decididas */}
-        <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
-        <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
-        
-        {/* Rota principal que delega a decisão para o ProtectedRoutes */}
-        <Route path="/*" element={<ProtectedRoutes />} />
+        {/* Bloco de rotas para quando o usuário NÃO está logado */}
+        {!usuario && (
+          <>
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
+            {/* Se não estiver logado, qualquer outra rota leva para a Landing Page */}
+            <Route path="*" element={<Navigate to="/landing" />} />
+          </>
+        )}
+
+        {/* Bloco de rotas para quando o usuário ESTÁ logado */}
+        {usuario && (
+          <>
+            <Route path="/planos" element={usuario.pagamentoEfetuado ? <Navigate to="/" /> : <PricingPage />} />
+            <Route path="/bem-vindo" element={usuario.onboardingCompleto ? <Navigate to="/" /> : <OnboardingPage />} />
+            <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
+            <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
+            
+            {/* Rota principal que decide se mostra o app ou redireciona */}
+            <Route path="/*" element={
+                !usuario.pagamentoEfetuado ? <Navigate to="/planos" />
+              : !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" />
+              : <AppRoutes /> // Se tudo estiver OK, carrega o app principal
+            }/>
+          </>
+        )}
       </Routes>
     </Router>
   );
