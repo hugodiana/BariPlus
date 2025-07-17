@@ -440,7 +440,7 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
                 price: process.env.STRIPE_PRICE_ID,
                 quantity: 1,
             }],
-            success_url: `${process.env.CLIENT_URL}/pagamento-sucesso`,
+            success_url: `${process.env.CLIENT_URL}/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.CLIENT_URL}/planos`,
             
         });
@@ -450,6 +450,28 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
     } catch (error) {
         console.error("Erro ao criar sessão de checkout:", error);
         res.status(500).json({ error: { message: error.message } });
+    }
+});
+
+app.post('/api/verify-payment-session', autenticar, async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        // Se a sessão foi paga, atualizamos nosso banco de dados na hora
+        if (session.payment_status === 'paid') {
+            const stripeCustomerId = session.customer;
+            await User.findOneAndUpdate(
+                { stripeCustomerId: stripeCustomerId },
+                { pagamentoEfetuado: true }
+            );
+            console.log(`Pagamento verificado e confirmado para ${stripeCustomerId}`);
+            return res.json({ paymentVerified: true });
+        }
+        return res.json({ paymentVerified: false });
+    } catch (error) {
+        console.error("Erro ao verificar sessão de pagamento:", error);
+        res.status(500).json({ message: "Erro ao verificar pagamento." });
     }
 });
 
