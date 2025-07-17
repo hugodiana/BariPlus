@@ -13,8 +13,7 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const app = express();
 const whitelist = [
     'https://bariplus.vercel.app',      // O seu app principal (verifique se este link está correto)
-    'http://localhost:3002'
-    'https://bari-plus.vercel.app',     // Adicionando a versão que apareceu no erro
+    'http://localhost:3002',
     'https://bariplus-admin.vercel.app', // O seu painel de admin
     'http://localhost:3000',           // Para testes locais do app principal
     'http://localhost:3001'            // Para testes locais do admin
