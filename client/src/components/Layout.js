@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import './Layout.css';
+// A linha 'import logo from ...' FOI REMOVIDA daqui.
 
 const Layout = ({ children }) => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -19,6 +20,7 @@ const Layout = ({ children }) => {
       {isSidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
+          {/* ✅ CORREÇÃO: Usando o caminho público direto para a logo */}
           <img src="/bariplus_logo.png" alt="BariPlus Logo" className="sidebar-logo" />
           <button className="sidebar-close-btn" onClick={toggleSidebar}>&times;</button>
         </div>
@@ -28,7 +30,6 @@ const Layout = ({ children }) => {
           <NavLink to="/progresso">Meu Progresso</NavLink>
           <NavLink to="/consultas">Minhas Consultas</NavLink>
           <NavLink to="/medicacao">Medicação</NavLink>
-          <NavLink to="/diario-alimentar">Diário Alimentar</NavLink>
         </nav>
         <button onClick={handleLogout} className="logout-btn">Sair</button>
       </aside>
@@ -38,5 +39,4 @@ const Layout = ({ children }) => {
     </div>
   );
 };
-
 export default Layout;

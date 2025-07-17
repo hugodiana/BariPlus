@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
-// A linha 'import logo from ...' foi removida daqui
+// A linha 'import logo from ...' FOI REMOVIDA daqui.
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
@@ -46,7 +46,7 @@ const LoginPage = () => {
     <div className="login-page-container">
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
-          {/* ✅ CORREÇÃO: Usando o caminho público para a logo */}
+          {/* ✅ CORREÇÃO: Usando o caminho público direto para a logo */}
           <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo" />
           <p>Organize sua jornada pré e pós-bariátrica.</p>
         </div>
