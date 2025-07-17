@@ -10,10 +10,10 @@ function AdminApp() {
   // Estados para o formulário de login
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false); // <-- NOVIDADE
 
-  const apiUrl = process.env.REACT_APP_ADMIN_API_URL || 'http://localhost:3001';
+  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-  // Efeito para buscar os usuários se já tivermos um token
   useEffect(() => {
     if (token) {
       setLoading(true);
@@ -22,26 +22,17 @@ function AdminApp() {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => {
-        if (res.status === 403) {
-          throw new Error('Acesso negado. Você não é um administrador.');
-        }
-        if (!res.ok) {
-          throw new Error('Erro de rede ou no servidor.');
-        }
+        if (res.status === 403) throw new Error('Acesso negado. Você não é um administrador.');
+        if (!res.ok) throw new Error('Erro de rede ou no servidor.');
         return res.json();
       })
-      .then(data => {
-        setUsers(data);
-      })
+      .then(data => setUsers(data))
       .catch(err => {
         setError(err.message);
-        // Limpa o token se ele for inválido
         localStorage.removeItem('bariplus_admin_token');
         setToken(null);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
     }
   }, [token, apiUrl]);
 
@@ -72,8 +63,12 @@ function AdminApp() {
     setToken(null);
     setUsers([]);
   };
+  
+  const handleGrantAccess = async (userId) => {
+      // Futuramente, chamaremos a API para dar acesso aqui
+      alert(`Funcionalidade "Liberar Acesso" para o usuário ${userId} a ser implementada.`);
+  };
 
-  // Se não houver token, mostra o formulário de login
   if (!token) {
     return (
       <div className="admin-login-container">
@@ -86,13 +81,19 @@ function AdminApp() {
             onChange={e => setIdentifier(e.target.value)}
             required
           />
-          <input 
-            type="password"
-            placeholder="Senha"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-          />
+          {/* ✅ NOVIDADE: Wrapper para o campo de senha */}
+          <div className="password-wrapper">
+            <input 
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Senha"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
+            />
+            <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? '👁️' : '👁️'}
+            </span>
+          </div>
           <button type="submit" disabled={loading}>
             {loading ? 'Entrando...' : 'Entrar'}
           </button>
@@ -102,41 +103,44 @@ function AdminApp() {
     );
   }
 
-  // Se houver token, mostra a lista de usuários
   return (
     <div className="admin-container">
       <header className="admin-header">
-        <h1>Painel de Usuários</h1>
+        <h1>Painel de Usuários ({users.length})</h1>
         <button onClick={handleLogout}>Sair</button>
       </header>
       {loading && <p>Carregando usuários...</p>}
       {error && <p className="error-message">{error}</p>}
       
       {!loading && !error && (
-        <table>
-          <thead>
-            <tr>
-              <th>Nome</th>
-              <th>Email</th>
-              <th>Status Pagamento</th>
-              <th>Onboarding Completo</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user._id}>
-                <td>{user.nome} {user.sobrenome}</td>
-                <td>{user.email}</td>
-                <td>{user.pagamentoEfetuado ? '✅ Sim' : '❌ Não'}</td>
-                <td>{user.onboardingCompleto ? '✅ Sim' : '❌ Não'}</td>
-                <td>
-                  <button disabled={user.pagamentoEfetuado}>Liberar Acesso</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Status Pagamento</th>
+                    <th>Onboarding Completo</th>
+                    <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {users.map(user => (
+                    <tr key={user._id}>
+                        <td>{user.nome} {user.sobrenome}</td>
+                        <td>{user.email}</td>
+                        <td>{user.pagamentoEfetuado ? '✅ Sim' : '❌ Não'}</td>
+                        <td>{user.onboardingCompleto ? '✅ Sim' : '❌ Não'}</td>
+                        <td>
+                        <button onClick={() => handleGrantAccess(user._id)} disabled={user.pagamentoEfetuado}>
+                            Liberar Acesso
+                        </button>
+                        </td>
+                    </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
       )}
     </div>
   );

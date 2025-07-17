@@ -96,3 +96,30 @@ td button:disabled {
   font-weight: bold;
   margin-top: 15px;
 }
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 15px;
+}
+
+.password-wrapper input {
+    width: 100%;
+    padding-right: 40px;
+    box-sizing: border-box;
+    margin-bottom: 0;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    user-select: none;
+    color: #555;
+}
+
+.table-wrapper {
+    overflow-x: auto; /* Adiciona scroll horizontal em telas pequenas */
+}
