@@ -5,38 +5,36 @@ import { format } from 'date-fns';
 import { toast } from 'react-toastify';
 
 const FoodDiaryPage = () => {
-    // Estados da página
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [loadingSearch, setLoadingSearch] = useState(false);
     const [message, setMessage] = useState('Use a barra de pesquisa para encontrar alimentos.');
     
-    // Estados do diário e do modal
     const [diary, setDiary] = useState(null);
     const [loadingDiary, setLoadingDiary] = useState(true);
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    // Função para buscar o diário da data selecionada
     const fetchDiary = useCallback(async (date) => {
         setLoadingDiary(true);
         try {
             const res = await fetch(`${apiUrl}/api/food-diary/${date}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) throw new Error("Falha ao carregar o diário.");
             const data = await res.json();
             setDiary(data);
         } catch (error) {
             console.error("Erro ao buscar diário:", error);
-            toast.error("Não foi possível carregar o diário.");
+            toast.error(error.message);
         } finally {
             setLoadingDiary(false);
         }
     }, [token, apiUrl]);
 
-    // Busca o diário quando a página carrega ou a data muda
     useEffect(() => {
         fetchDiary(selectedDate);
     }, [selectedDate, fetchDiary]);
@@ -48,13 +46,11 @@ const FoodDiaryPage = () => {
         setSearchResults([]);
         setMessage('');
         try {
-            const res = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            const data = await res.json();
-            if (data.length === 0) {
-                setMessage(`Nenhum resultado encontrado para "${searchTerm}".`);
-            } else {
-                setSearchResults(data);
-            }
+            const response = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) throw new Error('Erro ao buscar alimentos.');
+            const data = await response.json();
+            if (data.length === 0) setMessage(`Nenhum resultado encontrado para "${searchTerm}".`);
+            else setSearchResults(data);
         } catch (error) {
             setMessage("Ocorreu um erro na busca. Tente novamente.");
         } finally {
@@ -62,7 +58,6 @@ const FoodDiaryPage = () => {
         }
     };
     
-    // Simplificamos: não precisamos buscar detalhes de novo, já temos na busca.
     const handleSelectFood = (food) => {
         setSelectedFood(food);
         setIsModalOpen(true);
@@ -82,7 +77,7 @@ const FoodDiaryPage = () => {
             setSelectedFood(null);
             setSearchResults([]);
             setSearchTerm('');
-            toast.success(`${selectedFood.name} adicionado ao ${mealType}!`);
+            toast.success(`${selectedFood.name} adicionado com sucesso!`);
         } catch (error) {
             toast.error("Erro ao registrar refeição.");
         }
@@ -95,8 +90,7 @@ const FoodDiaryPage = () => {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            // Recarrega o diário para refletir a remoção
-            fetchDiary(selectedDate);
+            fetchDiary(selectedDate); // Recarrega o diário para refletir a remoção
             toast.info("Item removido do diário.");
         } catch (error) {
             toast.error("Erro ao apagar item.");
@@ -110,7 +104,7 @@ const FoodDiaryPage = () => {
                 <ul className="logged-food-list">
                     {mealArray.map((item) => (
                         <li key={item._id}>
-                            <span>{item.name} ({item.brand})</span>
+                            <span>{item.name} <small>({item.brand})</small></span>
                             <button onClick={() => handleDeleteFood(mealKey, item._id)} className="delete-food-btn">×</button>
                         </li>
                     ))}
@@ -137,9 +131,7 @@ const FoodDiaryPage = () => {
                 <div className="search-container">
                     <form onSubmit={handleSearch}>
                         <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Ex: Frango grelhado, maçã, etc." className="search-input"/>
-                        <button type="submit" className="search-button" disabled={loadingSearch}>
-                            {loadingSearch ? 'Buscando...' : 'Pesquisar'}
-                        </button>
+                        <button type="submit" className="search-button" disabled={loadingSearch}>{loadingSearch ? 'Buscando...' : 'Pesquisar'}</button>
                     </form>
                 </div>
 
@@ -147,17 +139,15 @@ const FoodDiaryPage = () => {
                     {loadingSearch && <p className="info-message">Carregando...</p>}
                     {message && !loadingSearch && searchResults.length === 0 && <p className="info-message">{message}</p>}
                     {searchResults.length > 0 && (
-                        <ul className="results-list">
-                            {searchResults.map(food => (
-                                <li key={food.id} className="result-item" onClick={() => handleSelectFood(food)}>
-                                    <img src={food.imageUrl || 'https://via.placeholder.com/60'} alt={food.name} className="food-image" />
-                                    <div className="food-info">
-                                        <div className="food-name">{food.name}</div>
-                                        <div className="food-brand">{food.brand}</div>
-                                        <div className="food-nutrients">(por 100g) Cals: {food.nutrients.calories} | Prot: {food.nutrients.proteins}g</div>
-                                    </div>
-                                </li>
-                            ))}
+                        <ul className="results-list">{searchResults.map(food => (
+                            <li key={food.id} className="result-item" onClick={() => handleSelectFood(food)}>
+                                <img src={food.imageUrl || 'https://via.placeholder.com/60'} alt={food.name} className="food-image" />
+                                <div className="food-info">
+                                    <div className="food-name">{food.name}</div>
+                                    <div className="food-brand">{food.brand}</div>
+                                    <div className="food-nutrients">(por 100g) Cals: {food.nutrients.calories} | Prot: {food.nutrients.proteins}g</div>
+                                </div>
+                            </li>))}
                         </ul>
                     )}
                 </div>
@@ -165,12 +155,15 @@ const FoodDiaryPage = () => {
                 <div className="diary-view">
                     <h2>Refeições de {format(new Date(selectedDate.replace(/-/g, '\/')), 'dd/MM/yyyy')}</h2>
                     {loadingDiary ? <p>Carregando diário...</p> : (
-                        <div className="meals-grid">
-                            {renderMealSection("Café da Manhã", "cafeDaManha", diary?.refeicoes.cafeDaManha)}
-                            {renderMealSection("Almoço", "almoco", diary?.refeicoes.almoco)}
-                            {renderMealSection("Jantar", "jantar", diary?.refeicoes.jantar)}
-                            {renderMealSection("Lanches", "lanches", diary?.refeicoes.lanches)}
-                        </div>
+                        // ✅ CORREÇÃO: Verificação para garantir que 'diary' e 'refeicoes' existem
+                        diary && diary.refeicoes ? (
+                            <div className="meals-grid">
+                                {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
+                                {renderMealSection("Almoço", "almoco", diary.refeicoes.almoco)}
+                                {renderMealSection("Jantar", "jantar", diary.refeicoes.jantar)}
+                                {renderMealSection("Lanches", "lanches", diary.refeicoes.lanches)}
+                            </div>
+                        ) : <p>Não foi possível carregar o diário para este dia.</p>
                     )}
                 </div>
             </div>
