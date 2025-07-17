@@ -13,7 +13,8 @@ const admin = require('firebase-admin');
 
 const app = express();
 
-const serviceAccount = require('.\Dev\BariPlus\bariplus-app-firebase-adminsdk-fbsvc-e6d98f3d96.json');
+const serviceAccount = require('./bariplus-app-firebase-adminsdk-fbsvc-e6d98f3d96.json');
+
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
