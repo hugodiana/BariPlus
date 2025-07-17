@@ -439,11 +439,13 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
                 price: process.env.STRIPE_PRICE_ID,
                 quantity: 1,
             }],
+             allow_promotion_codes: true,
             success_url: `${process.env.CLIENT_URL}/pagamento-sucesso`,
             cancel_url: `${process.env.CLIENT_URL}/planos`,
-            sessionOptions.allow_promotion_codes = true;
+            
         });
 
+        res.json({ url: session.url });
         res.json({ id: session.id }); // Enviando o ID da sessão para o front-end
 
     } catch (error) {
