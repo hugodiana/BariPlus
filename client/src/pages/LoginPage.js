@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
-import Modal from '../components/Modal'; // Precisamos do Modal
-
+// A linha 'import logo from ...' foi removida daqui
 
 const LoginPage = () => {
   const [nome, setNome] = useState('');
@@ -13,10 +12,6 @@ const LoginPage = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  // Estados para o modal de "esqueci a senha"
-  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,30 +42,11 @@ const LoginPage = () => {
     }
   };
 
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    setMessage('');
-    const apiUrl = process.env.REACT_APP_API_URL;
-    try {
-      const response = await fetch(`${apiUrl}/api/forgot-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
-      });
-      const data = await response.json();
-      // Mostra a mensagem de feedback para o usuário e fecha o modal
-      alert(data.message); 
-      setIsForgotModalOpen(false);
-      setForgotEmail('');
-    } catch (error) {
-      alert("Erro ao conectar com o servidor. Tente novamente.");
-    }
-  };
-
   return (
     <div className="login-page-container">
       <form className="login-form" onSubmit={handleSubmit}>
         <div className="form-header">
+          {/* ✅ CORREÇÃO: Usando o caminho público para a logo */}
           <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo" />
           <p>Organize sua jornada pré e pós-bariátrica.</p>
         </div>
@@ -107,7 +83,7 @@ const LoginPage = () => {
         {message && <p className="message">{message}</p>}
 
         <div className="form-footer">
-            <button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>
+            <button type="button" className="link-button">
                 Esqueci a minha senha
             </button>
             <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>
@@ -115,24 +91,7 @@ const LoginPage = () => {
             </button>
         </div>
       </form>
-
-      <Modal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)}>
-        <h2>Redefinir Senha</h2>
-        <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>
-        <form onSubmit={handleForgotPassword} className="modal-form">
-          <label>E-mail</label>
-          <input
-            type="email"
-            value={forgotEmail}
-            onChange={(e) => setForgotEmail(e.target.value)}
-            placeholder="seu-email@exemplo.com"
-            required
-          />
-          <button type="submit" className="submit-button">Enviar Link de Redefinição</button>
-        </form>
-      </Modal>
     </div>
   );
 };
-
 export default LoginPage;
