@@ -60,3 +60,14 @@
     font-weight: bold;
     cursor: pointer;
 }
+
+.notification-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #37715b; /* Cor verde padrão */
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}
