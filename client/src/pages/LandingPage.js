@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
-import logo from '/bariplus_logo.png'; // Usando a logo da pasta public
 
 const LandingPage = () => {
     return (
