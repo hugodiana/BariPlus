@@ -1,14 +1,15 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
+// Não há 'import logo...' aqui
 
 const LandingPage = () => {
     return (
         <div className="landing-page">
-            {/* Cabeçalho Público */}
             <header className="landing-header">
                 <div className="landing-nav-container">
-                    <img src={logo} alt="BariPlus Logo" className="landing-logo" />
+                    {/* ✅ CORREÇÃO: O 'src' agora é um texto com o caminho direto */}
+                    <img src="/bariplus_logo.png" alt="BariPlus Logo" className="landing-logo" />
                     <nav className="landing-nav">
                         <a href="#features">Funcionalidades</a>
                         <a href="#pricing">Preço</a>
@@ -17,7 +18,6 @@ const LandingPage = () => {
                 </div>
             </header>
 
-            {/* Seção Principal (Hero) */}
             <main>
                 <section className="hero-section">
                     <div className="hero-content">
@@ -29,7 +29,6 @@ const LandingPage = () => {
                     </div>
                 </section>
 
-                {/* Seção de Funcionalidades */}
                 <section id="features" className="features-section">
                     <h2>Tudo o que você precisa em um só lugar</h2>
                     <div className="features-grid">
@@ -52,7 +51,6 @@ const LandingPage = () => {
                     </div>
                 </section>
 
-                {/* Seção de Preço */}
                 <section id="pricing" className="pricing-section">
                      <div className="pricing-card-public">
                         <h2>Acesso Vitalício</h2>
@@ -68,7 +66,6 @@ const LandingPage = () => {
                 </section>
             </main>
 
-            {/* Rodapé */}
             <footer className="landing-footer">
                 <p>&copy; {new Date().getFullYear()} BariPlus. Todos os direitos reservados.</p>
             </footer>
