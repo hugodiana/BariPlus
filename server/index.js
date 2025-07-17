@@ -14,6 +14,8 @@ const app = express();
 
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
+    'https://bariplus-app.onrender.com',
+    'https://bariplus-admin.onrender.com',
     'https://bariplus.vercel.app',
     'https://bari-plus.vercel.app',
     'https://bariplus-admin.vercel.app',
