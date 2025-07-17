@@ -528,4 +528,33 @@ app.post('/api/admin/grant-access/:userId', autenticar, isAdmin, async (req, res
     }
 });
 
+app.put('/api/user/change-password', autenticar, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        
+        // Busca o usuário no banco de dados
+        const usuario = await User.findById(req.userId);
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+
+        // Verifica se a senha atual fornecida está correta
+        const isMatch = await bcrypt.compare(currentPassword, usuario.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "A senha atual está incorreta." });
+        }
+
+        // Criptografa a nova senha e salva no banco de dados
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        usuario.password = hashedNewPassword;
+        await usuario.save();
+
+        res.json({ message: "Senha alterada com sucesso!" });
+
+    } catch (error) {
+        console.error("Erro ao alterar senha:", error);
+        res.status(500).json({ message: "Erro interno no servidor." });
+    }
+});
+
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
+// Imports da biblioteca de notificações
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
 // Importação de todas as páginas
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
@@ -15,6 +19,7 @@ import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Componente auxiliar para organizar as rotas protegidas
 function AppRoutes() {
@@ -26,7 +31,8 @@ function AppRoutes() {
         <Route path="/checklist" element={<ChecklistPage />} />
         <Route path="/consultas" element={<ConsultasPage />} />
         <Route path="/medicacao" element={<MedicationPage />} />
-        {/* Se o usuário logado tentar acessar uma rota desconhecida, volta para o painel */}
+        <Route path="/perfil" element={<ProfilePage />} />
+
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Layout>
@@ -65,37 +71,45 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        {/* Bloco de rotas para quando o usuário NÃO está logado */}
-        {!usuario && (
-          <>
-            <Route path="/landing" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
-            {/* Se não estiver logado, qualquer outra rota leva para a Landing Page */}
-            <Route path="*" element={<Navigate to="/landing" />} />
-          </>
-        )}
-
-        {/* Bloco de rotas para quando o usuário ESTÁ logado */}
-        {usuario && (
-          <>
-            <Route path="/planos" element={usuario.pagamentoEfetuado ? <Navigate to="/" /> : <PricingPage />} />
-            <Route path="/bem-vindo" element={usuario.onboardingCompleto ? <Navigate to="/" /> : <OnboardingPage />} />
-            <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
-            <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
-            
-            {/* Rota principal que decide se mostra o app ou redireciona */}
-            <Route path="/*" element={
-                !usuario.pagamentoEfetuado ? <Navigate to="/planos" />
-              : !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" />
-              : <AppRoutes /> // Se tudo estiver OK, carrega o app principal
-            }/>
-          </>
-        )}
-      </Routes>
-    </Router>
+    // ✅ CORREÇÃO: Adicionamos o <ToastContainer> aqui fora para que ele funcione em todo o app
+    <>
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      <Router>
+        <Routes>
+          {!usuario ? (
+            <>
+              <Route path="/landing" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
+              <Route path="*" element={<Navigate to="/landing" />} />
+            </>
+          ) : (
+            <>
+              <Route path="/planos" element={usuario.pagamentoEfetuado ? <Navigate to="/" /> : <PricingPage />} />
+              <Route path="/bem-vindo" element={usuario.onboardingCompleto ? <Navigate to="/" /> : <OnboardingPage />} />
+              <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
+              <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
+              <Route path="/*" element={
+                  !usuario.pagamentoEfetuado ? <Navigate to="/planos" />
+                : !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" />
+                : <AppRoutes />
+              }/>
+            </>
+          )}
+        </Routes>
+      </Router>
+    </>
   );
 }
 

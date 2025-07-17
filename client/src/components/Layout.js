@@ -30,6 +30,7 @@ const Layout = ({ children }) => {
           <NavLink to="/progresso">Meu Progresso</NavLink>
           <NavLink to="/consultas">Minhas Consultas</NavLink>
           <NavLink to="/medicacao">Medicação</NavLink>
+          <NavLink to="/perfil">Meu Perfil</NavLink>
         </nav>
         <button onClick={handleLogout} className="logout-btn">Sair</button>
       </aside>
