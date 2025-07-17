@@ -119,7 +119,16 @@ const MedicationSchema = new mongoose.Schema({
     historico: { type: Map, of: Number, default: {} }
 });
 
-
+const FoodLogSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    date: { type: String, required: true }, // Formato "YYYY-MM-DD"
+    refeicoes: {
+        cafeDaManha: [mongoose.Schema.Types.Mixed],
+        almoco: [mongoose.Schema.Types.Mixed],
+        jantar: [mongoose.Schema.Types.Mixed],
+        lanches: [mongoose.Schema.Types.Mixed]
+    }
+});
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -183,7 +192,8 @@ app.post('/api/register', async (req, res) => {
         await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
         await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
         await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', quantidade: 1, unidade: 'comprimido', vezesAoDia: 1 }], historico: {} }).save();
-        
+        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: {} }).save();
+
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
@@ -576,6 +586,53 @@ app.get('/api/admin/stats', autenticar, isAdmin, async (req, res) => {
     } catch (error) {
         console.error("Erro ao buscar estatísticas:", error);
         res.status(500).json({ message: "Erro no servidor" });
+    }
+});
+
+// Buscar o diário alimentar de uma data específica
+app.get('/api/food-diary/:date', autenticar, async (req, res) => {
+    try {
+        const { date } = req.params;
+        let log = await FoodLog.findOne({ userId: req.userId, date: date });
+        if (!log) {
+            // Se não existir, cria um diário vazio para aquele dia
+            log = new FoodLog({ userId: req.userId, date: date, refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } });
+            await log.save();
+        }
+        res.json(log);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar diário alimentar." });
+    }
+});
+
+// Adicionar um alimento a uma refeição
+app.post('/api/food-diary/log', autenticar, async (req, res) => {
+    try {
+        const { date, mealType, food } = req.body; // mealType será 'cafeDaManha', 'almoco', etc.
+        const fieldToUpdate = `refeicoes.${mealType}`;
+        const result = await FoodLog.findOneAndUpdate(
+            { userId: req.userId, date: date },
+            { $push: { [fieldToUpdate]: food } },
+            { new: true, upsert: true }
+        );
+        res.status(201).json(result);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao adicionar alimento." });
+    }
+});
+
+// Apagar um alimento de uma refeição
+app.delete('/api/food-diary/log/:date/:mealType/:itemId', autenticar, async (req, res) => {
+    try {
+        const { date, mealType, itemId } = req.params;
+        const fieldToUpdate = `refeicoes.${mealType}`;
+        await FoodLog.findOneAndUpdate(
+            { userId: req.userId, date: date },
+            { $pull: { [fieldToUpdate]: { _id: itemId } } }
+        );
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao apagar alimento." });
     }
 });
 
