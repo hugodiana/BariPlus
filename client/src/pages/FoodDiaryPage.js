@@ -1,4 +1,4 @@
-import React, 'useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './FoodDiaryPage.css';
 import Modal from '../components/Modal';
 import { format } from 'date-fns';
@@ -14,6 +14,7 @@ const FoodDiaryPage = () => {
     const [loadingDiary, setLoadingDiary] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
+
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
