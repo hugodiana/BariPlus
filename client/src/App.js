@@ -21,11 +21,14 @@ import ConsultasPage from './pages/ConsultasPage';
 import MedicationPage from './pages/MedicationPage';
 import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
+import AffiliatePortalPage from './pages/AffiliatePortalPage';
+
 
 // Componente auxiliar para organizar as rotas protegidas
 function AppRoutes() {
   return (
-    <Layout>
+    <Layout
+      usuario={usuario}> {/* ✅ NOVIDADE: Passamos o usuário para o Layout */}
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/progresso" element={<ProgressoPage />} />
@@ -34,7 +37,7 @@ function AppRoutes() {
         <Route path="/medicacao" element={<MedicationPage />} />
         <Route path="/perfil" element={<ProfilePage />} />
         <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
-
+        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Layout>

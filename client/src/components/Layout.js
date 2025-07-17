@@ -31,6 +31,7 @@ const Layout = ({ children }) => {
           <NavLink to="/consultas">Minhas Consultas</NavLink>
           <NavLink to="/diario-alimentar">Diário Alimentar</NavLink>
           <NavLink to="/medicacao">Medicação</NavLink>
+          <NavLink to="/portal-afiliado" className="affiliate-link"></NavLink>
           <NavLink to="/perfil">Meu Perfil</NavLink>
         </nav>
         <button onClick={handleLogout} className="logout-btn">Sair</button>
