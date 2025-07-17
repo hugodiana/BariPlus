@@ -636,50 +636,46 @@ app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (
 app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     try {
         const affiliateUser = await User.findById(req.userId);
-        
-        console.log("--- INICIANDO DEPURAÇÃO DE AFILIADO ---");
-        console.log("ID do usuário logado:", req.userId);
-        console.log("Documento completo encontrado no MongoDB:", JSON.stringify(affiliateUser, null, 2));
-        console.log("--- FIM DA DEPURAÇÃO ---");
-        
-        // ✅ INÍCIO DA DEPURAÇÃO
-        if (!affiliateUser) {
-            return res.status(404).json({ message: "Usuário afiliado não encontrado no banco de dados." });
-        }
-
         const couponCode = affiliateUser.affiliateCouponCode;
 
         if (!couponCode) {
-            // A nova mensagem de erro que nos ajudará a depurar
-            return res.status(400).json({ 
-                message: `Nenhum código de cupom associado para o usuário: ${affiliateUser.email}. Por favor, verifique os dados no MongoDB.` 
-            });
+            return res.status(400).json({ message: "Nenhum código de cupom associado a esta conta." });
         }
-        // ✅ FIM DA DEPURAÇÃO
 
-        const promotionCodes = await stripe.promotionCodes.list({ code: couponCode, expand: ['data.coupon'], limit: 1 });
-        if (promotionCodes.data.length === 0) return res.status(404).json({ message: `Cupom "${couponCode}" não encontrado no Stripe.` });
-        
-        const couponId = promotionCodes.data[0].coupon.id;
-        const sessions = await stripe.checkout.sessions.list({ expand: ['data.customer'], limit: 100 });
+        // 1. Busca todas as sessões de pagamento bem-sucedidas
+        const sessions = await stripe.checkout.sessions.list({
+            limit: 100, // Busca as últimas 100 sessões
+            expand: ['data.customer', 'data.discounts.promotion_code'], // Garante que temos os dados do cliente e do cupom
+        });
 
-        const affiliateSales = sessions.data.filter(s =>
-            s.payment_status === 'paid' &&
-            s.total_details?.discount?.some(d => d.discount.coupon.id === couponId)
+        // 2. ✅ CORREÇÃO: Nova lógica de filtro, muito mais robusta
+        // Filtra para encontrar as sessões que foram pagas E que usaram o código de cupom do nosso afiliado
+        const affiliateSales = sessions.data.filter(session =>
+            session.payment_status === 'paid' &&
+            session.discounts?.some(d => d.promotion_code?.code.toLowerCase() === couponCode.toLowerCase())
         );
-        
+
+        // 3. Calcula os totais e os detalhes (esta parte continua igual)
         const salesCount = affiliateSales.length;
-        const totalRevenueInCents = affiliateSales.reduce((sum, s) => sum + s.amount_total, 0);
-        const salesDetails = affiliateSales.map(s => ({
-            customerEmail: s.customer.email,
-            amount: (s.amount_total / 100).toFixed(2),
-            date: new Date(s.created * 1000).toLocaleDateString('pt-BR')
+        const totalRevenueInCents = affiliateSales.reduce((sum, session) => sum + session.amount_total, 0);
+
+        const salesDetails = affiliateSales.map(session => ({
+            customerEmail: session.customer?.email || 'Email não disponível',
+            amount: (session.amount_total / 100).toFixed(2),
+            date: new Date(session.created * 1000).toLocaleDateString('pt-BR')
         }));
 
-        res.json({ couponCode, salesCount, totalRevenueInCents, salesDetails });
+        res.json({
+            couponCode: couponCode,
+            salesCount: salesCount,
+            totalRevenueInCents: totalRevenueInCents,
+            salesDetails: salesDetails
+        });
+
     } catch (error) {
         console.error("Erro ao buscar estatísticas de afiliado:", error);
         res.status(500).json({ message: "Erro ao buscar estatísticas." });
     }
 });
+
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
