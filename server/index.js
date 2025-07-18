@@ -870,5 +870,6 @@ app.post('/api/cron/send-medication-reminders', async (req, res) => {
         console.error("Erro no cron job de medicação:", error);
         res.status(500).send("Erro ao processar lembretes de medicação.");
     }
+});
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
