@@ -113,11 +113,28 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="profile-card">
-                    <h3>Notificações</h3>
-                    <p>Receba lembretes sobre consultas, medicamentos e metas diárias.</p>
-                    <div className="notification-actions">
-                        <button onClick={handleEnableNotifications} className="notification-btn">Ativar Notificações</button>
-                        <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                    <h3>Preferências de Notificação</h3>
+                    <div className="setting-item">
+                        <span>Lembretes de Consultas</span>
+                        <label className="switch">
+                            <input 
+                                type="checkbox" 
+                                checked={usuario.notificationSettings?.appointmentReminders ?? true}
+                                onChange={(e) => handleSettingsChange('appointmentReminders', e.target.checked)}
+                            />
+                            <span className="slider round"></span>
+                        </label>
+                    </div>
+                    <div className="setting-item">
+                        <span>Lembretes de Medicação</span>
+                        <label className="switch">
+                            <input 
+                                type="checkbox"
+                                checked={usuario.notificationSettings?.medicationReminders ?? true}
+                                onChange={(e) => handleSettingsChange('medicationReminders', e.target.checked)}
+                            />
+                            <span className="slider round"></span>
+                        </label>
                     </div>
                 </div>
 
