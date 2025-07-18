@@ -1,6 +1,6 @@
 .profile-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 20px;
 }
 
@@ -16,6 +16,7 @@
     color: #37715b;
     border-bottom: 1px solid #eef0ef;
     padding-bottom: 10px;
+    margin-bottom: 20px;
 }
 
 .profile-info {
@@ -66,48 +67,10 @@
     padding: 12px;
     border: none;
     border-radius: 8px;
-    background-color: #37715b; /* Cor verde padrão */
+    background-color: #37715b;
     color: white;
     font-weight: bold;
     cursor: pointer;
-}
-
-.quick-actions-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    justify-content: center;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 20px;
-}
-
-.quick-actions-card h3 {
-    margin-top: 0;
-    text-align: center;
-    color: #37715b;
-}
-
-/* ✅ ESTE É O ESTILO PRINCIPAL DO BOTÃO */
-.quick-action-btn {
-    width: 100%;
-    padding: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    background-color: #007aff; /* Cor azul de ação */
-    color: white;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none; /* Remove o sublinhado do link */
-    box-sizing: border-box;
-    transition: opacity 0.2s;
-}
-
-.quick-action-btn:hover {
-    opacity: 0.9;
 }
 
 .setting-item {
@@ -119,6 +82,7 @@
 }
 .setting-item:last-child {
     border-bottom: none;
+    padding-bottom: 0;
 }
 .setting-item span {
     font-weight: 500;

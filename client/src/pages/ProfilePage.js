@@ -7,6 +7,8 @@ import { getToken } from 'firebase/messaging';
 const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Estados para o formulário de senha
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,15 +53,33 @@ const ProfilePage = () => {
         }
     };
 
-    const handleEnableNotifications = async () => { /* ... (código existente) */ };
+    const handleEnableNotifications = async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY; // Lendo a chave do ambiente
+                const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
+                if (fcmToken) {
+                    await fetch(`${apiUrl}/api/user/save-fcm-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ fcmToken })
+                    });
+                    toast.success("Notificações ativadas com sucesso!");
+                }
+            } else {
+                toast.error("Permissão para notificações foi negada.");
+            }
+        } catch (error) {
+            toast.error("Ocorreu um erro ao ativar as notificações.");
+        }
+    };
 
-    // ✅ CORREÇÃO: A função que estava em falta foi adicionada
     const handleSettingsChange = async (settingKey, value) => {
         if (!usuario) return;
-        const currentSettings = usuario.notificationSettings || { appointmentReminders: true, medicationReminders: true };
+        const currentSettings = usuario.notificationSettings || {};
         const newSettings = { ...currentSettings, [settingKey]: value };
         setUsuario(prev => ({ ...prev, notificationSettings: newSettings }));
-
         try {
             await fetch(`${apiUrl}/api/user/notification-settings`, {
                 method: 'PUT',
@@ -74,7 +94,7 @@ const ProfilePage = () => {
     };
 
     if (loading || !usuario) {
-        return <div>Carregando perfil...</div>;
+        return <div className="page-container">Carregando perfil...</div>;
     }
 
     return (
@@ -83,6 +103,7 @@ const ProfilePage = () => {
                 <h1>Meu Perfil</h1>
                 <p>Aqui estão os seus dados e preferências.</p>
             </div>
+
             <div className="profile-grid">
                 <div className="profile-card">
                     <h3>Meus Dados</h3>
@@ -90,53 +111,53 @@ const ProfilePage = () => {
                     <div className="profile-info"><strong>Nome de Usuário:</strong><span>{usuario.username}</span></div>
                     <div className="profile-info"><strong>Email:</strong><span>{usuario.email}</span></div>
                 </div>
+
                 <div className="profile-card">
                     <h3>Preferências de Notificação</h3>
                     <div className="setting-item">
                         <span>Lembretes de Consultas</span>
                         <label className="switch">
-                            <input 
-                                type="checkbox" 
-                                checked={usuario.notificationSettings?.appointmentReminders ?? true}
-                                onChange={(e) => handleSettingsChange('appointmentReminders', e.target.checked)}
-                            />
+                            <input type="checkbox" checked={usuario.notificationSettings?.appointmentReminders ?? true} onChange={(e) => handleSettingsChange('appointmentReminders', e.target.checked)} />
                             <span className="slider round"></span>
                         </label>
                     </div>
                     <div className="setting-item">
                         <span>Lembretes de Medicação</span>
                         <label className="switch">
-                            <input 
-                                type="checkbox"
-                                checked={usuario.notificationSettings?.medicationReminders ?? true}
-                                onChange={(e) => handleSettingsChange('medicationReminders', e.target.checked)}
-                            />
+                            <input type="checkbox" checked={usuario.notificationSettings?.medicationReminders ?? true} onChange={(e) => handleSettingsChange('medicationReminders', e.target.checked)} />
+                            <span className="slider round"></span>
+                        </label>
+                    </div>
+                    <div className="setting-item">
+                        <span>Lembretes de Pesagem Semanal</span>
+                        <label className="switch">
+                            <input type="checkbox" checked={usuario.notificationSettings?.weighInReminders ?? true} onChange={(e) => handleSettingsChange('weighInReminders', e.target.checked)} />
                             <span className="slider round"></span>
                         </label>
                     </div>
                 </div>
-                <div className="setting-item">
-        <span>Lembretes de Pesagem Semanal</span>
-        <label className="switch">
-            <input 
-                type="checkbox"
-                checked={usuario.notificationSettings?.weighInReminders ?? true}
-                onChange={(e) => handleSettingsChange('weighInReminders', e.target.checked)}
-            />
-            <span className="slider round"></span>
-        </label>
-    </div>
 
+                {/* ✅ CORREÇÃO: O card de "Alterar Senha" que estava em falta, agora está aqui. */}
                 <div className="profile-card">
                     <h3>Alterar Senha</h3>
                     <form onSubmit={handleChangePassword} className="password-form">
-                        {/* ... (inputs do formulário de senha) */}
+                        <label>Senha Atual</label>
+                        <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+                        <label>Nova Senha</label>
+                        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+                        <label>Confirmar Nova Senha</label>
+                        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                        <button type="submit">Salvar Nova Senha</button>
                     </form>
                 </div>
+                
+                {/* ✅ CORREÇÃO: O card de "Ativar Notificações" agora está separado e completo. */}
                 <div className="profile-card">
                     <h3>Notificações Push</h3>
                     <p>Ative para receber lembretes no seu dispositivo.</p>
-                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar Notificações</button>
+                    <div className="notification-actions">
+                        <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
+                    </div>
                 </div>
             </div>
         </div>
