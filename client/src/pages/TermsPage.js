@@ -1,29 +1,26 @@
 import React from 'react';
-import './LegalPage.css'; // Usaremos um estilo compartilhado
+import { Link } from 'react-router-dom';
+import './StaticPage.css'; // Vamos criar um estilo genérico
 
 const TermsPage = () => {
     return (
-        <div className="legal-container">
-            <h1>Termos de Serviço do BariPlus</h1>
-            <p><strong>Última atualização:</strong> 18 de julho de 2025</p>
+        <div className="static-page-container">
+            <div className="static-page-card">
+                <h1>Termos de Serviço</h1>
+                <p>Última atualização: 18 de Julho de 2025</p>
 
-            <h2>1. Aceitação dos Termos</h2>
-            <p>
-                Ao se cadastrar e usar o aplicativo BariPlus ("Serviço"), você concorda em cumprir e estar vinculado a estes Termos de Serviço.
-            </p>
+                <p>Bem-vindo(a) ao BariPlus! Ao utilizar nosso aplicativo, você concorda com estes termos. Por favor, leia-os com atenção.</p>
 
-            <h2>2. Descrição do Serviço</h2>
-            <p>
-                O BariPlus é uma ferramenta para auxiliar no acompanhamento da jornada de pacientes bariátricos. As informações fornecidas não substituem o aconselhamento médico profissional. Consulte sempre a sua equipe de saúde.
-            </p>
+                <h2>1. Uso da Conta</h2>
+                <p>Você é responsável por manter a confidencialidade da sua conta e senha e por restringir o acesso ao seu dispositivo. Você concorda em aceitar a responsabilidade por todas as atividades que ocorram sob sua conta ou senha.</p>
 
-            <h2>3. Uso da Conta</h2>
-            <p>
-                Você é responsável por manter a confidencialidade da sua senha e conta. Você concorda em nos notificar imediatamente sobre qualquer uso não autorizado da sua conta.
-            </p>
+                <h2>2. Pagamentos</h2>
+                <p>O acesso às funcionalidades do BariPlus requer um pagamento único. Todos os pagamentos são processados através do nosso parceiro de pagamentos, Stripe, e estão sujeitos aos seus termos de serviço.</p>
+                
+                {/* Adicione aqui o resto do seu texto de termos de serviço */}
 
-            {/* AVISO: Adicione aqui os seus termos completos. */}
-            <p><strong>[Este é um texto de exemplo. Consulte um profissional para criar seus termos de serviço completos.]</strong></p>
+                <Link to="/landing" className="back-link">Voltar para a Página Inicial</Link>
+            </div>
         </div>
     );
 };
