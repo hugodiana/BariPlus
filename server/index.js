@@ -14,17 +14,18 @@ const admin = require('firebase-admin');
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (!admin.apps.length) {
   try {
-    console.log("Tentando inicializar o Firebase Admin...");
-    if (!process.env.FIREBASE_PRIVATE_KEY) {
-      throw new Error("A variável de ambiente FIREBASE_PRIVATE_KEY não foi encontrada.");
-    }
-    const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY_STRING.replace(/\\n/g, '\n');
+
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: privateKey,
+      })
     });
-    console.log('Firebase Admin inicializado com sucesso!');
+    console.log('Firebase Admin inicializado com sucesso (Método Seguro)!');
   } catch (error) {
-    console.error('ERRO CRÍTICO ao inicializar Firebase Admin:', error.message);
+    console.error('Erro ao inicializar Firebase Admin (Método Seguro):', error.message);
   }
 }
 
