@@ -21,8 +21,8 @@ admin.initializeApp({
 
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
-    'https://bariplus.vercel.app',
-    'https://bari-plus.vercel.app',
+    'https://bariplus-app.onrender.com', // O seu app principal
+    'https://bariplus-admin.onrender.com', // O seu painel de admin
     'https://bariplus-admin.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
@@ -30,6 +30,7 @@ const whitelist = [
 ];
 const corsOptions = {
     origin: function (origin, callback) {
+        // Permite pedidos sem 'origin' (como apps mobile ou Postman) ou se a origem estiver na whitelist
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
@@ -37,6 +38,7 @@ const corsOptions = {
         }
     }
 };
+
 app.use(cors(corsOptions));
 
 // --- ROTA DE WEBHOOK DO STRIPE (ANTES DE express.json()) ---
