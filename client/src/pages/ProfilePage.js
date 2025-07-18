@@ -115,6 +115,18 @@ const ProfilePage = () => {
                         </label>
                     </div>
                 </div>
+                <div className="setting-item">
+        <span>Lembretes de Pesagem Semanal</span>
+        <label className="switch">
+            <input 
+                type="checkbox"
+                checked={usuario.notificationSettings?.weighInReminders ?? true}
+                onChange={(e) => handleSettingsChange('weighInReminders', e.target.checked)}
+            />
+            <span className="slider round"></span>
+        </label>
+    </div>
+
                 <div className="profile-card">
                     <h3>Alterar Senha</h3>
                     <form onSubmit={handleChangePassword} className="password-form">

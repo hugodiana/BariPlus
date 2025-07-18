@@ -97,6 +97,7 @@ const UserSchema = new mongoose.Schema({
     notificationSettings: {
         appointmentReminders: { type: Boolean, default: true },
         medicationReminders: { type: Boolean, default: true }
+        weighInReminders: { type: Boolean, default: true }
     }
 }, { timestamps: true });
 
@@ -887,6 +888,54 @@ app.post('/api/cron/send-medication-reminders', async (req, res) => {
     } catch (error) {
         console.error("Erro no cron job de medicação:", error);
         res.status(500).send("Erro ao processar lembretes de medicação.");
+    }
+});
+
+app.post('/api/cron/send-weigh-in-reminders', async (req, res) => {
+    // 1. Verificação de segurança
+    const providedSecret = req.headers['authorization']?.split(' ')[1];
+    if (providedSecret !== process.env.CRON_JOB_SECRET) {
+        return res.status(401).send('Acesso não autorizado.');
+    }
+
+    console.log("Cron job de lembretes de pesagem semanal iniciado...");
+
+    try {
+        // 2. Busca todos os usuários que querem receber este lembrete
+        const usuariosParaNotificar = await User.find({
+            "notificationSettings.weighInReminders": true,
+            fcmToken: { $ne: null } // Apenas usuários com um token de notificação
+        });
+
+        console.log(`Encontrados ${usuariosParaNotificar.length} usuários para notificar sobre a pesagem.`);
+
+        // 3. Envia a notificação para cada um
+        for (const usuario of usuariosParaNotificar) {
+            const message = {
+                notification: {
+                    title: 'Sua evolução é importante! ⚖️',
+                    body: 'Lembrete semanal: Hora de registrar o seu peso e ver a sua evolução no BariPlus!'
+                },
+                token: usuario.fcmToken
+            };
+
+            try {
+                await admin.messaging().send(message);
+                console.log(`Notificação de pesagem enviada para ${usuario.email}`);
+            } catch (error) {
+                if (error.code === 'messaging/registration-token-not-registered') {
+                    console.log(`Token de pesagem inválido para ${usuario.email}. Removendo.`);
+                    usuario.fcmToken = null;
+                    await usuario.save();
+                } else {
+                    console.error(`Erro ao enviar notificação de pesagem para ${usuario.email}:`, error);
+                }
+            }
+        }
+        res.status(200).send("Lembretes de pesagem processados.");
+    } catch (error) {
+        console.error("Erro no cron job de pesagem:", error);
+        res.status(500).send("Erro ao processar lembretes de pesagem.");
     }
 });
 
