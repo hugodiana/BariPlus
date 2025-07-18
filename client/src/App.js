@@ -22,6 +22,8 @@ import MedicationPage from './pages/MedicationPage';
 import AffiliatePortalPage from './pages/AffiliatePortalPage';
 import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -73,6 +75,8 @@ function App() {
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
           <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+          <Route path="/termos" element={<TermsPage />} />
+<Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Layout>

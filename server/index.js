@@ -141,20 +141,49 @@ const isAffiliate = async (req, res, next) => {
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
     try {
-        const { nome, sobrenome, username, email, password } = req.body;
-        if (await User.findOne({ email })) return res.status(400).json({ message: 'E-mail já em uso.' });
-        if (await User.findOne({ username })) return res.status(400).json({ message: 'Nome de usuário já em uso.' });
+        let { nome, sobrenome, username, email, password } = req.body;
+
+        // ✅ INÍCIO DA CORREÇÃO: Validação e formatação do nome de usuário
+        username = username.toLowerCase().trim();
+        if (username.includes(' ')) {
+            return res.status(400).json({ message: 'O nome de usuário não pode conter espaços.' });
+        }
+        if (username.length < 3) {
+            return res.status(400).json({ message: 'O nome de usuário precisa ter pelo menos 3 caracteres.' });
+        }
+        // ✅ FIM DA CORREÇÃO
+
+        // ✅ NOVIDADE: Validação de força da senha no servidor
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ message: 'A senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.' });
+        }
+        // ✅ FIM DA NOVIDADE
+
+        if (await User.findOne({ email })) {
+            return res.status(400).json({ message: 'Este e-mail já está em uso.' });
+        }
+        if (await User.findOne({ username })) {
+            return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+        }
+        
         const hashedPassword = await bcrypt.hash(password, 10);
         const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
         await novoUsuario.save();
+
+        // Cria os documentos associados para o novo usuário
         await new Checklist({ userId: novoUsuario._id, preOp: [{ descricao: 'Marcar consulta com cirurgião', concluido: false }], posOp: [{ descricao: 'Tomar suplementos vitamínicos', concluido: false }] }).save();
         await new Peso({ userId: novoUsuario._id, registros: [] }).save();
         await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
         await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
         await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', quantidade: 1, unidade: 'comprimido', vezesAoDia: 1 }], historico: {} }).save();
         await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: { cafeDaManha:[], almoco:[], jantar:[], lanches:[] } }).save();
+        
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
-    } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
+    } catch (error) {
+        console.error("Erro no registro:", error);
+        res.status(500).json({ message: 'Erro no servidor.' });
+    }
 });
 
 app.post('/api/login', async (req, res) => {
