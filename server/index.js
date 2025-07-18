@@ -695,6 +695,7 @@ app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     }
 });
 
+// --- ROTAS DE NOTIFICAÇÃO ---
 app.post('/api/user/save-fcm-token', autenticar, async (req, res) => {
     try {
         const { fcmToken } = req.body;
@@ -705,7 +706,6 @@ app.post('/api/user/save-fcm-token', autenticar, async (req, res) => {
     }
 });
 
-// Rota para enviar uma notificação de teste
 app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
     try {
         const usuario = await User.findById(req.userId);
@@ -717,7 +717,6 @@ app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
                 },
                 token: usuario.fcmToken
             };
-
             await admin.messaging().send(message);
             res.status(200).json({ message: "Notificação de teste enviada!" });
         } else {
