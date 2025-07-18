@@ -741,5 +741,55 @@ app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
     }
 });
 
+app.post('/api/cron/send-appointment-reminders', async (req, res) => {
+    // 1. Verifica se o pedido veio do nosso Cron Job (e não de um estranho)
+    const providedSecret = req.headers['authorization']?.split(' ')[1];
+    if (providedSecret !== process.env.CRON_JOB_SECRET) {
+        return res.status(401).send('Acesso não autorizado.');
+    }
+
+    console.log("Cron job de lembretes de consulta iniciado...");
+    
+    try {
+        // 2. Encontra as datas de hoje e de amanhã
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const amanha = new Date(hoje);
+        amanha.setDate(amanha.getDate() + 1);
+        const depoisDeAmanha = new Date(amanha);
+        depoisDeAmanha.setDate(depoisDeAmanha.getDate() + 1);
+
+        // 3. Busca no banco de dados por usuários que tenham consultas amanhã
+        const usuariosComConsultasAmanha = await Consulta.find({
+            "consultas.data": { $gte: amanha, $lt: depoisDeAmanha }
+        }).populate('userId');
+
+        for (const doc of usuariosComConsultasAmanha) {
+            const usuario = doc.userId;
+            if (usuario && usuario.fcmToken) {
+                const consultaDeAmanha = doc.consultas.find(c => 
+                    new Date(c.data) >= amanha && new Date(c.data) < depoisDeAmanha
+                );
+
+                if (consultaDeAmanha) {
+                    // 4. Monta e envia a notificação para cada usuário
+                    const message = {
+                        notification: {
+                            title: 'Lembrete de Consulta 🗓️',
+                            body: `Não se esqueça da sua consulta de ${consultaDeAmanha.especialidade} amanhã!`
+                        },
+                        token: usuario.fcmToken
+                    };
+                    await admin.messaging().send(message);
+                    console.log(`Notificação de lembrete enviada para ${usuario.email}`);
+                }
+            }
+        }
+        res.status(200).send("Lembretes de consulta enviados com sucesso.");
+    } catch (error) {
+        console.error("Erro no cron job de lembretes:", error);
+        res.status(500).send("Erro ao processar lembretes.");
+    }
+});
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
