@@ -717,12 +717,14 @@ app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
                 },
                 token: usuario.fcmToken
             };
+
             await admin.messaging().send(message);
             res.status(200).json({ message: "Notificação de teste enviada!" });
         } else {
             res.status(404).json({ message: "Usuário ou token de notificação não encontrado." });
         }
     } catch (error) {
+        console.error("Erro ao enviar notificação:", error);
         res.status(500).json({ message: "Erro ao enviar notificação." });
     }
 });
