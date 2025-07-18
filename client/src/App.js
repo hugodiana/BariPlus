@@ -1,4 +1,4 @@
-import React, 'useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -29,7 +29,6 @@ function App() {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // useEffect para autenticação
   useEffect(() => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -53,7 +52,6 @@ function App() {
     }
   }, []);
 
-  // useEffect para notificações com o app aberto
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       onMessage(messaging, (payload) => {
@@ -74,14 +72,11 @@ function App() {
         <Route path="/perfil" element={<ProfilePage />} />
         <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
         <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-        {/* As páginas de Termos e Privacidade também devem estar acessíveis aqui para usuários logados */}
-        <Route path="/termos" element={<TermsPage />} />
-        <Route path="/privacidade" element={<PrivacyPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Layout>
   );
-
+  
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
   }
@@ -91,31 +86,25 @@ function App() {
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <Routes>
-          {/* --- ROTAS PÚBLICAS (visíveis para todos) --- */}
+          {/* --- ROTAS PÚBLICAS E INTERMEDIÁRIAS --- */}
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
           <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
-          
           <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
-
-          {/* --- ROTAS QUE DEPENDEM DO ESTADO DE LOGIN --- */}
+          
+          {/* --- ROTA PRINCIPAL E PROTEGIDA --- */}
           <Route path="/*" element={
-            !usuario 
-              ? <Navigate to="/landing" /> // Se não estiver logado, o padrão é a landing page
-              : !usuario.pagamentoEfetuado 
-                ? <Navigate to="/planos" />
-                : !usuario.onboardingCompleto
-                  ? <Navigate to="/bem-vindo" />
-                  : <AppRoutes /> // Se tudo estiver OK, carrega o app principal
+            !usuario ? <Navigate to="/landing" /> :
+            !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
+            !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
+            <AppRoutes />
           }/>
           
-          {/* Rotas intermediárias para usuários logados mas incompletos */}
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
           <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
-
         </Routes>
       </Router>
     </>
