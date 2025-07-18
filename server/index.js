@@ -11,6 +11,17 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
 
+try {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+  console.log('Firebase Admin inicializado com sucesso!');
+} catch (error) {
+  console.error('Erro ao inicializar Firebase Admin:', error.message);
+}
+
+
 const app = express();
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
@@ -692,7 +703,7 @@ app.post('/api/user/save-fcm-token', autenticar, async (req, res) => {
     try {
         const { fcmToken } = req.body;
         await User.findByIdAndUpdate(req.userId, { fcmToken: fcmToken });
-        res.status(200).json({ message: 'Token de notificação salvo com sucesso.' });
+        res.status(200).json({ message: 'Token salvo com sucesso.' });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao salvar token.' });
     }
@@ -710,14 +721,12 @@ app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
                 },
                 token: usuario.fcmToken
             };
-
             await admin.messaging().send(message);
             res.status(200).json({ message: "Notificação de teste enviada!" });
         } else {
             res.status(404).json({ message: "Usuário ou token de notificação não encontrado." });
         }
     } catch (error) {
-        console.error("Erro ao enviar notificação:", error);
         res.status(500).json({ message: "Erro ao enviar notificação." });
     }
 });
