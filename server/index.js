@@ -26,12 +26,6 @@ if (!admin.apps.length) {
 
 const app = express();
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
     'https://bariplus-app.onrender.com', // O seu app principal
