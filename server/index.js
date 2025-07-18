@@ -11,29 +11,6 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
 
-// Garante que o app só é inicializado uma vez
-if (!admin.apps.length) {
-  try {
-    // 1. Pega a chave completa codificada em Base64 do ambiente
-    const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
-    
-    // 2. Descodifica de volta para o formato JSON original
-    const decodedKey = Buffer.from(encodedKey, 'base64').toString('ascii');
-    
-    // 3. Converte o texto JSON num objeto JavaScript
-    const serviceAccount = JSON.parse(decodedKey);
-
-    // 4. ✅ CORREÇÃO: Passa o objeto serviceAccount inteiro para o Firebase
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-
-    console.log('Firebase Admin inicializado com sucesso!');
-  } catch (error) {
-    console.error('Erro ao inicializar Firebase Admin:', error);
-  }
-}
-
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [ 'https://bariplus.vercel.app', 'https://bari-plus.vercel.app', 'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com', 'https://bariplus-admin.onrender.com', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002' ];
 const corsOptions = {
@@ -70,6 +47,20 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
 });
 
 app.use(express.json());
+
+if (!admin.apps.length) {
+  try {
+    const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
+    const decodedKey = Buffer.from(encodedKey, 'base64').toString('ascii');
+    const serviceAccount = JSON.parse(decodedKey);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin inicializado com sucesso!');
+  } catch (error) {
+    console.error('Erro ao inicializar Firebase Admin:', error);
+  }
+}
 
 // --- OUTRAS CONFIGURAÇÕES ---
 cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
