@@ -768,15 +768,10 @@ app.post('/api/cron/send-appointment-reminders', async (req, res) => {
 
         // 2. Para cada documento encontrado, processa individualmente
         for (const doc of consultaDocs) {
-            // Busca o usuário associado a este documento de consulta
             const usuario = await User.findById(doc.userId);
 
-            // Verifica se o usuário existe e se tem um token de notificação
             if (usuario && usuario.fcmToken) {
-                // Encontra a consulta específica de amanhã dentro do array de consultas do documento
-                const consultaDeAmanha = doc.consultas.find(c => 
-                    new Date(c.data) >= amanha && new Date(c.data) < depoisDeAmanha
-                );
+                const consultaDeAmanha = doc.consultas.find(c => new Date(c.data) >= amanha && new Date(c.data) < depoisDeAmanha);
 
                 if (consultaDeAmanha) {
                     const message = {
@@ -786,12 +781,25 @@ app.post('/api/cron/send-appointment-reminders', async (req, res) => {
                         },
                         token: usuario.fcmToken
                     };
-                    await admin.messaging().send(message);
-                    console.log(`Notificação de lembrete enviada para ${usuario.email}`);
+                    
+                    try {
+                        // Tenta enviar a notificação
+                        await admin.messaging().send(message);
+                        console.log(`Notificação de lembrete enviada para ${usuario.email}`);
+                    } catch (error) {
+                        // ✅ CORREÇÃO: Se o erro for 'token não registrado', apaga o token do banco de dados
+                        if (error.code === 'messaging/registration-token-not-registered') {
+                            console.log(`Token inválido encontrado para ${usuario.email}. Removendo do banco de dados.`);
+                            usuario.fcmToken = null;
+                            await usuario.save();
+                        } else {
+                            console.error(`Erro ao enviar notificação para ${usuario.email}:`, error);
+                        }
+                    }
                 }
             }
         }
-        res.status(200).send("Lembretes de consulta processados com sucesso.");
+        res.status(200).send("Lembretes processados.");
     } catch (error) {
         console.error("Erro no cron job de lembretes:", error);
         res.status(500).send("Erro ao processar lembretes.");
