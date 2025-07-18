@@ -14,7 +14,12 @@ const admin = require('firebase-admin');
 const app = express();
 
 // --- CONFIGURAÇÃO DE CORS ---
-const whitelist = [ 'https://bariplus.vercel.app', 'https://bari-plus.vercel.app', 'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com', 'https://bariplus-admin.onrender.com', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002' ];
+const whitelist = [
+    'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
+    'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com',
+    'https://bariplus-admin.onrender.com', 'http://localhost:3000',
+    'http://localhost:3001', 'http://localhost:3002'
+];
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1 || !origin) {
@@ -26,7 +31,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// --- ROTA DE WEBHOOK DO STRIPE (ANTES DE express.json()) ---
+// --- ROTA DE WEBHOOK DO STRIPE ---
 app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -50,6 +55,7 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
 
 app.use(express.json());
 
+// --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (!admin.apps.length) {
   try {
     const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
