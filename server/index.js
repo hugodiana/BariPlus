@@ -81,33 +81,25 @@ const JWT_SECRET = process.env.JWT_SECRET;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-onst UserSchema = new mongoose.Schema({
-    // --- Campos do Usuário ---
+const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String, required: true },
     username: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: {
-        fezCirurgia: String, dataCirurgia: Date, altura: Number,
-        pesoInicial: Number, pesoAtual: Number
-    },
+    detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number },
     stripeCustomerId: String,
     pagamentoEfetuado: { type: Boolean, default: false },
     role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
     affiliateCouponCode: String,
     fcmToken: String,
-    
-    // ✅ CORREÇÃO: O campo 'notificationSettings' fica aqui dentro
     notificationSettings: {
         appointmentReminders: { type: Boolean, default: true },
         medicationReminders: { type: Boolean, default: true }
     }
-}, { 
-    // ✅ CORREÇÃO: A opção 'timestamps' fica aqui, no segundo objeto
-    timestamps: true 
-});
+}, { timestamps: true });
+
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
