@@ -61,7 +61,7 @@ const ProfilePage = () => {
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-            const vapidKey = "SUA_CHAVE_VAPID_AQUI";
+            const vapidKey = "BO6r0_2ceNtjYoYOFxjpWTQ9kziRPGXtIK4kSGYaN25nMJIhvpcpDECYte0NFvhnJPbcgVKeFj-vcYOH_2CXHTQ";
             const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
 
             if (fcmToken) {
