@@ -1,17 +1,33 @@
-import React, 'useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { onMessage } from "firebase/messaging";
 import { messaging } from './firebase';
 
-// ... (todas as suas outras importações de páginas)
+// Importação de todas as páginas
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import PricingPage from './pages/PricingPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import OnboardingPage from './pages/OnboardingPage';
+import Layout from './components/Layout';
+import DashboardPage from './pages/DashboardPage';
+import ProgressoPage from './pages/ProgressoPage';
+import ChecklistPage from './pages/ChecklistPage';
+import ConsultasPage from './pages/ConsultasPage';
+import MedicationPage from './pages/MedicationPage';
+import AffiliatePortalPage from './pages/AffiliatePortalPage';
+import ProfilePage from './pages/ProfilePage';
+import FoodDiaryPage from './pages/FoodDiaryPage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // useEffect para autenticação (continua igual)
+  // useEffect para autenticação
   useEffect(() => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -35,17 +51,16 @@ function App() {
     }
   }, []);
 
-  // ✅ NOVIDADE: useEffect para ouvir por notificações com o app aberto
+  // useEffect para notificações com o app aberto
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       onMessage(messaging, (payload) => {
-        console.log('Notificação recebida em primeiro plano: ', payload);
         toast.info(<div><strong>{payload.notification.title}</strong><br/>{payload.notification.body}</div>);
       });
     }
   }, []);
 
-
+  // Componente auxiliar para as rotas protegidas
   const AppRoutes = () => {
     return (
       <Layout usuario={usuario}>
