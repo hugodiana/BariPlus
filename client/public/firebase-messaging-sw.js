@@ -16,9 +16,10 @@ firebase.initializeApp(firebaseConfig);
 
 const messaging = firebase.messaging();
 
-// Opcional: Lógica para quando a notificação é recebida com o app em segundo plano
+// Lógica para quando a notificação é recebida com o app em segundo plano
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  console.log('[firebase-messaging-sw.js] Mensagem recebida em segundo plano: ', payload);
+
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
