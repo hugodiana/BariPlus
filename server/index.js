@@ -13,6 +13,7 @@ const admin = require('firebase-admin');
 
 if (!admin.apps.length) {
   try {
+    // Garanta que a sua variável de ambiente FIREBASE_PRIVATE_KEY está configurada no Render
     const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount)
