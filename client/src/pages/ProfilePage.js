@@ -7,12 +7,9 @@ import { getToken } from 'firebase/messaging';
 const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // Estados para o formulário de senha
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
@@ -57,8 +54,14 @@ const ProfilePage = () => {
         try {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
-                const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY; // Lendo a chave do ambiente
+                // ✅ CORREÇÃO: Lendo a chave VAPID da variável de ambiente
+                const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
+                if (!vapidKey) {
+                    return toast.error("Configuração de notificações em falta.");
+                }
+
                 const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
+
                 if (fcmToken) {
                     await fetch(`${apiUrl}/api/user/save-fcm-token`, {
                         method: 'POST',
@@ -103,7 +106,6 @@ const ProfilePage = () => {
                 <h1>Meu Perfil</h1>
                 <p>Aqui estão os seus dados e preferências.</p>
             </div>
-
             <div className="profile-grid">
                 <div className="profile-card">
                     <h3>Meus Dados</h3>
@@ -137,7 +139,6 @@ const ProfilePage = () => {
                     </div>
                 </div>
 
-                {/* ✅ CORREÇÃO: O card de "Alterar Senha" que estava em falta, agora está aqui. */}
                 <div className="profile-card">
                     <h3>Alterar Senha</h3>
                     <form onSubmit={handleChangePassword} className="password-form">
@@ -151,13 +152,10 @@ const ProfilePage = () => {
                     </form>
                 </div>
                 
-                {/* ✅ CORREÇÃO: O card de "Ativar Notificações" agora está separado e completo. */}
                 <div className="profile-card">
                     <h3>Notificações Push</h3>
                     <p>Ative para receber lembretes no seu dispositivo.</p>
-                    <div className="notification-actions">
-                        <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
-                    </div>
+                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
                 </div>
             </div>
         </div>

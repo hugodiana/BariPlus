@@ -76,7 +76,7 @@ function App() {
           <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
           <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
           <Route path="/termos" element={<TermsPage />} />
-<Route path="/privacidade" element={<PrivacyPage />} />
+          <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Layout>
