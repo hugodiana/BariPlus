@@ -806,4 +806,63 @@ app.post('/api/cron/send-appointment-reminders', async (req, res) => {
     }
 });
 
+app.post('/api/cron/send-medication-reminders', async (req, res) => {
+    // 1. A mesma verificação de segurança da outra rota
+    const providedSecret = req.headers['authorization']?.split(' ')[1];
+    if (providedSecret !== process.env.CRON_JOB_SECRET) {
+        return res.status(401).send('Acesso não autorizado.');
+    }
+
+    console.log("Cron job de lembretes de medicação iniciado...");
+
+    try {
+        // 2. Pega a data de hoje no formato "YYYY-MM-DD"
+        const hoje = new Date().toISOString().split('T')[0];
+
+        // 3. Busca todos os usuários que têm medicamentos cadastrados
+        const usuariosComMedicamentos = await User.find({
+            // Podemos adicionar um filtro aqui se quisermos, mas por agora buscamos todos
+        });
+
+        console.log(`Verificando ${usuariosComMedicamentos.length} usuários com medicamentos.`);
+
+        for (const usuario of usuariosComMedicamentos) {
+            // 4. Para cada usuário, verifica se ele já registrou algum medicamento hoje
+            const logDeMedicacao = await Medication.findOne({ userId: usuario._id });
+
+            // Se o log de medicação existe E NÃO tem um registro para hoje
+            if (logDeMedicacao && !logDeMedicacao.historico.has(hoje)) {
+                
+                // 5. Se o usuário tem um token válido, envia a notificação
+                if (usuario.fcmToken) {
+                    const message = {
+                        notification: {
+                            title: 'Hora dos seus cuidados! 💊',
+                            body: 'Não se esqueça de registrar as suas vitaminas e medicamentos de hoje no BariPlus.'
+                        },
+                        token: usuario.fcmToken
+                    };
+
+                    try {
+                        await admin.messaging().send(message);
+                        console.log(`Notificação de medicação enviada para ${usuario.email}`);
+                    } catch (error) {
+                        // Lida com tokens inválidos, como fizemos antes
+                        if (error.code === 'messaging/registration-token-not-registered') {
+                            console.log(`Token de medicação inválido para ${usuario.email}. Removendo.`);
+                            usuario.fcmToken = null;
+                            await usuario.save();
+                        } else {
+                            console.error(`Erro ao enviar notificação de medicação para ${usuario.email}:`, error);
+                        }
+                    }
+                }
+            }
+        }
+        res.status(200).send("Lembretes de medicação processados.");
+    } catch (error) {
+        console.error("Erro no cron job de medicação:", error);
+        res.status(500).send("Erro ao processar lembretes de medicação.");
+    }
+
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
