@@ -14,13 +14,20 @@ const admin = require('firebase-admin');
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (!admin.apps.length) {
   try {
+    console.log("Tentando inicializar o Firebase Admin...");
+    if (!process.env.FIREBASE_PRIVATE_KEY) {
+      throw new Error("A variável de ambiente FIREBASE_PRIVATE_KEY não foi encontrada.");
+    }
     const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
-    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
     console.log('Firebase Admin inicializado com sucesso!');
   } catch (error) {
-    console.error('Erro ao inicializar Firebase Admin:', error.message);
+    console.error('ERRO CRÍTICO ao inicializar Firebase Admin:', error.message);
   }
 }
+
 
 const app = express();
 
@@ -697,24 +704,46 @@ app.post('/api/user/save-fcm-token', autenticar, async (req, res) => {
 });
 
 app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
+    console.log("--- ROTA DE TESTE DE NOTIFICAÇÃO ATINGIDA ---");
     try {
+        console.log("1. Buscando usuário pelo ID:", req.userId);
         const usuario = await User.findById(req.userId);
+
+        if (!usuario) {
+            console.error("Usuário não encontrado no banco de dados.");
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+        console.log("2. Usuário encontrado:", usuario.email);
+
         if (usuario && usuario.fcmToken) {
+            console.log("3. Token FCM encontrado:", usuario.fcmToken);
             const message = {
                 notification: {
                     title: 'Olá do BariPlus! 👋',
-                    body: 'Este é um teste para confirmar que suas notificações estão funcionando.'
+                    body: 'Este é o seu teste de notificação. Funcionou!'
                 },
                 token: usuario.fcmToken
             };
-            await admin.messaging().send(message);
-            res.status(200).json({ message: "Notificação de teste enviada!" });
+
+            console.log("4. A preparar para enviar a mensagem...");
+            try {
+                const response = await admin.messaging().send(message);
+                console.log("5. Mensagem enviada com sucesso!", response);
+                res.status(200).json({ message: "Notificação de teste enviada com sucesso!" });
+            } catch (sendError) {
+                // Erro específico do envio do Firebase
+                console.error("ERRO DENTRO DO FIREBASE MESSAGING:", sendError);
+                res.status(500).json({ message: "Erro específico ao tentar enviar via Firebase." });
+            }
         } else {
-            res.status(404).json({ message: "Usuário ou token de notificação não encontrado." });
+            console.error("Token FCM não encontrado para este usuário.");
+            res.status(404).json({ message: "Token de notificação não encontrado para este usuário." });
         }
     } catch (error) {
-        res.status(500).json({ message: "Erro ao enviar notificação." });
+        console.error("Erro geral na rota send-test-notification:", error);
+        res.status(500).json({ message: "Erro geral no servidor." });
     }
 });
+
 
 app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
