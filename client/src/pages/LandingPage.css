@@ -146,3 +146,18 @@
     .hero-content h1 { font-size: 2.2rem; }
     .features-section h2, .pricing-section h2 { font-size: 2rem; }
 }
+
+.footer-links {
+    margin-top: 10px;
+}
+.footer-links a {
+    color: #ccc;
+    text-decoration: none;
+    margin: 0 10px;
+}
+.footer-links a:hover {
+    text-decoration: underline;
+}
+.footer-links span {
+    color: #666;
+}
