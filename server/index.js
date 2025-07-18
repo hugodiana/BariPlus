@@ -11,6 +11,8 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
 
+const app = express();
+
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [ 'https://bariplus.vercel.app', 'https://bari-plus.vercel.app', 'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com', 'https://bariplus-admin.onrender.com', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002' ];
 const corsOptions = {
