@@ -96,7 +96,7 @@ const UserSchema = new mongoose.Schema({
     fcmToken: String,
     notificationSettings: {
         appointmentReminders: { type: Boolean, default: true },
-        medicationReminders: { type: Boolean, default: true }
+        medicationReminders: { type: Boolean, default: true },
         weighInReminders: { type: Boolean, default: true }
     }
 }, { timestamps: true });
