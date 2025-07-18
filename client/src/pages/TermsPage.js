@@ -42,8 +42,7 @@ const TermsPage = () => {
     
             <Link to="/landing" className="back-link">Voltar à Página Inicial</Link>
         </div>
-
-);
-
+    );
+};
 
 export default TermsPage;
