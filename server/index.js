@@ -11,16 +11,17 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
 
-try {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
-  console.log('Firebase Admin inicializado com sucesso!');
-} catch (error) {
-  console.error('Erro ao inicializar Firebase Admin:', error.message);
+if (!admin.apps.length) {
+  try {
+    const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount)
+    });
+    console.log('Firebase Admin inicializado com sucesso!');
+  } catch (error) {
+    console.error('Erro ao inicializar Firebase Admin:', error.message);
+  }
 }
-
 
 const app = express();
 
