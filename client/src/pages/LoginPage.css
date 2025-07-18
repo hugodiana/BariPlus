@@ -7,7 +7,6 @@
     padding: 20px;
     box-sizing: border-box;
 }
-
 .login-form-wrapper {
     background: white;
     padding: 30px 40px;
@@ -16,29 +15,24 @@
     width: 100%;
     max-width: 400px;
 }
-
 .login-form-header {
     text-align: center;
     margin-bottom: 25px;
 }
-
 .login-logo {
     width: 120px;
     margin-bottom: 10px;
 }
-
 .login-form-header h2 {
     color: #333;
     font-weight: 600;
     margin: 0 0 5px 0;
 }
-
 .login-form-header p {
     color: #666;
     font-size: 1rem;
     margin: 0;
 }
-
 .login-form input {
     width: 100%;
     padding: 12px;
@@ -48,18 +42,15 @@
     box-sizing: border-box;
     font-size: 16px;
 }
-
 .password-wrapper {
     position: relative;
     width: 100%;
     margin-bottom: 15px;
 }
-
 .password-wrapper input {
     padding-right: 40px; 
     margin-bottom: 0;
 }
-
 .password-toggle-icon {
     position: absolute;
     top: 50%;
@@ -69,7 +60,6 @@
     color: #888;
     user-select: none;
 }
-
 .submit-button {
     width: 100%;
     padding: 12px;
@@ -82,30 +72,25 @@
     cursor: pointer;
     transition: background-color 0.2s;
 }
-
 .submit-button:hover {
     background-color: #2a5745;
 }
-
 .submit-button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
 }
-
 .message {
     color: #d93025;
     margin-top: 15px;
     text-align: center;
     font-size: 14px;
 }
-
 .form-footer {
     display: flex;
     justify-content: space-between;
     margin-top: 20px;
     flex-wrap: wrap;
 }
-
 .link-button {
     background: none;
     border: none;
@@ -114,29 +99,25 @@
     cursor: pointer;
     padding: 0;
 }
-
 .link-button:hover {
     text-decoration: underline;
 }
-
-/* NOVIDADE: Estilos para a confirmação de termos */
 .terms-container {
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     font-size: 13px;
     color: #555;
     text-align: left;
 }
-
 .terms-container label {
     display: flex;
     align-items: center;
     gap: 8px;
+    cursor: pointer;
 }
-
 .terms-container input[type="checkbox"] {
     width: auto;
+    margin-bottom: 0;
 }
-
 .terms-container a {
     color: #007aff;
     text-decoration: none;
@@ -144,3 +125,27 @@
 .terms-container a:hover {
     text-decoration: underline;
 }
+.modal-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+.modal-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.password-requirements {
+    margin: -5px 0 15px 0;
+    font-size: 12px;
+    text-align: left;
+}
+.password-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.password-requirements li.invalid { color: #a0a0a0; }
+.password-requirements li.valid { color: #28a745; font-weight: 600; }
