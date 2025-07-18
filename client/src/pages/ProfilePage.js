@@ -58,7 +58,7 @@ const ProfilePage = () => {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
                 toast.info("Obtendo o token de notificação...");
-                const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
+                const vapidKey = "BLH255x4EOj3AuXL6JvX4ZouPigm5Q9aqmW4R7e0T6tVMxBcbZglrzdsdMTn9B8izsb2ZRp1F8ck4BHrHM1HjJc";
                 if (!vapidKey) return toast.error("Chave de configuração de notificações não encontrada.");
 
                 const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
