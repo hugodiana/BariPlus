@@ -1,30 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, 'useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { onMessage } from "firebase/messaging";
+import { messaging } from './firebase';
 
-// Importação de todas as páginas
-import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
-import PricingPage from './pages/PricingPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentCancelPage from './pages/PaymentCancelPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import OnboardingPage from './pages/OnboardingPage';
-import Layout from './components/Layout';
-import DashboardPage from './pages/DashboardPage';
-import ProgressoPage from './pages/ProgressoPage';
-import ChecklistPage from './pages/ChecklistPage';
-import ConsultasPage from './pages/ConsultasPage';
-import MedicationPage from './pages/MedicationPage';
-import AffiliatePortalPage from './pages/AffiliatePortalPage';
-import ProfilePage from './pages/ProfilePage';
-import FoodDiaryPage from './pages/FoodDiaryPage';
+// ... (todas as suas outras importações de páginas)
 
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // useEffect para autenticação (continua igual)
   useEffect(() => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -48,8 +35,17 @@ function App() {
     }
   }, []);
 
-  // ✅ CORREÇÃO: O componente auxiliar agora está DENTRO do App
-  // Assim, ele consegue aceder à variável 'usuario'
+  // ✅ NOVIDADE: useEffect para ouvir por notificações com o app aberto
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      onMessage(messaging, (payload) => {
+        console.log('Notificação recebida em primeiro plano: ', payload);
+        toast.info(<div><strong>{payload.notification.title}</strong><br/>{payload.notification.body}</div>);
+      });
+    }
+  }, []);
+
+
   const AppRoutes = () => {
     return (
       <Layout usuario={usuario}>
@@ -74,18 +70,7 @@ function App() {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
+      <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <Routes>
           {!usuario ? (
