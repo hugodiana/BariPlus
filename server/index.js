@@ -11,13 +11,11 @@ const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
 
+// --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (!admin.apps.length) {
   try {
-    // Garanta que a sua variável de ambiente FIREBASE_PRIVATE_KEY está configurada no Render
     const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
+    admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
     console.log('Firebase Admin inicializado com sucesso!');
   } catch (error) {
     console.error('Erro ao inicializar Firebase Admin:', error.message);
@@ -27,17 +25,9 @@ if (!admin.apps.length) {
 const app = express();
 
 // --- CONFIGURAÇÃO DE CORS ---
-const whitelist = [
-    'https://bariplus-app.onrender.com', // O seu app principal
-    'https://bariplus-admin.onrender.com', // O seu painel de admin
-    'https://bariplus-admin.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3002'
-];
+const whitelist = [ 'https://bariplus.vercel.app', 'https://bari-plus.vercel.app', 'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com', 'https://bariplus-admin.onrender.com', 'http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002' ];
 const corsOptions = {
     origin: function (origin, callback) {
-        // Permite pedidos sem 'origin' (como apps mobile ou Postman) ou se a origem estiver na whitelist
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
@@ -45,7 +35,6 @@ const corsOptions = {
         }
     }
 };
-
 app.use(cors(corsOptions));
 
 // --- ROTA DE WEBHOOK DO STRIPE (ANTES DE express.json()) ---
@@ -83,7 +72,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, required: true, unique: true }, email: { type: String, required: true, unique: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String }, { timestamps: true });
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, required: true, unique: true }, email: { type: String, required: true, unique: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
@@ -112,12 +101,12 @@ const autenticar = (req, res, next) => {
 };
 const isAdmin = async (req, res, next) => {
     const usuario = await User.findById(req.userId);
-    if (usuario && usuario.role === 'admin') { next(); }
+    if (usuario && usuario.role === 'admin') { next(); } 
     else { res.status(403).json({ message: "Acesso negado." }); }
 };
 const isAffiliate = async (req, res, next) => {
     const usuario = await User.findById(req.userId);
-    if (usuario && usuario.role === 'affiliate') { next(); }
+    if (usuario && usuario.role === 'affiliate') { next(); } 
     else { res.status(403).json({ message: "Acesso negado." }); }
 };
 
@@ -696,6 +685,7 @@ app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
 });
 
 // --- ROTAS DE NOTIFICAÇÃO ---
+// ✅ ROTAS DE NOTIFICAÇÃO
 app.post('/api/user/save-fcm-token', autenticar, async (req, res) => {
     try {
         const { fcmToken } = req.body;
@@ -713,7 +703,7 @@ app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
             const message = {
                 notification: {
                     title: 'Olá do BariPlus! 👋',
-                    body: 'Este é um teste para confirmar que as suas notificações estão a funcionar.'
+                    body: 'Este é um teste para confirmar que suas notificações estão funcionando.'
                 },
                 token: usuario.fcmToken
             };
@@ -723,7 +713,6 @@ app.post('/api/user/send-test-notification', autenticar, async (req, res) => {
             res.status(404).json({ message: "Usuário ou token de notificação não encontrado." });
         }
     } catch (error) {
-        console.error("Erro ao enviar notificação:", error);
         res.status(500).json({ message: "Erro ao enviar notificação." });
     }
 });
