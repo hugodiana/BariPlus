@@ -9,4 +9,5 @@ client/build
 .env
 
 # Chaves Secretas
-server/bariplus-oficial-firebase-adminsdk-fbsvc-029e80f1f6.json
+server/bariplus-oficial-firebase-adminsdk-fbsvc-029e80f1f6.json.env
+server/bariplus-oficial-firebase-adminsdk-*.json
