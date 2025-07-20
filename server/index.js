@@ -147,7 +147,7 @@ const isAffiliate = async (req, res, next) => {
 
 // --- ROTAS DA API ---
 // ROTA DE CADASTRO ATUALIZADA COM VALIDAÇÃO
-app.post('/api/reset-password/:userId/:token', async (req, res) => {
+app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
 
