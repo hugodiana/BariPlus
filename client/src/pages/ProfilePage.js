@@ -145,6 +145,25 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="profile-card">
+                    <h3>Notificações Push</h3>
+                    <p>Ative para receber lembretes no seu dispositivo.</p>
+                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
+                    <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                </div>
+
+                <div className="profile-card">
+                    <h3>Alterar Email</h3>
+                    <form onSubmit={handleChangeEmail} className="email-form">
+                        <label>Email Atual</label>
+                        <input type="email" value={currentEmail} onChange={e => setCurrentEmail(e.target.value)} required />
+
+                        <label>Novo Email</label>
+                        <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
+
+                        <button type="submit">Salvar Novo Email</button>
+                    </form>
+                </div>
+                <div className="profile-card">
                     <h3>Alterar Senha</h3>
                     <form onSubmit={handleChangePassword} className="password-form">
                         <label>Senha Atual</label>

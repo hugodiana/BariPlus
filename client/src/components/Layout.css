@@ -18,7 +18,9 @@
   padding: 20px;
   box-sizing: border-box;
   transition: transform 0.3s ease-in-out;
-  z-index: 1000; /* Garante que a sidebar fique por cima de tudo */
+  z-index: 1001; /* Garante que a sidebar fique por cima de tudo */
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-header {

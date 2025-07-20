@@ -70,12 +70,13 @@ const LoginPage = () => {
                 return toast.error("A sua senha não cumpre todos os requisitos de segurança.");
             }
             if (!acceptedTerms) {
-                return toast.error("Você precisa aceitar os Termos de Serviço para se cadastrar.");
+                return toast.error("Você precisa de aceitar os Termos de Serviço.");
             }
         }
 
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
         const body = isRegistering 
+            ? { nome, sobrenome, username, email, password } 
             ? { nome, sobrenome, username, email, password } 
             : { identifier, password };
             
@@ -198,13 +199,7 @@ const LoginPage = () => {
                 <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>
                 <form onSubmit={handleForgotPassword} className="modal-form">
                     <label>E-mail</label>
-                    <input
-                        type="email"
-                        value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
-                        placeholder="seu-email@exemplo.com"
-                        required
-                    />
+                    <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="seu-email@exemplo.com" required />
                     <button type="submit" className="submit-button">Enviar Link de Redefinição</button>
                 </form>
             </Modal>
