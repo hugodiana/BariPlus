@@ -73,13 +73,18 @@ app.use(express.json());
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (!admin.apps.length) {
     try {
-        const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
+        // Correção: Decodificar a chave privada do Firebase de base64 primeiro
+        const firebasePrivateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY, 'base64').toString('utf-8');
+        const serviceAccount = JSON.parse(firebasePrivateKey);
+        
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
         });
         console.log('Firebase Admin inicializado com sucesso!');
     } catch (error) {
         console.error('Erro ao inicializar Firebase Admin:', error);
+        // Adicione este log para verificar a chave
+        console.log('Conteúdo de FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY);
     }
 }
 
