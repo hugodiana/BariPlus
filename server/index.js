@@ -229,17 +229,36 @@ app.post('/api/forgot-password', async (req, res) => {
 app.post('/api/reset-password/:userId/:token', async (req, res) => {
     const { userId, token } = req.params;
     const { password } = req.body;
+
+    if (!password) {
+        return res.status(400).json({ message: "A nova senha é obrigatória." });
+    }
+
     try {
         const usuario = await User.findById(userId);
-        if (!usuario) return res.status(400).json({ message: "Link inválido ou expirado." });
+        if (!usuario) {
+            return res.status(400).json({ message: "Usuário não encontrado." });
+        }
+
         const resetSecret = JWT_SECRET + usuario.password;
-        jwt.verify(token, resetSecret);
+
+        try {
+            jwt.verify(token, resetSecret);
+        } catch (err) {
+            return res.status(400).json({ message: "Token inválido ou expirado." });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         usuario.password = hashedPassword;
         await usuario.save();
+
         res.json({ message: "Senha redefinida com sucesso!" });
-    } catch (error) { res.status(400).json({ message: "Link inválido ou expirado." }); }
+    } catch (error) {
+        console.error("Erro ao redefinir senha:", error);
+        res.status(500).json({ message: "Erro interno do servidor." });
+    }
 });
+
 
 app.get('/api/me', autenticar, async (req, res) => {
     try {
