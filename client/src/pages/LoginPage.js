@@ -42,7 +42,7 @@ const LoginPage = () => {
             length: pass.length >= 8,
             uppercase: /[A-Z]/.test(pass),
             number: /[0-9]/.test(pass),
-            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(pass),
+            specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(pass),
         };
         setPasswordValidations(validations);
         return Object.values(validations).every(Boolean);
