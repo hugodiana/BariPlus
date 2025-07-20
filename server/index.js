@@ -10,14 +10,16 @@ const nodemailer = require('nodemailer');
 const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
+
 const validatePassword = (password) => {
     if (password.length < 8) return false;
     if (!/[A-Z]/.test(password)) return false;
-    if (!/[a-z]/.test(password)) return false; // Adicionando verificação de minúscula
+    if (!/[a-z]/.test(password)) return false;
     if (!/[0-9]/.test(password)) return false;
-    if (!/[!@#$%^&*(),.?":{}|<>*]/.test(password)) return false;
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return false;
     return true;
 };
+
 const app = express();
 
 // --- CONFIGURAÇÃO DE CORS ---
@@ -27,6 +29,7 @@ const whitelist = [
     'https://bariplus-admin.onrender.com', 'http://localhost:3000',
     'http://localhost:3001', 'http://localhost:3002'
 ];
+
 const corsOptions = {
     origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1 || !origin) {
@@ -36,6 +39,7 @@ const corsOptions = {
         }
     }
 };
+
 app.use(cors(corsOptions));
 
 // --- ROTA DE WEBHOOK DO STRIPE ---
@@ -43,20 +47,24 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
     let event;
+
     try {
         event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
     } catch (err) {
         return res.status(400).send(`Webhook Error: ${err.message}`);
     }
+
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const stripeCustomerId = session.customer;
+        
         try {
-            await User.findOneAndUpdate({ stripeCustomerId: stripeCustomerId }, { pagamentoEfetuado: true });
+            await User.findOneAndUpdate({ stripeCustomerId }, { pagamentoEfetuado: true });
         } catch (err) {
             return res.status(500).json({ error: "Erro ao atualizar status do usuário." });
         }
     }
+    
     res.json({received: true});
 });
 
@@ -64,28 +72,33 @@ app.use(express.json());
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (!admin.apps.length) {
-  try {
-    const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
-    const decodedKey = Buffer.from(encodedKey, 'base64').toString('ascii');
-    const serviceAccount = JSON.parse(decodedKey);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('Firebase Admin inicializado com sucesso!');
-  } catch (error) {
-    console.error('Erro ao inicializar Firebase Admin:', error);
-  }
+    try {
+        const serviceAccount = JSON.parse(process.env.FIREBASE_PRIVATE_KEY);
+        admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount)
+        });
+        console.log('Firebase Admin inicializado com sucesso!');
+    } catch (error) {
+        console.error('Erro ao inicializar Firebase Admin:', error);
+    }
 }
 
 // --- OUTRAS CONFIGURAÇÕES ---
-cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET 
+});
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- CONEXÃO COM O BANCO DE DADOS ---
-mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
+mongoose.connect(process.env.DATABASE_URL)
+    .then(() => console.log('Conectado ao MongoDB!'))
+    .catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
 const UserSchema = new mongoose.Schema({
@@ -95,7 +108,13 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number },
+    detalhesCirurgia: { 
+        fezCirurgia: String, 
+        dataCirurgia: Date, 
+        altura: Number, 
+        pesoInicial: Number, 
+        pesoAtual: Number 
+    },
     stripeCustomerId: String,
     pagamentoEfetuado: { type: Boolean, default: false },
     role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
@@ -108,12 +127,66 @@ const UserSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
-const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
-const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
-const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
-const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
-const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
+const ChecklistSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    preOp: [{ descricao: String, concluido: Boolean }], 
+    posOp: [{ descricao: String, concluido: Boolean }] 
+});
+
+const PesoSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    registros: [{ 
+        peso: Number, 
+        data: Date, 
+        fotoUrl: String, 
+        medidas: { 
+            cintura: Number, 
+            quadril: Number, 
+            braco: Number 
+        } 
+    }] 
+});
+
+const ConsultaSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    consultas: [{ 
+        especialidade: String, 
+        data: Date, 
+        local: String, 
+        notas: String, 
+        status: String 
+    }] 
+});
+
+const DailyLogSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    date: String, 
+    waterConsumed: { type: Number, default: 0 }, 
+    proteinConsumed: { type: Number, default: 0 } 
+});
+
+const MedicationSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    medicamentos: [{ 
+        nome: String, 
+        dosagem: String, 
+        quantidade: Number, 
+        unidade: String, 
+        vezesAoDia: Number 
+    }], 
+    historico: { type: Map, of: Map, default: {} } 
+});
+
+const FoodLogSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    date: String, 
+    refeicoes: { 
+        cafeDaManha: [mongoose.Schema.Types.Mixed], 
+        almoco: [mongoose.Schema.Types.Mixed], 
+        jantar: [mongoose.Schema.Types.Mixed], 
+        lanches: [mongoose.Schema.Types.Mixed] 
+    } 
+});
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -127,67 +200,83 @@ const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 const autenticar = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.sendStatus(401);
+    
+    if (!token) return res.sendStatus(401);
+    
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.sendStatus(403);
         req.userId = user.userId;
         next();
     });
 };
+
 const isAdmin = async (req, res, next) => {
-    const usuario = await User.findById(req.userId);
-    if (usuario && usuario.role === 'admin') { next(); } 
-    else { res.status(403).json({ message: "Acesso negado." }); }
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.role === 'admin') {
+            next();
+        } else {
+            res.status(403).json({ message: "Acesso negado." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao verificar permissões." });
+    }
 };
+
 const isAffiliate = async (req, res, next) => {
-    const usuario = await User.findById(req.userId);
-    if (usuario && usuario.role === 'affiliate') { next(); } 
-    else { res.status(403).json({ message: "Acesso negado." }); }
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.role === 'affiliate') {
+            next();
+        } else {
+            res.status(403).json({ message: "Acesso negado." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao verificar permissões." });
+    }
 };
 
 // --- ROTAS DA API ---
-// ROTA DE CADASTRO ATUALIZADA COM VALIDAÇÃO
 app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
 
-        // ✅ NOVIDADE: Adicionando a verificação de senha forte aqui
         if (!validatePassword(password)) {
-            return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança (mínimo 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial)." });
+            return res.status(400).json({ 
+                message: "A senha não cumpre os requisitos de segurança (mínimo 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial)." 
+            });
         }
 
-        if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-        if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+        if (await User.findOne({ email })) {
+            return res.status(400).json({ message: 'Este e-mail já está em uso.' });
+        }
+        
+        if (await User.findOne({ username })) {
+            return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+        }
         
         const hashedPassword = await bcrypt.hash(password, 10);
         const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
         await novoUsuario.save();
 
-        // Cria todos os documentos associados para o novo usuário
-        await new Checklist({ userId: novoUsuario._id, /*...*/ }).save();
-        await new Peso({ userId: novoUsuario._id, /*...*/ }).save();
-        // ... (etc. para todos os outros)
-        
-        res.status(201).json({ message: 'Usuário criado com sucesso! Verifique seu e-mail.' });
+        // Cria documentos associados para o novo usuário
+        await Promise.all([
+            new Checklist({ userId: novoUsuario._id, preOp: [], posOp: [] }).save(),
+            new Peso({ userId: novoUsuario._id, registros: [] }).save(),
+            new Consulta({ userId: novoUsuario._id, consultas: [] }).save(),
+            new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+            new Medication({ 
+                userId: novoUsuario._id, 
+                medicamentos: [], 
+                historico: {} 
+            }).save(),
+            new FoodLog({ 
+                userId: novoUsuario._id, 
+                date: new Date().toISOString().split('T')[0], 
+                refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } 
+            }).save()
+        ]);
 
-    } catch (error) { 
-        res.status(500).json({ message: 'Erro no servidor.' }); 
-    }
-});
-
-        
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
-        await novoUsuario.save();
-
-        // Cria os documentos associados para o novo usuário
-        await new Checklist({ userId: novoUsuario._id, preOp: [{ descricao: 'Marcar consulta com cirurgião', concluido: false }], posOp: [{ descricao: 'Tomar suplementos vitamínicos', concluido: false }] }).save();
-        await new Peso({ userId: novoUsuario._id, registros: [] }).save();
-        await new Consulta({ userId: novoUsuario._id, consultas: [] }).save();
-        await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
-        await new Medication({ userId: novoUsuario._id, medicamentos: [{ nome: 'Vitamina B12', dosagem: '1000mcg', quantidade: 1, unidade: 'comprimido', vezesAoDia: 1 }], historico: {} }).save();
-        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0], refeicoes: { cafeDaManha:[], almoco:[], jantar:[], lanches:[] } }).save();
-        
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
     } catch (error) {
         console.error("Erro no registro:", error);
@@ -195,43 +284,114 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+// Rota de Login
 app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
-        const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
-        if (!usuario || !(await bcrypt.compare(password, usuario.password))) return res.status(401).json({ message: 'Credenciais inválidas.' });
+        
+        // Validação básica
+        if (!identifier || !password) {
+            return res.status(400).json({ message: 'E-mail/nome de usuário e senha são obrigatórios.' });
+        }
+
+        const usuario = await User.findOne({ 
+            $or: [{ email: identifier }, { username: identifier }] 
+        }).select('+password');
+
+        if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
+            return res.status(401).json({ message: 'Credenciais inválidas.' });
+        }
+
         const token = jwt.sign({ userId: usuario._id }, JWT_SECRET, { expiresIn: '8h' });
-        res.json({ token });
-    } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
+        
+        // Remove a senha antes de retornar
+        usuario.password = undefined;
+        
+        res.json({ 
+            token,
+            user: usuario
+        });
+
+    } catch (error) {
+        console.error('Erro no login:', error);
+        res.status(500).json({ message: 'Erro no servidor.' });
+    }
 });
 
+// Rota de Recuperação de Senha
 app.post('/api/forgot-password', async (req, res) => {
-    const { email } = req.body;
     try {
-        const usuario = await User.findOne({ email });
-        if (!usuario) {
-            return res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ message: 'O e-mail é obrigatório.' });
         }
+
+        const usuario = await User.findOne({ email });
+        
+        // Mesmo se não encontrar, retorna sucesso por segurança
+        if (!usuario) {
+            return res.json({ 
+                message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." 
+            });
+        }
+
         const resetSecret = JWT_SECRET + usuario.password;
-        const resetToken = jwt.sign({ userId: usuario._id }, resetSecret, { expiresIn: '15m' });
+        const resetToken = jwt.sign({ userId: usuario._id }, resetSecret, { 
+            expiresIn: '15m' 
+        });
+        
         const resetLink = `${process.env.CLIENT_URL}/reset-password/${usuario._id}/${resetToken}`;
-        const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+        
+        const transporter = nodemailer.createTransport({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            secure: process.env.SMTP_SECURE === 'true',
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            }
+        });
+
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.SMTP_USER}>`,
             to: usuario.email,
             subject: "Redefinição de Senha - BariPlus",
-            html: `<p>Olá ${usuario.nome},</p><p>Para redefinir sua senha, clique no link abaixo:</p><a href="${resetLink}">Redefinir Senha</a><p>Este link é válido por 15 minutos.</p>`,
+            html: `
+                <p>Olá ${usuario.nome},</p>
+                <p>Para redefinir sua senha, clique no link abaixo:</p>
+                <a href="${resetLink}">Redefinir Senha</a>
+                <p>Este link é válido por 15 minutos.</p>
+                <p>Caso não tenha solicitado esta redefinição, ignore este e-mail.</p>
+            `,
         });
-        res.json({ message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." });
-    } catch (error) { res.status(500).json({ message: "Erro no servidor." }); }
+
+        res.json({ 
+            message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." 
+        });
+
+    } catch (error) {
+        console.error('Erro na recuperação de senha:', error);
+        res.status(500).json({ message: "Erro no servidor." });
+    }
 });
 
+// Rota de Redefinição de Senha
 app.post('/api/reset-password/:userId/:token', async (req, res) => {
-    const { userId, token } = req.params;
-    const { password } = req.body;
     try {
+        const { userId, token } = req.params;
+        const { password } = req.body;
+        
+        if (!password || !validatePassword(password)) {
+            return res.status(400).json({ 
+                message: "A senha não cumpre os requisitos de segurança." 
+            });
+        }
+
         const usuario = await User.findById(userId);
-        if (!usuario) return res.status(400).json({ message: "Link inválido ou expirado." });
+        if (!usuario) {
+            return res.status(400).json({ message: "Link inválido ou expirado." });
+        }
 
         const resetSecret = JWT_SECRET + usuario.password;
         jwt.verify(token, resetSecret);
@@ -241,221 +401,545 @@ app.post('/api/reset-password/:userId/:token', async (req, res) => {
         await usuario.save();
 
         res.json({ message: "Senha redefinida com sucesso!" });
+
     } catch (error) {
+        console.error('Erro na redefinição de senha:', error);
         res.status(400).json({ message: "Link inválido ou expirado." });
     }
 });
 
-
+// Rota de Perfil do Usuário
 app.get('/api/me', autenticar, async (req, res) => {
     try {
-        const usuario = await User.findById(req.userId).select('-password');
+        const usuario = await User.findById(req.userId)
+            .select('-password -fcmToken -stripeCustomerId');
+            
+        if (!usuario) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
         res.json(usuario);
-    } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
+    } catch (error) {
+        console.error('Erro ao buscar perfil:', error);
+        res.status(500).json({ message: 'Erro no servidor.' });
+    }
 });
 
+// Rota de Onboarding
 app.post('/api/onboarding', autenticar, async (req, res) => {
     try {
         const { fezCirurgia, dataCirurgia, altura, pesoInicial } = req.body;
+        
+        // Validação básica
+        if (!fezCirurgia || !altura || !pesoInicial) {
+            return res.status(400).json({ 
+                message: 'Todos os campos são obrigatórios.' 
+            });
+        }
+
         const pesoNum = parseFloat(pesoInicial);
-        const detalhes = { fezCirurgia, dataCirurgia: dataCirurgia || null, altura: parseFloat(altura), pesoInicial: pesoNum, pesoAtual: pesoNum };
-        await User.findByIdAndUpdate(req.userId, { $set: { detalhesCirurgia: detalhes, onboardingCompleto: true } });
-        await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: { peso: pesoNum, data: new Date() } } });
+        const alturaNum = parseFloat(altura);
+
+        if (isNaN(pesoNum) {
+            return res.status(400).json({ message: 'Peso inválido.' });
+        }
+
+        if (isNaN(alturaNum)) {
+            return res.status(400).json({ message: 'Altura inválida.' });
+        }
+
+        const detalhes = { 
+            fezCirurgia, 
+            dataCirurgia: fezCirurgia === 'sim' ? new Date(dataCirurgia) : null, 
+            altura: alturaNum, 
+            pesoInicial: pesoNum, 
+            pesoAtual: pesoNum 
+        };
+
+        await User.findByIdAndUpdate(
+            req.userId, 
+            { 
+                $set: { 
+                    detalhesCirurgia: detalhes, 
+                    onboardingCompleto: true 
+                } 
+            }
+        );
+
+        await Peso.findOneAndUpdate(
+            { userId: req.userId }, 
+            { 
+                $push: { 
+                    registros: { 
+                        peso: pesoNum, 
+                        data: new Date() 
+                    } 
+                } 
+            },
+            { upsert: true }
+        );
+
         res.status(200).json({ message: 'Dados salvos com sucesso!' });
-    } catch (error) { res.status(500).json({ message: 'Erro no servidor ao salvar detalhes.' }); }
+
+    } catch (error) {
+        console.error('Erro no onboarding:', error);
+        res.status(500).json({ message: 'Erro ao salvar detalhes.' });
+    }
 });
 
+// Rota para Atualizar Data de Cirurgia
 app.put('/api/user/surgery-date', autenticar, async (req, res) => {
-    const { dataCirurgia } = req.body;
-    const usuarioAtualizado = await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.dataCirurgia": dataCirurgia } }, { new: true }).select('-password');
-    res.json(usuarioAtualizado);
+    try {
+        const { dataCirurgia } = req.body;
+        
+        if (!dataCirurgia) {
+            return res.status(400).json({ message: 'A data da cirurgia é obrigatória.' });
+        }
+
+        const usuarioAtualizado = await User.findByIdAndUpdate(
+            req.userId,
+            { $set: { "detalhesCirurgia.dataCirurgia": new Date(dataCirurgia) } },
+            { new: true }
+        ).select('-password');
+
+        if (!usuarioAtualizado) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
+        res.json(usuarioAtualizado);
+
+    } catch (error) {
+        console.error('Erro ao atualizar data de cirurgia:', error);
+        res.status(500).json({ message: 'Erro no servidor.' });
+    }
 });
 
-app.get('/api/pesos', autenticar, async (req, res) => {
-    const pesoDoc = await Peso.findOne({ userId: req.userId });
-    res.json(pesoDoc ? pesoDoc.registros : []);
-});
-
+// Rota para Registrar Peso
 app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
     try {
         const { peso, cintura, quadril, braco } = req.body;
+        
+        if (!peso) {
+            return res.status(400).json({ message: 'O peso é obrigatório.' });
+        }
+
+        const pesoNum = parseFloat(peso);
+        if (isNaN(pesoNum)) {
+            return res.status(400).json({ message: 'Peso inválido.' });
+        }
+
         let fotoUrl = '';
         if (req.file) {
-            const b64 = Buffer.from(req.file.buffer).toString('base64');
-            let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-            const result = await cloudinary.uploader.upload(dataURI, { resource_type: 'auto', folder: 'bariplus_progress' });
-            fotoUrl = result.secure_url;
+            try {
+                const b64 = Buffer.from(req.file.buffer).toString('base64');
+                const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+                const result = await cloudinary.uploader.upload(dataURI, {
+                    resource_type: 'auto',
+                    folder: 'bariplus_progress'
+                });
+                fotoUrl = result.secure_url;
+            } catch (uploadError) {
+                console.error('Erro no upload da foto:', uploadError);
+                return res.status(500).json({ message: 'Erro ao fazer upload da foto.' });
+            }
         }
-        const pesoNum = parseFloat(peso);
-        const novoRegistro = { peso: pesoNum, data: new Date(), fotoUrl, medidas: { cintura: parseFloat(cintura) || null, quadril: parseFloat(quadril) || null, braco: parseFloat(braco) || null } };
-        await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": pesoNum } });
-        const pesoDoc = await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: novoRegistro } }, { new: true, upsert: true });
-        res.status(201).json(pesoDoc.registros[pesoDoc.registros.length - 1]);
-    } catch (error) { res.status(500).json({ message: 'Erro ao registrar peso.' }); }
-});
 
+        const novoRegistro = {
+            peso: pesoNum,
+            data: new Date(),
+            fotoUrl,
+            medidas: {
+                cintura: parseFloat(cintura) || null,
+                quadril: parseFloat(quadril) || null,
+                braco: parseFloat(braco) || null
+            }
+        };
+
+        // Atualiza o peso atual do usuário
+        await User.findByIdAndUpdate(
+            req.userId,
+            { $set: { "detalhesCirurgia.pesoAtual": pesoNum } }
+        );
+
+        // Adiciona o novo registro de peso
+        const pesoDoc = await Peso.findOneAndUpdate(
+            { userId: req.userId },
+            { $push: { registros: novoRegistro } },
+            { new: true, upsert: true }
+        );
+
+        res.status(201).json(pesoDoc.registros[pesoDoc.registros.length - 1]);
+
+    } catch (error) {
+        console.error('Erro ao registrar peso:', error);
+        res.status(500).json({ message: 'Erro ao registrar peso.' });
+    }
+});
+// --- ROTAS DE CHECKLIST ---
 app.get('/api/checklist', autenticar, async (req, res) => {
-    const checklistDoc = await Checklist.findOne({ userId: req.userId });
-    res.json(checklistDoc || { preOp: [], posOp: [] });
+    try {
+        const checklistDoc = await Checklist.findOne({ userId: req.userId });
+        res.json(checklistDoc || { preOp: [], posOp: [] });
+    } catch (error) {
+        console.error('Erro ao buscar checklist:', error);
+        res.status(500).json({ message: 'Erro ao buscar checklist.' });
+    }
 });
 
 app.post('/api/checklist', autenticar, async (req, res) => {
-    const { descricao, type } = req.body;
-    const novoItem = { descricao, concluido: false };
-    const result = await Checklist.findOneAndUpdate({ userId: req.userId }, { $push: { [type]: novoItem } }, { new: true });
-    res.status(201).json(result[type][result[type].length - 1]);
+    try {
+        const { descricao, type } = req.body;
+        
+        if (!descricao || !type || !['preOp', 'posOp'].includes(type)) {
+            return res.status(400).json({ 
+                message: 'Descrição e tipo (preOp/posOp) são obrigatórios.' 
+            });
+        }
+
+        const novoItem = { descricao, concluido: false };
+        const result = await Checklist.findOneAndUpdate(
+            { userId: req.userId },
+            { $push: { [type]: novoItem } },
+            { new: true, upsert: true }
+        );
+
+        res.status(201).json(result[type][result[type].length - 1]);
+    } catch (error) {
+        console.error('Erro ao adicionar item ao checklist:', error);
+        res.status(500).json({ message: 'Erro ao adicionar item.' });
+    }
 });
 
 app.put('/api/checklist/:itemId', autenticar, async (req, res) => {
-    const { itemId } = req.params;
-    const { concluido, descricao, type } = req.body;
     try {
+        const { itemId } = req.params;
+        const { concluido, descricao, type } = req.body;
+
+        if (!itemId || !type || !['preOp', 'posOp'].includes(type)) {
+            return res.status(400).json({ 
+                message: 'ID do item e tipo (preOp/posOp) são obrigatórios.' 
+            });
+        }
+
         const checklistDoc = await Checklist.findOne({ userId: req.userId });
-        if (!checklistDoc) return res.status(404).json({ message: "Checklist não encontrado." });
+        if (!checklistDoc) {
+            return res.status(404).json({ message: "Checklist não encontrado." });
+        }
+
         const item = checklistDoc[type].id(itemId);
-        if (!item) return res.status(404).json({ message: "Item não encontrado." });
+        if (!item) {
+            return res.status(404).json({ message: "Item não encontrado." });
+        }
+
         if (descricao !== undefined) item.descricao = descricao;
         if (concluido !== undefined) item.concluido = concluido;
+
         await checklistDoc.save();
         res.json(item);
-    } catch (error) { res.status(500).json({ message: "Erro ao atualizar item." }); }
+    } catch (error) {
+        console.error('Erro ao atualizar item do checklist:', error);
+        res.status(500).json({ message: "Erro ao atualizar item." });
+    }
 });
 
 app.delete('/api/checklist/:itemId', autenticar, async (req, res) => {
-    const { itemId } = req.params;
-    const { type } = req.query;
     try {
-        await Checklist.findOneAndUpdate({ userId: req.userId }, { $pull: { [type]: { _id: itemId } } });
+        const { itemId } = req.params;
+        const { type } = req.query;
+
+        if (!itemId || !type || !['preOp', 'posOp'].includes(type)) {
+            return res.status(400).json({ 
+                message: 'ID do item e tipo (preOp/posOp) são obrigatórios.' 
+            });
+        }
+
+        await Checklist.findOneAndUpdate(
+            { userId: req.userId },
+            { $pull: { [type]: { _id: itemId } } }
+        );
+
         res.status(204).send();
-    } catch (error) { res.status(500).json({ message: "Erro ao apagar item." }); }
+    } catch (error) {
+        console.error('Erro ao remover item do checklist:', error);
+        res.status(500).json({ message: "Erro ao apagar item." });
+    }
 });
 
+// --- ROTAS DE CONSULTAS ---
 app.get('/api/consultas', autenticar, async (req, res) => {
-    const consultaDoc = await Consulta.findOne({ userId: req.userId });
-    res.json(consultaDoc ? consultaDoc.consultas : []);
+    try {
+        const consultaDoc = await Consulta.findOne({ userId: req.userId });
+        res.json(consultaDoc ? consultaDoc.consultas : []);
+    } catch (error) {
+        console.error('Erro ao buscar consultas:', error);
+        res.status(500).json({ message: 'Erro ao buscar consultas.' });
+    }
 });
 
 app.post('/api/consultas', autenticar, async (req, res) => {
-    const { especialidade, data, local, notas } = req.body;
-    const novaConsulta = { especialidade, data, local, notas, status: 'Agendado' };
-    const result = await Consulta.findOneAndUpdate({ userId: req.userId }, { $push: { consultas: novaConsulta } }, { new: true });
-    res.status(201).json(result.consultas[result.consultas.length - 1]);
+    try {
+        const { especialidade, data, local, notas } = req.body;
+        
+        if (!especialidade || !data) {
+            return res.status(400).json({ 
+                message: 'Especialidade e data são obrigatórios.' 
+            });
+        }
+
+        const novaConsulta = { 
+            especialidade, 
+            data: new Date(data), 
+            local: local || '', 
+            notas: notas || '', 
+            status: 'Agendado' 
+        };
+
+        const result = await Consulta.findOneAndUpdate(
+            { userId: req.userId },
+            { $push: { consultas: novaConsulta } },
+            { new: true, upsert: true }
+        );
+
+        res.status(201).json(result.consultas[result.consultas.length - 1]);
+    } catch (error) {
+        console.error('Erro ao agendar consulta:', error);
+        res.status(500).json({ message: 'Erro ao agendar consulta.' });
+    }
 });
 
 app.put('/api/consultas/:consultaId', autenticar, async (req, res) => {
     try {
         const { consultaId } = req.params;
-        const { especialidade, data, local, notas } = req.body;
-        const consultaDoc = await Consulta.findOne({ "consultas._id": consultaId, userId: req.userId });
-        if (!consultaDoc) return res.status(404).json({ message: "Consulta não encontrada." });
-        const itemDaConsulta = consultaDoc.consultas.id(consultaId);
-        itemDaConsulta.especialidade = especialidade; itemDaConsulta.data = data; itemDaConsulta.local = local; itemDaConsulta.notas = notas;
+        const { especialidade, data, local, notas, status } = req.body;
+
+        if (!consultaId) {
+            return res.status(400).json({ message: 'ID da consulta é obrigatório.' });
+        }
+
+        const consultaDoc = await Consulta.findOne({ 
+            "consultas._id": consultaId, 
+            userId: req.userId 
+        });
+
+        if (!consultaDoc) {
+            return res.status(404).json({ message: "Consulta não encontrada." });
+        }
+
+        const consulta = consultaDoc.consultas.id(consultaId);
+        if (!consulta) {
+            return res.status(404).json({ message: "Consulta não encontrada." });
+        }
+
+        if (especialidade) consulta.especialidade = especialidade;
+        if (data) consulta.data = new Date(data);
+        if (local !== undefined) consulta.local = local;
+        if (notas !== undefined) consulta.notas = notas;
+        if (status) consulta.status = status;
+
         await consultaDoc.save();
-        res.json(itemDaConsulta);
-    } catch (error) { res.status(500).json({ message: "Erro no servidor ao editar consulta." }); }
+        res.json(consulta);
+    } catch (error) {
+        console.error('Erro ao atualizar consulta:', error);
+        res.status(500).json({ message: "Erro ao editar consulta." });
+    }
 });
 
 app.delete('/api/consultas/:consultaId', autenticar, async (req, res) => {
-    const { consultaId } = req.params;
-    await Consulta.findOneAndUpdate({ userId: req.userId }, { $pull: { consultas: { _id: consultaId } } });
-    res.status(204).send();
+    try {
+        const { consultaId } = req.params;
+
+        if (!consultaId) {
+            return res.status(400).json({ message: 'ID da consulta é obrigatório.' });
+        }
+
+        await Consulta.findOneAndUpdate(
+            { userId: req.userId },
+            { $pull: { consultas: { _id: consultaId } } }
+        );
+
+        res.status(204).send();
+    } catch (error) {
+        console.error('Erro ao cancelar consulta:', error);
+        res.status(500).json({ message: "Erro ao cancelar consulta." });
+    }
 });
 
+// --- ROTAS DE REGISTRO DIÁRIO ---
 app.get('/api/dailylog/today', autenticar, async (req, res) => {
     try {
         const today = new Date().toISOString().split('T')[0];
         let log = await DailyLog.findOne({ userId: req.userId, date: today });
+        
         if (!log) {
-            log = new DailyLog({ userId: req.userId, date: today });
+            log = new DailyLog({ 
+                userId: req.userId, 
+                date: today,
+                waterConsumed: 0,
+                proteinConsumed: 0
+            });
             await log.save();
         }
+        
         res.json(log);
-    } catch (error) { res.status(500).json({ message: "Erro ao buscar log diário." }); }
+    } catch (error) {
+        console.error('Erro ao buscar registro diário:', error);
+        res.status(500).json({ message: "Erro ao buscar log diário." });
+    }
 });
 
 app.post('/api/dailylog/track', autenticar, async (req, res) => {
     try {
         const { type, amount } = req.body;
+        
+        if (!type || !['water', 'protein'].includes(type) || !amount) {
+            return res.status(400).json({ 
+                message: 'Tipo (water/protein) e quantidade são obrigatórios.' 
+            });
+        }
+
+        const amountNum = parseFloat(amount);
+        if (isNaN(amountNum)) {
+            return res.status(400).json({ message: 'Quantidade inválida.' });
+        }
+
         const today = new Date().toISOString().split('T')[0];
         const fieldToUpdate = type === 'water' ? 'waterConsumed' : 'proteinConsumed';
-        const updatedLog = await DailyLog.findOneAndUpdate({ userId: req.userId, date: today }, { $inc: { [fieldToUpdate]: amount } }, { new: true, upsert: true });
+        
+        const updatedLog = await DailyLog.findOneAndUpdate(
+            { userId: req.userId, date: today },
+            { $inc: { [fieldToUpdate]: amountNum } },
+            { new: true, upsert: true }
+        );
+
         res.json(updatedLog);
-    } catch (error) { res.status(500).json({ message: "Erro ao registrar consumo." }); }
+    } catch (error) {
+        console.error('Erro ao registrar consumo:', error);
+        res.status(500).json({ message: "Erro ao registrar consumo." });
+    }
 });
 
+// --- ROTAS DE MEDICAÇÃO ---
 app.get('/api/medication', autenticar, async (req, res) => {
-    let doc = await Medication.findOne({ userId: req.userId });
-    if (!doc) {
-        doc = new Medication({ userId: req.userId, medicamentos: [], historico: {} });
-        await doc.save();
+    try {
+        let doc = await Medication.findOne({ userId: req.userId });
+        
+        if (!doc) {
+            doc = new Medication({ 
+                userId: req.userId, 
+                medicamentos: [], 
+                historico: {} 
+            });
+            await doc.save();
+        }
+        
+        res.json(doc);
+    } catch (error) {
+        console.error('Erro ao buscar medicamentos:', error);
+        res.status(500).json({ message: 'Erro ao buscar medicamentos.' });
     }
-    res.json(doc);
 });
 
 app.post('/api/medication', autenticar, async (req, res) => {
-    const { nome, dosagem, quantidade, unidade, vezesAoDia } = req.body;
-    const novoMedicamento = { nome, dosagem, quantidade, unidade, vezesAoDia };
-    const result = await Medication.findOneAndUpdate({ userId: req.userId }, { $push: { medicamentos: novoMedicamento } }, { new: true, upsert: true });
-    res.status(201).json(result.medicamentos[result.medicamentos.length - 1]);
+    try {
+        const { nome, dosagem, quantidade, unidade, vezesAoDia } = req.body;
+        
+        if (!nome || !dosagem || !quantidade || !unidade || !vezesAoDia) {
+            return res.status(400).json({ 
+                message: 'Todos os campos são obrigatórios.' 
+            });
+        }
+
+        const novoMedicamento = { 
+            nome, 
+            dosagem, 
+            quantidade: parseInt(quantidade), 
+            unidade, 
+            vezesAoDia: parseInt(vezesAoDia) 
+        };
+
+        const result = await Medication.findOneAndUpdate(
+            { userId: req.userId },
+            { $push: { medicamentos: novoMedicamento } },
+            { new: true, upsert: true }
+        );
+
+        res.status(201).json(result.medicamentos[result.medicamentos.length - 1]);
+    } catch (error) {
+        console.error('Erro ao adicionar medicamento:', error);
+        res.status(500).json({ message: 'Erro ao adicionar medicamento.' });
+    }
 });
 
-app.post('/api/medication/log/update', autenticar, async (req, res) => {
-    const { date, medId, count } = req.body;
-    const fieldToUpdate = `historico.${date}.${medId}`;
-    const updatedDoc = await Medication.findOneAndUpdate({ userId: req.userId }, { $set: { [fieldToUpdate]: count } }, { new: true, upsert: true });
-    res.json(updatedDoc.historico.get(date) || {});
+app.post('/api/medication/log', autenticar, async (req, res) => {
+    try {
+        const { date, medId, count } = req.body;
+        
+        if (!date || !medId || count === undefined) {
+            return res.status(400).json({ 
+                message: 'Data, ID do medicamento e contagem são obrigatórios.' 
+            });
+        }
+
+        const fieldToUpdate = `historico.${date}.${medId}`;
+        const updatedDoc = await Medication.findOneAndUpdate(
+            { userId: req.userId },
+            { $set: { [fieldToUpdate]: parseInt(count) } },
+            { new: true, upsert: true }
+        );
+
+        res.json(updatedDoc.historico.get(date) || {});
+    } catch (error) {
+        console.error('Erro ao registrar medicação:', error);
+        res.status(500).json({ message: 'Erro ao registrar medicação.' });
+    }
 });
 
 app.delete('/api/medication/:medId', autenticar, async (req, res) => {
-    const { medId } = req.params;
-    await Medication.findOneAndUpdate({ userId: req.userId }, { $pull: { medicamentos: { _id: medId } } });
-    res.status(204).send();
-});
-
-app.get('/api/diario/:date', autenticar, async (req, res) => {
     try {
-        const { date } = req.params;
-        let diario = await DiarioAlimentar.findOne({ userId: req.userId, date: date });
-        if (!diario) {
-            diario = new DiarioAlimentar({ userId: req.userId, date: date });
-            await diario.save();
+        const { medId } = req.params;
+        
+        if (!medId) {
+            return res.status(400).json({ message: 'ID do medicamento é obrigatório.' });
         }
-        res.json(diario);
-    } catch (error) { res.status(500).json({ message: "Erro ao buscar diário alimentar." }); }
-});
 
-app.post('/api/diario', autenticar, async (req, res) => {
-    try {
-        const { date, tipoRefeicao, alimentos } = req.body;
-        if (!date || !tipoRefeicao || !alimentos || !Array.isArray(alimentos)) return res.status(400).json({ message: "Dados incompletos." });
-        const campoParaAtualizar = `refeicoes.${tipoRefeicao}`;
-        const diario = await DiarioAlimentar.findOneAndUpdate({ userId: req.userId, date: date }, { $push: { [campoParaAtualizar]: { $each: alimentos } } }, { new: true, upsert: true });
-        res.status(201).json(diario);
-    } catch (error) { res.status(500).json({ message: "Erro ao adicionar alimento." }); }
-});
+        await Medication.findOneAndUpdate(
+            { userId: req.userId },
+            { $pull: { medicamentos: { _id: medId } } }
+        );
 
-app.delete('/api/diario/:date/:tipoRefeicao/:alimentoId', autenticar, async (req, res) => {
-    try {
-        const { date, tipoRefeicao, alimentoId } = req.params;
-        const campoParaAtualizar = `refeicoes.${tipoRefeicao}`;
-        await DiarioAlimentar.findOneAndUpdate({ userId: req.userId, date: date }, { $pull: { [campoParaAtualizar]: { _id: alimentoId } } });
         res.status(204).send();
-    } catch (error) { res.status(500).json({ message: "Erro ao apagar alimento." }); }
+    } catch (error) {
+        console.error('Erro ao remover medicamento:', error);
+        res.status(500).json({ message: 'Erro ao remover medicamento.' });
+    }
 });
 
-// --- ROTA DO STRIPE ---
+
+
+/// Rota de Checkout do Stripe
 app.post('/api/create-checkout-session', autenticar, async (req, res) => {
     try {
         const usuario = await User.findById(req.userId);
+        if (!usuario) {
+            return res.status(404).json({ message: 'Usuário não encontrado.' });
+        }
+
         let stripeCustomerId = usuario.stripeCustomerId;
 
+        // Cria o cliente no Stripe se não existir
         if (!stripeCustomerId) {
             const customer = await stripe.customers.create({
                 email: usuario.email,
-                name: `${usuario.nome} ${usuario.sobrenome}`
+                name: `${usuario.nome} ${usuario.sobrenome}`,
+                metadata: { userId: usuario._id.toString() }
             });
             stripeCustomerId = customer.id;
-            await User.findByIdAndUpdate(req.userId, { stripeCustomerId: stripeCustomerId });
+            
+            // Atualiza o usuário com o ID do cliente Stripe
+            await User.findByIdAndUpdate(
+                req.userId,
+                { stripeCustomerId }
+            );
         }
 
         const session = await stripe.checkout.sessions.create({
@@ -464,20 +948,26 @@ app.post('/api/create-checkout-session', autenticar, async (req, res) => {
             customer: stripeCustomerId,
             allow_promotion_codes: true,
             line_items: [{
-                // ✅ Esta linha precisa da variável de ambiente para funcionar
                 price: process.env.STRIPE_PRICE_ID,
                 quantity: 1,
             }],
             success_url: `${process.env.CLIENT_URL}/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${process.env.CLIENT_URL}/planos`,
-            
+            metadata: {
+                userId: usuario._id.toString()
+            }
         });
 
-        res.json({ id: session.id }); // Enviando o ID da sessão para o front-end
+        res.json({ id: session.id });
 
     } catch (error) {
         console.error("Erro ao criar sessão de checkout:", error);
-        res.status(500).json({ error: { message: error.message } });
+        res.status(500).json({ 
+            error: { 
+                message: error.message,
+                code: error.code || 'internal_error'
+            } 
+        });
     }
 });
 
@@ -593,61 +1083,172 @@ app.get('/api/admin/stats', autenticar, isAdmin, async (req, res) => {
 });
 
 // Buscar o diário alimentar de uma data específica
-app.get('/api/foods/search', autenticar, async (req, res) => {
-    const { query } = req.query;
-    if (!query) {
-        return res.status(400).json({ message: "É necessário um termo de busca." });
-    }
-    const searchUrl = `https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`;
+app.get('/api/food-diary/:date', autenticar, async (req, res) => {
     try {
-        const response = await axios.get(searchUrl);
-        const products = (response.data.products || []).map(food => ({
-            id: food.id,
-            name: food.product_name_pt || food.product_name || 'Nome não disponível',
-            brand: food.brands || 'Marca não informada',
-            imageUrl: food.image_front_small_url || food.image_front_url || null,
-            nutrients: {
-                calories: food.nutriments.energy_kcal_100g || 'N/A',
-                proteins: food.nutriments.proteins_100g || 'N/A',
-                carbs: food.nutriments.carbohydrates_100g || 'N/A',
-                fats: food.nutriments.fat_100g || 'N/A'
-            }
-        }));
-        res.json(products);
+        const { date } = req.params;
+        
+        if (!date) {
+            return res.status(400).json({ message: 'Data é obrigatória.' });
+        }
+
+        let diario = await FoodLog.findOne({ 
+            userId: req.userId, 
+            date: date 
+        });
+
+        if (!diario) {
+            diario = new FoodLog({ 
+                userId: req.userId, 
+                date: date,
+                refeicoes: {
+                    cafeDaManha: [],
+                    almoco: [],
+                    jantar: [],
+                    lanches: []
+                }
+            });
+            await diario.save();
+        }
+
+        res.json(diario);
     } catch (error) {
-        console.error("Erro ao buscar na Open Food Facts:", error);
-        res.status(500).json({ message: "Erro ao buscar alimentos." });
+        console.error('Erro ao buscar diário alimentar:', error);
+        res.status(500).json({ message: "Erro ao buscar diário alimentar." });
     }
 });
 
-// Adicionar um alimento a uma refeição
 app.post('/api/food-diary/log', autenticar, async (req, res) => {
     try {
-        const { date, mealType, food } = req.body; // mealType será 'cafeDaManha', 'almoco', etc.
+        const { date, mealType, food } = req.body;
+        
+        if (!date || !mealType || !food) {
+            return res.status(400).json({ 
+                message: 'Data, tipo de refeição e alimento são obrigatórios.' 
+            });
+        }
+
+        if (!['cafeDaManha', 'almoco', 'jantar', 'lanches'].includes(mealType)) {
+            return res.status(400).json({ 
+                message: 'Tipo de refeição inválido.' 
+            });
+        }
+
         const fieldToUpdate = `refeicoes.${mealType}`;
         const result = await FoodLog.findOneAndUpdate(
             { userId: req.userId, date: date },
             { $push: { [fieldToUpdate]: food } },
             { new: true, upsert: true }
         );
+
         res.status(201).json(result);
     } catch (error) {
+        console.error('Erro ao adicionar alimento:', error);
         res.status(500).json({ message: "Erro ao adicionar alimento." });
     }
 });
 
-// Apagar um alimento de uma refeição
 app.delete('/api/food-diary/log/:date/:mealType/:itemId', autenticar, async (req, res) => {
     try {
         const { date, mealType, itemId } = req.params;
+        
+        if (!date || !mealType || !itemId) {
+            return res.status(400).json({ 
+                message: 'Data, tipo de refeição e ID do item são obrigatórios.' 
+            });
+        }
+
+        if (!['cafeDaManha', 'almoco', 'jantar', 'lanches'].includes(mealType)) {
+            return res.status(400).json({ 
+                message: 'Tipo de refeição inválido.' 
+            });
+        }
+
         const fieldToUpdate = `refeicoes.${mealType}`;
         await FoodLog.findOneAndUpdate(
             { userId: req.userId, date: date },
             { $pull: { [fieldToUpdate]: { _id: itemId } } }
         );
+
         res.status(204).send();
     } catch (error) {
-        res.status(500).json({ message: "Erro ao apagar alimento." });
+        console.error('Erro ao remover alimento:', error);
+        res.status(500).json({ message: "Erro ao remover alimento." });
+    }
+});
+
+// --- ROTAS DE ADMINISTRAÇÃO ---
+app.get('/api/admin/users', autenticar, isAdmin, async (req, res) => {
+    try {
+        const { page = 1, limit = 10, search = '' } = req.query;
+        const skip = (page - 1) * limit;
+        
+        const query = search 
+            ? {
+                $or: [
+                    { nome: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { username: { $regex: search, $options: 'i' } }
+                ]
+            } 
+            : {};
+
+        const [users, total] = await Promise.all([
+            User.find(query)
+                .select('-password -fcmToken')
+                .skip(skip)
+                .limit(parseInt(limit))
+                .sort({ createdAt: -1 }),
+            User.countDocuments(query)
+        ]);
+
+        res.json({
+            users,
+            total,
+            pages: Math.ceil(total / limit),
+            currentPage: parseInt(page)
+        });
+    } catch (error) {
+        console.error('Erro ao listar usuários:', error);
+        res.status(500).json({ message: 'Erro ao buscar usuários.' });
+    }
+});
+
+app.post('/api/admin/grant-access/:userId', autenticar, isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        
+        const usuario = await User.findByIdAndUpdate(
+            userId,
+            { $set: { pagamentoEfetuado: true } },
+            { new: true }
+        ).select('-password');
+
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+
+        // Enviar notificação ao usuário
+        if (usuario.fcmToken) {
+            try {
+                await admin.messaging().send({
+                    notification: {
+                        title: 'Acesso Liberado!',
+                        body: 'Seu acesso ao BariPlus foi ativado com sucesso!'
+                    },
+                    token: usuario.fcmToken
+                });
+            } catch (notificationError) {
+                console.error('Erro ao enviar notificação:', notificationError);
+            }
+        }
+
+        res.json({ 
+            message: "Acesso concedido com sucesso.",
+            usuario
+        });
+    } catch (error) {
+        console.error('Erro ao conceder acesso:', error);
+        res.status(500).json({ message: "Erro ao conceder acesso." });
     }
 });
 
@@ -983,4 +1584,9 @@ app.post('/api/cron/send-weigh-in-reminders', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`Servidor do BariPlus rodando na porta ${PORT}`));
+// --- INICIALIZAÇÃO DO SERVIDOR ---
+app.listen(PORT, () => {
+    console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
+    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Banco de dados: ${process.env.DATABASE_URL}`);
+});
