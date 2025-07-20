@@ -77,7 +77,6 @@ const LoginPage = () => {
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
         const body = isRegistering 
             ? { nome, sobrenome, username, email, password } 
-            ? { nome, sobrenome, username, email, password } 
             : { identifier, password };
             
         try {

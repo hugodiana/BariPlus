@@ -200,6 +200,7 @@ const ProfilePage = () => {
                     <h3>Notificações Push</h3>
                     <p>Ative para receber lembretes no seu dispositivo.</p>
                     <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
+                    <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
                 </div>
             </div>
         </div>
