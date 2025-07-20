@@ -440,7 +440,7 @@ app.post('/api/onboarding', autenticar, async (req, res) => {
         const pesoNum = parseFloat(pesoInicial);
         const alturaNum = parseFloat(altura);
 
-        if (isNaN(pesoNum) {
+        if (isNaN(pesoNum)) {
             return res.status(400).json({ message: 'Peso inválido.' });
         }
 
