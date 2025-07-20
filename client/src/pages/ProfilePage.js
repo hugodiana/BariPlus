@@ -8,11 +8,12 @@ const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // Estados para o formulário de senha
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     
-    // Estado para a validação da senha em tempo real
+    // Estado para a validação de senha forte
     const [passwordValidations, setPasswordValidations] = useState({
         length: false,
         uppercase: false,
@@ -37,8 +38,7 @@ const ProfilePage = () => {
         };
         fetchUser();
     }, [token, apiUrl]);
-    
-    // Função para validar a senha
+
     const validatePassword = (password) => {
         const validations = {
             length: password.length >= 8,
@@ -58,14 +58,12 @@ const ProfilePage = () => {
 
     const handleChangePassword = async (e) => {
         e.preventDefault();
-        
         if (!validatePassword(newPassword)) {
             return toast.error("A nova senha não cumpre todos os requisitos.");
         }
         if (newPassword !== confirmPassword) {
             return toast.error("A nova senha e a confirmação não coincidem.");
         }
-
         try {
             const response = await fetch(`${apiUrl}/api/user/change-password`, {
                 method: 'PUT',
@@ -107,22 +105,16 @@ const ProfilePage = () => {
         }
     };
     
-
-    const handleSettingsChange = async (settingKey, value) => {
-        if (!usuario) return;
-        const currentSettings = usuario.notificationSettings || {};
-        const newSettings = { ...currentSettings, [settingKey]: value };
-        setUsuario(prev => ({ ...prev, notificationSettings: newSettings }));
+    // ✅ CORREÇÃO: A função que estava em falta
+    const handleSendTestNotification = async () => {
         try {
-            await fetch(`${apiUrl}/api/user/notification-settings`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ settings: newSettings })
+            await fetch(`${apiUrl}/api/user/send-test-notification`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-            toast.success("Preferência atualizada!");
+            toast.info("Pedido de notificação de teste enviado!");
         } catch (error) {
-            toast.error("Não foi possível salvar a preferência.");
-            setUsuario(prev => ({ ...prev, notificationSettings: usuario.notificationSettings }));
+            toast.error("Erro ao enviar notificação de teste.");
         }
     };
 
@@ -145,25 +137,6 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="profile-card">
-                    <h3>Notificações Push</h3>
-                    <p>Ative para receber lembretes no seu dispositivo.</p>
-                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
-                    <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
-                </div>
-
-                <div className="profile-card">
-                    <h3>Alterar Email</h3>
-                    <form onSubmit={handleChangeEmail} className="email-form">
-                        <label>Email Atual</label>
-                        <input type="email" value={currentEmail} onChange={e => setCurrentEmail(e.target.value)} required />
-
-                        <label>Novo Email</label>
-                        <input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} required />
-
-                        <button type="submit">Salvar Novo Email</button>
-                    </form>
-                </div>
-                <div className="profile-card">
                     <h3>Alterar Senha</h3>
                     <form onSubmit={handleChangePassword} className="password-form">
                         <label>Senha Atual</label>
@@ -174,18 +147,10 @@ const ProfilePage = () => {
 
                         <div className="password-requirements">
                             <ul>
-                                <li className={passwordValidations.length ? 'valid' : 'invalid'}>
-                                    {passwordValidations.length ? '✓' : '✗'} Pelo menos 8 caracteres
-                                </li>
-                                <li className={passwordValidations.uppercase ? 'valid' : 'invalid'}>
-                                    {passwordValidations.uppercase ? '✓' : '✗'} Uma letra maiúscula
-                                </li>
-                                <li className={passwordValidations.number ? 'valid' : 'invalid'}>
-                                    {passwordValidations.number ? '✓' : '✗'} Um número
-                                </li>
-                                <li className={passwordValidations.specialChar ? 'valid' : 'invalid'}>
-                                    {passwordValidations.specialChar ? '✓' : '✗'} Um caractere especial (!@#$...)
-                                </li>
+                                <li className={passwordValidations.length ? 'valid' : 'invalid'}>Pelo menos 8 caracteres</li>
+                                <li className={passwordValidations.uppercase ? 'valid' : 'invalid'}>Uma letra maiúscula</li>
+                                <li className={passwordValidations.number ? 'valid' : 'invalid'}>Um número</li>
+                                <li className={passwordValidations.specialChar ? 'valid' : 'invalid'}>Um caractere especial</li>
                             </ul>
                         </div>
 
@@ -199,8 +164,10 @@ const ProfilePage = () => {
                 <div className="profile-card">
                     <h3>Notificações Push</h3>
                     <p>Ative para receber lembretes no seu dispositivo.</p>
-                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
-                    <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                    <div className="notification-actions">
+                        <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
+                        <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                    </div>
                 </div>
             </div>
         </div>
