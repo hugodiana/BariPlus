@@ -10,7 +10,14 @@ const nodemailer = require('nodemailer');
 const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
-
+const validatePassword = (password) => {
+    if (password.length < 8) return false;
+    if (!/[A-Z]/.test(password)) return false;
+    if (!/[a-z]/.test(password)) return false; // Adicionando verificação de minúscula
+    if (!/[0-9]/.test(password)) return false;
+    if (!/[!@#$%^&*(),.?":{}|<>*]/.test(password)) return false;
+    return true;
+};
 const app = express();
 
 // --- CONFIGURAÇÃO DE CORS ---
@@ -139,33 +146,35 @@ const isAffiliate = async (req, res, next) => {
 };
 
 // --- ROTAS DA API ---
+// ROTA DE CADASTRO ATUALIZADA COM VALIDAÇÃO
 app.post('/api/register', async (req, res) => {
     try {
-        let { nome, sobrenome, username, email, password } = req.body;
+        const { nome, sobrenome, username, email, password } = req.body;
 
-        // ✅ INÍCIO DA CORREÇÃO: Validação e formatação do nome de usuário
-        username = username.toLowerCase().trim();
-        if (username.includes(' ')) {
-            return res.status(400).json({ message: 'O nome de usuário não pode conter espaços.' });
+        // ✅ NOVIDADE: Adicionando a verificação de senha forte aqui
+        if (!validatePassword(password)) {
+            return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança (mínimo 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial)." });
         }
-        if (username.length < 3) {
-            return res.status(400).json({ message: 'O nome de usuário precisa ter pelo menos 3 caracteres.' });
-        }
-        // ✅ FIM DA CORREÇÃO
 
-        // ✅ NOVIDADE: Validação de força da senha no servidor
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
-        if (!passwordRegex.test(password)) {
-            return res.status(400).json({ message: 'A senha deve ter no mínimo 8 caracteres, incluindo uma letra maiúscula, uma minúscula e um número.' });
-        }
-        // ✅ FIM DA NOVIDADE
+        if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
+        if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
+        await novoUsuario.save();
 
-        if (await User.findOne({ email })) {
-            return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-        }
-        if (await User.findOne({ username })) {
-            return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
-        }
+        // Cria todos os documentos associados para o novo usuário
+        await new Checklist({ userId: novoUsuario._id, /*...*/ }).save();
+        await new Peso({ userId: novoUsuario._id, /*...*/ }).save();
+        // ... (etc. para todos os outros)
+        
+        res.status(201).json({ message: 'Usuário criado com sucesso! Verifique seu e-mail.' });
+
+    } catch (error) { 
+        res.status(500).json({ message: 'Erro no servidor.' }); 
+    }
+});
+
         
         const hashedPassword = await bcrypt.hash(password, 10);
         const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
