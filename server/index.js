@@ -41,7 +41,8 @@ const corsOptions = {
         } else {
             callback(new Error('Not allowed by CORS'));
         }
-    }
+    },
+    credentials: true // ✅ Adicione esta linha
 };
 
 app.use(cors(corsOptions));
