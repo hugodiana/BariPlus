@@ -1,19 +1,36 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './LandingPage.css';
-// Não há 'import logo...' aqui
 
 const LandingPage = () => {
+    const [menuAtivo, setMenuAtivo] = useState(false);
+
+    const alternarMenu = () => {
+        setMenuAtivo(!menuAtivo);
+    };
+
+    const fecharMenu = () => {
+        setMenuAtivo(false);
+    };
+
     return (
         <div className="landing-page">
             <header className="landing-header">
                 <div className="landing-nav-container">
-                    {/* ✅ CORREÇÃO: O 'src' agora é um texto com o caminho direto */}
                     <img src="/bariplus_logo.png" alt="BariPlus Logo" className="landing-logo" />
-                    <nav className="landing-nav">
-                        <a href="#features">Funcionalidades</a>
-                        <a href="#pricing">Preço</a>
-                        <Link to="/login" className="nav-login-btn">Entrar</Link>
+
+                    {/* Botão hamburger */}
+                    <div className="burger-menu" onClick={alternarMenu} aria-label="Abrir menu">
+                        <div className="burger-line"></div>
+                        <div className="burger-line"></div>
+                        <div className="burger-line"></div>
+                    </div>
+
+                    {/* Menu de navegação */}
+                    <nav className={`landing-nav ${menuAtivo ? 'active' : ''}`}>
+                        <a href="#features" onClick={fecharMenu}>Funcionalidades</a>
+                        <a href="#pricing" onClick={fecharMenu}>Preço</a>
+                        <Link to="/login" className="nav-login-btn" onClick={fecharMenu}>Entrar</Link>
                     </nav>
                 </div>
             </header>
@@ -52,7 +69,7 @@ const LandingPage = () => {
                 </section>
 
                 <section id="pricing" className="pricing-section">
-                     <div className="pricing-card-public">
+                    <div className="pricing-card-public">
                         <h2>Acesso Vitalício</h2>
                         <p className="pricing-description">
                             Um único pagamento para ter acesso a todas as funcionalidades atuais e futuras. Sem mensalidades, sem surpresas.
@@ -68,6 +85,9 @@ const LandingPage = () => {
 
             <footer className="landing-footer">
                 <p>&copy; {new Date().getFullYear()} BariPlus. Todos os direitos reservados.</p>
+                <div className="footer-links">
+                    <Link to="/termos">Termos de Serviço</Link>
+                </div>
             </footer>
         </div>
     );

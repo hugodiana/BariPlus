@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
-import Modal from './components/Modal'; // Garanta que o Modal foi copiado para a pasta 'admin-client/src/components'
+import Modal from './components/Modal';
 
 function AdminApp() {
   const [token, setToken] = useState(localStorage.getItem('bariplus_admin_token'));
@@ -13,8 +13,6 @@ function AdminApp() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-
-  // Estados para o modal de promover afiliado
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [userToPromote, setUserToPromote] = useState(null);
   const [couponCode, setCouponCode] = useState('');
@@ -22,51 +20,75 @@ function AdminApp() {
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+  // Função para buscar dados do admin
+  const fetchAdminData = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [usersRes, statsRes] = await Promise.all([
+        fetch(`${apiUrl}/api/admin/users`, { 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        }),
+        fetch(`${apiUrl}/api/admin/stats`, { 
+          headers: { 'Authorization': `Bearer ${token}` } 
+        })
+      ]);
+
+      if (!usersRes.ok || !statsRes.ok) {
+        const errorData = await usersRes.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Erro ao carregar dados');
+      }
+
+      const [usersData, statsData] = await Promise.all([
+        usersRes.json(),
+        statsRes.json()
+      ]);
+
+      setUsers(usersData);
+      setStats(statsData);
+    } catch (err) {
+      setError(err.message);
+      if (err.message.includes('Acesso negado')) {
+        handleLogout();
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (token) {
-      setLoading(true);
-      setError('');
-      Promise.all([
-        fetch(`${apiUrl}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
-        fetch(`${apiUrl}/api/admin/stats`, { headers: { 'Authorization': `Bearer ${token}` } })
-      ])
-      .then(async ([usersRes, statsRes]) => {
-        if (usersRes.status === 403 || statsRes.status === 403) throw new Error('Acesso negado. Você não é um administrador.');
-        if (!usersRes.ok || !statsRes.ok) throw new Error('Erro de rede ou no servidor.');
-        
-        const usersData = await usersRes.json();
-        const statsData = await statsRes.json();
-        
-        setUsers(usersData);
-        setStats(statsData);
-      })
-      .catch(err => {
-        setError(err.message);
-        localStorage.removeItem('bariplus_admin_token');
-        setToken(null);
-      })
-      .finally(() => setLoading(false));
-    } else {
-        setLoading(false);
+      fetchAdminData();
     }
   }, [token, apiUrl]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
+    if (!identifier || !password) {
+      setError('Por favor, preencha todos os campos');
+      return;
+    }
+
     setLoading(true);
+    setError('');
     try {
       const response = await fetch(`${apiUrl}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password })
       });
+
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Falha no login');
+      if (!response.ok) {
+        throw new Error(data.message || 'Credenciais inválidas');
+      }
+
       localStorage.setItem('bariplus_admin_token', data.token);
       setToken(data.token);
+      toast.success('Login realizado com sucesso!');
     } catch (err) {
       setError(err.message);
+      toast.error(err.message);
     } finally {
       setLoading(false);
     }
@@ -76,137 +98,286 @@ function AdminApp() {
     localStorage.removeItem('bariplus_admin_token');
     setToken(null);
     setUsers([]);
+    setStats(null);
+    toast.info('Você saiu do painel de administração');
   };
   
   const handleGrantAccess = async (userId) => {
-      if (!window.confirm("Tem certeza que quer liberar o acesso para este usuário sem pagamento?")) return;
-      try {
-        const response = await fetch(`${apiUrl}/api/admin/grant-access/${userId}`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const updatedUser = await response.json();
-        if (!response.ok) throw new Error(updatedUser.message || 'Falha ao liberar acesso.');
-        setUsers(prevUsers => prevUsers.map(user => user._id === updatedUser._id ? updatedUser : user));
-        toast.success('Acesso liberado com sucesso!');
-      } catch(err) {
-          toast.error(err.message || "Ocorreu um erro.");
+    if (!window.confirm("Tem certeza que quer liberar o acesso para este usuário?")) return;
+    
+    try {
+      const response = await fetch(`${apiUrl}/api/admin/grant-access/${userId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Falha ao liberar acesso');
       }
+
+      const updatedUser = await response.json();
+      setUsers(prevUsers => 
+        prevUsers.map(user => user._id === updatedUser._id ? updatedUser : user)
+      );
+      toast.success('Acesso liberado com sucesso!');
+    } catch (err) {
+      toast.error(err.message);
+    }
   };
 
   const openPromoteModal = (user) => {
     setUserToPromote(user);
-    setCouponCode(user.username.toUpperCase()); 
+    setCouponCode(user.username.toUpperCase().replace(/\s+/g, '_')); 
     setIsPromoteModalOpen(true);
   };
 
   const handlePromoteToAffiliate = async (e) => {
     e.preventDefault();
-    if (!userToPromote || !couponCode || !commissionPercent) return;
+    if (!couponCode || !commissionPercent) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
     try {
-        const response = await fetch(`${apiUrl}/api/admin/promote-to-affiliate/${userToPromote._id}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ couponCode, commissionPercent })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Falha ao promover usuário.');
-        setUsers(prevUsers => prevUsers.map(user => user._id === data.usuario._id ? data.usuario : user));
-        toast.success(`Usuário ${data.usuario.username} agora é um afiliado!`);
-        setIsPromoteModalOpen(false);
+      const response = await fetch(
+        `${apiUrl}/api/admin/promote-to-affiliate/${userToPromote._id}`, 
+        {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}` 
+          },
+          body: JSON.stringify({ couponCode, commissionPercent })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Falha ao promover usuário');
+      }
+
+      const data = await response.json();
+      setUsers(prevUsers => 
+        prevUsers.map(user => user._id === data.usuario._id ? data.usuario : user)
+      );
+      toast.success(`${data.usuario.nome} agora é um afiliado!`);
+      setIsPromoteModalOpen(false);
     } catch (err) {
-        toast.error(err.message || "Ocorreu um erro.");
+      toast.error(err.message);
     }
   };
 
   if (!token) {
     return (
-      <>
-        <ToastContainer position="top-right" autoClose={4000} />
+      <div className="admin-app">
+        <ToastContainer 
+          position="top-right" 
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
         <div className="admin-login-container">
-          <form onSubmit={handleLogin}>
-            <h2>Painel de Administração - BariPlus</h2>
-            <input type="text" placeholder="Email ou Username" value={identifier} onChange={e => setIdentifier(e.target.value)} required />
-            <div className="password-wrapper">
-              <input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={password} onChange={e => setPassword(e.target.value)} required />
-              <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>👁️</span>
-            </div>
-            <button type="submit" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
-            {error && <p className="error-message">{error}</p>}
-          </form>
+          <div className="login-box">
+            <h2>Painel de Administração</h2>
+            <form onSubmit={handleLogin}>
+              <div className="input-group">
+                <label>Email ou Username</label>
+                <input 
+                  type="text" 
+                  value={identifier} 
+                  onChange={(e) => setIdentifier(e.target.value)} 
+                  required 
+                />
+              </div>
+              <div className="input-group">
+                <label>Senha</label>
+                <div className="password-input">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="toggle-password"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? '🙈' : '👁️'}
+                  </button>
+                </div>
+              </div>
+              <button type="submit" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
+              </button>
+              {error && <p className="error-message">{error}</p>}
+            </form>
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <>
-      <ToastContainer position="top-right" autoClose={4000} />
-      <div className="admin-container">
-        <header className="admin-header">
-          <h1>Painel de Administração</h1>
-          <button onClick={handleLogout}>Sair</button>
-        </header>
-        {loading && <p>Carregando...</p>}
-        {error && <p className="error-message">{error}</p>}
-        {!loading && stats && (
-            <div className="stats-grid">
-                <div className="stat-card"><h2>{stats.totalUsers}</h2><p>Usuários Totais</p></div>
-                <div className="stat-card"><h2>{stats.paidUsers}</h2><p>Contas Pagas</p></div>
-                <div className="stat-card"><h2>{stats.newUsersLast7Days}</h2><p>Novos nos últimos 7 dias</p></div>
+    <div className="admin-app">
+      <ToastContainer 
+        position="top-right" 
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      
+      <header className="admin-header">
+        <h1>Painel de Administração</h1>
+        <button onClick={handleLogout} className="logout-btn">
+          Sair
+        </button>
+      </header>
+
+      <main className="admin-content">
+        {loading && <div className="loading-overlay">Carregando...</div>}
+        
+        {stats && (
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Total de Usuários</h3>
+              <p>{stats.totalUsers}</p>
             </div>
+            <div className="stat-card">
+              <h3>Contas Ativas</h3>
+              <p>{stats.paidUsers}</p>
+            </div>
+            <div className="stat-card">
+              <h3>Novos (7 dias)</h3>
+              <p>{stats.newUsersLast7Days}</p>
+            </div>
+          </div>
         )}
-        <div className="user-table-container">
-            <h2>Usuários Cadastrados ({users.length})</h2>
-            {!loading && !error && (
-              <div className="table-wrapper">
-                  <table>
-                      <thead>
-                          <tr>
-                            <th>Nome</th>
-                            <th>Email</th>
-                            <th>Função (Role)</th>
-                            <th>Pagamento</th>
-                            <th>Onboarding</th>
-                            <th>Ações</th>
-                          </tr>
-                      </thead>
-                      <tbody>
-                          {users.map(user => (
-                            <tr key={user._id}>
-                              <td>{user.nome} {user.sobrenome}</td>
-                              <td>{user.email}</td>
-                              <td><span className={`status status-${user.role}`}>{user.role}</span></td>
-                              <td>{user.pagamentoEfetuado ? <span className="status status-pago">Sim</span> : <span className="status status-pendente">Não</span>}</td>
-                              <td>{user.onboardingCompleto ? '✅ Sim' : '❌ Não'}</td>
-                              <td className="actions-cell">
-                                <button onClick={() => handleGrantAccess(user._id)} disabled={user.pagamentoEfetuado}>Liberar Pagamento</button>
-                                {user.role === 'user' && user.pagamentoEfetuado && (
-                                  <button className="promote-btn" onClick={() => openPromoteModal(user)}>Tornar Afiliado</button>
-                                )}
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                  </table>
-              </div>
-            )}
+
+        <div className="users-section">
+          <h2>Usuários Cadastrados</h2>
+          <div className="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Tipo</th>
+                  <th>Status</th>
+                  <th>Onboarding</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user._id}>
+                    <td>{user.nome} {user.sobrenome}</td>
+                    <td>{user.email}</td>
+                    <td>
+                      <span className={`badge ${user.role}`}>
+                        {user.role}
+                      </span>
+                    </td>
+                    <td>
+                      {user.pagamentoEfetuado ? (
+                        <span className="badge success">Ativo</span>
+                      ) : (
+                        <span className="badge warning">Pendente</span>
+                      )}
+                    </td>
+                    <td>
+                      {user.onboardingCompleto ? (
+                        <span className="badge success">Completo</span>
+                      ) : (
+                        <span className="badge danger">Incompleto</span>
+                      )}
+                    </td>
+                    <td className="actions">
+                      {!user.pagamentoEfetuado && (
+                        <button
+                          onClick={() => handleGrantAccess(user._id)}
+                          className="btn-primary"
+                        >
+                          Liberar Acesso
+                        </button>
+                      )}
+                      {user.role === 'user' && user.pagamentoEfetuado && (
+                        <button
+                          onClick={() => openPromoteModal(user)}
+                          className="btn-secondary"
+                        >
+                          Tornar Afiliado
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
-      <Modal isOpen={isPromoteModalOpen} onClose={() => setIsPromoteModalOpen(false)}>
-        <h2>Promover a Afiliado</h2>
+      </main>
+
+      <Modal
+        isOpen={isPromoteModalOpen}
+        onClose={() => setIsPromoteModalOpen(false)}
+        title="Promover a Afiliado"
+      >
         {userToPromote && (
-            <form onSubmit={handlePromoteToAffiliate} className="modal-form">
-                <p>Você está promovendo <strong>{userToPromote.nome} {userToPromote.sobrenome}</strong>.</p>
-                <label>Código do Cupom de Desconto</label>
-                <input type="text" value={couponCode} onChange={e => setCouponCode(e.target.value.toUpperCase())} required />
-                <label>Percentagem de Desconto (%)</label>
-                <input type="number" min="1" max="100" value={commissionPercent} onChange={e => setCommissionPercent(e.target.value)} required />
-                <button type="submit">Confirmar e Criar Cupom</button>
-            </form>
+          <form onSubmit={handlePromoteToAffiliate} className="modal-form">
+            <p>
+              Promovendo: <strong>{userToPromote.nome} {userToPromote.sobrenome}</strong>
+            </p>
+            
+            <div className="form-group">
+              <label>Código do Cupom</label>
+              <input
+                type="text"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Comissão (%)</label>
+              <input
+                type="number"
+                min="1"
+                max="50"
+                value={commissionPercent}
+                onChange={(e) => setCommissionPercent(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="form-actions">
+              <button
+                type="button"
+                onClick={() => setIsPromoteModalOpen(false)}
+                className="btn-cancel"
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="btn-confirm">
+                Confirmar
+              </button>
+            </div>
+          </form>
         )}
       </Modal>
-    </>
+    </div>
   );
 }
 

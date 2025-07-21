@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './PricingPage.css';
 import { loadStripe } from '@stripe/stripe-js';
 
+
 // ✅ CORREÇÃO: Verificamos se a chave existe antes de carregar o Stripe
 const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
 let stripePromise;

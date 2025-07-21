@@ -5,41 +5,34 @@
     min-height: 100vh;
     background-color: #f4f7f6;
     padding: 20px;
+    box-sizing: border-box;
 }
-
-.login-form {
+.login-form-wrapper {
     background: white;
     padding: 30px 40px;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
-    box-sizing: border-box;
 }
-
-.form-header {
+.login-form-header {
     text-align: center;
     margin-bottom: 25px;
 }
-
 .login-logo {
     width: 120px;
     margin-bottom: 10px;
 }
-
-.form-header p {
+.login-form-header h2 {
+    color: #333;
+    font-weight: 600;
+    margin: 0 0 5px 0;
+}
+.login-form-header p {
     color: #666;
     font-size: 1rem;
     margin: 0;
 }
-
-.login-form h2 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 25px;
-    font-weight: 600;
-}
-
 .login-form input {
     width: 100%;
     padding: 12px;
@@ -49,19 +42,15 @@
     box-sizing: border-box;
     font-size: 16px;
 }
-
 .password-wrapper {
     position: relative;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
-
 .password-wrapper input {
-    /* padding-right para não deixar o texto ir para baixo do ícone */
     padding-right: 40px; 
     margin-bottom: 0;
 }
-
 .password-toggle-icon {
     position: absolute;
     top: 50%;
@@ -69,9 +58,8 @@
     transform: translateY(-50%);
     cursor: pointer;
     color: #888;
-    user-select: none; /* Impede que o ícone seja selecionado como texto */
+    user-select: none;
 }
-
 .submit-button {
     width: 100%;
     padding: 12px;
@@ -84,25 +72,25 @@
     cursor: pointer;
     transition: background-color 0.2s;
 }
-
 .submit-button:hover {
     background-color: #2a5745;
 }
-
+.submit-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
 .message {
     color: #d93025;
     margin-top: 15px;
     text-align: center;
     font-size: 14px;
 }
-
 .form-footer {
     display: flex;
     justify-content: space-between;
     margin-top: 20px;
-    flex-wrap: wrap; /* Permite que os links quebrem a linha em telas muito pequenas */
+    flex-wrap: wrap;
 }
-
 .link-button {
     background: none;
     border: none;
@@ -111,25 +99,53 @@
     cursor: pointer;
     padding: 0;
 }
-
 .link-button:hover {
     text-decoration: underline;
 }
-
-.modal-form {
-  margin-top: 20px;
+.terms-container {
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #555;
+    text-align: left;
+}
+.terms-container label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.terms-container input[type="checkbox"] {
+    width: auto;
+    margin-bottom: 0;
+}
+.terms-container a {
+    color: #007aff;
+    text-decoration: none;
+}
+.terms-container a:hover {
+    text-decoration: underline;
 }
 .modal-form label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 600;
-  color: #333;
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
 }
 .modal-form input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-sizing: border-box;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
 }
+.password-requirements {
+    margin: -5px 0 15px 0;
+    font-size: 12px;
+    text-align: left;
+}
+.password-requirements ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.password-requirements li.invalid { color: #a0a0a0; }
+.password-requirements li.valid { color: #28a745; font-weight: 600; }

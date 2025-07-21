@@ -8,6 +8,8 @@ import { messaging } from './firebase';
 // Importação de todas as páginas
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 import PricingPage from './pages/PricingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
@@ -27,7 +29,6 @@ function App() {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // useEffect para autenticação
   useEffect(() => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -51,7 +52,6 @@ function App() {
     }
   }, []);
 
-  // useEffect para notificações com o app aberto
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       onMessage(messaging, (payload) => {
@@ -61,23 +61,21 @@ function App() {
   }, []);
 
   // Componente auxiliar para as rotas protegidas
-  const AppRoutes = () => {
-    return (
-      <Layout usuario={usuario}>
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/progresso" element={<ProgressoPage />} />
-          <Route path="/checklist" element={<ChecklistPage />} />
-          <Route path="/consultas" element={<ConsultasPage />} />
-          <Route path="/medicacao" element={<MedicationPage />} />
-          <Route path="/perfil" element={<ProfilePage />} />
-          <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
-          <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Layout>
-    );
-  };
+  const AppRoutes = () => (
+    <Layout usuario={usuario}>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/progresso" element={<ProgressoPage />} />
+        <Route path="/checklist" element={<ChecklistPage />} />
+        <Route path="/consultas" element={<ConsultasPage />} />
+        <Route path="/medicacao" element={<MedicationPage />} />
+        <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
+        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Layout>
+  );
   
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
@@ -88,26 +86,25 @@ function App() {
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <Routes>
-          {!usuario ? (
-            <>
-              <Route path="/landing" element={<LandingPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
-              <Route path="*" element={<Navigate to="/landing" />} />
-            </>
-          ) : (
-            <>
-              <Route path="/planos" element={usuario.pagamentoEfetuado ? <Navigate to="/" /> : <PricingPage />} />
-              <Route path="/bem-vindo" element={usuario.onboardingCompleto ? <Navigate to="/" /> : <OnboardingPage />} />
-              <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
-              <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
-              <Route path="/*" element={
-                  !usuario.pagamentoEfetuado ? <Navigate to="/planos" />
-                : !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" />
-                : <AppRoutes />
-              }/>
-            </>
-          )}
+          {/* --- ROTAS PÚBLICAS E INTERMEDIÁRIAS --- */}
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/termos" element={<TermsPage />} />
+          <Route path="/privacidade" element={<PrivacyPage />} />
+          <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
+          <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
+          <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
+          <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
+          
+          {/* --- ROTA PRINCIPAL E PROTEGIDA --- */}
+          <Route path="/*" element={
+            !usuario ? <Navigate to="/landing" /> :
+            !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
+            !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
+            <AppRoutes />
+          }/>
+          
+          <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
+          <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
         </Routes>
       </Router>
     </>

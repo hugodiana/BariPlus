@@ -1,8 +1,10 @@
+/* Fonte padrão */
 .landing-page {
     font-family: 'Inter', sans-serif;
     color: #333;
 }
 
+/* Cabeçalho fixo */
 .landing-header {
     background: #fff;
     padding: 15px 40px;
@@ -12,6 +14,7 @@
     z-index: 100;
 }
 
+/* Contêiner de navegação */
 .landing-nav-container {
     display: flex;
     justify-content: space-between;
@@ -20,8 +23,15 @@
     margin: 0 auto;
 }
 
+/* Logo */
 .landing-logo {
     height: 40px;
+}
+
+/* Navegação */
+.landing-nav {
+    display: flex;
+    align-items: center;
 }
 
 .landing-nav a {
@@ -29,15 +39,32 @@
     text-decoration: none;
     color: #555;
     font-weight: 600;
+    transition: color 0.3s ease;
 }
 
+.landing-nav a:hover,
+.landing-nav a:focus {
+    color: #37715b;
+    outline: none;
+}
+
+/* Botão de login */
 .nav-login-btn {
     background-color: #37715b;
     color: white !important;
     padding: 8px 16px;
     border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
 }
 
+.nav-login-btn:hover,
+.nav-login-btn:focus {
+    background-color: #2f5f4d;
+    outline: none;
+}
+
+/* Seção principal */
 .hero-section {
     display: flex;
     justify-content: center;
@@ -63,6 +90,7 @@
     margin-bottom: 30px;
 }
 
+/* Botão principal */
 .hero-cta-btn {
     background-color: #007aff;
     color: white;
@@ -74,22 +102,28 @@
     transition: background-color 0.2s;
 }
 
-.hero-cta-btn:hover {
+.hero-cta-btn:hover,
+.hero-cta-btn:focus {
     background-color: #0056b3;
+    outline: none;
 }
 
-.features-section, .pricing-section {
+/* Seções comuns */
+.features-section,
+.pricing-section {
     padding: 80px 20px;
     max-width: 1200px;
     margin: 0 auto;
     text-align: center;
 }
 
-.features-section h2, .pricing-section h2 {
+.features-section h2,
+.pricing-section h2 {
     font-size: 2.5rem;
     margin-bottom: 50px;
 }
 
+/* Grid de funcionalidades */
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -101,7 +135,7 @@
     background: #fff;
     padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .feature-card h3 {
@@ -109,6 +143,7 @@
     color: #37715b;
 }
 
+/* Preço */
 .pricing-card-public {
     max-width: 500px;
     margin: 0 auto;
@@ -131,18 +166,76 @@
     color: #666;
 }
 
+/* Rodapé */
 .landing-footer {
     text-align: center;
     padding: 40px 20px;
-    background-color: #333;
-    color: #aaa;
+    background-color: #222;
+    color: #eee;
+}
+
+.footer-links {
+    margin-top: 10px;
+}
+
+.footer-links a {
+    color: #ccc;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.footer-links a:hover,
+.footer-links a:focus {
+    text-decoration: underline;
+}
+
+/* Rolagem suave */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Botão hamburger */
+.burger-menu {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+}
+
+.burger-line {
+    width: 25px;
+    height: 3px;
+    background-color: #555;
+    margin: 4px 0;
 }
 
 /* Responsividade */
 @media (max-width: 768px) {
     .landing-nav {
-        display: none; /* Simplificação para mobile, o botão "Entrar" continua visível */
+        display: none;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background-color: white;
+        flex-direction: column;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    .hero-content h1 { font-size: 2.2rem; }
-    .features-section h2, .pricing-section h2 { font-size: 2rem; }
+
+    .landing-nav.active {
+        display: flex;
+    }
+
+    .burger-menu {
+        display: flex;
+    }
+
+    .hero-content h1 {
+        font-size: 2.2rem;
+    }
+
+    .features-section h2,
+    .pricing-section h2 {
+        font-size: 2rem;
+    }
 }

@@ -7,9 +7,19 @@ import { getToken } from 'firebase/messaging';
 const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // Estados para o formulário de senha
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    
+    // Estado para a validação de senha forte
+    const [passwordValidations, setPasswordValidations] = useState({
+        length: false,
+        uppercase: false,
+        number: false,
+        specialChar: false,
+    });
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -29,11 +39,30 @@ const ProfilePage = () => {
         fetchUser();
     }, [token, apiUrl]);
 
+    const validatePassword = (password) => {
+        const validations = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            number: /[0-9]/.test(password),
+            specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(password),
+        };
+        setPasswordValidations(validations);
+        return Object.values(validations).every(Boolean);
+    };
+
+    const handleNewPasswordChange = (e) => {
+        const newPass = e.target.value;
+        setNewPassword(newPass);
+        validatePassword(newPass);
+    };
+
     const handleChangePassword = async (e) => {
         e.preventDefault();
+        if (!validatePassword(newPassword)) {
+            return toast.error("A nova senha não cumpre todos os requisitos.");
+        }
         if (newPassword !== confirmPassword) {
-            toast.error("A nova senha e a confirmação não coincidem.");
-            return;
+            return toast.error("A nova senha e a confirmação não coincidem.");
         }
         try {
             const response = await fetch(`${apiUrl}/api/user/change-password`, {
@@ -42,27 +71,25 @@ const ProfilePage = () => {
                 body: JSON.stringify({ currentPassword, newPassword })
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Não foi possível alterar a senha.");
+            if (!response.ok) throw new Error(data.message);
             toast.success("Senha alterada com sucesso!");
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error.message || "Não foi possível alterar a senha.");
         }
     };
-
-    // ✅ CORREÇÃO: As funções foram movidas para DENTRO do componente
+    
+    // ✅ CORREÇÃO: A função que estava em falta
     const handleEnableNotifications = async () => {
         try {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
-                toast.info("Obtendo o token de notificação...");
-                const vapidKey = "BLH255x4EOj3AuXL6JvX4ZouPigm5Q9aqmW4R7e0T6tVMxBcbZglrzdsdMTn9B8izsb2ZRp1F8ck4BHrHM1HjJc";
-                if (!vapidKey) return toast.error("Chave de configuração de notificações não encontrada.");
-
+                const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
+                if (!vapidKey) return toast.error("Configuração de notificações em falta.");
+                
                 const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
-
                 if (fcmToken) {
                     await fetch(`${apiUrl}/api/user/save-fcm-token`, {
                         method: 'POST',
@@ -70,8 +97,6 @@ const ProfilePage = () => {
                         body: JSON.stringify({ fcmToken })
                     });
                     toast.success("Notificações ativadas com sucesso!");
-                } else {
-                    toast.warn("Não foi possível obter o token de notificação.");
                 }
             } else {
                 toast.error("Permissão para notificações foi negada.");
@@ -80,30 +105,35 @@ const ProfilePage = () => {
             toast.error("Ocorreu um erro ao ativar as notificações.");
         }
     };
-
-    const handleSendTestNotification = async () => {
+    
+    const handleSettingsChange = async (settingKey, value) => {
+        if (!usuario) return;
+        const currentSettings = usuario.notificationSettings || {};
+        const newSettings = { ...currentSettings, [settingKey]: value };
+        setUsuario(prev => ({ ...prev, notificationSettings: newSettings }));
         try {
-            await fetch(`${apiUrl}/api/user/send-test-notification`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+            await fetch(`${apiUrl}/api/user/notification-settings`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ settings: newSettings })
             });
-            toast.info("Pedido de notificação de teste enviado!");
+            toast.success("Preferência atualizada!");
         } catch (error) {
-            toast.error("Erro ao enviar notificação de teste.");
+            toast.error("Não foi possível salvar a preferência.");
+            setUsuario(prev => ({ ...prev, notificationSettings: usuario.notificationSettings }));
         }
     };
 
     if (loading || !usuario) {
-        return <div>Carregando perfil...</div>;
+        return <div className="page-container">Carregando perfil...</div>;
     }
 
     return (
         <div className="page-container">
             <div className="page-header">
                 <h1>Meu Perfil</h1>
-                <p>Aqui estão os seus dados cadastrados no BariPlus.</p>
+                <p>Aqui estão os seus dados e preferências.</p>
             </div>
-
             <div className="profile-grid">
                 <div className="profile-card">
                     <h3>Meus Dados</h3>
@@ -113,11 +143,20 @@ const ProfilePage = () => {
                 </div>
 
                 <div className="profile-card">
-                    <h3>Notificações</h3>
-                    <p>Receba lembretes sobre consultas, medicamentos e metas diárias.</p>
-                    <div className="notification-actions">
-                        <button onClick={handleEnableNotifications} className="notification-btn">Ativar Notificações</button>
-                        <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                    <h3>Preferências de Notificação</h3>
+                    <div className="setting-item">
+                        <span>Lembretes de Consultas</span>
+                        <label className="switch">
+                            <input type="checkbox" checked={usuario.notificationSettings?.appointmentReminders ?? true} onChange={(e) => handleSettingsChange('appointmentReminders', e.target.checked)} />
+                            <span className="slider round"></span>
+                        </label>
+                    </div>
+                    <div className="setting-item">
+                        <span>Lembretes de Medicação</span>
+                        <label className="switch">
+                            <input type="checkbox" checked={usuario.notificationSettings?.medicationReminders ?? true} onChange={(e) => handleSettingsChange('medicationReminders', e.target.checked)} />
+                            <span className="slider round"></span>
+                        </label>
                     </div>
                 </div>
 
@@ -126,12 +165,30 @@ const ProfilePage = () => {
                     <form onSubmit={handleChangePassword} className="password-form">
                         <label>Senha Atual</label>
                         <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+                        
                         <label>Nova Senha</label>
-                        <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+                        <input type="password" value={newPassword} onChange={handleNewPasswordChange} required />
+
+                        <div className="password-requirements">
+                            <ul>
+                                <li className={passwordValidations.length ? 'valid' : 'invalid'}>Pelo menos 8 caracteres</li>
+                                <li className={passwordValidations.uppercase ? 'valid' : 'invalid'}>Uma letra maiúscula</li>
+                                <li className={passwordValidations.number ? 'valid' : 'invalid'}>Um número</li>
+                                <li className={passwordValidations.specialChar ? 'valid' : 'invalid'}>Um caractere especial</li>
+                            </ul>
+                        </div>
+
                         <label>Confirmar Nova Senha</label>
                         <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+
                         <button type="submit">Salvar Nova Senha</button>
                     </form>
+                </div>
+                
+                <div className="profile-card">
+                    <h3>Notificações Push</h3>
+                    <p>Ative para receber lembretes no seu dispositivo.</p>
+                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
                 </div>
             </div>
         </div>
