@@ -11,8 +11,18 @@ export const formatCurrency = (amountInCents) => {
 };
 
 // ✅ NOVIDADE: A função que estava em falta
-export const formatDate = (dateString) => {
-  if (!dateString) return '';
-  // Converte a string de data para um objeto Date e formata
-  return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+export const formatDate = (dateInput) => {
+  // Se a data for inválida ou não existir, retorna um hífen
+  if (!dateInput) return '-';
+  
+  try {
+    const date = new Date(dateInput);
+    // Verifica se a data é válida antes de formatar
+    if (isNaN(date.getTime())) {
+      return '-';
+    }
+    return format(date, 'dd/MM/yyyy', { locale: ptBR });
+  } catch (error) {
+    return '-'; // Retorna um hífen em caso de qualquer erro
+  }
 };
