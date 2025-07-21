@@ -29,7 +29,7 @@ const WeightProgressCard = ({
   // Calcula diferença e progresso
   const diferenca = pesoInicial - pesoAtual;
   const pesoEliminado = Math.max(diferenca, 0).toFixed(1);
-  const progressoMeta = meta ? ((pesoInicial - pesoAtual) / (pesoInicial - meta) * 100 : null;
+  const progressoMeta = meta ? ((pesoInicial - pesoAtual) / (pesoInicial - meta)) * 100 : null;
 
   // Prepara dados para o gráfico
   const getChartData = () => {
