@@ -1,116 +1,203 @@
+/* --- VARIÁVEIS DE CORES --- */
+:root {
+  --primary-color: #37715b;
+  --primary-light: #e9f5f2;
+  --primary-dark: #204a38;
+  --error-color: #c0392b;
+  --error-light: #fceeee;
+  --affiliate-color: #1e40af;
+  --affiliate-light: #dbeafe;
+  --text-color: #333;
+  --text-light: #666;
+  --border-color: #e0e0e0;
+  --shadow-color: rgba(0, 0, 0, 0.05);
+  --overlay-color: rgba(0, 0, 0, 0.5);
+  --white: #ffffff;
+  --background: #f4f7f6;
+}
+
 /* --- ESTILOS GERAIS DO LAYOUT --- */
 .layout-container {
   display: flex;
+  min-height: 100vh;
 }
 
-/* --- ESTILOS DA SIDEBAR (DESKTOP PRIMEIRO) --- */
+/* --- ESTILOS DA SIDEBAR --- */
 .sidebar {
-  width: 250px; /* Largura da sidebar no desktop */
-  height: 100vh; /* Altura total da tela */
-  position: fixed; /* Fixa na tela */
+  width: 280px;
+  height: 100vh;
+  position: fixed;
   top: 0;
   left: 0;
-  background-color: #ffffff;
-  border-right: 1px solid #e0e0e0;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  background-color: var(--white);
+  border-right: 1px solid var(--border-color);
+  box-shadow: 2px 0 5px var(--shadow-color);
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 1.5rem;
   box-sizing: border-box;
   transition: transform 0.3s ease-in-out;
-  z-index: 1001; /* Garante que a sidebar fique por cima de tudo */
-  display: flex;
-  flex-direction: column;
+  z-index: 1001;
 }
 
 .sidebar-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 2rem;
+  position: relative;
 }
 
 .sidebar-logo {
   height: 50px;
   width: auto;
+  max-width: 100%;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 10px; /* Espaço entre os links */
+  gap: 0.5rem;
+  flex-grow: 1;
 }
 
 .sidebar-nav a {
   text-decoration: none;
-  color: #37715b;
+  color: var(--primary-color);
   font-weight: 600;
-  padding: 15px 20px;
-  border-radius: 8px;
-  transition: background-color 0.2s, color 0.2s;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
 }
 
-/* Estilo para quando o link está ativo ou com mouse em cima */
+.sidebar-nav a::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background-color: currentColor;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
 .sidebar-nav a:hover,
-.sidebar-nav a.active { /* A classe .active é adicionada automaticamente pelo NavLink */
-  background-color: #e9f5f2; /* Verde bem claro da nossa paleta */
-  color: #204a38;
+.sidebar-nav a.active {
+  background-color: var(--primary-light);
+  color: var(--primary-dark);
 }
 
+.sidebar-nav a.active::before {
+  opacity: 1;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.user-info {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.user-name {
+  display: block;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.user-email {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-light);
+}
 
 /* --- ESTILOS DO CONTEÚDO PRINCIPAL --- */
 .main-content {
   flex-grow: 1;
-  padding: 40px;
-  background-color: #f4f7f6;
-  margin-left: 250px; /* IMPORTANTE: Empurra o conteúdo para a direita da sidebar */
+  padding: 2.5rem;
+  background-color: var(--background);
+  margin-left: 280px;
   transition: margin-left 0.3s ease-in-out;
+  min-height: 100vh;
 }
 
+/* --- BOTÕES --- */
+.logout-btn {
+  padding: 0.75rem 1rem;
+  width: 100%;
+  border: none;
+  background-color: var(--error-light);
+  color: var(--error-color);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
 
-/* --- ELEMENTOS MOBILE (ESCONDIDOS NO DESKTOP) --- */
-.hamburger-btn, .overlay {
+.logout-btn:hover {
+  background-color: #f9dcdc;
+}
+
+.affiliate-link {
+  background-color: var(--affiliate-light);
+  color: var(--affiliate-color) !important;
+  font-weight: bold;
+}
+
+/* --- ELEMENTOS MOBILE --- */
+.hamburger-btn,
+.overlay {
   display: none;
 }
 
+.sidebar-close-btn {
+  display: none;
+}
 
-/* --- MEDIA QUERY PARA TELAS MENORES (MOBILE) --- */
+/* --- MEDIA QUERY PARA MOBILE --- */
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
-    padding: 20px; /* NOVIDADE: Reduz o espaçamento nas laterais */
-    padding-top: 80px; 
+    padding: 1.25rem;
+    padding-top: 5rem;
   }
   
-  /* Esconde a sidebar fora da tela por padrão */
   .sidebar {
-    transform: translateX(-100%); 
+    transform: translateX(-100%);
+    width: 85%;
+    max-width: 300px;
   }
 
-  /* Mostra a sidebar quando a classe 'open' é adicionada */
   .sidebar.open {
     transform: translateX(0);
   }
 
-  /* O conteúdo principal ocupa 100% da largura */
-  .main-content {
-    margin-left: 0;
-  }
-  
-  /* Mostra o botão hambúrguer */
   .hamburger-btn {
-    display: block;
+    display: flex;
     position: fixed;
-    top: 15px;
-    left: 15px;
-    z-index: 1001; /* Fica acima de tudo */
-    background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 20px;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1002;
+    background: var(--white);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 1.25rem;
     cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px var(--shadow-color);
   }
 
-  /* Mostra o overlay quando o menu está aberto */
   .overlay {
     display: block;
     position: fixed;
@@ -118,50 +205,36 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 999; /* Fica abaixo da sidebar mas acima do conteúdo */
-  }
-}
-
-/* Adicione estas regras DENTRO da media query no final do Layout.css */
-
-  .sidebar-header {
-    position: relative; /* Necessário para posicionar o botão de fechar */
+    background-color: var(--overlay-color);
+    z-index: 1000;
   }
 
   .sidebar-close-btn {
-    display: block; /* Mostra o botão de fechar no mobile */
+    display: block;
     position: absolute;
-    top: -10px;
-    right: -5px;
-    background: transparent;
+    top: -0.5rem;
+    right: -0.5rem;
+    background: var(--white);
     border: none;
-    font-size: 30px;
-    color: #333;
+    font-size: 1.75rem;
+    color: var(--text-color);
     cursor: pointer;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px var(--shadow-color);
   }
-
-.logout-btn {
-    margin-top: auto; /* Empurra o botão para o final da sidebar */
-    padding: 15px 20px;
-    width: 100%;
-    border: none;
-    background-color: #fceeee;
-    color: #c0392b;
-    border-radius: 8px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-    transition: background-color 0.2s;
 }
 
-.logout-btn:hover {
-    background-color: #f9dcdc;
+/* --- ANIMAÇÕES --- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-.affiliate-link {
-    background-color: #dbeafe;
-    color: #1e40af !important; /* !important para sobrepor outros estilos de hover */
-    font-weight: bold;
+.overlay {
+  animation: fadeIn 0.2s ease-out;
 }

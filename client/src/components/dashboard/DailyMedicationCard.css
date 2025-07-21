@@ -1,52 +1,153 @@
-.daily-med-card h3 {
-    margin-top: 0;
-    text-align: center;
-    color: #37715b;
+/* DailyMedicationCard.css */
+.daily-med-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.25rem;
 }
 
-.daily-med-item {
+.med-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid #eef0ef;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
 }
 
-.daily-med-item:last-child {
-    border-bottom: none;
+.med-card-header h3 {
+    margin: 0;
+    color: #37715b;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
-.daily-med-info span {
-    font-size: 14px;
-    color: #666;
+.meds-count {
+    background: #f0f7f4;
+    color: #37715b;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
 }
 
-.daily-med-checks {
-    display: flex;
-    gap: 8px;
-}
-
-.med-checkbox-daily {
-    width: 25px;
-    height: 25px;
-    border: 2px solid #ccc;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    color: white;
-    transition: all 0.2s ease-in-out;
-}
-
-.med-checkbox-daily.taken {
-    background-color: #28a745;
-    border-color: #28a745;
+.empty-state {
+    text-align: center;
+    padding: 1.5rem 0;
 }
 
 .empty-meds {
-    text-align: center;
+    color: #666;
+    margin-bottom: 0.25rem;
+}
+
+.empty-state small {
+    color: #999;
+    font-size: 0.8rem;
+}
+
+.med-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.med-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.med-item:hover {
+    background-color: #f9f9f9;
+}
+
+.med-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.med-name-dose {
+    margin-bottom: 0.25rem;
+}
+
+.med-name-dose strong {
+    display: block;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.med-name-dose span {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.med-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.med-progress small {
+    font-size: 0.7rem;
     color: #888;
-    padding: 15px 0;
+}
+
+.med-progress progress {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.med-progress progress::-webkit-progress-bar {
+    background-color: #f0f0f0;
+}
+
+.med-progress progress::-webkit-progress-value {
+    background-color: #4caf50;
+}
+
+.med-checks {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 0.75rem;
+}
+
+.med-checkbox {
+    width: 28px;
+    height: 28px;
+    border: 2px solid #ddd;
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s ease;
+}
+
+.med-checkbox:hover {
+    border-color: #aaa;
+    background-color: #f5f5f5;
+}
+
+.med-checkbox.taken {
+    background-color: #4caf50;
+    border-color: #4caf50;
+    color: white;
+}
+
+.med-checkbox svg {
+    stroke-width: 2px;
 }

@@ -24,10 +24,14 @@ const app = express();
 
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
-    'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
-    'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com',
-    'https://bariplus-admin.onrender.com', 'http://localhost:3000',
-    'http://localhost:3001', 'http://localhost:3002'
+    'https://bariplus.vercel.app',
+    'https://bari-plus.vercel.app',
+    'https://bariplus-admin.vercel.app',
+    'https://bariplus-app.onrender.com',
+    'https://bariplus-admin.onrender.com',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002'
 ];
 
 const corsOptions = {
@@ -37,7 +41,8 @@ const corsOptions = {
         } else {
             callback(new Error('Not allowed by CORS'));
         }
-    }
+    },
+    credentials: true // ✅ Adicione esta linha
 };
 
 app.use(cors(corsOptions));
@@ -580,6 +585,17 @@ app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
         res.status(500).json({ message: 'Erro ao registrar peso.' });
     }
 });
+
+app.get('/api/pesos', autenticar, async (req, res) => {
+    try {
+        const pesoDoc = await Peso.findOne({ userId: req.userId });
+        res.json(pesoDoc ? pesoDoc.registros : []);
+    } catch (error) {
+        console.error('Erro ao buscar histórico de peso:', error);
+        res.status(500).json({ message: 'Erro no servidor' });
+    }
+});
+
 // --- ROTAS DE CHECKLIST ---
 app.get('/api/checklist', autenticar, async (req, res) => {
     try {
