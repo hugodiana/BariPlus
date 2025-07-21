@@ -1,13 +1,9 @@
-# Dependências e Logs
-node_modules/
-npm-debug.log
-
-# Pasta de build do React
-client/build
-
-# Arquivos de ambiente (vamos usar no futuro)
+# Arquivos de ambiente
 .env
+*.env
+server/*.json
+server/config/
 
-# Chaves Secretas
-server/bariplus-oficial-firebase-adminsdk-fbsvc-029e80f1f6.json.env
-server/bariplus-oficial-firebase-adminsdk-*.json
+# Firebase
+**/firebase-admin.json
+**/firebase-*.json

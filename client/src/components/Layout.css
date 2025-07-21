@@ -1,5 +1,6 @@
-/* --- VARIÁVEIS DE CORES --- */
+/* layout.css - Versão Otimizada */
 :root {
+  /* Cores (mantidas suas variáveis) */
   --primary-color: #37715b;
   --primary-light: #e9f5f2;
   --primary-dark: #204a38;
@@ -14,17 +15,32 @@
   --overlay-color: rgba(0, 0, 0, 0.5);
   --white: #ffffff;
   --background: #f4f7f6;
+  
+  /* Novas variáveis para responsividade */
+  --sidebar-width: 280px;
+  --sidebar-mobile-width: 85%;
+  --sidebar-mobile-max-width: 300px;
+  --transition-speed: 0.3s;
+  --mobile-breakpoint: 768px;
 }
 
-/* --- ESTILOS GERAIS DO LAYOUT --- */
+/* Reset básico para consistência */
+.layout-container * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Layout principal */
 .layout-container {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
 
-/* --- ESTILOS DA SIDEBAR --- */
+/* Sidebar - Desktop */
 .sidebar {
-  width: 280px;
+  width: var(--sidebar-width);
   height: 100vh;
   position: fixed;
   top: 0;
@@ -35,9 +51,9 @@
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
-  box-sizing: border-box;
-  transition: transform 0.3s ease-in-out;
+  transition: transform var(--transition-speed) ease-in-out;
   z-index: 1001;
+  will-change: transform; /* Otimização de performance */
 }
 
 .sidebar-header {
@@ -50,8 +66,10 @@
   height: 50px;
   width: auto;
   max-width: 100%;
+  object-fit: contain; /* Garante que a imagem não distorça */
 }
 
+/* Navegação */
 .sidebar-nav {
   display: flex;
   flex-direction: column;
@@ -69,29 +87,37 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  position: relative;
 }
 
+/* Indicador visual para links ativos */
 .sidebar-nav a::before {
   content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background-color: currentColor;
-  border-radius: 50%;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 0;
+  background-color: var(--primary-color);
+  border-radius: 0 2px 2px 0;
+  transition: height 0.2s ease;
+}
+
+.sidebar-nav a:hover::before,
+.sidebar-nav a.active::before {
+  height: 60%;
 }
 
 .sidebar-nav a:hover,
-.sidebar-nav a.active {
+.sidebar-nav a.active,
+.sidebar-nav a:focus {
   background-color: var(--primary-light);
   color: var(--primary-dark);
+  outline: none;
 }
 
-.sidebar-nav a.active::before {
-  opacity: 1;
-}
-
+/* Rodapé da sidebar */
 .sidebar-footer {
   margin-top: auto;
   padding-top: 1rem;
@@ -107,25 +133,31 @@
   display: block;
   font-weight: 600;
   color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-email {
   display: block;
   font-size: 0.8rem;
   color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* --- ESTILOS DO CONTEÚDO PRINCIPAL --- */
+/* Conteúdo principal */
 .main-content {
   flex-grow: 1;
   padding: 2.5rem;
   background-color: var(--background);
-  margin-left: 280px;
-  transition: margin-left 0.3s ease-in-out;
+  margin-left: var(--sidebar-width);
+  transition: margin-left var(--transition-speed) ease-in-out;
   min-height: 100vh;
 }
 
-/* --- BOTÕES --- */
+/* Botões */
 .logout-btn {
   padding: 0.75rem 1rem;
   width: 100%;
@@ -141,46 +173,42 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 44px; /* Tamanho mínimo para toque */
 }
 
-.logout-btn:hover {
+.logout-btn:hover,
+.logout-btn:focus {
   background-color: #f9dcdc;
+  outline: 2px solid var(--error-color);
 }
 
 .affiliate-link {
   background-color: var(--affiliate-light);
   color: var(--affiliate-color) !important;
   font-weight: bold;
+  position: relative;
 }
 
-/* --- ELEMENTOS MOBILE --- */
-.hamburger-btn,
-.overlay {
-  display: none;
-}
-
-.sidebar-close-btn {
-  display: none;
-}
-
-/* --- MEDIA QUERY PARA MOBILE --- */
+/* Mobile Styles */
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
     padding: 1.25rem;
-    padding-top: 5rem;
+    padding-top: 4.5rem; /* Espaço para o botão hamburguer */
   }
   
   .sidebar {
     transform: translateX(-100%);
-    width: 85%;
-    max-width: 300px;
+    width: var(--sidebar-mobile-width);
+    max-width: var(--sidebar-mobile-max-width);
+    padding: 1rem;
   }
 
   .sidebar.open {
     transform: translateX(0);
   }
 
+  /* Botão hamburguer */
   .hamburger-btn {
     display: flex;
     position: fixed;
@@ -190,14 +218,22 @@
     background: var(--white);
     border: 1px solid var(--border-color);
     border-radius: 0.5rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem;
     font-size: 1.25rem;
     cursor: pointer;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px var(--shadow-color);
+    min-width: 44px;
+    min-height: 44px;
+    color: var(--primary-color);
   }
 
+  .hamburger-btn:focus {
+    outline: 2px solid var(--primary-color);
+  }
+
+  /* Overlay */
   .overlay {
     display: block;
     position: fixed;
@@ -207,34 +243,64 @@
     bottom: 0;
     background-color: var(--overlay-color);
     z-index: 1000;
+    opacity: 0;
+    animation: fadeIn 0.2s ease-out forwards;
+    backdrop-filter: blur(2px);
   }
 
+  /* Botão fechar */
   .sidebar-close-btn {
-    display: block;
+    display: flex;
     position: absolute;
-    top: -0.5rem;
-    right: -0.5rem;
+    top: 0.5rem;
+    right: 0.5rem;
     background: var(--white);
     border: none;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     color: var(--text-color);
     cursor: pointer;
-    width: 2rem;
-    height: 2rem;
+    width: 2.5rem;
+    height: 2.5rem;
     border-radius: 50%;
-    display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 2px 4px var(--shadow-color);
+    z-index: 1003;
+  }
+
+  .sidebar-close-btn:focus {
+    outline: 2px solid var(--primary-color);
   }
 }
 
-/* --- ANIMAÇÕES --- */
+/* Animações */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.overlay {
-  animation: fadeIn 0.2s ease-out;
+/* Dark Mode opcional */
+@media (prefers-color-scheme: dark) {
+  .sidebar {
+    background-color: #1a1a1a;
+    border-right-color: #333;
+  }
+  
+  .sidebar-nav a {
+    color: #f0f0f0;
+  }
+  
+  .main-content {
+    background-color: #121212;
+  }
+}
+
+/* Acessibilidade - reduz movimento */
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .main-content,
+  .overlay {
+    transition: none;
+    animation: none;
+  }
 }
