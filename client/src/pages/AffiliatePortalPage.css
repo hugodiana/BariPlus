@@ -1,4 +1,4 @@
-/* AffiliatePortalPage.css */
+/* AffiliatePortalPage.css - Versão Mobile-Optimized */
 :root {
   --primary-color: #37715b;
   --primary-light: #e9f5f2;
@@ -11,73 +11,69 @@
   --success-color: #28a745;
   --warning-color: #ffc107;
   --error-color: #dc3545;
+  --mobile-breakpoint: 768px;
 }
 
+/* Container principal */
 .affiliate-portal-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1.5rem;
+  min-height: 100vh;
 }
 
+/* Header */
 .portal-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .portal-header h1 {
   margin: 0;
   color: var(--primary-color);
-  font-size: 2.2rem;
+  font-size: 1.8rem; /* Reduzido para mobile */
+  line-height: 1.2;
 }
 
 .portal-header .subtitle {
   color: var(--text-light);
   margin-top: 0.5rem;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
+/* Grid de estatísticas */
 .stats-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-bottom: 2.5rem;
+  grid-template-columns: 1fr; /* Coluna única em mobile */
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
 
 .stat-card {
   background-color: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px var(--shadow-color);
+  padding: 1.25rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px var(--shadow-color);
   text-align: center;
 }
 
-.stat-card.highlight {
-  border-top: 4px solid var(--secondary-color);
-}
-
-.stat-card h3 {
-  margin-top: 0;
-  color: var(--text-light);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
+/* Cópia de cupom */
 .coupon-container {
   display: flex;
+  flex-direction: column; /* Empilhado em mobile */
   align-items: center;
-  justify-content: center;
   gap: 0.75rem;
   margin: 1rem 0;
 }
 
 .coupon-code {
-  font-size: 1.8rem;
+  font-size: 1.4rem; /* Reduzido para mobile */
   font-weight: bold;
   color: var(--secondary-color);
   background-color: var(--secondary-light);
   padding: 0.5rem 1rem;
   border-radius: 8px;
-  display: inline-block;
+  word-break: break-all; /* Evita overflow */
 }
 
 .copy-btn {
@@ -88,167 +84,117 @@
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  transition: all 0.2s ease;
+  min-width: 80px;
+  min-height: 40px; /* Tamanho mínimo para toque */
 }
 
-.copy-btn:hover {
-  background-color: #0069d9;
-}
-
-.copy-btn.copied {
-  background-color: var(--success-color);
-}
-
-.stat-value {
-  font-size: 2.5rem;
-  font-weight: bold;
-  color: var(--primary-color);
-  margin: 0.5rem 0;
-}
-
-.stat-description {
-  color: var(--text-light);
-  font-size: 0.9rem;
-  margin: 0;
-}
-
+/* Abas */
 .portal-tabs {
   display: flex;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto; /* Permite scroll horizontal se necessário */
+  -webkit-overflow-scrolling: touch;
 }
 
 .tab-btn {
-  padding: 0.75rem 1.5rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--text-light);
-  position: relative;
-  margin-right: 0.5rem;
+  padding: 0.75rem 1rem;
+  min-width: 100px;
+  min-height: 44px; /* Tamanho mínimo para toque */
+  font-size: 0.9rem;
 }
 
-.tab-btn.active {
-  color: var(--secondary-color);
-}
-
-.tab-btn.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--secondary-color);
-}
-
+/* Tabela de vendas */
 .sales-table-container {
   background-color: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px var(--shadow-color);
-}
-
-.sales-table-container h3 {
-  margin-top: 0;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px var(--shadow-color);
   margin-bottom: 1.5rem;
-  color: var(--text-color);
 }
 
 .table-responsive {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -1rem; /* Compensa o padding do container */
 }
 
 table {
+  min-width: 600px; /* Largura mínima para manter legibilidade */
   width: 100%;
-  border-collapse: collapse;
 }
 
 th, td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0.75rem 0.5rem; /* Reduzido para mobile */
+  font-size: 0.85rem; /* Reduzido para mobile */
 }
 
-th {
-  color: var(--text-light);
-  font-weight: 600;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-}
-
+/* Badges de status */
 .status-badge {
-  display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
 }
 
-.status-badge.completed {
-  background-color: rgba(40, 167, 69, 0.1);
-  color: var(--success-color);
-}
-
-.status-badge.pending {
-  background-color: rgba(255, 193, 7, 0.1);
-  color: var(--warning-color);
-}
-
-.status-badge.canceled {
-  background-color: rgba(220, 53, 69, 0.1);
-  color: var(--error-color);
-}
-
-.performance-container {
-  background-color: white;
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px var(--shadow-color);
-}
-
+/* Performance metrics */
 .metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  grid-template-columns: 1fr; /* Coluna única em mobile */
+  gap: 1rem;
 }
 
-.metric-card {
-  background-color: var(--primary-light);
-  padding: 1.5rem;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.metric-card h4 {
-  margin-top: 0;
-  color: var(--text-light);
-  font-size: 1rem;
-}
-
-.metric-value {
-  font-size: 2rem;
-  font-weight: bold;
-  color: var(--primary-color);
-  margin: 0.5rem 0 0;
-}
-
-@media (max-width: 768px) {
+/* Media Queries para Desktop */
+@media (min-width: 769px) {
   .affiliate-portal-container {
-    padding: 1rem;
+    padding: 2rem;
+  }
+  
+  .portal-header h1 {
+    font-size: 2.2rem;
   }
   
   .stats-summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+  }
+  
+  .coupon-container {
+    flex-direction: row; /* Linha em desktop */
   }
   
   .coupon-code {
+    font-size: 1.8rem;
+  }
+  
+  .metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  }
+  
+  th, td {
+    padding: 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Ajustes para telas muito pequenas (iPhone SE etc) */
+@media (max-width: 375px) {
+  .affiliate-portal-container {
+    padding: 1rem 0.75rem;
+  }
+  
+  .portal-header h1 {
     font-size: 1.5rem;
   }
   
-  .stat-value {
-    font-size: 2rem;
+  .stat-card {
+    padding: 1rem;
+  }
+  
+  .coupon-code {
+    font-size: 1.2rem;
+  }
+  
+  .tab-btn {
+    padding: 0.5rem;
+    min-width: 80px;
+    font-size: 0.8rem;
   }
 }
