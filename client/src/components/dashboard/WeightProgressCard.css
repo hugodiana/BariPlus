@@ -1,57 +1,121 @@
-.dashboard-card {
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 20px;
+/* WeightProgressCard.css */
+.weight-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.weight-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
 .weight-card h3 {
-    margin-top: 0;
-    color: #37715b;
-    text-align: center;
-    margin-bottom: 20px;
+  margin: 0;
+  color: #37715b;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.meta-indicator {
+  background-color: #f0f7f4;
+  color: #37715b;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .weight-stats {
-    display: flex;
-    justify-content: space-around;
-    text-align: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  text-align: center;
 }
 
-.stat-item .stat-label {
-    display: block;
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 5px;
+.stat-item {
+  padding: 0.75rem;
+  border-radius: 8px;
+  background-color: #f9f9f9;
 }
 
-.stat-item .stat-value {
-    display: block;
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
+.stat-item.eliminado {
+  background-color: rgba(0, 122, 255, 0.05);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.stat-value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
 }
 
 .stat-item.eliminado .stat-value {
-    color: #007aff;
+  color: #007aff;
 }
 
-/* Estilos para o mini-gráfico */
-.mini-chart-container {
-    position: relative; 
-    height: 80px;      
-    margin-top: 20px;
+.trend-indicator {
+  font-size: 0.9rem;
+  color: #666;
 }
 
-.chart-placeholder {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    color: #aaa;
-    font-size: 13px;
-    text-align: center;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    padding: 0 10px;
+.progress-badge {
+  background-color: #007aff;
+  color: white;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 10px;
+  margin-left: 0.25rem;
+}
+
+.chart-container {
+  position: relative;
+  height: 120px;
+  margin-top: 0.5rem;
+}
+
+.chart-legend {
+  text-align: right;
+  font-size: 0.7rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.empty-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: #888;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.empty-state p {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.empty-state small {
+  font-size: 0.75rem;
 }
