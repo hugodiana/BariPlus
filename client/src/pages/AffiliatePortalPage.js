@@ -19,6 +19,9 @@ const AffiliatePortalPage = () => {
     useEffect(() => {
         const fetchAffiliateStats = async () => {
             try {
+                setLoading(true);
+                setError(null);
+                
                 const response = await fetch(`${apiUrl}/api/affiliate/stats`, {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -46,6 +49,8 @@ const AffiliatePortalPage = () => {
     }, [token, apiUrl]);
 
     const copyToClipboard = () => {
+        if (!stats?.couponCode) return;
+        
         navigator.clipboard.writeText(stats.couponCode)
             .then(() => {
                 setCopied(true);
@@ -57,7 +62,7 @@ const AffiliatePortalPage = () => {
 
     if (loading) {
         return (
-            <div className="page-container">
+            <div className="affiliate-portal-container">
                 <LoadingSpinner message="Carregando portal do afiliado..." />
             </div>
         );
@@ -65,7 +70,7 @@ const AffiliatePortalPage = () => {
 
     if (error) {
         return (
-            <div className="page-container">
+            <div className="affiliate-portal-container">
                 <EmptyState 
                     title="Erro ao carregar dados"
                     message={error}
@@ -78,7 +83,7 @@ const AffiliatePortalPage = () => {
 
     if (!stats) {
         return (
-            <div className="page-container">
+            <div className="affiliate-portal-container">
                 <EmptyState 
                     title="Nenhum dado encontrado"
                     message="Você ainda não possui dados de afiliado."
@@ -103,8 +108,9 @@ const AffiliatePortalPage = () => {
                             onClick={copyToClipboard}
                             className={`copy-btn ${copied ? 'copied' : ''}`}
                             aria-label="Copiar cupom"
+                            disabled={!stats.couponCode}
                         >
-                            {copied ? '✓' : 'Copiar'}
+                            {copied ? '✓ Copiado!' : 'Copiar'}
                         </button>
                     </div>
                     <p className="stat-description">Compartilhe este cupom para ganhar comissões</p>
@@ -127,12 +133,14 @@ const AffiliatePortalPage = () => {
                 <button 
                     className={`tab-btn ${activeTab === 'sales' ? 'active' : ''}`}
                     onClick={() => setActiveTab('sales')}
+                    aria-selected={activeTab === 'sales'}
                 >
                     Vendas
                 </button>
                 <button 
                     className={`tab-btn ${activeTab === 'performance' ? 'active' : ''}`}
                     onClick={() => setActiveTab('performance')}
+                    aria-selected={activeTab === 'performance'}
                 >
                     Desempenho
                 </button>
@@ -157,11 +165,11 @@ const AffiliatePortalPage = () => {
                                     <tbody>
                                         {stats.salesDetails.map((sale, index) => (
                                             <tr key={`sale-${index}`}>
-                                                <td>{sale.customerEmail}</td>
-                                                <td>{formatCurrency(sale.amount)}</td>
-                                                <td>{formatCurrency(sale.commission)}</td>
-                                                <td>{formatDate(sale.date)}</td>
-                                                <td>
+                                                <td data-label="Cliente">{sale.customerEmail}</td>
+                                                <td data-label="Valor">{formatCurrency(sale.amount)}</td>
+                                                <td data-label="Comissão">{formatCurrency(sale.commission)}</td>
+                                                <td data-label="Data">{formatDate(sale.date)}</td>
+                                                <td data-label="Status">
                                                     <span className={`status-badge ${sale.status}`}>
                                                         {sale.status}
                                                     </span>
@@ -186,10 +194,12 @@ const AffiliatePortalPage = () => {
                             <div className="metric-card">
                                 <h4>Taxa de Conversão</h4>
                                 <p className="metric-value">{stats.conversionRate || '0%'}</p>
+                                <p className="metric-description">Porcentagem de visitantes que usaram seu cupom</p>
                             </div>
                             <div className="metric-card">
                                 <h4>Clientes Recorrentes</h4>
                                 <p className="metric-value">{stats.recurringCustomers || 0}</p>
+                                <p className="metric-description">Clientes que usaram seu cupom mais de uma vez</p>
                             </div>
                         </div>
                     </div>
