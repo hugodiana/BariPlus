@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { format, differenceInDays } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
 import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 import Modal from '../components/Modal';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../components/LoadingSpinner'; // Usando o spinner
 import './DashboardPage.css';
 
 const DashboardPage = () => {
+    // Voltando à nossa estrutura original de estados separados
     const [usuario, setUsuario] = useState(null);
     const [pesos, setPesos] = useState([]);
     const [dailyLog, setDailyLog] = useState(null);
@@ -49,6 +50,7 @@ const DashboardPage = () => {
             setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setMedicationData(dadosMedication);
             setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
+
         } catch (error) {
             toast.error(error.message);
             if (error.message.includes('Sessão inválida')) {
@@ -74,6 +76,7 @@ const DashboardPage = () => {
             if (!response.ok) throw new Error('Falha ao registrar');
             const updatedLog = await response.json();
             setDailyLog(updatedLog);
+            toast.success('Registro atualizado!');
         } catch (error) {
             toast.error(error.message);
         }
@@ -98,7 +101,7 @@ const DashboardPage = () => {
             toast.error(error.message);
         }
     };
-
+    
     const handleToggleMedToma = async (medId, totalDoses) => {
         try {
             const hoje = new Date().toISOString().split('T')[0];
@@ -131,8 +134,13 @@ const DashboardPage = () => {
         return `${saudacao}, ${nome}!`;
     };
 
-    if (loading) return <LoadingSpinner />;
-    if (!usuario) return <div className="loading-container">Não foi possível carregar os dados. Por favor, <a href="/login">faça o login</a> novamente.</div>;
+    if (loading) {
+        return <LoadingSpinner />;
+    }
+
+    if (!usuario) {
+        return <div className="loading-container">Não foi possível carregar os dados. Por favor, <a href="/login">faça o login</a> novamente.</div>;
+    }
 
     const proximasTarefas = ((usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || []).filter(t => !t.concluido).slice(0, 3);
     const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
