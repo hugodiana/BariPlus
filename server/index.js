@@ -205,7 +205,7 @@ app.post('/api/register', async (req, res) => {
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
         await transporter.sendMail({
-            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: novoUsuario.email,
             subject: "Ative a sua Conta no BariPlus",
             html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Por favor, clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
@@ -289,7 +289,7 @@ app.post('/api/forgot-password', async (req, res) => {
         });
 
         await transporter.sendMail({
-            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
             subject: "Redefinição de Senha - BariPlus",
             html: `
@@ -1594,7 +1594,7 @@ app.get('/api/verify-email/:token', async (req, res) => {
         // Envia o e-mail de boas-vindas APÓS a verificação
         const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
         await transporter.sendMail({
-            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
             subject: "🎉 Conta Ativada! Bem-vindo(a) ao BariPlus!",
             html: `<h1>Olá, ${usuario.nome}!</h1><p>A sua conta foi ativada com sucesso. Agora você já pode fazer o login e começar a sua jornada.</p>`,
@@ -1631,7 +1631,7 @@ app.post('/api/resend-verification-email', async (req, res) => {
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
         await transporter.sendMail({
-            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
             subject: "Seu Novo Link de Verificação BariPlus",
             html: `<h1>Novo Link de Ativação</h1><p>Aqui está o seu novo link para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
