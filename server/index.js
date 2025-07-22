@@ -122,107 +122,17 @@ mongoose.connect(process.env.DATABASE_URL)
     .catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({
-    nome: { type: String, required: true },
-    sobrenome: { type: String, required: true },
-    username: { type: String, required: true, unique: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
-    onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: { 
-        fezCirurgia: String, 
-        dataCirurgia: Date, 
-        altura: Number, 
-        pesoInicial: Number, 
-        pesoAtual: Number 
-    },
-    stripeCustomerId: String,
-    pagamentoEfetuado: { type: Boolean, default: false },
-    role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
-    affiliateCouponCode: String,
-    fcmToken: String,
-    notificationSettings: {
-        appointmentReminders: { type: Boolean, default: true },
-        medicationReminders: { type: Boolean, default: true },
-        weighInReminders: { type: Boolean, default: true }
-    },
-    emailVerificationToken: { type: String },
-    emailVerificationExpires: { type: Date },
-    isEmailVerified: { type: Boolean, default: false }
-}, { timestamps: true });
+ongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
-const ChecklistSchema = new mongoose.Schema({ 
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-    preOp: [{ descricao: String, concluido: Boolean }], 
-    posOp: [{ descricao: String, concluido: Boolean }] 
-});
-
-const PesoSchema = new mongoose.Schema({ 
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-    registros: [{ 
-        peso: Number, 
-        data: Date, 
-        fotoUrl: String, 
-        medidas: { 
-            cintura: Number, 
-            quadril: Number, 
-            braco: Number 
-        } 
-    }] 
-});
-
-const ConsultaSchema = new mongoose.Schema({ 
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-    consultas: [{ 
-        especialidade: String, 
-        data: Date, 
-        local: String, 
-        notas: String, 
-        status: String 
-    }] 
-});
-
-const DailyLogSchema = new mongoose.Schema({ 
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-    date: String, 
-    waterConsumed: { type: Number, default: 0 }, 
-    proteinConsumed: { type: Number, default: 0 } 
-});
-
-const MedicationSchema = new mongoose.Schema({ 
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-    medicamentos: [{ 
-        nome: String, 
-        dosagem: String, 
-        quantidade: Number, 
-        unidade: String, 
-        vezesAoDia: Number 
-    }], 
-    historico: { type: Map, of: Map, default: {} } 
-});
-
-const FoodLogSchema = new mongoose.Schema({ 
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
-    date: String, 
-    refeicoes: { 
-        cafeDaManha: [mongoose.Schema.Types.Mixed], 
-        almoco: [mongoose.Schema.Types.Mixed], 
-        jantar: [mongoose.Schema.Types.Mixed], 
-        lanches: [mongoose.Schema.Types.Mixed] 
-    } 
-});
-
-const GastoSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    descricao: { type: String, required: true },
-    valor: { type: Number, required: true },
-    categoria: {
-        type: String,
-        required: true,
-        enum: ['Consultas', 'Suplementos', 'Farmácia', 'Alimentação', 'Academia', 'Outros']
-    },
-    data: { type: Date, default: Date.now }
-});
+// --- SCHEMAS E MODELOS ---
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationToken: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false } }, { timestamps: true });
+const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
+const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
+const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
+const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
+const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
+const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
+const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
