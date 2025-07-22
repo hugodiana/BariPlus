@@ -188,9 +188,10 @@ app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
         if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-
+        
         const hashedPassword = await bcrypt.hash(password, 10);
         
+        // Gera um token de verificação seguro e aleatório
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const verificationExpires = new Date(Date.now() + 3600000); // Expira em 1 hora
 
@@ -211,7 +212,7 @@ app.post('/api/register', async (req, res) => {
             html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Por favor, clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
         });
 
-        // Cria documentos associados para o novo usuário
+        // Cria os documentos associados (Checklist, Peso, etc.)
         await Promise.all([
             new Checklist({ userId: novoUsuario._id, preOp: [], posOp: [] }).save(),
             new Peso({ userId: novoUsuario._id, registros: [] }).save(),
@@ -230,7 +231,7 @@ app.post('/api/register', async (req, res) => {
             await new Gasto({ userId: novoUsuario._id, registros: [] }).save(),
         ]);
 
-        res.status(201).json({ message: 'Usuário criado com sucesso!' });
+        res.status(201).json({ message: 'Cadastro realizado! Por favor, verifique seu e-mail para ativar a sua conta.' });
     } catch (error) {
         console.error("Erro no registro:", error);
         res.status(500).json({ message: 'Erro no servidor.' });
@@ -251,6 +252,29 @@ app.post('/api/login', async (req, res) => {
         const token = jwt.sign({ userId: usuario._id }, JWT_SECRET, { expiresIn: '8h' });
         res.json({ token });
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
+});
+
+app.get('/api/verify-email/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const usuario = await User.findOne({
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: Date.now() } // Verifica se o token não expirou
+        });
+
+        if (!usuario) {
+            return res.status(400).json({ message: "Link de verificação inválido ou expirado." });
+        }
+
+        usuario.isEmailVerified = true;
+        usuario.emailVerificationToken = undefined;
+        usuario.emailVerificationExpires = undefined;
+        await usuario.save();
+
+        res.json({ message: "E-mail verificado com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ message: "Erro no servidor." });
+    }
 });
 
 // Rota de Recuperação de Senha
