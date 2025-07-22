@@ -25,6 +25,7 @@ import AffiliatePortalPage from './pages/AffiliatePortalPage';
 import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
 import GastosPage from './pages/GastosPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
 
 const AppRoutes = ({ usuario }) => {
   return (

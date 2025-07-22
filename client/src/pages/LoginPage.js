@@ -63,7 +63,7 @@ const LoginPage = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
             if (isRegistering) {
-                avigate('/verify-email', { state: { email: email } });
+                navigate('/verify-email', { state: { email: email } });
             } else {
                 localStorage.setItem('bariplus_token', data.token);
                 window.location.href = '/'; 
