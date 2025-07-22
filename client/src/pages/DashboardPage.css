@@ -1,230 +1,146 @@
-/* DashboardPage.css - Versão Mobile-Optimized */
-:root {
-  --primary-color: #37715b;
-  --primary-light: #e9f5f2;
-  --secondary-color: #007aff;
-  --secondary-light: #f0f8ff;
-  --text-color: #333;
-  --text-light: #666;
-  --border-color: #eef0ef;
-  --shadow-color: rgba(0, 0, 0, 0.08);
-  --card-bg: #ffffff;
-  --mobile-breakpoint: 768px;
+/* Estilos base */
+.dashboard-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    font-family: 'Inter', sans-serif;
 }
 
-/* Container principal */
-.dashboard-container {
-  width: 100%;
-  padding: 1rem;
-  box-sizing: border-box;
-}
-
-/* Mensagem de boas-vindas */
 .dashboard-welcome {
-  color: var(--text-color);
-  margin: 0 0 1.5rem 0;
-  font-size: 1.8rem;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: center;
+    color: #2c3e50;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    font-weight: 700;
 }
 
-/* Grid de cards */
+/* Grid layout */
 .dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-  gap: 1.5rem;
-  width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    width: 100%;
 }
 
-/* Cards gerais */
+.dashboard-card-wrapper {
+    min-width: 0; /* Previne overflow */
+}
+
+/* Cards */
 .dashboard-card {
-  background-color: var(--card-bg);
-  border-radius: 0.75rem;
-  box-shadow: 0 2px 8px var(--shadow-color);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Previne que conteúdo estoure */
 }
 
-/* Card especial para data de cirurgia */
+.dashboard-card h3 {
+    color: #37715b;
+    font-size: 1.25rem;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+/* Card especial */
 .special-action-card {
-  background-color: var(--primary-light);
-  border: 2px dashed var(--primary-color);
-  text-align: center;
-  grid-column: 1 / -1; /* Ocupa toda a largura */
-}
-
-.special-action-card h3 {
-  color: var(--primary-color);
-  margin: 0 0 0.75rem 0;
-  font-size: 1.25rem;
-}
-
-.special-action-card p {
-  color: var(--text-color);
-  font-size: 1rem;
-  line-height: 1.5;
-  margin: 0 0 1.5rem 0;
-}
-
-/* Card de ações rápidas */
-.quick-actions-card {
-  gap: 0.75rem;
-}
-
-.quick-actions-card h3 {
-  margin: 0 0 1rem 0;
-  text-align: center;
-  color: var(--primary-color);
-  font-size: 1.25rem;
+    background-color: #f0f7f4;
+    border: 1px solid #d1e7dd;
+    grid-column: 1 / -1;
 }
 
 /* Botões */
-.quick-action-btn,
-.summary-action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  text-align: center;
-  text-decoration: none;
-  box-sizing: border-box;
-  min-height: 44px; /* Tamanho mínimo para toque */
-}
-
 .quick-action-btn {
-  background-color: var(--secondary-color);
-  color: white;
+    display: block;
+    background-color: #37715b;
+    color: white;
+    padding: 0.75rem;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 0.75rem;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
 .quick-action-btn:hover {
-  opacity: 0.9;
+    background-color: #2a5a48;
+    transform: translateY(-2px);
 }
 
-/* Cards de resumo */
-.summary-card h3 {
-  margin: 0 0 1rem 0;
-  color: var(--primary-color);
-  font-size: 1.25rem;
-}
-
+/* Listas */
 .summary-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex-grow: 1;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .summary-list li {
-  padding: 0.75rem 0;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 1rem;
-  line-height: 1.4;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #eee;
 }
 
 .summary-list li:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
+/* Estado vazio */
 .summary-empty {
-  text-align: center;
-  padding: 1rem 0;
-  color: var(--text-light);
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.summary-empty p {
-  margin: 0 0 1rem 0;
+    text-align: center;
+    padding: 1rem 0;
+    color: #7f8c8d;
 }
 
 .summary-action-btn {
-  background-color: var(--secondary-light);
-  color: var(--secondary-color);
-  border: 1px solid var(--secondary-color);
+    display: inline-block;
+    background-color: #37715b;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-top: 0.75rem;
+    font-size: 0.875rem;
 }
 
-/* Modal de data */
+/* Modal */
 .date-input {
-  width: 100%;
-  padding: 0.75rem;
-  margin: 0.5rem 0 1.5rem;
-  border: 1px solid var(--border-color);
-  border-radius: 0.5rem;
-  box-sizing: border-box;
-  font-size: 1rem;
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 1rem;
 }
 
 .submit-btn {
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 1rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 0.5rem;
-  background-color: var(--primary-color);
-  color: white;
-  cursor: pointer;
-  min-height: 44px;
+    background-color: #37715b;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
 }
 
-/* Media Queries para telas pequenas */
+/* Loading */
+.loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    color: #7f8c8d;
+}
+
+/* Responsividade */
 @media (max-width: 768px) {
-  .dashboard-container {
-    padding: 1rem 0.75rem;
-  }
-
-  .dashboard-welcome {
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .dashboard-grid {
-    gap: 1rem;
-  }
-
-  .dashboard-card {
-    padding: 1.25rem;
-  }
-
-  .special-action-card {
-    padding: 1.5rem 1rem;
-  }
-}
-
-/* Ajustes para telas muito pequenas */
-@media (max-width: 375px) {
-  .dashboard-welcome {
-    font-size: 1.4rem;
-  }
-
-  .summary-list li {
-    font-size: 0.9rem;
-    padding: 0.5rem 0;
-  }
-}
-
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --card-bg: #1e1e1e;
-    --text-color: #f0f0f0;
-    --text-light: #aaa;
-    --border-color: #333;
-    --primary-light: #2a2a2a;
-    --secondary-light: #1a1a1a;
-  }
-
-  .special-action-card {
-    background-color: #2a2a2a;
-  }
+    .dashboard-page {
+        padding: 1rem;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
 }
