@@ -52,7 +52,7 @@
   flex-direction: column;
   padding: 1.5rem;
   transition: transform var(--transition-speed) ease-in-out;
-  z-index: 1001;
+  z-index: 999;
   will-change: transform; /* Otimização de performance */
 }
 
@@ -242,7 +242,7 @@
     right: 0;
     bottom: 0;
     background-color: var(--overlay-color);
-    z-index: 1000;
+    z-index: 998;
     opacity: 0;
     animation: fadeIn 0.2s ease-out forwards;
     backdrop-filter: blur(2px);
