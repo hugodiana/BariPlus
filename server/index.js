@@ -243,32 +243,6 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-        // Cria os documentos associados (Checklist, Peso, etc.)
-        await Promise.all([
-            new Checklist({ userId: novoUsuario._id, preOp: [], posOp: [] }).save(),
-            new Peso({ userId: novoUsuario._id, registros: [] }).save(),
-            new Consulta({ userId: novoUsuario._id, consultas: [] }).save(),
-            new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-            new Medication({ 
-                userId: novoUsuario._id, 
-                medicamentos: [], 
-                historico: {} 
-            }).save(),
-            new FoodLog({ 
-                userId: novoUsuario._id, 
-                date: new Date().toISOString().split('T')[0], 
-                refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } 
-            }).save(),
-            await new Gasto({ userId: novoUsuario._id, registros: [] }).save(),
-        ]);
-
-        res.status(201).json({ message: 'Cadastro realizado! Por favor, verifique seu e-mail para ativar a sua conta.' });
-    } catch (error) {
-        console.error("Erro no registro:", error);
-        res.status(500).json({ message: 'Erro no servidor.' });
-    }
-});
-
 // Rota de Login
 app.post('/api/login', async (req, res) => {
     try {
