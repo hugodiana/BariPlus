@@ -4,8 +4,10 @@ import './LoginPage.css';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'; // Importa o novo componente
+import { Link, useNavigate } from 'react-router-dom';
 
 const LoginPage = () => {
+    const navigate = useNavigate();
     const [isRegistering, setIsRegistering] = useState(false);
     const [identifier, setIdentifier] = useState('');
     const [nome, setNome] = useState('');
