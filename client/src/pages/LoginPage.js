@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import './LoginPage.css';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
