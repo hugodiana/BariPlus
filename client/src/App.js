@@ -96,9 +96,11 @@ function App() {
           <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
-          
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+
           <Route path="/*" element={
             !usuario ? <Navigate to="/landing" /> :
+            !usuario.isEmailVerified ? <Navigate to="/verify-email" state={{ email: usuario.email }} /> :
             !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
             !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
             <AppRoutes usuario={usuario} />

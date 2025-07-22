@@ -1697,6 +1697,43 @@ app.get('/api/verify-email/:token', async (req, res) => {
     }
 });
 
+app.post('/api/resend-verification-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const usuario = await User.findOne({ email });
+
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+        if (usuario.isEmailVerified) {
+            return res.status(400).json({ message: "Este e-mail já foi verificado." });
+        }
+
+        // Gera um novo token e data de expiração
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 3600000); // Expira em 1 hora
+
+        usuario.emailVerificationToken = verificationToken;
+        usuario.emailVerificationExpires = verificationExpires;
+        await usuario.save();
+        
+        // Reenvia o e-mail
+        const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
+        await transporter.sendMail({
+            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            to: usuario.email,
+            subject: "Seu Novo Link de Verificação BariPlus",
+            html: `<h1>Novo Link de Ativação</h1><p>Aqui está o seu novo link para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
+        });
+
+        res.json({ message: "Um novo link de verificação foi enviado para o seu e-mail." });
+
+    } catch (error) {
+        res.status(500).json({ message: "Erro no servidor." });
+    }
+});
+
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {
     console.log(`Servidor do BariPlus rodando na porta ${PORT}`);

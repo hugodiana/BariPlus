@@ -63,13 +63,12 @@ const LoginPage = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
             if (isRegistering) {
-                toast.success('Cadastro realizado! Verifique seu e-mail para ativar a conta.');
-                setIsRegistering(false);
+                avigate('/verify-email', { state: { email: email } });
             } else {
                 localStorage.setItem('bariplus_token', data.token);
                 window.location.href = '/'; 
             }
-        } catch (error) {
+            } catch (error) {
             toast.error(error.message);
         }
     };
