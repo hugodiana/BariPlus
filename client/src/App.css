@@ -1,13 +1,15 @@
 /* Importa uma fonte moderna e limpa do Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* Define as nossas "variáveis de design". 
-  Agora podemos reusar estas cores em todo o site, garantindo consistência.
-*/
+/* Define as nossas "variáveis de design" para todo o projeto */
 :root {
   --primary-green: #37715b;
+  --primary-light: #e9f5f2;
   --action-blue: #007aff;
   --danger-red: #c0392b;
+  --error-light: #fceeee;
+  --affiliate-color: #1e40af;
+  --affiliate-light: #dbeafe;
   --background-light: #f4f7f6;
   --background-white: #ffffff;
   --text-dark: #2c3e50;
@@ -17,12 +19,10 @@
   --shadow-color: rgba(0, 0, 0, 0.08);
 }
 
-/* Estilos Globais */
+/* Estilos Globais aplicados a todo o corpo da página */
 body {
   margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--background-light);
@@ -33,26 +33,7 @@ body {
   box-sizing: border-box;
 }
 
-/* Padronização de Títulos e Parágrafos */
-h1, h2, h3, h4 {
-  color: var(--text-dark);
-}
-
-p {
-  color: var(--text-medium);
-  line-height: 1.6;
-}
-
-a {
-  color: var(--action-blue);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-/* Classes de Container Padrão */
+/* Classes de Container Padrão para as páginas */
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
@@ -65,11 +46,12 @@ a:hover {
 
 .page-header h1 {
   font-size: 2rem;
-  margin: 0;
+  margin: 0 0 5px 0;
+  color: var(--text-dark);
 }
 
 .page-header p {
   font-size: 1.1rem;
   color: var(--text-light);
-  margin-top: 5px;
+  margin-top: 0;
 }

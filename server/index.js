@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
-import './App.css';
+
 
 const validatePassword = (password) => {
     if (password.length < 8) return false;
