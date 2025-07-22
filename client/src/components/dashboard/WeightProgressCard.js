@@ -8,8 +8,7 @@ import {
   PointElement,
   LineElement,
   Tooltip,
-  Filler,
-  Legend
+  Filler
 } from 'chart.js';
 
 ChartJS.register(
@@ -18,8 +17,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   Tooltip,
-  Filler,
-  Legend
+  Filler
 );
 
 const WeightProgressCard = ({ 
@@ -28,21 +26,10 @@ const WeightProgressCard = ({
   historico = [], 
   meta = null 
 }) => {
-  // Cálculos de progresso
+  // Calcula diferença e progresso
   const diferenca = pesoInicial - pesoAtual;
   const pesoEliminado = Math.max(diferenca, 0).toFixed(1);
-  const progressoMeta = meta ? Math.min(100, Math.max(0, ((pesoInicial - pesoAtual) / (pesoInicial - meta)) * 100) : null;
-
-  // Determina a tendência (melhorada para lidar com casos de igualdade)
-  const getTendencia = () => {
-    if (historico.length < 2) return '';
-    const ultimo = historico[historico.length - 1].peso;
-    const penultimo = historico[historico.length - 2].peso;
-    
-    if (ultimo < penultimo) return '↓';
-    if (ultimo > penultimo) return '↑';
-    return '→';
-  };
+  const progressoMeta = meta ? ((pesoInicial - pesoAtual) / (pesoInicial - meta)) * 100 : null;
 
   // Prepara dados para o gráfico
   const getChartData = () => {
@@ -59,16 +46,14 @@ const WeightProgressCard = ({
       datasets: [{
         label: 'Peso (kg)',
         data: hasEnoughData ? ultimosRegistros.map(item => item.peso) : [],
-        borderColor: '#37715b',
-        backgroundColor: 'rgba(55, 113, 91, 0.1)',
+        borderColor: '#007aff',
+        backgroundColor: 'rgba(0, 122, 255, 0.1)',
         borderWidth: 2,
         fill: true,
-        tension: 0.4,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        pointBackgroundColor: '#37715b',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2
+        tension: 0.3,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        pointBackgroundColor: '#007aff'
       }]
     };
   };
@@ -79,15 +64,8 @@ const WeightProgressCard = ({
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#2c3e50',
-        titleColor: '#ffffff',
-        bodyColor: '#ffffff',
-        bodySpacing: 5,
-        padding: 12,
-        cornerRadius: 8,
         callbacks: {
-          label: (context) => `${context.parsed.y} kg`,
-          title: (context) => context[0].label
+          label: (context) => `${context.parsed.y} kg`
         }
       }
     },
@@ -100,8 +78,7 @@ const WeightProgressCard = ({
           minRotation: 0,
           font: {
             size: 10
-          },
-          color: '#7f8c8d'
+          }
         }
       },
       y: {
@@ -114,20 +91,15 @@ const WeightProgressCard = ({
     interaction: {
       intersect: false,
       mode: 'index'
-    },
-    elements: {
-      line: {
-        borderJoinStyle: 'round'
-      }
     }
   };
 
   return (
-    <div className="weight-card" aria-label="Cartão de progresso de peso">
+    <div className="dashboard-card weight-card">
       <header className="weight-card-header">
         <h3>Progresso de Peso</h3>
         {meta && (
-          <div className="meta-indicator" aria-label={`Meta de peso: ${meta} kg`}>
+          <div className="meta-indicator">
             <span>Meta: {meta} kg</span>
           </div>
         )}
@@ -136,15 +108,15 @@ const WeightProgressCard = ({
       <div className="weight-stats">
         <div className="stat-item">
           <span className="stat-label">Inicial</span>
-          <span className="stat-value">{pesoInicial.toFixed(1)} kg</span>
+          <span className="stat-value">{pesoInicial} kg</span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Atual</span>
           <span className="stat-value" aria-live="polite">
-            {pesoAtual.toFixed(1)} kg
-            {historico.length > 1 && (
-              <span className="trend-indicator" aria-label={`Tendência: ${getTendencia() === '↓' ? 'diminuição' : getTendencia() === '↑' ? 'aumento' : 'estável'}`}>
-                {getTendencia()}
+            {pesoAtual} kg
+            {historico.length > 0 && (
+              <span className="trend-indicator">
+                {diferenca > 0 ? '↓' : diferenca < 0 ? '↑' : '→'}
               </span>
             )}
           </span>
@@ -153,9 +125,9 @@ const WeightProgressCard = ({
           <span className="stat-label">Redução</span>
           <span className="stat-value">
             {pesoEliminado} kg
-            {progressoMeta !== null && (
-              <span className="progress-badge" aria-label={`Progresso em relação à meta: ${Math.round(progressoMeta)}%`}>
-                {Math.round(progressoMeta)}%
+            {progressoMeta && (
+              <span className="progress-badge">
+                {Math.min(100, Math.round(progressoMeta))}%
               </span>
             )}
           </span>
@@ -169,7 +141,6 @@ const WeightProgressCard = ({
               data={getChartData()} 
               options={chartOptions} 
               aria-label="Gráfico de evolução de peso"
-              role="img"
             />
             <div className="chart-legend">
               <span>Últimos 7 registros</span>
@@ -196,12 +167,6 @@ WeightProgressCard.propTypes = {
     })
   ),
   meta: PropTypes.number
-};
-
-WeightProgressCard.defaultProps = {
-  pesoInicial: 0,
-  pesoAtual: 0,
-  historico: []
 };
 
 export default WeightProgressCard;
