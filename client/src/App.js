@@ -26,8 +26,6 @@ import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
 import GastosPage from './pages/GastosPage';
 
-// ✅ CORREÇÃO: O componente auxiliar foi movido para FORA do componente App.
-// Isto estabiliza a renderização e impede que os inputs percam o foco.
 const AppRoutes = ({ usuario }) => {
   return (
     <Layout usuario={usuario}>
@@ -96,7 +94,6 @@ function App() {
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
-          <Route path="/"
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
           
@@ -104,7 +101,7 @@ function App() {
             !usuario ? <Navigate to="/landing" /> :
             !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
             !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
-            <AppRoutes usuario={usuario} /> // Passa o usuário como prop
+            <AppRoutes usuario={usuario} />
           }/>
           
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />

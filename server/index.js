@@ -317,6 +317,7 @@ app.post('/api/register', async (req, res) => {
                 date: new Date().toISOString().split('T')[0], 
                 refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } 
             }).save()
+            await new Gasto({ userId: novoUsuario._id, registros: [] }).save();
         ]);
 
         res.status(201).json({ message: 'Usuário criado com sucesso!' });
