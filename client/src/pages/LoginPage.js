@@ -1,52 +1,48 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import './LoginPage.css';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 
 const LoginPage = () => {
-    const navigate = useNavigate();
     const [isRegistering, setIsRegistering] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
     
-    // Estados do formulário
-    const [formData, setFormData] = useState({
-        identifier: '',
-        nome: '',
-        sobrenome: '',
-        username: '',
-        email: '',
-        confirmEmail: '',
-        password: '',
-        confirmPassword: ''
-    });
+    // Estados para Login
+    const [identifier, setIdentifier] = useState('');
     
-    // Estados da UI
+    // Estados para Cadastro
+    const [nome, setNome] = useState('');
+    const [sobrenome, setSobrenome] = useState('');
+    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
+    const [confirmEmail, setConfirmEmail] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    
+    // Estados Comuns - ✅ A linha que faltava está aqui
+    const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    
+    // Estado para "Esqueci a Senha"
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+
+    // Estado para validação de senha forte
     const [passwordValidations, setPasswordValidations] = useState({
         length: false,
         uppercase: false,
         number: false,
         specialChar: false,
     });
+
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const apiUrl = process.env.REACT_APP_API_URL;
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
 
     const validatePassword = (pass) => {
         const validations = {
             length: pass.length >= 8,
             uppercase: /[A-Z]/.test(pass),
-            number: /\d/.test(pass),
-            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(pass),
+            number: /[0-9]/.test(pass),
+            specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(pass),
         };
         setPasswordValidations(validations);
         return Object.values(validations).every(Boolean);
@@ -55,45 +51,25 @@ const LoginPage = () => {
     const handlePasswordChange = (e) => {
         const newPass = e.target.value;
         setPassword(newPass);
-        // A validação visual ainda pode acontecer
         if (isRegistering) {
             validatePassword(newPass);
-    }
-};
+        }
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
         
         if (isRegistering) {
-            if (formData.email.toLowerCase() !== formData.confirmEmail.toLowerCase()) {
-                setIsLoading(false);
-                return toast.error("Os e-mails não coincidem.");
-            }
-            if (formData.password !== formData.confirmPassword) {
-                setIsLoading(false);
-                return toast.error("As senhas não coincidem.");
-            }
-            if (!validatePassword(formData.password)) {
-                setIsLoading(false);
-                return toast.error("Sua senha não atende aos requisitos de segurança.");
-            }
-            if (!acceptedTerms) {
-                setIsLoading(false);
-                return toast.error("Você precisa aceitar os Termos de Serviço.");
-            }
+            if (email.toLowerCase() !== confirmEmail.toLowerCase()) return toast.error("Os e-mails não coincidem.");
+            if (password !== confirmPassword) return toast.error("As senhas não coincidem.");
+            if (!validatePassword(password)) return toast.error("A sua senha não cumpre todos os requisitos de segurança.");
+            if (!acceptedTerms) return toast.error("Você precisa de aceitar os Termos de Serviço.");
         }
 
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
         const body = isRegistering 
-            ? { 
-                nome: formData.nome,
-                sobrenome: formData.sobrenome,
-                username: formData.username,
-                email: formData.email,
-                password: formData.password
-              } 
-            : { identifier: formData.identifier, password: formData.password };
+            ? { nome, sobrenome, username, email, password } 
+            : { identifier, password };
             
         try {
             const response = await fetch(url, {
@@ -101,51 +77,35 @@ const LoginPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
-            
             const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Ocorreu um erro ao processar sua solicitação.');
-            }
+            if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
             
             if (isRegistering) {
-                toast.success('Cadastro realizado com sucesso! Faça login para continuar.');
+                toast.success('Cadastro realizado com sucesso! Verifique seu e-mail para ativar a conta.');
                 setIsRegistering(false);
-                setFormData(prev => ({ ...prev, password: '', confirmPassword: '' }));
             } else {
                 localStorage.setItem('bariplus_token', data.token);
-                navigate('/');
+                window.location.href = '/'; 
             }
         } catch (error) {
             toast.error(error.message);
-        } finally {
-            setIsLoading(false);
         }
     };
   
     const handleForgotPassword = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
-        
         try {
             const response = await fetch(`${apiUrl}/api/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email }),
+                body: JSON.stringify({ email: forgotEmail }),
             });
-            
             const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Não foi possível enviar o e-mail de recuperação.');
-            }
-            
-            toast.success(data.message || 'E-mail de recuperação enviado com sucesso!');
+            toast.info(data.message);
             setIsForgotModalOpen(false);
+            setForgotEmail('');
         } catch (error) {
-            toast.error(error.message);
-        } finally {
-            setIsLoading(false);
+            toast.error("Erro ao conectar com o servidor. Tente novamente.");
         }
     };
 
@@ -154,229 +114,85 @@ const LoginPage = () => {
             <div className="login-form-wrapper">
                 <div className="login-form-header">
                     <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo" />
-                    <h2>{isRegistering ? 'Crie sua Conta' : 'Acesse sua Conta'}</h2>
-                    <p>{isRegistering ? 'Preencha os dados para se cadastrar' : 'Informe seus dados para entrar'}</p>
+                    <h2>{isRegistering ? 'Crie a sua Conta' : 'Acesse a sua Conta'}</h2>
                 </div>
-                
                 <form className="login-form" onSubmit={handleSubmit}>
                     {isRegistering ? (
                         <>
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <input 
-                                        type="text" 
-                                        name="nome"
-                                        placeholder="Nome" 
-                                        value={formData.nome} 
-                                        onChange={handleChange} 
-                                        required 
-                                    />
-                                </div>
-                                <div className="form-group">
-                                    <input 
-                                        type="text" 
-                                        name="sobrenome"
-                                        placeholder="Sobrenome" 
-                                        value={formData.sobrenome} 
-                                        onChange={handleChange} 
-                                        required 
-                                    />
-                                </div>
-                            </div>
-                            
-                            <div className="form-group">
-                                <input 
-                                    type="text" 
-                                    name="username"
-                                    placeholder="Nome de usuário" 
-                                    value={formData.username} 
-                                    onChange={handleChange} 
-                                    required 
-                                />
-                            </div>
-                            
-                            <div className="form-group">
-                                <input 
-                                    type="email" 
-                                    name="email"
-                                    placeholder="E-mail" 
-                                    value={formData.email} 
-                                    onChange={handleChange} 
-                                    required 
-                                />
-                            </div>
-                            
-                            <div className="form-group">
-                                <input 
-                                    type="email" 
-                                    name="confirmEmail"
-                                    placeholder="Confirme seu E-mail" 
-                                    value={formData.confirmEmail} 
-                                    onChange={handleChange} 
-                                    required 
-                                />
-                            </div>
+                            <input type="text" placeholder="Nome" value={nome} onChange={(e) => setNome(e.target.value)} required />
+                            <input type="text" placeholder="Sobrenome" value={sobrenome} onChange={(e) => setSobrenome(e.target.value)} required />
+                            <input type="text" placeholder="Nome de usuário" value={username} onChange={(e) => setUsername(e.target.value)} required />
+                            <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                            <input type="email" placeholder="Confirme seu E-mail" value={confirmEmail} onChange={(e) => setConfirmEmail(e.target.value)} required />
                         </>
                     ) : (
-                        <div className="form-group">
-                            <input 
-                                type="text" 
-                                name="identifier"
-                                placeholder="E-mail ou Nome de usuário" 
-                                value={formData.identifier} 
-                                onChange={handleChange} 
-                                required 
-                            />
-                        </div>
+                        <input type="text" placeholder="E-mail ou Username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
                     )}
                     
-                    <div className="form-group password-group">
+                    <div className="password-wrapper">
                         <input 
                             type={showPassword ? 'text' : 'password'}
-                            name="password"
                             placeholder="Senha" 
-                            value={formData.password} 
+                            value={password} 
                             onChange={handlePasswordChange} 
                             required 
                         />
-                        <button 
-                            type="button" 
-                            className="password-toggle"
-                            onClick={() => setShowPassword(!showPassword)}
-                            aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-                        >
-                            {showPassword ? '🙈' : '👁️'}
-                        </button>
+                        <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>👁️</span>
                     </div>
 
                     {isRegistering && (
                         <>
-                            <div className="form-group">
+                            <div className="password-wrapper">
                                 <input 
                                     type={showPassword ? 'text' : 'password'}
-                                    name="confirmPassword"
                                     placeholder="Confirme sua Senha" 
-                                    value={formData.confirmPassword} 
-                                    onChange={handleChange} 
+                                    value={confirmPassword} 
+                                    onChange={(e) => setConfirmPassword(e.target.value)} 
                                     required 
                                 />
                             </div>
-                            
                             <div className="password-requirements">
-                                <h4>Requisitos da senha:</h4>
                                 <ul>
-                                    <li className={passwordValidations.length ? 'valid' : 'invalid'}>
-                                        Pelo menos 8 caracteres
-                                    </li>
-                                    <li className={passwordValidations.uppercase ? 'valid' : 'invalid'}>
-                                        Pelo menos 1 letra maiúscula
-                                    </li>
-                                    <li className={passwordValidations.number ? 'valid' : 'invalid'}>
-                                        Pelo menos 1 número
-                                    </li>
-                                    <li className={passwordValidations.specialChar ? 'valid' : 'invalid'}>
-                                        Pelo menos 1 caractere especial
-                                    </li>
+                                    <li className={passwordValidations.length ? 'valid' : 'invalid'}>Pelo menos 8 caracteres</li>
+                                    <li className={passwordValidations.uppercase ? 'valid' : 'invalid'}>Uma letra maiúscula</li>
+                                    <li className={passwordValidations.number ? 'valid' : 'invalid'}>Um número</li>
+                                    <li className={passwordValidations.specialChar ? 'valid' : 'invalid'}>Um caractere especial</li>
                                 </ul>
                             </div>
-                            
                             <div className="terms-container">
-                                <label>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={acceptedTerms} 
-                                        onChange={(e) => setAcceptedTerms(e.target.checked)} 
-                                    />
-                                    Eu li e concordo com os <Link to="/termos" target="_blank">Termos de Serviço</Link> e a <Link to="/privacidade" target="_blank">Política de Privacidade</Link>.
-                                </label>
+                               <label>
+                                    <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
+                                    Eu li e concordo com os <Link to="/termos" target="_blank" rel="noopener noreferrer">Termos de Serviço</Link> e a <Link to="/privacidade" target="_blank" rel="noopener noreferrer">Política de Privacidade</Link>.
+                               </label>
                             </div>
                         </>
                     )}
 
-                    <button 
-                        type="submit" 
-                        className="submit-button" 
-                        disabled={(isRegistering && !acceptedTerms) || isLoading}
-                    >
-                        {isLoading ? (
-                            <span className="loading-spinner"></span>
-                        ) : isRegistering ? (
-                            'Cadastrar'
-                        ) : (
-                            'Entrar'
-                        )}
+                    <button type="submit" className="submit-button" disabled={isRegistering && !acceptedTerms}>
+                        {isRegistering ? 'Cadastrar' : 'Entrar'}
                     </button>
                     
                     <div className="form-footer">
                         {!isRegistering && (
-                            <button 
-                                type="button" 
-                                className="link-button" 
-                                onClick={() => setIsForgotModalOpen(true)}
-                            >
-                                Esqueci minha senha
+                            <button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>
+                                Esqueci a minha senha
                             </button>
                         )}
-                        
-                        <button 
-                            type="button" 
-                            className="link-button" 
-                            onClick={() => {
-                                setIsRegistering(!isRegistering);
-                                setFormData({
-                                    identifier: '',
-                                    nome: '',
-                                    sobrenome: '',
-                                    username: '',
-                                    email: '',
-                                    confirmEmail: '',
-                                    password: '',
-                                    confirmPassword: ''
-                                });
-                            }}
-                        >
-                            {isRegistering ? (
-                                'Já tem uma conta? Faça login'
-                            ) : (
-                                'Não tem uma conta? Cadastre-se'
-                            )}
+                        <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>
+                            {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
                         </button>
                     </div>
                 </form>
             </div>
 
             <Modal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)}>
-                <div className="modal-content">
-                    <h2>Redefinir Senha</h2>
-                    <p>Digite seu e-mail de cadastro e enviaremos um link para criar uma nova senha.</p>
-                    
-                    <form onSubmit={handleForgotPassword} className="modal-form">
-                        <div className="form-group">
-                            <label htmlFor="forgotEmail">E-mail</label>
-                            <input 
-                                type="email" 
-                                id="forgotEmail"
-                                value={formData.email} 
-                                onChange={handleChange}
-                                name="email"
-                                placeholder="seu-email@exemplo.com" 
-                                required 
-                            />
-                        </div>
-                        
-                        <button 
-                            type="submit" 
-                            className="submit-button"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <span className="loading-spinner"></span>
-                            ) : (
-                                'Enviar Link de Redefinição'
-                            )}
-                        </button>
-                    </form>
-                </div>
+                <h2>Redefinir Senha</h2>
+                <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>
+                <form onSubmit={handleForgotPassword} className="modal-form">
+                    <label>E-mail</label>
+                    <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="seu-email@exemplo.com" required />
+                    <button type="submit" className="submit-button">Enviar Link de Redefinição</button>
+                </form>
             </Modal>
         </div>
     );
