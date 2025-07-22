@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import './LoginPage.css';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'; // Importa o novo componente
 
 const LoginPage = () => {
     const [isRegistering, setIsRegistering] = useState(false);
@@ -18,7 +19,7 @@ const LoginPage = () => {
     const [confirmEmail, setConfirmEmail] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     
-    // Estados Comuns - ✅ A linha que faltava está aqui
+    // Estados Comuns
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     
@@ -67,6 +68,8 @@ const LoginPage = () => {
         }
 
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
+        
+        // ✅ CORREÇÃO: Lógica do 'body' corrigida
         const body = isRegistering 
             ? { nome, sobrenome, username, email, password } 
             : { identifier, password };
@@ -151,14 +154,7 @@ const LoginPage = () => {
                                     required 
                                 />
                             </div>
-                            <div className="password-requirements">
-                                <ul>
-                                    <li className={passwordValidations.length ? 'valid' : 'invalid'}>Pelo menos 8 caracteres</li>
-                                    <li className={passwordValidations.uppercase ? 'valid' : 'invalid'}>Uma letra maiúscula</li>
-                                    <li className={passwordValidations.number ? 'valid' : 'invalid'}>Um número</li>
-                                    <li className={passwordValidations.specialChar ? 'valid' : 'invalid'}>Um caractere especial</li>
-                                </ul>
-                            </div>
+                            <PasswordStrengthIndicator validations={passwordValidations} />
                             <div className="terms-container">
                                <label>
                                     <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />

@@ -3,17 +3,16 @@ import './ProfilePage.css';
 import { toast } from 'react-toastify';
 import { messaging } from '../firebase';
 import { getToken } from 'firebase/messaging';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'; // Componente de validação
 
 const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Estados para o formulário de senha
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     
-    // Estado para a validação de senha forte
     const [passwordValidations, setPasswordValidations] = useState({
         length: false,
         uppercase: false,
@@ -53,7 +52,6 @@ const ProfilePage = () => {
     const handleNewPasswordChange = (e) => {
         const newPass = e.target.value;
         setNewPassword(newPass);
-        // A validação visual ainda pode acontecer
         validatePassword(newPass);
     };
 
@@ -82,7 +80,6 @@ const ProfilePage = () => {
         }
     };
     
-    // ✅ CORREÇÃO: A função que estava em falta
     const handleEnableNotifications = async () => {
         try {
             const permission = await Notification.requestPermission();
@@ -107,6 +104,18 @@ const ProfilePage = () => {
         }
     };
     
+    const handleSendTestNotification = async () => {
+        try {
+            await fetch(`${apiUrl}/api/user/send-test-notification`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            toast.info("Pedido de notificação de teste enviado!");
+        } catch (error) {
+            toast.error("Erro ao enviar notificação de teste.");
+        }
+    };
+
     const handleSettingsChange = async (settingKey, value) => {
         if (!usuario) return;
         const currentSettings = usuario.notificationSettings || {};
@@ -159,6 +168,13 @@ const ProfilePage = () => {
                             <span className="slider round"></span>
                         </label>
                     </div>
+                     <div className="setting-item">
+                        <span>Lembretes de Pesagem</span>
+                        <label className="switch">
+                            <input type="checkbox" checked={usuario.notificationSettings?.weighInReminders ?? true} onChange={(e) => handleSettingsChange('weighInReminders', e.target.checked)} />
+                            <span className="slider round"></span>
+                        </label>
+                    </div>
                 </div>
 
                 <div className="profile-card">
@@ -166,22 +182,11 @@ const ProfilePage = () => {
                     <form onSubmit={handleChangePassword} className="password-form">
                         <label>Senha Atual</label>
                         <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
-                        
                         <label>Nova Senha</label>
                         <input type="password" value={newPassword} onChange={handleNewPasswordChange} required />
-
-                        <div className="password-requirements">
-                            <ul>
-                                <li className={passwordValidations.length ? 'valid' : 'invalid'}>Pelo menos 8 caracteres</li>
-                                <li className={passwordValidations.uppercase ? 'valid' : 'invalid'}>Uma letra maiúscula</li>
-                                <li className={passwordValidations.number ? 'valid' : 'invalid'}>Um número</li>
-                                <li className={passwordValidations.specialChar ? 'valid' : 'invalid'}>Um caractere especial</li>
-                            </ul>
-                        </div>
-
+                        <PasswordStrengthIndicator validations={passwordValidations} />
                         <label>Confirmar Nova Senha</label>
                         <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-
                         <button type="submit">Salvar Nova Senha</button>
                     </form>
                 </div>
@@ -189,7 +194,10 @@ const ProfilePage = () => {
                 <div className="profile-card">
                     <h3>Notificações Push</h3>
                     <p>Ative para receber lembretes no seu dispositivo.</p>
-                    <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
+                    <div className="notification-actions">
+                        <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
+                        <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                    </div>
                 </div>
             </div>
         </div>
