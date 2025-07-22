@@ -94,7 +94,120 @@ const DashboardPage = () => {
         fetchDashboardData();
     }, [token, apiUrl]);
 
-    // ... (outras funções permanecem iguais)
+    const handleTrack = async (type, amount) => {
+        try {
+            const response = await fetch(`${apiUrl}/api/dailylog/track`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ type, amount })
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha ao registrar');
+            }
+
+            const updatedLog = await response.json();
+            setState(prev => ({ ...prev, dailyLog: updatedLog }));
+            toast.success('Registro atualizado!');
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
+
+    const handleSetSurgeryDate = async (e) => {
+        e.preventDefault();
+        if (!state.novaDataCirurgia) return;
+
+        try {
+            const response = await fetch(`${apiUrl}/api/user/surgery-date`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ dataCirurgia: state.novaDataCirurgia })
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha ao atualizar data');
+            }
+
+            const updatedUser = await response.json();
+            setState(prev => ({
+                ...prev,
+                usuario: updatedUser,
+                isDateModalOpen: false,
+                novaDataCirurgia: ''
+            }));
+            toast.success('Data da cirurgia atualizada!');
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
+
+    const handleToggleMedToma = async (medId, totalDoses) => {
+        try {
+            const today = format(new Date(), 'yyyy-MM-dd');
+            const currentCount = state.medicationData.historico[today]?.[medId] || 0;
+            const newCount = currentCount < totalDoses ? currentCount + 1 : 0;
+
+            const response = await fetch(`${apiUrl}/api/medication/log/update`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ date: today, medId, count: newCount })
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha ao atualizar medicação');
+            }
+
+            const updatedMedication = await response.json();
+            setState(prev => ({
+                ...prev,
+                medicationData: {
+                    ...prev.medicationData,
+                    historico: updatedMedication.historico
+                }
+            }));
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
+
+    const getWelcomeMessage = () => {
+        if (!state.usuario) return 'Bem-vindo(a)!';
+        
+        const nome = state.usuario.nome.split(' ')[0];
+        const now = new Date();
+        const hora = now.getHours();
+        
+        let saudacao = 'Bom dia';
+        if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
+        if (hora >= 18 || hora < 5) saudacao = 'Boa noite';
+        
+        return `${saudacao}, ${nome}!`;
+    };
+
+    if (state.loading || !state.usuario) {
+        return <div className="loading-container">Carregando seu painel...</div>;
+    }
+
+    // Calcula as variáveis derivadas do estado
+    const tarefasAtivas = (state.usuario.detalhesCirurgia?.fezCirurgia === 'sim' 
+        ? state.checklist.posOp 
+        : state.checklist.preOp) || [];
+    
+    const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
+    const proximasConsultas = state.consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
+    
+    const mostrarCardAdicionarData = state.usuario.detalhesCirurgia?.fezCirurgia === 'nao' 
+        && !state.usuario.detalhesCirurgia.dataCirurgia;
 
     return (
         <div className="dashboard-page">
