@@ -29,7 +29,7 @@ const WeightProgressCard = ({
   const diferenca = pesoInicial - pesoAtual;
   const pesoEliminado = Math.max(diferenca, 0).toFixed(1);
   
-  // ✅ CORREÇÃO: Parêntese adicionado para corrigir a sintaxe
+  // ✅ CORREÇÃO: Parêntese adicionado para fechar a expressão
   const progressoMeta = meta ? ((pesoInicial - pesoAtual) / (pesoInicial - meta)) * 100 : null;
 
   const getChartData = () => {
