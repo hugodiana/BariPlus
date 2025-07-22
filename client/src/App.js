@@ -127,6 +127,7 @@ function App() {
           <Route path="/consultas" element={<ConsultasPage />} />
           <Route path="/medicacao" element={<MedicationPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
+          <Route path="/gastos" element={<GastosPage />} />
           <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
           <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -198,6 +198,18 @@ const FoodLogSchema = new mongoose.Schema({
     } 
 });
 
+const GastoSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    descricao: { type: String, required: true },
+    valor: { type: Number, required: true },
+    categoria: {
+        type: String,
+        required: true,
+        enum: ['Consultas', 'Suplementos', 'Farmácia', 'Alimentação', 'Academia', 'Outros']
+    },
+    data: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
 const Peso = mongoose.model('Peso', PesoSchema);
@@ -205,6 +217,7 @@ const Consulta = mongoose.model('Consulta', ConsultaSchema);
 const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
+const Gasto = mongoose.model('Gasto', GastoSchema);
 
 // --- MIDDLEWARES ---
 const autenticar = (req, res, next) => {
@@ -1604,6 +1617,51 @@ app.post('/api/cron/send-weigh-in-reminders', async (req, res) => {
         res.status(500).send("Erro ao processar lembretes de pesagem.");
     }
 });
+
+// ✅ NOVIDADE: ROTAS PARA O CONTROLE DE GASTOS
+app.get('/api/gastos', autenticar, async (req, res) => {
+    try {
+        const { year, month } = req.query; // ex: ?year=2025&month=7
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59);
+
+        const gastos = await Gasto.find({
+            userId: req.userId,
+            data: { $gte: startDate, $lte: endDate }
+        }).sort({ data: -1 });
+
+        res.json(gastos);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar gastos." });
+    }
+});
+
+app.post('/api/gastos', autenticar, async (req, res) => {
+    try {
+        const { descricao, valor, categoria, data } = req.body;
+        const novoGasto = new Gasto({
+            userId: req.userId,
+            descricao,
+            valor: parseFloat(valor),
+            categoria,
+            data: data ? new Date(data) : new Date()
+        });
+        await novoGasto.save();
+        res.status(201).json(novoGasto);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao adicionar gasto." });
+    }
+});
+
+app.delete('/api/gastos/:id', autenticar, async (req, res) => {
+    try {
+        await Gasto.findOneAndDelete({ _id: req.params.id, userId: req.userId });
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao apagar gasto." });
+    }
+});
+
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {

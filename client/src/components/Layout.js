@@ -86,6 +86,7 @@ const Layout = ({ children, usuario }) => {
           <NavLink to="/consultas" className={({ isActive }) => isActive ? 'active' : ''}>
             Minhas Consultas
           </NavLink>
+          <NavLink to="/gastos">Controle de Gastos</NavLink>
           <NavLink to="/diario-alimentar" className={({ isActive }) => isActive ? 'active' : ''}>
             Diário Alimentar
           </NavLink>
