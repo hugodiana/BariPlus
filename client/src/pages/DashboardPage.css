@@ -1,105 +1,230 @@
+/* DashboardPage.css - Versão Mobile-Optimized */
+:root {
+  --primary-color: #37715b;
+  --primary-light: #e9f5f2;
+  --secondary-color: #007aff;
+  --secondary-light: #f0f8ff;
+  --text-color: #333;
+  --text-light: #666;
+  --border-color: #eef0ef;
+  --shadow-color: rgba(0, 0, 0, 0.08);
+  --card-bg: #ffffff;
+  --mobile-breakpoint: 768px;
+}
+
+/* Container principal */
+.dashboard-container {
+  width: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* Mensagem de boas-vindas */
 .dashboard-welcome {
-    color: #333;
-    margin-bottom: 25px;
-    font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 1.5rem 0;
+  font-size: 1.8rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
 }
+
+/* Grid de cards */
 .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 1.5rem;
+  width: 100%;
 }
+
+/* Cards gerais */
+.dashboard-card {
+  background-color: var(--card-bg);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px var(--shadow-color);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card especial para data de cirurgia */
 .special-action-card {
-    background-color: #e9f5f2;
-    border: 2px dashed #37715b;
-    text-align: center;
+  background-color: var(--primary-light);
+  border: 2px dashed var(--primary-color);
+  text-align: center;
+  grid-column: 1 / -1; /* Ocupa toda a largura */
 }
+
 .special-action-card h3 {
-    color: #37715b;
-    margin-top: 0;
+  color: var(--primary-color);
+  margin: 0 0 0.75rem 0;
+  font-size: 1.25rem;
 }
+
 .special-action-card p {
-    color: #333;
-    font-size: 15px;
-    line-height: 1.5;
+  color: var(--text-color);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0 0 1.5rem 0;
 }
-.date-input {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0 20px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 16px;
-}
+
+/* Card de ações rápidas */
 .quick-actions-card {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    justify-content: center; /* Centraliza os botões */
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    padding: 20px;
+  gap: 0.75rem;
 }
+
 .quick-actions-card h3 {
-    margin-top: 0;
-    text-align: center;
-    color: #37715b;
+  margin: 0 0 1rem 0;
+  text-align: center;
+  color: var(--primary-color);
+  font-size: 1.25rem;
 }
-.quick-action-btn {
-    width: 100%;
-    padding: 12px;
-    font-size: 15px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    background-color: #007aff;
-    color: white;
-    cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-    box-sizing: border-box;
-}
-.quick-action-btn:hover {
-    opacity: 0.9;
-}
-.summary-card h3 {
-    margin-top: 0;
-    color: #37715b;
-}
-.summary-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-.summary-list li {
-    padding: 8px 0;
-    border-bottom: 1px solid #eef0ef;
-    font-size: 15px;
-}
-.summary-list li:last-child {
-    border-bottom: none;
-}
-.summary-empty {
-    text-align: center;
-    padding: 20px 0;
-    color: #888;
-}
-.summary-empty p {
-    margin: 0 0 15px 0;
-}
+
+/* Botões */
+.quick-action-btn,
 .summary-action-btn {
-    background-color: #f0f8ff;
-    color: #007aff;
-    border: 1px solid #007aff;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  box-sizing: border-box;
+  min-height: 44px; /* Tamanho mínimo para toque */
 }
-@media (max-width: 480px) {
+
+.quick-action-btn {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.quick-action-btn:hover {
+  opacity: 0.9;
+}
+
+/* Cards de resumo */
+.summary-card h3 {
+  margin: 0 0 1rem 0;
+  color: var(--primary-color);
+  font-size: 1.25rem;
+}
+
+.summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.summary-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.summary-list li:last-child {
+  border-bottom: none;
+}
+
+.summary-empty {
+  text-align: center;
+  padding: 1rem 0;
+  color: var(--text-light);
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.summary-empty p {
+  margin: 0 0 1rem 0;
+}
+
+.summary-action-btn {
+  background-color: var(--secondary-light);
+  color: var(--secondary-color);
+  border: 1px solid var(--secondary-color);
+}
+
+/* Modal de data */
+.date-input {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 0.5rem 0 1.5rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  box-sizing: border-box;
+  font-size: 1rem;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+/* Media Queries para telas pequenas */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 1rem 0.75rem;
+  }
+
   .dashboard-welcome {
-    font-size: 22px;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .dashboard-grid {
+    gap: 1rem;
+  }
+
+  .dashboard-card {
+    padding: 1.25rem;
+  }
+
+  .special-action-card {
+    padding: 1.5rem 1rem;
+  }
+}
+
+/* Ajustes para telas muito pequenas */
+@media (max-width: 375px) {
+  .dashboard-welcome {
+    font-size: 1.4rem;
+  }
+
+  .summary-list li {
+    font-size: 0.9rem;
+    padding: 0.5rem 0;
+  }
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card-bg: #1e1e1e;
+    --text-color: #f0f0f0;
+    --text-light: #aaa;
+    --border-color: #333;
+    --primary-light: #2a2a2a;
+    --secondary-light: #1a1a1a;
+  }
+
+  .special-action-card {
+    background-color: #2a2a2a;
   }
 }
