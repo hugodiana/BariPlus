@@ -70,7 +70,7 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
             if (user) {
                 const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
                 await transporter.sendMail({
-                    from: `"BariPlus" <${process.env.SMTP_USER}>`,
+                    from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
                     to: user.email,
                     subject: "Pagamento Confirmado - BariPlus",
                     html: `<h1>Obrigado, ${user.nome}!</h1><p>O seu pagamento foi processado com sucesso e o seu Acesso Vitalício ao BariPlus está liberado.</p><p>Aproveite todas as funcionalidades!</p>`,
