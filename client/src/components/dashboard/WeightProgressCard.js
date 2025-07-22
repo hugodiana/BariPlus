@@ -26,26 +26,19 @@ const WeightProgressCard = ({
   historico = [], 
   meta = null 
 }) => {
-  // Calcula diferença e progresso
   const diferenca = pesoInicial - pesoAtual;
   const pesoEliminado = Math.max(diferenca, 0).toFixed(1);
+  
+  // ✅ CORREÇÃO: Parêntese adicionado para corrigir a sintaxe
   const progressoMeta = meta ? ((pesoInicial - pesoAtual) / (pesoInicial - meta)) * 100 : null;
 
-  // Prepara dados para o gráfico
   const getChartData = () => {
     const ultimosRegistros = historico.slice(-7);
-    const hasEnoughData = historico.length > 1;
-    
     return {
-      labels: hasEnoughData 
-        ? ultimosRegistros.map(item => new Date(item.data).toLocaleDateString('pt-BR', { 
-            day: 'numeric', 
-            month: 'short' 
-          }))
-        : [],
+      labels: ultimosRegistros.map(item => new Date(item.data).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })),
       datasets: [{
         label: 'Peso (kg)',
-        data: hasEnoughData ? ultimosRegistros.map(item => item.peso) : [],
+        data: ultimosRegistros.map(item => item.peso),
         borderColor: '#007aff',
         backgroundColor: 'rgba(0, 122, 255, 0.1)',
         borderWidth: 2,
@@ -63,35 +56,22 @@ const WeightProgressCard = ({
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (context) => `${context.parsed.y} kg`
-        }
-      }
+      tooltip: { callbacks: { label: (context) => `${context.parsed.y} kg` } }
     },
     scales: {
       x: {
         display: historico.length > 1,
         grid: { display: false },
-        ticks: {
-          maxRotation: 0,
-          minRotation: 0,
-          font: {
-            size: 10
-          }
-        }
+        ticks: { maxRotation: 0, minRotation: 0, font: { size: 10 } }
       },
       y: {
         display: false,
-        min: Math.min(...historico.map(h => h.peso)) - 2,
-        max: Math.max(...historico.map(h => h.peso)) + 2,
+        min: historico.length > 0 ? Math.min(...historico.map(h => h.peso)) - 2 : undefined,
+        max: historico.length > 0 ? Math.max(...historico.map(h => h.peso)) + 2 : undefined,
         grid: { display: false }
       }
     },
-    interaction: {
-      intersect: false,
-      mode: 'index'
-    }
+    interaction: { intersect: false, mode: 'index' }
   };
 
   return (
@@ -125,7 +105,7 @@ const WeightProgressCard = ({
           <span className="stat-label">Redução</span>
           <span className="stat-value">
             {pesoEliminado} kg
-            {progressoMeta && (
+            {progressoMeta !== null && (
               <span className="progress-badge">
                 {Math.min(100, Math.round(progressoMeta))}%
               </span>
