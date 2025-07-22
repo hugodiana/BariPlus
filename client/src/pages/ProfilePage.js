@@ -53,6 +53,7 @@ const ProfilePage = () => {
     const handleNewPasswordChange = (e) => {
         const newPass = e.target.value;
         setNewPassword(newPass);
+        // A validação visual ainda pode acontecer
         validatePassword(newPass);
     };
 

@@ -111,21 +111,13 @@ const Layout = ({ children, usuario }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="user-info">
-            {usuario && (
-              <>
-                <span className="user-name">{usuario.nome}</span>
-                <span className="user-email">{usuario.email}</span>
-              </>
-            )}
-          </div>
-          <button 
-            onClick={handleLogout} 
-            className="logout-btn"
-            aria-label="Sair da conta"
-          >
-            Sair
-          </button>
+          {usuario && (
+            <div className="user-info">
+              <span className="user-name">{usuario.nome} {usuario.sobrenome}</span>
+              <span className="user-email">{usuario.email}</span>
+            </div>
+          )}
+          <button onClick={handleLogout} className="logout-btn">Sair</button>
         </div>
       </aside>
 

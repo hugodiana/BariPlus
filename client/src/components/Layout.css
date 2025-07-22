@@ -147,3 +147,46 @@
         padding-top: 80px; /* Espaço para o botão hamburger */
     }
 }
+
+.sidebar-footer {
+    margin-top: auto; /* Empurra o rodapé para o fundo */
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+}
+
+.user-info {
+    padding: 0 20px 20px 20px;
+    text-align: center;
+}
+
+.user-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Adiciona "..." se o nome for muito longo */
+}
+
+.user-email {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.logout-btn {
+    display: block; /* Garante que ocupa a linha toda */
+    width: 100%;
+    padding: 15px;
+    border: none;
+    background-color: var(--error-light, #fceeee);
+    color: var(--danger-red, #c0392b);
+    text-align: center; /* Centraliza o texto */
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    border-radius: 0; /* Remove o radius para um look mais integrado */
+}

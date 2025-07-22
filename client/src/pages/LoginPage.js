@@ -54,11 +54,12 @@ const LoginPage = () => {
 
     const handlePasswordChange = (e) => {
         const newPass = e.target.value;
-        setFormData(prev => ({ ...prev, password: newPass }));
+        setPassword(newPass);
+        // A validação visual ainda pode acontecer
         if (isRegistering) {
             validatePassword(newPass);
-        }
-    };
+    }
+};
 
     const handleSubmit = async (e) => {
         e.preventDefault();
