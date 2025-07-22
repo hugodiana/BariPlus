@@ -26,6 +26,7 @@ import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
 import GastosPage from './pages/GastosPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import VerifyPage from './pages/VerifyPage';
 
 const AppRoutes = ({ usuario }) => {
   return (
@@ -98,6 +99,7 @@ function App() {
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/verify-email/:token" element={<VerifyPage />} />
 
           <Route path="/*" element={
             !usuario ? <Navigate to="/landing" /> :
