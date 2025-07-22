@@ -1,203 +1,124 @@
-/* WeightProgressCard.css */
 .weight-card {
-  background-color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .weight-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
 .weight-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .weight-card h3 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 1.25rem;
-  font-weight: 700;
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.25rem;
+    font-weight: 700;
 }
 
 .meta-indicator {
-  background-color: #f0f7f4;
-  color: #37715b;
-  padding: 0.375rem 0.75rem;
-  border-radius: 16px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.meta-indicator::before {
-  content: '🎯';
-  font-size: 0.9em;
+    background-color: #f0f7f4;
+    color: #37715b;
+    padding: 0.375rem 0.75rem;
+    border-radius: 16px;
+    font-size: 0.8125rem;
+    font-weight: 600;
 }
 
 .weight-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  text-align: center;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    text-align: center;
 }
 
 .stat-item {
-  padding: 1rem 0.75rem;
-  border-radius: 12px;
-  background-color: #f8faf9;
-  transition: all 0.2s ease;
-}
-
-.stat-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    padding: 1rem 0.75rem;
+    border-radius: 12px;
+    background-color: #f8faf9;
 }
 
 .stat-item.eliminado {
-  background-color: rgba(55, 113, 91, 0.08);
-  position: relative;
-  overflow: hidden;
-}
-
-.stat-item.eliminado::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background-color: #37715b;
+    background-color: rgba(55, 113, 91, 0.08);
 }
 
 .stat-label {
-  display: block;
-  font-size: 0.8125rem;
-  color: #7f8c8d;
-  margin-bottom: 0.375rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+    display: block;
+    font-size: 0.8125rem;
+    color: #7f8c8d;
+    margin-bottom: 0.375rem;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
 .stat-value {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.375rem;
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #2c3e50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2c3e50;
 }
 
 .stat-item.eliminado .stat-value {
-  color: #37715b;
+    color: #37715b;
 }
 
 .trend-indicator {
-  font-size: 1rem;
-  font-weight: bold;
-}
-
-.trend-indicator[aria-label*="diminuição"] {
-  color: #27ae60;
-}
-
-.trend-indicator[aria-label*="aumento"] {
-  color: #e74c3c;
-}
-
-.trend-indicator[aria-label*="estável"] {
-  color: #f39c12;
+    font-size: 1rem;
+    font-weight: bold;
 }
 
 .progress-badge {
-  background-color: #37715b;
-  color: white;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
-  margin-left: 0.375rem;
-  font-weight: 600;
+    background-color: #37715b;
+    color: white;
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    margin-left: 0.375rem;
 }
 
+/* --- ✅ ESTA É A CORREÇÃO PRINCIPAL --- */
 .chart-container {
-  position: relative;
-  height: 160px;
-  margin-top: 0.75rem;
+    position: relative; /* Necessário para o gráfico se ajustar */
+    height: 120px;     /* Define uma altura fixa para "segurar" o gráfico */
+    margin-top: 0.75rem;
 }
 
 .chart-legend {
-  text-align: right;
-  font-size: 0.75rem;
-  color: #95a5a6;
-  margin-top: 0.5rem;
-  font-style: italic;
+    text-align: right;
+    font-size: 0.75rem;
+    color: #95a5a6;
+    margin-top: 0.5rem;
 }
 
 .empty-state {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  color: #95a5a6;
-  background-color: #f8faf9;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px dashed #dfe6e9;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    color: #95a5a6;
+    background-color: #f8faf9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px dashed #dfe6e9;
 }
 
 .empty-state p {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-.empty-state small {
-  font-size: 0.8125rem;
-  opacity: 0.8;
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-  .weight-card {
-    padding: 1.25rem;
-  }
-  
-  .weight-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .stat-item {
-    padding: 0.875rem;
-  }
-  
-  .chart-container {
-    height: 140px;
-  }
-}
-
-@media (max-width: 480px) {
-  .weight-card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-  
-  .meta-indicator {
-    align-self: flex-end;
-  }
+    margin: 0 0 0.5rem 0;
+    font-weight: 500;
 }
