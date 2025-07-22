@@ -7,11 +7,10 @@ import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
 import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 import Modal from '../components/Modal';
-import LoadingSpinner from '../components/LoadingSpinner'; // Usando o spinner
+import LoadingSpinner from '../components/LoadingSpinner';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
-    // Voltando à nossa estrutura original de estados separados
     const [usuario, setUsuario] = useState(null);
     const [pesos, setPesos] = useState([]);
     const [dailyLog, setDailyLog] = useState(null);
@@ -30,6 +29,7 @@ const DashboardPage = () => {
             setLoading(false);
             return;
         }
+        setLoading(true);
         try {
             const endpoints = ['me', 'dailylog/today', 'checklist', 'consultas', 'medication', 'pesos'];
             const responses = await Promise.all(
@@ -37,6 +37,7 @@ const DashboardPage = () => {
             );
 
             for (const res of responses) {
+                if (res.status === 401) throw new Error('Sessão inválida. Por favor, faça o login novamente.');
                 if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
             }
 
@@ -48,10 +49,12 @@ const DashboardPage = () => {
             setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setMedicationData(dadosMedication);
             setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
-
         } catch (error) {
             toast.error(error.message);
-            if (error.message.includes('401')) localStorage.removeItem('bariplus_token');
+            if (error.message.includes('Sessão inválida')) {
+                localStorage.removeItem('bariplus_token');
+                window.location.href = '/login';
+            }
         } finally {
             setLoading(false);
         }
@@ -65,20 +68,12 @@ const DashboardPage = () => {
         try {
             const response = await fetch(`${apiUrl}/api/dailylog/track`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type, amount })
             });
-
-            if (!response.ok) {
-                throw new Error('Falha ao registrar');
-            }
-
+            if (!response.ok) throw new Error('Falha ao registrar');
             const updatedLog = await response.json();
-            setState(prev => ({ ...prev, dailyLog: updatedLog }));
-            toast.success('Registro atualizado!');
+            setDailyLog(updatedLog);
         } catch (error) {
             toast.error(error.message);
         }
@@ -86,29 +81,18 @@ const DashboardPage = () => {
 
     const handleSetSurgeryDate = async (e) => {
         e.preventDefault();
-        if (!state.novaDataCirurgia) return;
-
+        if (!novaDataCirurgia) return;
         try {
             const response = await fetch(`${apiUrl}/api/user/surgery-date`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ dataCirurgia: state.novaDataCirurgia })
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dataCirurgia: novaDataCirurgia })
             });
-
-            if (!response.ok) {
-                throw new Error('Falha ao atualizar data');
-            }
-
+            if (!response.ok) throw new Error('Falha ao atualizar data');
             const updatedUser = await response.json();
-            setState(prev => ({
-                ...prev,
-                usuario: updatedUser,
-                isDateModalOpen: false,
-                novaDataCirurgia: ''
-            }));
+            setUsuario(updatedUser);
+            setIsDateModalOpen(false);
+            setNovaDataCirurgia('');
             toast.success('Data da cirurgia atualizada!');
         } catch (error) {
             toast.error(error.message);
@@ -117,33 +101,23 @@ const DashboardPage = () => {
 
     const handleToggleMedToma = async (medId, totalDoses) => {
         try {
-            const today = format(new Date(), 'yyyy-MM-dd');
-            const currentCount = state.medicationData.historico[today]?.[medId] || 0;
-            const newCount = currentCount < totalDoses ? currentCount + 1 : 0;
+            const hoje = new Date().toISOString().split('T')[0];
+            const historicoDeHoje = (medicationData.historico && medicationData.historico[hoje]) || {};
+            const tomasAtuais = historicoDeHoje[medId] || 0;
+            const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
 
-            const response = await fetch(`${apiUrl}/api/medication/log/update`, {
+            const newHistoryState = { ...medicationData.historico };
+            if (!newHistoryState[hoje]) { newHistoryState[hoje] = {}; }
+            newHistoryState[hoje][medId] = novasTomas;
+            setMedicationData({ ...medicationData, historico: newHistoryState });
+            
+            await fetch(`${apiUrl}/api/medication/log/update`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ date: today, medId, count: newCount })
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
             });
-
-            if (!response.ok) {
-                throw new Error('Falha ao atualizar medicação');
-            }
-
-            const updatedMedication = await response.json();
-            setState(prev => ({
-                ...prev,
-                medicationData: {
-                    ...prev.medicationData,
-                    historico: updatedMedication.historico
-                }
-            }));
         } catch (error) {
-            toast.error(error.message);
+            toast.error("Erro ao atualizar medicação.");
         }
     };
 
@@ -157,13 +131,8 @@ const DashboardPage = () => {
         return `${saudacao}, ${nome}!`;
     };
 
-    if (loading) {
-        return <LoadingSpinner />;
-    }
-
-    if (!usuario) {
-        return <div className="loading-container">Não foi possível carregar os dados. Faça o login novamente.</div>;
-    }
+    if (loading) return <LoadingSpinner />;
+    if (!usuario) return <div className="loading-container">Não foi possível carregar os dados. Por favor, <a href="/login">faça o login</a> novamente.</div>;
 
     const proximasTarefas = ((usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || []).filter(t => !t.concluido).slice(0, 3);
     const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
