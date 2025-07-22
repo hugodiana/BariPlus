@@ -196,30 +196,52 @@ const transporter = nodemailer.createTransport({
 app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
+        if (!validatePassword(password)) {
+            return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
+        }
         if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-        
+        if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // Gera um token de verificação seguro e aleatório
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = new Date(Date.now() + 3600000); // Expira em 1 hora
+        // Gera um código de 6 dígitos aleatório
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationExpires = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
 
         const novoUsuario = new User({ 
             nome, sobrenome, username, email, password: hashedPassword,
-            emailVerificationToken: verificationToken,
+            emailVerificationCode: verificationCode,
             emailVerificationExpires: verificationExpires
         });
         await novoUsuario.save();
 
-        // Envia o e-mail de verificação com o link
-        const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        // Cria os documentos associados
+        await new Checklist({ userId: novoUsuario._id }).save();
+        await new Peso({ userId: novoUsuario._id }).save();
+        await new Consulta({ userId: novoUsuario._id }).save();
+        await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
+        await new Medication({ userId: novoUsuario._id }).save();
+        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
         
-        await transporter.sendMail({
-            from: `"BariPlus" <${process.env.SMTP_USER}>`,
-            to: novoUsuario.email,
-            subject: "Seu Código de Verificação BariPlus",
-            html: `<h1>Bem-vindo(a)!</h1><p>Seu código de verificação é: <strong>${verificationCode}</strong></p>`,
-        });
+        // Envia o e-mail de verificação
+        try {
+            await transporter.sendMail({
+                from: `"BariPlus" <${process.env.SMTP_USER}>`,
+                to: novoUsuario.email,
+                subject: "Seu Código de Verificação BariPlus",
+                html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Seu código de verificação é: <strong>${verificationCode}</strong></p><p>Este código expira em 15 minutos.</p>`,
+            });
+        } catch (emailError) {
+            console.error("Falha ao enviar e-mail de verificação:", emailError);
+            // Continua o processo mesmo que o e-mail falhe, para não bloquear o usuário
+        }
+        
+        res.status(201).json({ message: 'Usuário pré-cadastrado! Verifique seu e-mail.' });
+    } catch (error) { 
+        console.error("Erro no registro:", error);
+        res.status(500).json({ message: 'Erro no servidor.' }); 
+    }
+});
 
         // Cria os documentos associados (Checklist, Peso, etc.)
         await Promise.all([
