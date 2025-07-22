@@ -7,35 +7,22 @@ import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const LoginPage = () => {
     const [isRegistering, setIsRegistering] = useState(false);
-    
-    // Estados para Login
     const [identifier, setIdentifier] = useState('');
-    
-    // Estados para Cadastro
     const [nome, setNome] = useState('');
     const [sobrenome, setSobrenome] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [confirmEmail, setConfirmEmail] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    
-    // Estados Comuns
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-    
-    // Estado para "Esqueci a Senha"
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
     const [forgotEmail, setForgotEmail] = useState('');
-
-    // Estado para validação de senha forte
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [passwordValidations, setPasswordValidations] = useState({
-        length: false,
-        uppercase: false,
-        number: false,
-        specialChar: false,
+        length: false, uppercase: false, number: false, specialChar: false,
     });
 
-    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const validatePassword = (pass) => {
@@ -59,21 +46,14 @@ const LoginPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
         if (isRegistering) {
             if (email.toLowerCase() !== confirmEmail.toLowerCase()) return toast.error("Os e-mails não coincidem.");
             if (password !== confirmPassword) return toast.error("As senhas não coincidem.");
-            if (!validatePassword(password)) return toast.error("A sua senha não cumpre todos os requisitos de segurança.");
+            if (!validatePassword(password)) return toast.error("A sua senha não cumpre todos os requisitos.");
             if (!acceptedTerms) return toast.error("Você precisa de aceitar os Termos de Serviço.");
         }
-
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
-        
-        // ✅ CORREÇÃO: Lógica do 'body' corrigida
-        const body = isRegistering 
-            ? { nome, sobrenome, username, email, password } 
-            : { identifier, password };
-            
+        const body = isRegistering ? { nome, sobrenome, username, email, password } : { identifier, password };
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -82,9 +62,8 @@ const LoginPage = () => {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
-            
             if (isRegistering) {
-                toast.success('Cadastro realizado com sucesso! Verifique seu e-mail para ativar a conta.');
+                toast.success('Cadastro realizado! Verifique seu e-mail para ativar a conta.');
                 setIsRegistering(false);
             } else {
                 localStorage.setItem('bariplus_token', data.token);
@@ -108,7 +87,7 @@ const LoginPage = () => {
             setIsForgotModalOpen(false);
             setForgotEmail('');
         } catch (error) {
-            toast.error("Erro ao conectar com o servidor. Tente novamente.");
+            toast.error("Erro ao conectar com o servidor.");
         }
     };
 
@@ -131,28 +110,14 @@ const LoginPage = () => {
                     ) : (
                         <input type="text" placeholder="E-mail ou Username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
                     )}
-                    
                     <div className="password-wrapper">
-                        <input 
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="Senha" 
-                            value={password} 
-                            onChange={handlePasswordChange} 
-                            required 
-                        />
+                        <input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={password} onChange={handlePasswordChange} required />
                         <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>👁️</span>
                     </div>
-
                     {isRegistering && (
                         <>
                             <div className="password-wrapper">
-                                <input 
-                                    type={showPassword ? 'text' : 'password'}
-                                    placeholder="Confirme sua Senha" 
-                                    value={confirmPassword} 
-                                    onChange={(e) => setConfirmPassword(e.target.value)} 
-                                    required 
-                                />
+                                <input type={showPassword ? 'text' : 'password'} placeholder="Confirme sua Senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                             </div>
                             <PasswordStrengthIndicator validations={passwordValidations} />
                             <div className="terms-container">
@@ -163,24 +128,13 @@ const LoginPage = () => {
                             </div>
                         </>
                     )}
-
-                    <button type="submit" className="submit-button" disabled={isRegistering && !acceptedTerms}>
-                        {isRegistering ? 'Cadastrar' : 'Entrar'}
-                    </button>
-                    
+                    <button type="submit" className="submit-button" disabled={isRegistering && !acceptedTerms}>{isRegistering ? 'Cadastrar' : 'Entrar'}</button>
                     <div className="form-footer">
-                        {!isRegistering && (
-                            <button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>
-                                Esqueci a minha senha
-                            </button>
-                        )}
-                        <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>
-                            {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
-                        </button>
+                        {!isRegistering && (<button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>Esqueci a minha senha</button>)}
+                        <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>{isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}</button>
                     </div>
                 </form>
             </div>
-
             <Modal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)}>
                 <h2>Redefinir Senha</h2>
                 <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>

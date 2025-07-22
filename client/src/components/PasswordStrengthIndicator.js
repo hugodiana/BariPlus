@@ -1,5 +1,5 @@
 import React from 'react';
-import './PasswordStrengthIndicator.css'; // Vamos criar este CSS a seguir
+import './PasswordStrengthIndicator.css';
 
 const PasswordStrengthIndicator = ({ validations }) => {
     return (
@@ -22,5 +22,5 @@ const PasswordStrengthIndicator = ({ validations }) => {
     );
 };
 
-// React.memo impede que este componente seja redesenhado desnecessariamente
+// React.memo é uma otimização que impede re-renderizações desnecessárias
 export default React.memo(PasswordStrengthIndicator);
