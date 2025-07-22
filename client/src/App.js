@@ -26,7 +26,7 @@ const AffiliatePortalPage = React.lazy(() => import('./pages/AffiliatePortalPage
 const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
 const FoodDiaryPage = React.lazy(() => import('./pages/FoodDiaryPage'));
 const Layout = React.lazy(() => import('./components/Layout'));
-import GastosPage from './pages/GastosPage';
+const GastosPage = React.lazy(() => import('./pages/GastosPage'));
 
 // Componente de Suspense personalizado
 const SuspenseFallback = () => (
