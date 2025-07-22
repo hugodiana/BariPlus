@@ -24,6 +24,7 @@ import MedicationPage from './pages/MedicationPage';
 import AffiliatePortalPage from './pages/AffiliatePortalPage';
 import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
+import GastosPage from './pages/GastosPage';
 
 // ✅ CORREÇÃO: O componente auxiliar foi movido para FORA do componente App.
 // Isto estabiliza a renderização e impede que os inputs percam o foco.
@@ -39,6 +40,7 @@ const AppRoutes = ({ usuario }) => {
         <Route path="/perfil" element={<ProfilePage />} />
         <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
         <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+        <Route path="/gastos" element={<GastosPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Layout>
@@ -94,6 +96,7 @@ function App() {
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
+          <Route path="/"
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
           

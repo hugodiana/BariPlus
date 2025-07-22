@@ -63,9 +63,19 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const stripeCustomerId = session.customer;
-        
         try {
-            await User.findOneAndUpdate({ stripeCustomerId }, { pagamentoEfetuado: true });
+            const user = await User.findOneAndUpdate({ stripeCustomerId: stripeCustomerId }, { pagamentoEfetuado: true });
+            
+            // Envia e-mail de confirmação de pagamento
+            if (user) {
+                const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
+                await transporter.sendMail({
+                    from: `"BariPlus" <${process.env.SMTP_USER}>`,
+                    to: user.email,
+                    subject: "Pagamento Confirmado - BariPlus",
+                    html: `<h1>Obrigado, ${user.nome}!</h1><p>O seu pagamento foi processado com sucesso e o seu Acesso Vitalício ao BariPlus está liberado.</p><p>Aproveite todas as funcionalidades!</p>`,
+                });
+            }
         } catch (err) {
             return res.status(500).json({ error: "Erro ao atualizar status do usuário." });
         }
@@ -135,7 +145,10 @@ const UserSchema = new mongoose.Schema({
         appointmentReminders: { type: Boolean, default: true },
         medicationReminders: { type: Boolean, default: true },
         weighInReminders: { type: Boolean, default: true }
-    }
+    },
+    emailVerificationToken: { type: String },
+    emailVerificationExpires: { type: Date },
+    isEmailVerified: { type: Boolean, default: false }
 }, { timestamps: true });
 
 const ChecklistSchema = new mongoose.Schema({ 
@@ -264,24 +277,29 @@ const isAffiliate = async (req, res, next) => {
 app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
+        if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
 
-        if (!validatePassword(password)) {
-            return res.status(400).json({ 
-                message: "A senha não cumpre os requisitos de segurança (mínimo 8 caracteres, uma maiúscula, uma minúscula, um número e um caractere especial)." 
-            });
-        }
-
-        if (await User.findOne({ email })) {
-            return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-        }
-        
-        if (await User.findOne({ username })) {
-            return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
-        }
-        
         const hashedPassword = await bcrypt.hash(password, 10);
-        const novoUsuario = new User({ nome, sobrenome, username, email, password: hashedPassword });
+        
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 3600000); // Expira em 1 hora
+
+        const novoUsuario = new User({ 
+            nome, sobrenome, username, email, password: hashedPassword,
+            emailVerificationToken: verificationToken,
+            emailVerificationExpires: verificationExpires
+        });
         await novoUsuario.save();
+
+        // Envia o e-mail de verificação com o link
+        const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
+        await transporter.sendMail({
+            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            to: novoUsuario.email,
+            subject: "Ative a sua Conta no BariPlus",
+            html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Por favor, clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
+        });
 
         // Cria documentos associados para o novo usuário
         await Promise.all([
@@ -312,34 +330,16 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
-        
-        // Validação básica
-        if (!identifier || !password) {
-            return res.status(400).json({ message: 'E-mail/nome de usuário e senha são obrigatórios.' });
-        }
-
-        const usuario = await User.findOne({ 
-            $or: [{ email: identifier }, { username: identifier }] 
-        }).select('+password');
-
+        const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
         if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
             return res.status(401).json({ message: 'Credenciais inválidas.' });
         }
-
+        if (!usuario.isEmailVerified) {
+            return res.status(403).json({ message: 'Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.' });
+        }
         const token = jwt.sign({ userId: usuario._id }, JWT_SECRET, { expiresIn: '8h' });
-        
-        // Remove a senha antes de retornar
-        usuario.password = undefined;
-        
-        res.json({ 
-            token,
-            user: usuario
-        });
-
-    } catch (error) {
-        console.error('Erro no login:', error);
-        res.status(500).json({ message: 'Erro no servidor.' });
-    }
+        res.json({ token });
+    } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
 // Rota de Recuperação de Senha
@@ -1663,6 +1663,38 @@ app.delete('/api/gastos/:id', autenticar, async (req, res) => {
     }
 });
 
+app.get('/api/verify-email/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const usuario = await User.findOne({
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: Date.now() } // Verifica se o token não expirou
+        });
+
+        if (!usuario) {
+            return res.status(400).send("Link de verificação inválido ou expirado. Por favor, tente se cadastrar novamente.");
+        }
+
+        usuario.isEmailVerified = true;
+        usuario.emailVerificationToken = undefined;
+        usuario.emailVerificationExpires = undefined;
+        await usuario.save();
+
+        // Envia o e-mail de boas-vindas APÓS a verificação
+        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
+        await transporter.sendMail({
+            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            to: usuario.email,
+            subject: "🎉 Conta Ativada! Bem-vindo(a) ao BariPlus!",
+            html: `<h1>Olá, ${usuario.nome}!</h1><p>A sua conta foi ativada com sucesso. Agora você já pode fazer o login e começar a sua jornada.</p>`,
+        });
+        
+        // Redireciona o usuário para uma página de sucesso no front-end
+        res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
+    } catch (error) {
+        res.status(500).send("Erro no servidor ao verificar o e-mail.");
+    }
+});
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {
