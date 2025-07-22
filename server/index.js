@@ -68,7 +68,6 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
             
             // Envia e-mail de confirmação de pagamento
             if (user) {
-                const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
                 await transporter.sendMail({
                     from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
                     to: user.email,
@@ -183,6 +182,16 @@ const isAffiliate = async (req, res, next) => {
     }
 };
 
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    secure: process.env.SMTP_PORT == 465,
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
     try {
@@ -204,12 +213,12 @@ app.post('/api/register', async (req, res) => {
 
         // Envia o e-mail de verificação com o link
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
+        
         await transporter.sendMail({
-            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+            from: `"BariPlus" <${process.env.SMTP_USER}>`,
             to: novoUsuario.email,
-            subject: "Ative a sua Conta no BariPlus",
-            html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Por favor, clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
+            subject: "Seu Código de Verificação BariPlus",
+            html: `<h1>Bem-vindo(a)!</h1><p>Seu código de verificação é: <strong>${verificationCode}</strong></p>`,
         });
 
         // Cria os documentos associados (Checklist, Peso, etc.)
@@ -1616,7 +1625,7 @@ app.get('/api/verify-email/:token', async (req, res) => {
         await usuario.save();
 
         // Envia o e-mail de boas-vindas APÓS a verificação
-        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
+        
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
@@ -1653,7 +1662,6 @@ app.post('/api/resend-verification-email', async (req, res) => {
         
         // Reenvia o e-mail
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
