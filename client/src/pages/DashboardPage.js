@@ -147,7 +147,7 @@ const DashboardPage = () => {
     const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && !usuario.detalhesCirurgia.dataCirurgia;
 
     return (
-        <div className="dashboard-page">
+        <div className="page-container">
             <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
             <div className="dashboard-grid">
                 {mostrarCardAdicionarData && (
