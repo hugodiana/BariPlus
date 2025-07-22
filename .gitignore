@@ -1,4 +1,6 @@
 # Arquivos de ambiente
+.env
+*.env
 server/*.json
 server/config/
 
