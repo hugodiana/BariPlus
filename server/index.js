@@ -8,7 +8,7 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const mercadopago = require('mercadopago');
 const admin = require('firebase-admin');
 
 const app = express();
@@ -1638,13 +1638,11 @@ app.post('/api/resend-verification-email', async (req, res) => {
     }
 });
 
-// ✅ ROTA PARA CRIAR A PREFERÊNCIA DE PAGAMENTO DO MERCADO PAGO
 app.post('/api/create-payment-preference', autenticar, async (req, res) => {
     try {
         const { couponCode } = req.body;
-        let finalPrice = 79.99; // Preço padrão
+        let finalPrice = 79.99;
 
-        // Lógica simples de cupom
         if (couponCode && couponCode.startsWith('AFILIADO')) {
             finalPrice = 49.99;
         }
@@ -1660,14 +1658,13 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
                 failure: `${process.env.CLIENT_URL}/pagamento-cancelado`,
             },
             auto_return: 'approved',
-            external_reference: req.userId, // Guardamos o ID do nosso usuário
+            external_reference: req.userId,
         };
 
         const response = await mercadopago.preferences.create(preference);
         res.json({ preferenceId: response.body.id });
 
     } catch (error) {
-        console.error("Erro ao criar preferência de pagamento:", error);
         res.status(500).json({ error: { message: "Erro ao criar pagamento." } });
     }
 });
