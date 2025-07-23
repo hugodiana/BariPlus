@@ -1640,7 +1640,9 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
         const { couponCode } = req.body;
         let finalPrice = 79.99;
 
-        // ... (sua lógica de cupom)
+        if (couponCode && couponCode.startsWith('AFILIADO')) {
+            finalPrice = 49.99;
+        }
 
         const preference = new Preference(client);
 
@@ -1668,6 +1670,7 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
         res.status(500).json({ error: { message: "Erro ao criar pagamento." } });
     }
 });
+
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {
