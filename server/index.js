@@ -50,24 +50,30 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// --- ROTA DE WEBHOOK DO STRIPE ---
-app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
-    const sig = req.headers['stripe-signature'];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
-    let event;
+mercadopago.configure({
+    access_token: process.env.MERCADOPAGO_ACCESS_TOKEN,
+});
 
+// --- ROTA DE WEBHOOK (Agora do Mercado Pago) ---
+app.post('/api/mp-webhook', async (req, res) => {
     try {
-        event = stripe.webhooks.constructEvent(req.body, sig, endpointSecret);
-    } catch (err) {
-        return res.status(400).send(`Webhook Error: ${err.message}`);
-    }
+        if (req.query.type === 'payment') {
+            const payment = await mercadopago.payment.findById(req.query['data.id']);
+            const externalReference = payment.body.external_reference; // Nosso ID de usuário
 
-    if (event.type === 'checkout.session.completed') {
-        const session = event.data.object;
-        const stripeCustomerId = session.customer;
-        try {
-            const user = await User.findOneAndUpdate({ stripeCustomerId: stripeCustomerId }, { pagamentoEfetuado: true });
-            
+            if (payment.body.status === 'approved') {
+                await User.findByIdAndUpdate(externalReference, { pagamentoEfetuado: true });
+                console.log(`Pagamento aprovado para o usuário: ${externalReference}`);
+            }
+        }
+        res.status(200).send('Webhook recebido.');
+    } catch (error) {
+        console.error('Erro no webhook do Mercado Pago:', error);
+        res.status(500).send('Erro no webhook.');
+    }
+});
+
+
             // Envia e-mail de confirmação de pagamento
             if (user) {
                 await transporter.sendMail({
@@ -1741,6 +1747,45 @@ app.post('/api/resend-verification-email', async (req, res) => {
     } catch (error) {
         console.error("Erro ao reenviar e-mail de verificação:", error);
         res.status(500).json({ message: "Erro no servidor." });
+    }
+});
+
+app.post('/api/create-payment-preference', autenticar, async (req, res) => {
+    try {
+        const usuario = await User.findById(req.userId);
+        const { couponCode } = req.body;
+
+        let discount = 0;
+        if (couponCode) {
+            // Lógica simples para um cupom de afiliado de R$30
+            // Numa versão futura, buscaríamos o valor do cupom no painel
+            if (couponCode.toLowerCase().includes("afiliado")) { // Exemplo
+                discount = 30; // R$30 de desconto
+            }
+        }
+
+        const preference = {
+            items: [
+                {
+                    title: 'BariPlus - Acesso Vitalício',
+                    unit_price: 79.99 - discount, // Preço final
+                    quantity: 1,
+                }
+            ],
+            back_urls: {
+                success: `${process.env.CLIENT_URL}/pagamento-sucesso`,
+                failure: `${process.env.CLIENT_URL}/pagamento-cancelado`,
+            },
+            auto_return: 'approved',
+            external_reference: req.userId, // Guardamos o ID do nosso usuário
+        };
+
+        const response = await mercadopago.preferences.create(preference);
+        res.json({ id: response.body.id }); // Envia o ID da preferência para o front-end
+
+    } catch (error) {
+        console.error("Erro ao criar preferência de pagamento:", error);
+        res.status(500).json({ error: { message: error.message } });
     }
 });
 
