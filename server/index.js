@@ -32,8 +32,8 @@ const whitelist = [
     'https://bariplus-admin.onrender.com',
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://localhost:3002'
-    'https://www.bariplus.com', // Substitua pelo seu domínio
+    'http://localhost:3002',
+    'https://www.bariplus.com' , 
     'https://bariplus.com',  
 ];
 
