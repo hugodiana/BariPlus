@@ -68,7 +68,6 @@ app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (
             
             // Envia e-mail de confirmação de pagamento
             if (user) {
-                const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
                 await transporter.sendMail({
                     from: `"BariPlus" <${process.env.SMTP_USER}>`,
                     to: user.email,
@@ -203,7 +202,6 @@ app.post('/api/register', async (req, res) => {
 
         // Envia o e-mail de verificação com o link
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.SMTP_USER}>`,
             to: novoUsuario.email,
@@ -1592,7 +1590,6 @@ app.get('/api/verify-email/:token', async (req, res) => {
         await usuario.save();
 
         // Envia o e-mail de boas-vindas APÓS a verificação
-        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.SMTP_USER}>`,
             to: usuario.email,
@@ -1629,7 +1626,6 @@ app.post('/api/resend-verification-email', async (req, res) => {
         
         // Reenvia o e-mail
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        const transporter = nodemailer.createTransport({ /* ...suas configs SMTP... */ });
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.SMTP_USER}>`,
             to: usuario.email,
