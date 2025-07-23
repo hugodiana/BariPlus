@@ -33,8 +33,8 @@ const whitelist = [
     'http://localhost:3000',
     'http://localhost:3001',
     'http://localhost:3002',
-    'https://www.bariplus.com' , 
-    'https://bariplus.com',  
+    'https://www.bariplus.com.br', 
+    'https://bariplus.com.br',  
 ];
 
 const corsOptions = {
