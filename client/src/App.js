@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { onMessage } from "firebase/messaging";
+import { messaging } from './firebase';
 
-// Componentes e Páginas
+// Componentes
 import Layout from './components/Layout';
 import LoadingSpinner from './components/LoadingSpinner';
 
-// Páginas Públicas
+// Páginas Públicas e Intermediárias
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
-
-// Páginas Intermediárias
 import PricingPage from './pages/PricingPage';
 import OnboardingPage from './pages/OnboardingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
@@ -47,6 +47,7 @@ const PrivateRoutes = ({ usuario }) => {
   if (!usuario.onboardingCompleto) {
     return <Navigate to="/bem-vindo" replace />;
   }
+  
   // Se passou por todas as verificações, renderiza o Layout, 
   // que por sua vez renderiza a página filha através do <Outlet />
   return (
@@ -55,7 +56,6 @@ const PrivateRoutes = ({ usuario }) => {
     </Layout>
   );
 };
-
 
 function App() {
   const [usuario, setUsuario] = useState(null);
@@ -81,6 +81,15 @@ function App() {
     }
   }, []);
 
+  // useEffect para notificações com o app aberto
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      onMessage(messaging, (payload) => {
+        toast.info(<div><strong>{payload.notification.title}</strong><br/>{payload.notification.body}</div>);
+      });
+    }
+  }, []);
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -90,15 +99,13 @@ function App() {
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <Routes>
-          {/* --- ROTAS PÚBLICAS (sempre acessíveis) --- */}
+          {/* --- ROTAS PÚBLICAS E INTERMEDIÁRIAS (acessíveis dependendo do estado de login) --- */}
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={!usuario ? <LoginPage /> : <Navigate to="/" />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
-
-          {/* --- ROTAS INTERMEDIÁRIAS (precisam de login, mas ainda não estão no app principal) --- */}
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
           <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
           <Route path="/pagamento-sucesso" element={usuario ? <PaymentSuccessPage /> : <Navigate to="/login" />} />
@@ -116,7 +123,7 @@ function App() {
             <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
             <Route path="/gastos" element={<GastosPage />} />
           </Route>
-
+          
           {/* Rota final para qualquer endereço não encontrado */}
           <Route path="*" element={<Navigate to={usuario ? "/" : "/landing"} />} />
         </Routes>
