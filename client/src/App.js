@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -27,28 +28,12 @@ import FoodDiaryPage from './pages/FoodDiaryPage';
 import GastosPage from './pages/GastosPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 
-const AppRoutes = ({ usuario }) => {
-  return (
-    <Layout usuario={usuario}>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/progresso" element={<ProgressoPage />} />
-        <Route path="/checklist" element={<ChecklistPage />} />
-        <Route path="/consultas" element={<ConsultasPage />} />
-        <Route path="/medicacao" element={<MedicationPage />} />
-        <Route path="/perfil" element={<ProfilePage />} />
-        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
-        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-        <Route path="/gastos" element={<GastosPage />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Layout>
-  );
-};
-
+// ✅ CORREÇÃO: O componente auxiliar foi movido para DENTRO do App
+// Assim, ele consegue aceder à variável 'usuario'
 function App() {
   const [usuario, setUsuario] = useState(null);
   const [loading, setLoading] = useState(true);
+
 
   useEffect(() => {
     const token = localStorage.getItem('bariplus_token');
@@ -85,26 +70,50 @@ function App() {
     return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
   }
 
+  const AppRoutes = () => (
+    <Layout usuario={usuario}>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/progresso" element={<ProgressoPage />} />
+        <Route path="/checklist" element={<ChecklistPage />} />
+        <Route path="/consultas" element={<ConsultasPage />} />
+        <Route path="/medicacao" element={<MedicationPage />} />
+        <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
+        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+        <Route path="/gastos" element={<GastosPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Layout>
+  );
+  
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
+  }
+
   return (
     <>
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <Routes>
+          {/* --- ROTAS PÚBLICAS (sempre acessíveis) --- */}
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
-          <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
+          <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          
+          <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
 
+          {/* --- ROTAS QUE DEPENDEM DO ESTADO DE LOGIN --- */}
           <Route path="/*" element={
             !usuario ? <Navigate to="/landing" /> :
             !usuario.isEmailVerified ? <Navigate to="/verify-email" state={{ email: usuario.email }} /> :
             !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
             !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
-            <AppRoutes usuario={usuario} />
+            <AppRoutes />
           }/>
           
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
