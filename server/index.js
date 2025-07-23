@@ -33,12 +33,30 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// --- ROTA DE WEBHOOK DO STRIPE (ANTES DE express.json()) ---
-app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
-    // ... (lógica do webhook que já funcionava)
+// ✅ NOVIDADE: Configuração do Mercado Pago
+mercadopago.configure({
+    access_token: process.env.MERCADOPAGO_ACCESS_TOKEN,
 });
 
-app.use(express.json());
+// --- ROTA DE WEBHOOK (Agora do Mercado Pago) ---
+app.post('/api/mp-webhook', async (req, res) => {
+    try {
+        if (req.query.type === 'payment') {
+            const payment = await mercadopago.payment.findById(req.query['data.id']);
+            const externalReference = payment.body.external_reference; // Nosso ID de usuário
+
+            if (payment.body.status === 'approved') {
+                await User.findByIdAndUpdate(externalReference, { pagamentoEfetuado: true });
+                console.log(`Pagamento aprovado para o usuário: ${externalReference}`);
+            }
+        }
+        res.status(200).send('Webhook recebido.');
+    } catch (error) {
+        console.error('Erro no webhook do Mercado Pago:', error);
+        res.status(500).send('Erro no webhook.');
+    }
+});
+
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
@@ -99,34 +117,46 @@ const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, po
 app.post('/api/register', async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password } = req.body;
+
+        // 1. Valida a senha primeiro
         if (!validatePassword(password)) {
             return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
         }
-        if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-        if (await User.findOne({ username })) return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+        
+        // 2. Verifica se o email ou username já existem
+        if (await User.findOne({ email })) {
+            return res.status(400).json({ message: 'Este e-mail já está em uso.' });
+        }
+        if (await User.findOne({ username })) {
+            return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
+        }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // Gera um código de 6 dígitos aleatório
+        // 3. Gera o código de verificação
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
         const verificationExpires = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
 
         const novoUsuario = new User({ 
             nome, sobrenome, username, email, password: hashedPassword,
             emailVerificationCode: verificationCode,
-            emailVerificationExpires: verificationExpires
+            emailVerificationExpires: verificationExpires,
+            isEmailVerified: false // Começa como não verificado
         });
         await novoUsuario.save();
 
-        // Cria os documentos associados
-        await new Checklist({ userId: novoUsuario._id }).save();
-        await new Peso({ userId: novoUsuario._id }).save();
-        await new Consulta({ userId: novoUsuario._id }).save();
-        await new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
-        await new Medication({ userId: novoUsuario._id }).save();
-        await new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save();
+        // 4. Cria todos os documentos associados para o novo usuário
+        await Promise.all([
+            new Checklist({ userId: novoUsuario._id }).save(),
+            new Peso({ userId: novoUsuario._id }).save(),
+            new Consulta({ userId: novoUsuario._id }).save(),
+            new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+            new Medication({ userId: novoUsuario._id }).save(),
+            new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+            new Gasto({ userId: novoUsuario._id }).save()
+        ]);
         
-        // Envia o e-mail de verificação
+        // 5. Envia o e-mail de verificação com o código
         try {
             await transporter.sendMail({
                 from: `"BariPlus" <${process.env.SMTP_USER}>`,
@@ -136,42 +166,13 @@ app.post('/api/register', async (req, res) => {
             });
         } catch (emailError) {
             console.error("Falha ao enviar e-mail de verificação:", emailError);
-            // Continua o processo mesmo que o e-mail falhe, para não bloquear o usuário
+            // Mesmo que o email falhe, o cadastro continua para não bloquear o usuário
         }
         
         res.status(201).json({ message: 'Usuário pré-cadastrado! Verifique seu e-mail.' });
+
     } catch (error) { 
-        // Envia o e-mail de verificação com o link
-        const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        await transporter.sendMail({
-            from: `"BariPlus" <${process.env.SMTP_USER}>`,
-            to: novoUsuario.email,
-            subject: "Ative a sua Conta no BariPlus",
-            html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Por favor, clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
-        });
-
-        // Cria documentos associados para o novo usuário
-        await Promise.all([
-            new Checklist({ userId: novoUsuario._id, preOp: [], posOp: [] }).save(),
-            new Peso({ userId: novoUsuario._id, registros: [] }).save(),
-            new Consulta({ userId: novoUsuario._id, consultas: [] }).save(),
-            new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-            new Medication({ 
-                userId: novoUsuario._id, 
-                medicamentos: [], 
-                historico: {} 
-            }).save(),
-            new FoodLog({ 
-                userId: novoUsuario._id, 
-                date: new Date().toISOString().split('T')[0], 
-                refeicoes: { cafeDaManha: [], almoco: [], jantar: [], lanches: [] } 
-            }).save(),
-            await new Gasto({ userId: novoUsuario._id, registros: [] }).save(),
-        ]);
-
-        res.status(201).json({ message: 'Usuário criado com sucesso!' });
-    } catch (error) {
-        console.error("Erro no registro:", error);
+        console.error("Erro fatal no registro:", error);
         res.status(500).json({ message: 'Erro no servidor.' }); 
     }
 });
