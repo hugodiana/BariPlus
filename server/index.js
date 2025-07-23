@@ -10,9 +10,9 @@ const nodemailer = require('nodemailer');
 const axios = require('axios');
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 const admin = require('firebase-admin');
+const crypto = require('crypto');
 
 const app = express();
-
 
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
@@ -23,7 +23,7 @@ const whitelist = [
     'https://www.bariplus.com.br', 'https://bariplus.com.br',
 ];
 const corsOptions = {
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
@@ -35,10 +35,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-
 // --- CONFIGURAÇÃO DO MERCADO PAGO ---
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
@@ -93,16 +91,22 @@ const validatePassword = (password) => {
 };
 
 // --- MIDDLEWARES ---
-const autenticar = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    if (token == null) return res.sendStatus(401);
+const autenticar = async (req, res, next) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        if (!token) return res.sendStatus(401);
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.userId = user.userId;
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userExists = await User.findById(decoded.userId);
+        
+        if (!userExists) return res.sendStatus(403);
+        
+        req.userId = decoded.userId;
         next();
-    });
+    } catch (err) {
+        return res.sendStatus(403);
+    }
 };
 
 const isAdmin = async (req, res, next) => {
@@ -218,16 +222,16 @@ app.get('/api/verify-email/:token', async (req, res) => {
     try {
         const { token } = req.params;
         const usuario = await User.findOne({
-            emailVerificationToken: token,
-            emailVerificationExpires: { $gt: Date.now() } // Verifica se o token não expirou
+            emailVerificationCode: token,  // Alterado para emailVerificationCode
+            emailVerificationExpires: { $gt: Date.now() }
         });
 
         if (!usuario) {
-            return res.status(400).json({ message: "Link de verificação inválido ou expirado." });
+            return res.status(400).json({ message: "Código de verificação inválido ou expirado." });
         }
 
         usuario.isEmailVerified = true;
-        usuario.emailVerificationToken = undefined;
+        usuario.emailVerificationCode = undefined;
         usuario.emailVerificationExpires = undefined;
         await usuario.save();
 
@@ -1217,31 +1221,6 @@ app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (
     }
 });
 
-
-// ✅ NOVIDADE: ROTAS DE ADMIN E AFILIADOS
-app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { couponCode } = req.body;
-        if (!couponCode) return res.status(400).json({ message: "O código do cupom é obrigatório." });
-
-        // Verifica se o cupom já existe no Stripe para evitar duplicados
-        const promotionCodes = await stripe.promotionCodes.list({ code: couponCode });
-        if (promotionCodes.data.length > 0) {
-            return res.status(400).json({ message: "Este código de cupom já está em uso." });
-        }
-        
-        const coupon = await stripe.coupons.create({ percent_off: 20, duration: 'once', name: `Cupom para Afiliado: ${couponCode}` }); // Ex: 20% de desconto
-        const promotionCode = await stripe.promotionCodes.create({ coupon: coupon.id, code: couponCode });
-
-        const usuario = await User.findByIdAndUpdate(userId, {
-            $set: { role: 'affiliate', affiliateCouponCode: promotionCode.code }
-        }, { new: true }).select('-password');
-        
-        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
-    } catch (error) { res.status(500).json({ message: "Erro ao promover afiliado." }); }
-});
-
 app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     try {
         const affiliateUser = await User.findById(req.userId);
@@ -1696,6 +1675,10 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
     }
 });
 
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Erro interno no servidor' });
+});
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 app.listen(PORT, () => {
