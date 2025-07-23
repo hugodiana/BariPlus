@@ -1,35 +1,24 @@
 import React, { useState } from 'react';
+import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 import './PricingPage.css';
-import { loadStripe } from '@stripe/stripe-js';
-
-
-// ✅ CORREÇÃO: Verificamos se a chave existe antes de carregar o Stripe
-const stripePublishableKey = process.env.REACT_APP_STRIPE_PUBLISHABLE_KEY;
-let stripePromise;
-if (stripePublishableKey) {
-    stripePromise = loadStripe(stripePublishableKey);
-}
 
 const PricingPage = () => {
+    const [preferenceId, setPreferenceId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const handleCheckout = async () => {
+    // ✅ INICIALIZAÇÃO: Use a sua Public Key do Mercado Pago
+    // Lembre-se de adicionar REACT_APP_MERCADOPAGO_PUBLIC_KEY nas suas variáveis de ambiente
+    initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
+
+    const createPaymentPreference = async () => {
         setLoading(true);
         setError(null);
-
-        // ✅ CORREÇÃO: Mostra um erro amigável se a chave não foi carregada
-        if (!stripePromise) {
-            setError("A configuração de pagamento não foi carregada corretamente. Por favor, contacte o suporte.");
-            setLoading(false);
-            return;
-        }
-
         const token = localStorage.getItem('bariplus_token');
         const apiUrl = process.env.REACT_APP_API_URL;
 
         try {
-            const response = await fetch(`${apiUrl}/api/create-checkout-session`, {
+            const response = await fetch(`${apiUrl}/api/create-payment-preference`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -37,19 +26,17 @@ const PricingPage = () => {
                 },
             });
 
-            const session = await response.json();
+            const data = await response.json();
 
             if (response.ok) {
-                const stripe = await stripePromise;
-                const { error } = await stripe.redirectToCheckout({
-                    sessionId: session.id,
-                });
-                if (error) throw new Error(error.message);
+                // Guarda o ID da preferência para o botão de pagamento usar
+                setPreferenceId(data.preferenceId);
             } else {
-                throw new Error(session.error?.message || 'Falha ao iniciar o pagamento.');
+                throw new Error(data.message || 'Falha ao criar preferência de pagamento.');
             }
         } catch (err) {
             setError(err.message);
+        } finally {
             setLoading(false);
         }
     };
@@ -59,10 +46,10 @@ const PricingPage = () => {
             <div className="pricing-card">
                 <h1 className="pricing-title">BariPlus - Acesso Vitalício</h1>
                 <p className="pricing-description">
-                    Adquira acesso completo e permanente a todas as ferramentas e funcionalidades do BariPlus com um único pagamento.
+                    Adquira acesso completo e permanente a todas as funcionalidades do BariPlus com um único pagamento.
                 </p>
                 <div className="price-tag">
-                    <span className="price-amount">R$ 49,90</span>
+                    <span className="price-amount">R$ 79,99</span>
                     <span className="price-term">Pagamento Único</span>
                 </div>
                 <ul className="features-list">
@@ -70,11 +57,18 @@ const PricingPage = () => {
                     <li>✓ Checklist Pré e Pós-Operatório</li>
                     <li>✓ Registro de Progresso com Fotos e Medidas</li>
                     <li>✓ Diário Alimentar com Consulta Nutricional</li>
-                    <li>✓ Todas as futuras atualizações</li>
                 </ul>
-                <button className="checkout-button" onClick={handleCheckout} disabled={loading}>
-                    {loading ? 'Aguarde...' : 'Comprar Acesso Agora'}
-                </button>
+                
+                {/* O botão de pagamento agora é condicional */}
+                {!preferenceId ? (
+                    <button className="checkout-button" onClick={createPaymentPreference} disabled={loading}>
+                        {loading ? 'Aguarde...' : 'Ir para o Pagamento'}
+                    </button>
+                ) : (
+                    // O componente <Wallet> renderiza o botão de pagamento do Mercado Pago
+                    <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                )}
+
                 {error && <p className="error-message">{error}</p>}
             </div>
         </div>

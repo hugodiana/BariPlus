@@ -20,6 +20,7 @@ import PricingPage from './pages/PricingPage';
 import OnboardingPage from './pages/OnboardingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+import PaymentStatusPage from './pages/PaymentStatusPage';
 
 // Páginas Protegidas (do App Principal)
 import DashboardPage from './pages/DashboardPage';
@@ -110,6 +111,7 @@ function App() {
           <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
           <Route path="/pagamento-sucesso" element={usuario ? <PaymentSuccessPage /> : <Navigate to="/login" />} />
           <Route path="/pagamento-cancelado" element={usuario ? <PaymentCancelPage /> : <Navigate to="/login" />} />
+          <Route path="/pagamento-status" element={<PaymentStatusPage />} />
 
           {/* --- ÁREA PRIVADA (o "Porteiro" decide se pode entrar) --- */}
           <Route element={<PrivateRoutes usuario={usuario} />}>
