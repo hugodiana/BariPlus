@@ -33,21 +33,16 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// ✅ NOVIDADE: Configuração do Mercado Pago
-mercadopago.configure({
-    access_token: process.env.MERCADOPAGO_ACCESS_TOKEN,
-});
-
-// --- ROTA DE WEBHOOK (Agora do Mercado Pago) ---
+// --- ROTA DE WEBHOOK DO MERCADO PAGO ---
 app.post('/api/mp-webhook', async (req, res) => {
     try {
         if (req.query.type === 'payment') {
             const payment = await mercadopago.payment.findById(req.query['data.id']);
-            const externalReference = payment.body.external_reference; // Nosso ID de usuário
+            const userId = payment.body.external_reference;
 
-            if (payment.body.status === 'approved') {
-                await User.findByIdAndUpdate(externalReference, { pagamentoEfetuado: true });
-                console.log(`Pagamento aprovado para o usuário: ${externalReference}`);
+            if (payment.body.status === 'approved' && userId) {
+                await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
+                console.log(`Pagamento aprovado para o usuário: ${userId}`);
             }
         }
         res.status(200).send('Webhook recebido.');
@@ -56,7 +51,6 @@ app.post('/api/mp-webhook', async (req, res) => {
         res.status(500).send('Erro no webhook.');
     }
 });
-
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
@@ -80,11 +74,16 @@ const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
+// ✅ NOVIDADE: Configuração do Mercado Pago
+mercadopago.configure({
+    access_token: process.env.MERCADOPAGO_ACCESS_TOKEN,
+});
+
 // --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false } }, { timestamps: true });
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number },  pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false } }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
@@ -1639,28 +1638,23 @@ app.post('/api/resend-verification-email', async (req, res) => {
     }
 });
 
+// ✅ ROTA PARA CRIAR A PREFERÊNCIA DE PAGAMENTO DO MERCADO PAGO
 app.post('/api/create-payment-preference', autenticar, async (req, res) => {
     try {
-        const usuario = await User.findById(req.userId);
         const { couponCode } = req.body;
+        let finalPrice = 79.99; // Preço padrão
 
-        let discount = 0;
-        if (couponCode) {
-            // Lógica simples para um cupom de afiliado de R$30
-            // Numa versão futura, buscaríamos o valor do cupom no painel
-            if (couponCode.toLowerCase().includes("afiliado")) { // Exemplo
-                discount = 30; // R$30 de desconto
-            }
+        // Lógica simples de cupom
+        if (couponCode && couponCode.startsWith('AFILIADO')) {
+            finalPrice = 49.99;
         }
 
         const preference = {
-            items: [
-                {
-                    title: 'BariPlus - Acesso Vitalício',
-                    unit_price: 79.99 - discount, // Preço final
-                    quantity: 1,
-                }
-            ],
+            items: [{
+                title: 'BariPlus - Acesso Vitalício',
+                unit_price: finalPrice,
+                quantity: 1,
+            }],
             back_urls: {
                 success: `${process.env.CLIENT_URL}/pagamento-sucesso`,
                 failure: `${process.env.CLIENT_URL}/pagamento-cancelado`,
@@ -1670,11 +1664,11 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
         };
 
         const response = await mercadopago.preferences.create(preference);
-        res.json({ id: response.body.id }); // Envia o ID da preferência para o front-end
+        res.json({ preferenceId: response.body.id });
 
     } catch (error) {
         console.error("Erro ao criar preferência de pagamento:", error);
-        res.status(500).json({ error: { message: error.message } });
+        res.status(500).json({ error: { message: "Erro ao criar pagamento." } });
     }
 });
 
