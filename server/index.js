@@ -187,11 +187,7 @@ const isAffiliate = async (req, res, next) => {
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
-    secure: process.env.SMTP_PORT == 465,
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
 });
 
 // --- ROTAS DA API ---
@@ -1670,6 +1666,39 @@ app.post('/api/resend-verification-email', async (req, res) => {
         res.json({ message: "Um novo link de verificação foi enviado para o seu e-mail." });
 
     } catch (error) {
+        res.status(500).json({ message: "Erro no servidor." });
+    }
+});
+
+app.post('/api/resend-verification-email', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const usuario = await User.findOne({ email });
+
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+        if (usuario.isEmailVerified) {
+            return res.status(400).json({ message: "Este e-mail já foi verificado." });
+        }
+
+        // Gera um novo código e data de expiração
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        usuario.emailVerificationCode = verificationCode;
+        usuario.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
+        await usuario.save();
+
+        // Envia o e-mail com o novo código
+        await transporter.sendMail({
+            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`, // Usa o e-mail verificado
+            to: usuario.email,
+            subject: "Seu Novo Código de Verificação BariPlus",
+            html: `<p>Seu novo código de verificação é: <strong>${verificationCode}</strong></p>`,
+        });
+
+        res.json({ message: "Um novo código de verificação foi enviado para o seu e-mail." });
+    } catch (error) {
+        console.error("Erro ao reenviar e-mail de verificação:", error);
         res.status(500).json({ message: "Erro no servidor." });
     }
 });
