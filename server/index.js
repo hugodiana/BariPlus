@@ -65,23 +65,116 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
 }
 
 // --- OUTRAS CONFIGURAÇÕES ---
-cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET 
+});
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
-mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
+mongoose.connect(process.env.DATABASE_URL)
+    .then(() => console.log('Conectado ao MongoDB!'))
+    .catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false }, mercadoPagoUserId: String }, { timestamps: true });
-const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
-const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
-const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
-const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
-const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
-const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
-const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
+const UserSchema = new mongoose.Schema({ 
+    nome: String, 
+    sobrenome: String, 
+    username: { type: String, unique: true, required: true }, 
+    email: { type: String, unique: true, required: true }, 
+    password: { type: String, required: true }, 
+    onboardingCompleto: { type: Boolean, default: false }, 
+    detalhesCirurgia: { 
+        fezCirurgia: String, 
+        dataCirurgia: Date, 
+        altura: Number, 
+        pesoInicial: Number, 
+        pesoAtual: Number 
+    }, 
+    pagamentoEfetuado: { type: Boolean, default: false }, 
+    role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, 
+    affiliateCouponCode: String, 
+    fcmToken: String, 
+    notificationSettings: { 
+        appointmentReminders: { type: Boolean, default: true }, 
+        medicationReminders: { type: Boolean, default: true }, 
+        weighInReminders: { type: Boolean, default: true } 
+    }, 
+    emailVerificationToken: String,  // Corrigido para usar o mesmo nome em todas as referências
+    emailVerificationExpires: Date, 
+    isEmailVerified: { type: Boolean, default: false }, 
+    mercadoPagoUserId: String 
+}, { timestamps: true });
+
+const ChecklistSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    preOp: [{ descricao: String, concluido: Boolean }], 
+    posOp: [{ descricao: String, concluido: Boolean }]
+});
+
+const PesoSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    registros: [{ 
+        peso: Number, 
+        data: Date, 
+        fotoUrl: String, 
+        medidas: { cintura: Number, quadril: Number, braco: Number } 
+    }]
+});
+
+const ConsultaSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    consultas: [{ 
+        especialidade: String, 
+        data: Date, 
+        local: String, 
+        notas: String, 
+        status: String 
+    }]
+});
+
+const DailyLogSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    date: String, 
+    waterConsumed: { type: Number, default: 0 }, 
+    proteinConsumed: { type: Number, default: 0 }
+});
+
+const MedicationSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    medicamentos: [{ 
+        nome: String, 
+        dosagem: String, 
+        quantidade: Number, 
+        unidade: String, 
+        vezesAoDia: Number 
+    }], 
+    historico: { type: Map, of: Map, default: {} }
+});
+
+const FoodLogSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
+    date: String, 
+    refeicoes: { 
+        cafeDaManha: [mongoose.Schema.Types.Mixed], 
+        almoco: [mongoose.Schema.Types.Mixed], 
+        jantar: [mongoose.Schema.Types.Mixed], 
+        lanches: [mongoose.Schema.Types.Mixed] 
+    }
+});
+
+const GastoSchema = new mongoose.Schema({ 
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, 
+    registros: [{ 
+        descricao: { type: String, required: true }, 
+        valor: { type: Number, required: true }, 
+        data: { type: Date, default: Date.now }, 
+        categoria: { type: String, default: 'Outros' } 
+    }]
+});
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -148,7 +241,14 @@ const isAffiliate = async (req, res, next) => {
 };
 
 // --- TRANSPORTER DE E-MAIL ---
-const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
+const transporter = nodemailer.createTransport({ 
+    host: process.env.SMTP_HOST, 
+    port: process.env.SMTP_PORT, 
+    auth: { 
+        user: process.env.SMTP_USER, 
+        pass: process.env.SMTP_PASS 
+    } 
+});
 
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
@@ -170,15 +270,19 @@ app.post('/api/register', async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        // 3. Gera o código de verificação
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const verificationExpires = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
+        // 3. Gera o token de verificação
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 3600000); // Expira em 1 hora
 
         const novoUsuario = new User({ 
-            nome, sobrenome, username, email, password: hashedPassword,
-            emailVerificationCode: verificationCode,
+            nome, 
+            sobrenome, 
+            username, 
+            email, 
+            password: hashedPassword,
+            emailVerificationToken: verificationToken,
             emailVerificationExpires: verificationExpires,
-            isEmailVerified: false // Começa como não verificado
+            isEmailVerified: false
         });
         await novoUsuario.save();
 
@@ -193,24 +297,61 @@ app.post('/api/register', async (req, res) => {
             new Gasto({ userId: novoUsuario._id }).save()
         ]);
         
-        // 5. Envia o e-mail de verificação com o código
+        // 5. Envia o e-mail de verificação com o link
         try {
+            const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
             await transporter.sendMail({
                 from: `"BariPlus" <${process.env.SMTP_USER}>`,
                 to: novoUsuario.email,
-                subject: "Seu Código de Verificação BariPlus",
-                html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Seu código de verificação é: <strong>${verificationCode}</strong></p><p>Este código expira em 15 minutos.</p>`,
+                subject: "Ative sua conta no BariPlus",
+                html: `<h1>Bem-vindo(a) ao BariPlus!</h1>
+                       <p>Por favor, clique no link abaixo para ativar sua conta:</p>
+                       <a href="${verificationLink}">Ativar minha conta</a>
+                       <p>Este link expira em 1 hora.</p>`,
             });
         } catch (emailError) {
             console.error("Falha ao enviar e-mail de verificação:", emailError);
             // Mesmo que o email falhe, o cadastro continua para não bloquear o usuário
         }
         
-        res.status(201).json({ message: 'Usuário pré-cadastrado! Verifique seu e-mail.' });
+        res.status(201).json({ message: 'Usuário pré-cadastrado! Verifique seu e-mail para ativar sua conta.' });
 
     } catch (error) { 
         console.error("Erro fatal no registro:", error);
         res.status(500).json({ message: 'Erro no servidor.' }); 
+    }
+});
+
+// Rota para verificar e-mail
+app.get('/api/verify-email/:token', async (req, res) => {
+    try {
+        const { token } = req.params;
+        const usuario = await User.findOne({
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: Date.now() }
+        });
+
+        if (!usuario) {
+            return res.status(400).json({ success: false, message: "Link de verificação inválido ou expirado." });
+        }
+
+        usuario.isEmailVerified = true;
+        usuario.emailVerificationToken = undefined;
+        usuario.emailVerificationExpires = undefined;
+        await usuario.save();
+
+        // Envia e-mail de boas-vindas
+        await transporter.sendMail({
+            from: `"BariPlus" <${process.env.SMTP_USER}>`,
+            to: usuario.email,
+            subject: "🎉 Conta Ativada! Bem-vindo(a) ao BariPlus!",
+            html: `<h1>Olá, ${usuario.nome}!</h1>
+                  <p>Sua conta foi ativada com sucesso. Agora você já pode fazer login e começar a usar o BariPlus.</p>`
+        });
+
+        res.json({ success: true, message: "E-mail verificado com sucesso!" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Erro no servidor." });
     }
 });
 
@@ -219,15 +360,20 @@ app.post('/api/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
         const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
+
         if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
             return res.status(401).json({ message: 'Credenciais inválidas.' });
         }
+        
         if (!usuario.isEmailVerified) {
             return res.status(403).json({ message: 'Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.' });
         }
+
         const token = jwt.sign({ userId: usuario._id }, JWT_SECRET, { expiresIn: '8h' });
         res.json({ token });
-    } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
+    } catch (error) { 
+        res.status(500).json({ message: 'Erro no servidor.' }); 
+    }
 });
 
 app.get('/api/verify-email/:code', async (req, res) => {
@@ -311,34 +457,36 @@ app.post('/api/forgot-password', async (req, res) => {
     }
 });
 
-// Rota de Redefinição de Senha
-app.post('/api/reset-password/:userId/:token', async (req, res) => {
+app.get('/api/validate-reset-token/:token', async (req, res) => {
     try {
-        const { userId, token } = req.params;
-        const { password } = req.body;
-        
-        if (!password || !validatePassword(password)) {
-            return res.status(400).json({ 
-                message: "A senha não cumpre os requisitos de segurança." 
-            });
-        }
+        const { token } = req.params;
+        // Apenas verifica o token sem alterar nada
+        jwt.verify(token, JWT_SECRET); // Usando um segredo mais simples por agora
+        res.json({ success: true });
+    } catch (error) {
+        res.status(400).json({ success: false, message: "Token inválido ou expirado." });
+    }
+});
 
-        const usuario = await User.findById(userId);
+// Rota de Redefinição de Senha
+app.post('/api/reset-password', async (req, res) => {
+    try {
+        const { token, password } = req.body;
+        if (!token || !password) return res.status(400).json({ message: "Dados incompletos." });
+
+        const decoded = jwt.verify(token, JWT_SECRET); // Decodifica para pegar o userId
+        const usuario = await User.findById(decoded.userId);
+
         if (!usuario) {
-            return res.status(400).json({ message: "Link inválido ou expirado." });
+            return res.status(400).json({ message: "Usuário não encontrado." });
         }
-
-        const resetSecret = JWT_SECRET + usuario.password;
-        jwt.verify(token, resetSecret);
 
         const hashedPassword = await bcrypt.hash(password, 10);
         usuario.password = hashedPassword;
         await usuario.save();
 
         res.json({ message: "Senha redefinida com sucesso!" });
-
     } catch (error) {
-        console.error('Erro na redefinição de senha:', error);
         res.status(400).json({ message: "Link inválido ou expirado." });
     }
 });
