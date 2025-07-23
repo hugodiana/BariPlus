@@ -33,25 +33,12 @@ const corsOptions = {
     credentials: true,
 };
 app.use(cors(corsOptions));
+app.use(express.json());
 
-// --- ROTA DE WEBHOOK DO MERCADO PAGO ---
-app.post('/api/mp-webhook', async (req, res) => {
-    try {
-        if (req.query.type === 'payment') {
-            const payment = await mercadopago.payment.findById(req.query['data.id']);
-            const userId = payment.body.external_reference;
 
-            if (payment.body.status === 'approved' && userId) {
-                await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
-                console.log(`Pagamento aprovado para o usuário: ${userId}`);
-            }
-        }
-        res.status(200).send('Webhook recebido.');
-    } catch (error) {
-        console.error('Erro no webhook do Mercado Pago:', error);
-        res.status(500).send('Erro no webhook.');
-    }
-});
+// --- CONFIGURAÇÃO DO MERCADO PAGO ---
+const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
@@ -61,7 +48,6 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
             const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
             const serviceAccount = JSON.parse(decodedKey);
             admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-            console.log('Firebase Admin inicializado com sucesso!');
         } catch (error) {
             console.error('Erro ao inicializar Firebase Admin:', error);
         }
@@ -73,14 +59,12 @@ cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: proc
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
-const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+const JWT_SECRET = process.env.JWT_SECRET;
 
-
-// --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number },  pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false } }, { timestamps: true });
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false }, mercadoPagoUserId: String }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
@@ -99,12 +83,53 @@ const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 const Gasto = mongoose.model('Gasto', GastoSchema);
 
 // --- FUNÇÃO DE VALIDAÇÃO DE SENHA ---
-const validatePassword = (password) => { /* ... (código existente) */ };
+const validatePassword = (password) => {
+    if (password.length < 8) return false;
+    if (!/[A-Z]/.test(password)) return false;
+    if (!/[a-z]/.test(password)) return false;
+    if (!/[0-9]/.test(password)) return false;
+    if (!/[!@#$%^&*(),.?":{}|<>*]/.test(password)) return false;
+    return true;
+};
 
 // --- MIDDLEWARES ---
-const autenticar = (req, res, next) => { /* ... (código existente) */ };
-const isAdmin = async (req, res, next) => { /* ... (código existente) */ };
-const isAffiliate = async (req, res, next) => { /* ... (código existente) */ };
+const autenticar = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.userId = user.userId;
+        next();
+    });
+};
+
+const isAdmin = async (req, res, next) => {
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.role === 'admin') {
+            next();
+        } else {
+            res.status(403).json({ message: "Acesso negado. Rota exclusiva para administradores." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao verificar permissões de admin." });
+    }
+};
+
+const isAffiliate = async (req, res, next) => {
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.role === 'affiliate') {
+            next();
+        } else {
+            res.status(403).json({ message: "Acesso negado. Rota exclusiva para afiliados." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao verificar permissões de afiliado." });
+    }
+};
 
 // --- TRANSPORTER DE E-MAIL ---
 const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
