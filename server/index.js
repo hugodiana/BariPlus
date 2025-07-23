@@ -11,6 +11,8 @@ const axios = require('axios');
 const { MercadoPagoConfig, Preference } = require('mercadopago');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -33,6 +35,16 @@ const corsOptions = {
     credentials: true,
 };
 app.use(cors(corsOptions));
+app.use(helmet());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100 // limite de 100 requisições por IP
+});
+
+app.use('/api/login', limiter);
+app.use('/api/forgot-password', limiter);
+
 app.use(express.json());
 
 // --- CONFIGURAÇÃO DO MERCADO PAGO ---
@@ -218,11 +230,11 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
-app.get('/api/verify-email/:token', async (req, res) => {
+app.get('/api/verify-email/:code', async (req, res) => {
     try {
-        const { token } = req.params;
+        const { code } = req.params;
         const usuario = await User.findOne({
-            emailVerificationCode: token,  // Alterado para emailVerificationCode
+            emailVerificationCode: code,
             emailVerificationExpires: { $gt: Date.now() }
         });
 
@@ -1602,39 +1614,6 @@ app.post('/api/resend-verification-email', async (req, res) => {
         res.json({ message: "Um novo link de verificação foi enviado para o seu e-mail." });
 
     } catch (error) {
-        res.status(500).json({ message: "Erro no servidor." });
-    }
-});
-
-app.post('/api/resend-verification-email', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const usuario = await User.findOne({ email });
-
-        if (!usuario) {
-            return res.status(404).json({ message: "Usuário não encontrado." });
-        }
-        if (usuario.isEmailVerified) {
-            return res.status(400).json({ message: "Este e-mail já foi verificado." });
-        }
-
-        // Gera um novo código e data de expiração
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        usuario.emailVerificationCode = verificationCode;
-        usuario.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
-        await usuario.save();
-
-        // Envia o e-mail com o novo código
-        await transporter.sendMail({
-            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`, // Usa o e-mail verificado
-            to: usuario.email,
-            subject: "Seu Novo Código de Verificação BariPlus",
-            html: `<p>Seu novo código de verificação é: <strong>${verificationCode}</strong></p>`,
-        });
-
-        res.json({ message: "Um novo código de verificação foi enviado para o seu e-mail." });
-    } catch (error) {
-        console.error("Erro ao reenviar e-mail de verificação:", error);
         res.status(500).json({ message: "Erro no servidor." });
     }
 });
