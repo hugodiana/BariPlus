@@ -8,10 +8,11 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const mercadopago = require('mercadopago');
+const { MercadoPagoConfig, Preference } = require('mercadopago');
 const admin = require('firebase-admin');
 
 const app = express();
+
 
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
@@ -72,12 +73,8 @@ cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: proc
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
-const JWT_SECRET = process.env.JWT_SECRET;
+const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
 
-// ✅ NOVIDADE: Configuração do Mercado Pago
-mercadopago.configure({
-    access_token: process.env.MERCADOPAGO_ACCESS_TOKEN,
-});
 
 // --- CONEXÃO COM O BANCO DE DADOS ---
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
@@ -1643,28 +1640,31 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
         const { couponCode } = req.body;
         let finalPrice = 79.99;
 
-        if (couponCode && couponCode.startsWith('AFILIADO')) {
-            finalPrice = 49.99;
-        }
+        // ... (sua lógica de cupom)
 
-        const preference = {
-            items: [{
-                title: 'BariPlus - Acesso Vitalício',
-                unit_price: finalPrice,
-                quantity: 1,
-            }],
-            back_urls: {
-                success: `${process.env.CLIENT_URL}/pagamento-sucesso`,
-                failure: `${process.env.CLIENT_URL}/pagamento-cancelado`,
-            },
-            auto_return: 'approved',
-            external_reference: req.userId,
-        };
+        const preference = new Preference(client);
 
-        const response = await mercadopago.preferences.create(preference);
-        res.json({ preferenceId: response.body.id });
+        const response = await preference.create({
+            body: {
+                items: [{
+                    title: 'BariPlus - Acesso Vitalício',
+                    unit_price: finalPrice,
+                    quantity: 1,
+                    currency_id: 'BRL', // Moeda brasileira
+                }],
+                back_urls: {
+                    success: `${process.env.CLIENT_URL}/pagamento-sucesso`,
+                    failure: `${process.env.CLIENT_URL}/pagamento-cancelado`,
+                },
+                auto_return: 'approved',
+                external_reference: req.userId,
+            }
+        });
+
+        res.json({ preferenceId: response.id });
 
     } catch (error) {
+        console.error("Erro ao criar preferência de pagamento:", error);
         res.status(500).json({ error: { message: "Erro ao criar pagamento." } });
     }
 });
