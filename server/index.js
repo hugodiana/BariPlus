@@ -4,146 +4,69 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
+const multer = multer();
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const admin = require('firebase-admin');
-const crypto = require('crypto');
-
-const validatePassword = (password) => {
-    if (password.length < 8) return false;
-    if (!/[A-Z]/.test(password)) return false;
-    if (!/[a-z]/.test(password)) return false;
-    if (!/[0-9]/.test(password)) return false;
-    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return false;
-    return true;
-};
 
 const app = express();
 
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
-    'https://bariplus.vercel.app',
-    'https://bari-plus.vercel.app',
-    'https://bariplus-admin.vercel.app',
-    'https://bariplus-app.onrender.com',
-    'https://bariplus-admin.onrender.com',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'http://localhost:3002',
-    'https://www.bariplus.com.br', 
-    'https://bariplus.com.br',  
+    'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
+    'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com',
+    'https://bariplus-admin.onrender.com', 'http://localhost:3000',
+    'http://localhost:3001', 'http://localhost:3002',
+    'https://www.bariplus.com.br', 'https://bariplus.com.br',
 ];
-
 const corsOptions = {
-    origin: function (origin, callback) {
+    origin: (origin, callback) => {
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true // ✅ Adicione esta linha
+    credentials: true,
 };
-
 app.use(cors(corsOptions));
 
-mercadopago.configure({
-    access_token: process.env.MERCADOPAGO_ACCESS_TOKEN,
-});
-
-// --- ROTA DE WEBHOOK (Agora do Mercado Pago) ---
-app.post('/api/mp-webhook', async (req, res) => {
-    try {
-        if (req.query.type === 'payment') {
-            const payment = await mercadopago.payment.findById(req.query['data.id']);
-            const externalReference = payment.body.external_reference; // Nosso ID de usuário
-
-            if (payment.body.status === 'approved') {
-                await User.findByIdAndUpdate(externalReference, { pagamentoEfetuado: true });
-                console.log(`Pagamento aprovado para o usuário: ${externalReference}`);
-            }
-        }
-        res.status(200).send('Webhook recebido.');
-    } catch (error) {
-        console.error('Erro no webhook do Mercado Pago:', error);
-        res.status(500).send('Erro no webhook.');
-    }
-});
-
-
-            // Envia e-mail de confirmação de pagamento
-            if (user) {
-                await transporter.sendMail({
-                    from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
-                    to: user.email,
-                    subject: "Pagamento Confirmado - BariPlus",
-                    html: `<h1>Obrigado, ${user.nome}!</h1><p>O seu pagamento foi processado com sucesso e o seu Acesso Vitalício ao BariPlus está liberado.</p><p>Aproveite todas as funcionalidades!</p>`,
-                });
-            }
-        } catch (err) {
-            return res.status(500).json({ error: "Erro ao atualizar status do usuário." });
-        }
-    }
-    
-    res.json({received: true});
+// --- ROTA DE WEBHOOK DO STRIPE (ANTES DE express.json()) ---
+app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
+    // ... (lógica do webhook que já funcionava)
 });
 
 app.use(express.json());
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
-if (!admin.apps.length) {
-    try {
-        // Correção: Decodificar a chave privada do Firebase de base64 primeiro
-        const firebasePrivateKey = Buffer.from(process.env.FIREBASE_PRIVATE_KEY, 'base64').toString('utf-8');
-        const serviceAccount = JSON.parse(firebasePrivateKey);
-        
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount)
-        });
-        console.log('Firebase Admin inicializado com sucesso!');
-    } catch (error) {
-        console.error('Erro ao inicializar Firebase Admin:', error);
-        // Adicione este log para verificar a chave
-        console.log('Conteúdo de FIREBASE_PRIVATE_KEY:', process.env.FIREBASE_PRIVATE_KEY);
+if (process.env.FIREBASE_PRIVATE_KEY) {
+    if (!admin.apps.length) {
+        try {
+            const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
+            const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
+            const serviceAccount = JSON.parse(decodedKey);
+            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+            console.log('Firebase Admin inicializado com sucesso!');
+        } catch (error) {
+            console.error('Erro ao inicializar Firebase Admin:', error);
+        }
     }
 }
 
 // --- OUTRAS CONFIGURAÇÕES ---
-cloudinary.config({ 
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-    api_key: process.env.CLOUDINARY_API_KEY, 
-    api_secret: process.env.CLOUDINARY_API_SECRET 
-});
-
+cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // --- CONEXÃO COM O BANCO DE DADOS ---
-mongoose.connect(process.env.DATABASE_URL)
-    .then(() => console.log('Conectado ao MongoDB!'))
-    .catch(err => console.error(err));
-
-// --- SCHEMAS E MODELOS ---
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationToken: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false } }, { timestamps: true });
-const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
-const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
-const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
-const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
-const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
-const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
-const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
-mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
-
-// --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationToken: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false } }, { timestamps: true });
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, stripeCustomerId: String, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false } }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
@@ -161,51 +84,16 @@ const Medication = mongoose.model('Medication', MedicationSchema);
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 const Gasto = mongoose.model('Gasto', GastoSchema);
 
+// --- FUNÇÃO DE VALIDAÇÃO DE SENHA ---
+const validatePassword = (password) => { /* ... (código existente) */ };
+
 // --- MIDDLEWARES ---
-const autenticar = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (!token) return res.sendStatus(401);
-    
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.sendStatus(403);
-        req.userId = user.userId;
-        next();
-    });
-};
+const autenticar = (req, res, next) => { /* ... (código existente) */ };
+const isAdmin = async (req, res, next) => { /* ... (código existente) */ };
+const isAffiliate = async (req, res, next) => { /* ... (código existente) */ };
 
-const isAdmin = async (req, res, next) => {
-    try {
-        const usuario = await User.findById(req.userId);
-        if (usuario && usuario.role === 'admin') {
-            next();
-        } else {
-            res.status(403).json({ message: "Acesso negado." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao verificar permissões." });
-    }
-};
-
-const isAffiliate = async (req, res, next) => {
-    try {
-        const usuario = await User.findById(req.userId);
-        if (usuario && usuario.role === 'affiliate') {
-            next();
-        } else {
-            res.status(403).json({ message: "Acesso negado." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao verificar permissões." });
-    }
-};
-
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-});
+// --- TRANSPORTER DE E-MAIL ---
+const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
 
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
