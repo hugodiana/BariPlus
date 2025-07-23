@@ -4,6 +4,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { onMessage } from "firebase/messaging";
 import { messaging } from './firebase';
+import EmailVerificationHandler from './pages/EmailVerificationHandler';
 
 // Componentes
 import Layout from './components/Layout';
@@ -112,6 +113,8 @@ function App() {
           <Route path="/pagamento-sucesso" element={usuario ? <PaymentSuccessPage /> : <Navigate to="/login" />} />
           <Route path="/pagamento-cancelado" element={usuario ? <PaymentCancelPage /> : <Navigate to="/login" />} />
           <Route path="/pagamento-status" element={<PaymentStatusPage />} />
+          <Route path="/verify-email/:token" element={<EmailVerificationHandler />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> 
 
           {/* --- ÁREA PRIVADA (o "Porteiro" decide se pode entrar) --- */}
           <Route element={<PrivateRoutes usuario={usuario} />}>
