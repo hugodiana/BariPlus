@@ -299,18 +299,14 @@ app.post('/api/register', async (req, res) => {
         
         // 5. Envia o e-mail de verificação com o link
         try {
-            const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
             await transporter.sendMail({
-                from: `"BariPlus" <${process.env.SMTP_USER}>`,
+                from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
                 to: novoUsuario.email,
-                subject: "Ative sua conta no BariPlus",
-                html: `<h1>Bem-vindo(a) ao BariPlus!</h1>
-                       <p>Por favor, clique no link abaixo para ativar sua conta:</p>
-                       <a href="${verificationLink}">Ativar minha conta</a>
-                       <p>Este link expira em 1 hora.</p>`,
+                subject: "Seu Código de Verificação BariPlus",
+                html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Seu código de verificação é: <strong>${verificationCode}</strong></p><p>Este código expira em 15 minutos.</p>`,
             });
         } catch (emailError) {
-            console.error("Falha ao enviar e-mail de verificação:", emailError);
+            console.error("Falha ao enviar e-mail de verificação no cadastro:", emailError);
             // Mesmo que o email falhe, o cadastro continua para não bloquear o usuário
         }
         
@@ -417,11 +413,8 @@ app.post('/api/forgot-password', async (req, res) => {
             });
         }
 
-        const resetSecret = JWT_SECRET + usuario.password;
-        const resetToken = jwt.sign({ userId: usuario._id }, resetSecret, { 
-            expiresIn: '15m' 
-        });
-        
+        const resetToken = jwt.sign({ userId: usuario._id }, process.env.PASSWORD_RESET_SECRET, { expiresIn: '15m' });
+                
         const resetLink = `${process.env.CLIENT_URL}/reset-password/${usuario._id}/${resetToken}`;
         
         const transporter = nodemailer.createTransport({
@@ -454,6 +447,31 @@ app.post('/api/forgot-password', async (req, res) => {
     } catch (error) {
         console.error('Erro na recuperação de senha:', error);
         res.status(500).json({ message: "Erro no servidor." });
+    }
+});
+
+app.post('/api/reset-password/:userId/:token', async (req, res) => {
+    try {
+        const { userId, token } = req.params;
+        const { password } = req.body;
+
+        // ✅ CORREÇÃO: Verifica o token usando a mesma chave secreta dedicada
+        const decoded = jwt.verify(token, process.env.PASSWORD_RESET_SECRET);
+
+        if (decoded.userId !== userId) {
+            return res.status(400).json({ message: "Token inválido." });
+        }
+
+        if (!validatePassword(password)) {
+            return res.status(400).json({ message: "A nova senha não cumpre os requisitos de segurança." });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await User.findByIdAndUpdate(userId, { password: hashedPassword });
+
+        res.json({ message: "Senha redefinida com sucesso!" });
+    } catch (error) {
+        res.status(400).json({ message: "Link inválido ou expirado." });
     }
 });
 
