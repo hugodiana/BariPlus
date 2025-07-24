@@ -259,24 +259,28 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
-app.get('/api/verify-email/', async (req, res) => {
+app.get('/api/verify-email/:token', async (req, res) => {
     try {
         const { token } = req.params;
-        // ✅ CORREÇÃO: Compara o timestamp de expiração com o timestamp de agora
         const usuario = await User.findOne({
-            email: email,
-            verificationCode: code,
-            verificationExpires: { $gt: Date.now() }
+            emailVerificationToken: token,
+            emailVerificationExpires: { $gt: Date.now() }
         });
-        if (!usuario) return res.status(400).send("Link de verificação inválido ou expirado.");
+
+        if (!usuario) {
+            return res.status(400).json({ message: "Link de verificação inválido ou expirado." });
+        }
         
         usuario.isEmailVerified = true;
         usuario.emailVerificationToken = undefined;
         usuario.emailVerificationExpires = undefined;
         await usuario.save();
         
-        res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
-    } catch (error) { res.status(500).send("Erro no servidor ao verificar o e-mail."); }
+        res.json({ success: true, message: "E-mail verificado com sucesso!" });
+    } catch (error) { 
+        console.error("Erro ao verificar e-mail:", error);
+        res.status(500).json({ message: "Erro no servidor ao verificar o e-mail." }); 
+    }
 });
 
 
@@ -311,8 +315,8 @@ app.post('/api/reset-password/:token', async (req, res) => {
         const { password } = req.body;
 
         const usuario = await User.findOne({
-            resetPasswordToken: token,
-            resetPasswordExpires: { $gt: Date.now() }
+            resetPasswordToken: String,
+            resetPasswordExpires: Date
         });
         if (!usuario) return res.status(400).json({ message: "Token inválido ou expirado." });
 
