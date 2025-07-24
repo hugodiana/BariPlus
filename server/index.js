@@ -181,6 +181,11 @@ const isAffiliate = async (req, res, next) => {
 // --- TRANSPORTER DE E-MAIL ---
 const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
 
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    next();
+});
+
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
     try {
@@ -287,18 +292,27 @@ app.get('/api/verify-email/:token', async (req, res) => {
 app.post('/api/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
+        console.log(`[FORGOT-PASSWORD] Solicitação recebida para: ${email}`); // LOG
+        
         const usuario = await User.findOne({ email });
         
         if (!usuario) {
+            console.log('[FORGOT-PASSWORD] E-mail não encontrado no banco'); // LOG
             return res.json({ message: "Se o e-mail existir, um link foi enviado." });
         }
 
         const resetToken = crypto.randomBytes(32).toString('hex');
+        const expirationDate = new Date(Date.now() + 3600000); // 1 hora
+        
+        console.log(`[FORGOT-PASSWORD] Token gerado: ${resetToken}`); // LOG
+        console.log(`[FORGOT-PASSWORD] Expira em: ${expirationDate}`); // LOG
+
         usuario.resetPasswordToken = resetToken;
-        usuario.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
+        usuario.resetPasswordExpires = expirationDate;
         await usuario.save();
         
         const resetLink = `${process.env.CLIENT_URL}/reset-password/${encodeURIComponent(resetToken)}`;
+        console.log(`[FORGOT-PASSWORD] Link gerado: ${resetLink}`); // LOG
         
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
@@ -307,18 +321,25 @@ app.post('/api/forgot-password', async (req, res) => {
             html: `<p>Clique <a href="${resetLink}">aqui</a> para redefinir sua senha (válido por 1 hora)</p>`
         });
         
+        console.log(`[FORGOT-PASSWORD] E-mail enviado para: ${usuario.email}`); // LOG
         res.json({ message: "Link de redefinição enviado com sucesso." });
     } catch (error) {
-        console.error('Erro:', error);
+        console.error('[FORGOT-PASSWORD] Erro:', error); // LOG
         res.status(500).json({ message: "Erro ao processar solicitação." });
     }
 });
 
+
 // Rota de Redefinição de Senha
 app.post('/api/reset-password/:token', async (req, res) => {
     try {
-        const token = decodeURIComponent(req.params.token);
+        const rawToken = req.params.token;
+        const token = decodeURIComponent(rawToken);
         const { password } = req.body;
+
+        console.log(`[RESET-PASSWORD] Tentativa com token: ${token}`); // LOG
+        console.log(`[RESET-PASSWORD] Token decodificado: ${token}`); // LOG
+        console.log(`[RESET-PASSWORD] Data atual: ${new Date()}`); // LOG
 
         const usuario = await User.findOne({
             resetPasswordToken: token,
@@ -326,13 +347,22 @@ app.post('/api/reset-password/:token', async (req, res) => {
         });
 
         if (!usuario) {
+            const expiredUser = await User.findOne({ resetPasswordToken: token });
+            if (expiredUser) {
+                console.log(`[RESET-PASSWORD] Token encontrado mas expirado. Data de expiração: ${expiredUser.resetPasswordExpires}`); // LOG
+            } else {
+                console.log('[RESET-PASSWORD] Token não encontrado no banco'); // LOG
+            }
             return res.status(400).json({ 
                 message: "Link inválido ou expirado. Solicite um novo link." 
             });
         }
 
-        // Validar a nova senha
+        console.log(`[RESET-PASSWORD] Usuário encontrado: ${usuario.email}`); // LOG
+        console.log(`[RESET-PASSWORD] Token expira em: ${usuario.resetPasswordExpires}`); // LOG
+
         if (!validatePassword(password)) {
+            console.log('[RESET-PASSWORD] Senha não atende aos requisitos'); // LOG
             return res.status(400).json({ 
                 message: "A senha não atende aos requisitos mínimos." 
             });
@@ -344,9 +374,10 @@ app.post('/api/reset-password/:token', async (req, res) => {
         usuario.resetPasswordExpires = undefined;
         await usuario.save();
 
+        console.log(`[RESET-PASSWORD] Senha alterada para usuário: ${usuario.email}`); // LOG
         res.json({ message: "Senha redefinida com sucesso!" });
     } catch (error) {
-        console.error('Erro:', error);
+        console.error('[RESET-PASSWORD] Erro:', error); // LOG
         res.status(500).json({ message: "Erro ao redefinir senha." });
     }
 });
