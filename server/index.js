@@ -16,7 +16,7 @@ const rateLimit = require('express-rate-limit');
 const { Payment } = require('mercadopago');
 
 const app = express();
-
+app.set('trust proxy', 1);
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
     'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
@@ -203,26 +203,28 @@ app.post('/api/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         
         // 3. Gera o código de verificação
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Código de 6 dígitos
-        const verificationExpires = Date.now() + 900000; // 15 minutos
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 3600000); // 1 hora
 
         const novoUsuario = new User({ 
             nome, sobrenome, username, email, password: hashedPassword,
-            verificationCode: verificationCode,
-            verificationExpires: verificationExpires,
+            emailVerificationToken: verificationToken,
+            emailVerificationExpires: verificationExpires,
+            isEmailVerified: false
             
         });
         await novoUsuario.save();
 
+        // Envia o e-mail de verificação
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: novoUsuario.email,
-            subject: "Seu Código de Verificação BariPlus",
-            html: `<h1>Bem-vindo(a)!</h1><p>Seu código para ativar a conta é: <strong>${verificationCode}</strong></p>`,
+            subject: "Ative a sua Conta no BariPlus",
+            html: `<h1>Bem-vindo(a)!</h1><p>Clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a>`,
         });
 
-        // 4. Cria todos os documentos associados para o novo usuário
+        // Cria os outros documentos associados
         await Promise.all([
             new Checklist({ userId: novoUsuario._id }).save(),
             new Peso({ userId: novoUsuario._id }).save(),
@@ -233,8 +235,7 @@ app.post('/api/register', async (req, res) => {
             new Gasto({ userId: novoUsuario._id }).save()
         ]);
         
-        // 5. Envia o e-mail de verificação com o código     
-        res.status(201).json({ message: 'Usuário pré-cadastrado! Verifique seu e-mail.' });
+        res.status(201).json({ message: 'Usuário cadastrado com sucesso! Verifique seu e-mail para ativar sua conta.' });
 
     } catch (error) { 
         console.error("Erro fatal no registro:", error);
