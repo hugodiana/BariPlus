@@ -75,7 +75,37 @@ const JWT_SECRET = process.env.JWT_SECRET;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false }, emailVerificationToken: String, emailVerificationExpires: Date, resetPasswordToken: String, resetPasswordExpires: Date,  mercadoPagoUserId: String }, isEmailVerified, { type: Boolean, default: false }, { timestamps: true });
+const UserSchema = new mongoose.Schema({
+    nome: { type: String, required: true },
+    sobrenome: { type: String, required: true },
+    username: { type: String, unique: true, required: true },
+    email: { type: String, unique: true, required: true },
+    password: { type: String, required: true },
+    onboardingCompleto: { type: Boolean, default: false },
+    detalhesCirurgia: {
+        fezCirurgia: String,
+        dataCirurgia: Date,
+        altura: Number,
+        pesoInicial: Number,
+        pesoAtual: Number
+    },
+    pagamentoEfetuado: { type: Boolean, default: false },
+    role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
+    affiliateCouponCode: String,
+    fcmToken: String,
+    notificationSettings: {
+        appointmentReminders: { type: Boolean, default: true },
+        medicationReminders: { type: Boolean, default: true },
+        weighInReminders: { type: Boolean, default: true }
+    },
+    isEmailVerified: { type: Boolean, default: false },
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
+    mercadoPagoUserId: String
+}, { timestamps: true });
+
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
