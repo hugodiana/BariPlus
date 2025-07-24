@@ -288,38 +288,54 @@ app.post('/api/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
         const usuario = await User.findOne({ email });
-        if (!usuario) return res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
+        
+        if (!usuario) {
+            return res.json({ message: "Se o e-mail existir, um link foi enviado." });
+        }
 
         const resetToken = crypto.randomBytes(32).toString('hex');
         usuario.resetPasswordToken = resetToken;
         usuario.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
         await usuario.save();
         
-        const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+        const resetLink = `${process.env.CLIENT_URL}/reset-password/${encodeURIComponent(resetToken)}`;
         
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
-            subject: "Redefinição de Senha - BariPlus",
-            html: `<p>Para redefinir sua senha, clique no link:</p><a href="${resetLink}">Redefinir Senha</a>`,
+            subject: "Redefinição de Senha",
+            html: `<p>Clique <a href="${resetLink}">aqui</a> para redefinir sua senha (válido por 1 hora)</p>`
         });
-        res.json({ message: "Se um usuário com este e-mail existir, um link foi enviado." });
-    } catch (error) { console.error('Erro na recuperação de senha:', error); res.status(500).json({ message: "Erro no servidor." }); }
+        
+        res.json({ message: "Link de redefinição enviado com sucesso." });
+    } catch (error) {
+        console.error('Erro:', error);
+        res.status(500).json({ message: "Erro ao processar solicitação." });
+    }
 });
 
 // Rota de Redefinição de Senha
 app.post('/api/reset-password/:token', async (req, res) => {
     try {
-        const { token } = req.params;
+        const token = decodeURIComponent(req.params.token);
         const { password } = req.body;
 
         const usuario = await User.findOne({
             resetPasswordToken: token,
-            resetPasswordExpires: { $gt: Date.now() }
+            resetPasswordExpires: { $gt: new Date() }
         });
-        
+
         if (!usuario) {
-            return res.status(400).json({ message: "Token inválido ou expirado." });
+            return res.status(400).json({ 
+                message: "Link inválido ou expirado. Solicite um novo link." 
+            });
+        }
+
+        // Validar a nova senha
+        if (!validatePassword(password)) {
+            return res.status(400).json({ 
+                message: "A senha não atende aos requisitos mínimos." 
+            });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -330,7 +346,7 @@ app.post('/api/reset-password/:token', async (req, res) => {
 
         res.json({ message: "Senha redefinida com sucesso!" });
     } catch (error) {
-        console.error('Erro ao redefinir senha:', error);
+        console.error('Erro:', error);
         res.status(500).json({ message: "Erro ao redefinir senha." });
     }
 });
