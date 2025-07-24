@@ -75,7 +75,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false }, mercadoPagoUserId: String }, { timestamps: true });
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, emailVerificationCode: String, emailVerificationExpires: Date, isEmailVerified: { type: Boolean, default: false }, emailVerificationToken: String, emailVerificationExpires: Date, resetPasswordToken: String, resetPasswordExpires: Date,  mercadoPagoUserId: String }, isEmailVerified: { type: Boolean, default: false }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
@@ -172,16 +172,24 @@ app.post('/api/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         
         // 3. Gera o código de verificação
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const verificationExpires = new Date(Date.now() + 15 * 60 * 1000); // Expira em 15 minutos
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+        const verificationExpires = new Date(Date.now() + 3600000); // 1 hora
 
         const novoUsuario = new User({ 
             nome, sobrenome, username, email, password: hashedPassword,
-            emailVerificationCode: verificationCode,
-            emailVerificationExpires: verificationExpires,
-            isEmailVerified: false // Começa como não verificado
+            emailVerificationToken: verificationToken,
+            emailVerificationExpires: verificationExpires
+            
         });
         await novoUsuario.save();
+
+        const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        await transporter.sendMail({
+            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+            to: novoUsuario.email,
+            subject: "Ative a sua Conta no BariPlus",
+            html: `<h1>Bem-vindo(a)!</h1><p>Clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a>`,
+        });
 
         // 4. Cria todos os documentos associados para o novo usuário
         await Promise.all([
@@ -194,19 +202,7 @@ app.post('/api/register', async (req, res) => {
             new Gasto({ userId: novoUsuario._id }).save()
         ]);
         
-        // 5. Envia o e-mail de verificação com o código
-        try {
-            await transporter.sendMail({
-                from: `"BariPlus" <${process.env.SMTP_USER}>`,
-                to: novoUsuario.email,
-                subject: "Seu Código de Verificação BariPlus",
-                html: `<h1>Bem-vindo(a) ao BariPlus!</h1><p>Seu código de verificação é: <strong>${verificationCode}</strong></p><p>Este código expira em 15 minutos.</p>`,
-            });
-        } catch (emailError) {
-            console.error("Falha ao enviar e-mail de verificação:", emailError);
-            // Mesmo que o email falhe, o cadastro continua para não bloquear o usuário
-        }
-        
+        // 5. Envia o e-mail de verificação com o código     
         res.status(201).json({ message: 'Usuário pré-cadastrado! Verifique seu e-mail.' });
 
     } catch (error) { 
@@ -231,118 +227,72 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
-app.get('/api/verify-email/:code', async (req, res) => {
+app.get('/api/verify-email/:token', async (req, res) => {
     try {
-        const { code } = req.params;
+        const { token } = req.params;
         const usuario = await User.findOne({
-            emailVerificationCode: code,
+            emailVerificationToken: token,
             emailVerificationExpires: { $gt: Date.now() }
         });
-
-        if (!usuario) {
-            return res.status(400).json({ message: "Código de verificação inválido ou expirado." });
-        }
-
+        if (!usuario) return res.status(400).send("Link de verificação inválido ou expirado.");
+        
         usuario.isEmailVerified = true;
-        usuario.emailVerificationCode = undefined;
+        usuario.emailVerificationToken = undefined;
         usuario.emailVerificationExpires = undefined;
         await usuario.save();
-
-        res.json({ message: "E-mail verificado com sucesso!" });
-    } catch (error) {
-        res.status(500).json({ message: "Erro no servidor." });
-    }
+        
+        res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
+    } catch (error) { res.status(500).send("Erro no servidor ao verificar o e-mail."); }
 });
 
+
 // Rota de Recuperação de Senha
-app.post('/api/forgot-password', async (req, res) => {
+pp.post('/api/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-        
-        if (!email) {
-            return res.status(400).json({ message: 'O e-mail é obrigatório.' });
-        }
-
         const usuario = await User.findOne({ email });
-        
-        // Mesmo se não encontrar, retorna sucesso por segurança
-        if (!usuario) {
-            return res.json({ 
-                message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." 
-            });
-        }
+        if (!usuario) return res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
 
-        const resetSecret = JWT_SECRET + usuario.password;
-        const resetToken = jwt.sign({ userId: usuario._id }, resetSecret, { 
-            expiresIn: '15m' 
-        });
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        usuario.resetPasswordToken = resetToken;
+        usuario.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hora
+        await usuario.save();
         
-        const resetLink = `${process.env.CLIENT_URL}/reset-password/${usuario._id}/${resetToken}`;
+        const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
         
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: process.env.SMTP_PORT,
-            secure: process.env.SMTP_SECURE === 'true',
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS
-            }
-        });
-
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
             subject: "Redefinição de Senha - BariPlus",
-            html: `
-                <p>Olá ${usuario.nome},</p>
-                <p>Para redefinir sua senha, clique no link abaixo:</p>
-                <a href="${resetLink}">Redefinir Senha</a>
-                <p>Este link é válido por 15 minutos.</p>
-                <p>Caso não tenha solicitado esta redefinição, ignore este e-mail.</p>
-            `,
+            html: `<p>Para redefinir sua senha, clique no link:</p><a href="${resetLink}">Redefinir Senha</a>`,
         });
-
-        res.json({ 
-            message: "Se um usuário com este e-mail existir, um link de redefinição foi enviado." 
-        });
-
-    } catch (error) {
-        console.error('Erro na recuperação de senha:', error);
-        res.status(500).json({ message: "Erro no servidor." });
-    }
+        res.json({ message: "Se um usuário com este e-mail existir, um link foi enviado." });
+    } catch (error) { console.error('Erro na recuperação de senha:', error); res.status(500).json({ message: "Erro no servidor." }); }
 });
 
 // Rota de Redefinição de Senha
-app.post('/api/reset-password/:userId/:token', async (req, res) => {
+aapp.post('/api/reset-password/:token', async (req, res) => {
     try {
-        const { userId, token } = req.params;
+        const { token } = req.params;
         const { password } = req.body;
-        
-        if (!password || !validatePassword(password)) {
-            return res.status(400).json({ 
-                message: "A senha não cumpre os requisitos de segurança." 
-            });
-        }
 
-        const usuario = await User.findById(userId);
-        if (!usuario) {
-            return res.status(400).json({ message: "Link inválido ou expirado." });
-        }
+        const usuario = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
 
-        const resetSecret = JWT_SECRET + usuario.password;
-        jwt.verify(token, resetSecret);
+        if (!usuario) return res.status(400).json({ message: "Token inválido ou expirado." });
 
         const hashedPassword = await bcrypt.hash(password, 10);
         usuario.password = hashedPassword;
+        usuario.resetPasswordToken = undefined;
+        usuario.resetPasswordExpires = undefined;
         await usuario.save();
 
         res.json({ message: "Senha redefinida com sucesso!" });
-
-    } catch (error) {
-        console.error('Erro na redefinição de senha:', error);
-        res.status(400).json({ message: "Link inválido ou expirado." });
-    }
+    } catch (error) { console.error('Erro ao redefinir senha:', error); res.status(500).json({ message: "Erro ao redefinir senha." }); }
 });
+
 
 // Rota de Perfil do Usuário
 app.get('/api/me', autenticar, async (req, res) => {
