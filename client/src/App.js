@@ -14,7 +14,6 @@ import PricingPage from './pages/PricingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import VerifyEmailPage from './pages/VerifyEmailPage';
 import OnboardingPage from './pages/OnboardingPage';
 import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
@@ -26,6 +25,8 @@ import AffiliatePortalPage from './pages/AffiliatePortalPage';
 import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
 import GastosPage from './pages/GastosPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import VerifyPage from './pages/VerifyPage'; // Para a página de sucesso da verificação
 
 // Componente auxiliar para capturar o código de referência do URL
 function HandleReferral() {
@@ -104,20 +105,24 @@ function App() {
       <Router>
         <HandleReferral />
         <Routes>
-          {/* --- ROTAS PÚBLICAS (Acessíveis por qualquer pessoa, a qualquer momento) --- */}
+          {/* --- ROTAS PÚBLICAS (Acessíveis por qualquer pessoa) --- */}
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
-          <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          
+          {/* ✅ ROTAS DE E-MAIL CORRIGIDAS */}
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/verify-email/:token" element={<VerifyPage />} />
+
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
           
           {/* --- ROTAS INTERMEDIÁRIAS (precisam de usuário logado) --- */}
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
           <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
-          
+          <Route path="/verify-email" element={usuario ? <VerifyEmailPage /> : <Navigate to="/login" />} />
+
           {/* --- ROTA CORINGA (Catch-all) QUE GERE O ACESSO AO APP --- */}
           <Route path="/*" element={
             !usuario ? <Navigate to="/landing" /> :
