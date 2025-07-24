@@ -277,7 +277,7 @@ app.get('/api/verify-email/:token', async (req, res) => {
 
 
 // Rota de Recuperação de Senha
-pp.post('/api/forgot-password', async (req, res) => {
+app.post('/api/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
         const usuario = await User.findOne({ email });
