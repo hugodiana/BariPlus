@@ -1,86 +1,179 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { onMessage } from 'firebase/messaging';
+import { messaging } from './firebase';
 
-:root {
-  /* Cores primárias */
-  --primary-green: #37715b;
-  --primary-light: #e9f5f2;
-  
-  /* Cores de ação */
-  --action-blue: #007aff;
-  --danger-red: #c0392b;
-  --error-light: #fceeee;
-  
-  /* Cores de fundo */
-  --background-light: #f4f7f6;
-  --background-white: #ffffff;
-  
-  /* Cores de texto */
-  --text-dark: #2c3e50;
-  --text-medium: #555555;
-  --text-light: #7f8c8d;
-  
-  /* Bordas e sombras */
-  --border-color: #e0e0e0;
-  --shadow-color: rgba(0, 0, 0, 0.08);
+// Importação de páginas
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import PricingPage from './pages/PricingPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import OnboardingPage from './pages/OnboardingPage';
+import Layout from './components/Layout';
+import DashboardPage from './pages/DashboardPage';
+import ProgressoPage from './pages/ProgressoPage';
+import ChecklistPage from './pages/ChecklistPage';
+import ConsultasPage from './pages/ConsultasPage';
+import MedicationPage from './pages/MedicationPage';
+import AffiliatePortalPage from './pages/AffiliatePortalPage';
+import ProfilePage from './pages/ProfilePage';
+import FoodDiaryPage from './pages/FoodDiaryPage';
+import GastosPage from './pages/GastosPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import VerifyPage from './pages/VerifyPage';
+
+// Componente para manipulação de código de referência
+function HandleReferral() {
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      localStorage.setItem('bariplus_referral_code', refCode);
+    }
+  }, [searchParams]);
+
+  return null;
 }
 
-/* Reset e estilos base */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+// Componente para rotas protegidas
+const ProtectedRoutes = ({ user }) => {
+  return (
+    <Layout user={user}>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/progresso" element={<ProgressoPage />} />
+        <Route path="/checklist" element={<ChecklistPage />} />
+        <Route path="/consultas" element={<ConsultasPage />} />
+        <Route path="/medicacao" element={<MedicationPage />} />
+        <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
+        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+        <Route path="/gastos" element={<GastosPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Layout>
+  );
+};
 
-body {
-  font-family: 'Inter', sans-serif;
-  background-color: var(--background-light);
-  color: var(--text-dark);
-  line-height: 1.6;
-}
+function App() {
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-/* Componentes reutilizáveis */
-.loading-screen {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 1.2rem;
-  color: var(--text-medium);
-}
+  useEffect(() => {
+    const token = localStorage.getItem('bariplus_token');
+    const apiUrl = process.env.REACT_APP_API_URL;
 
-.page-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1.5rem;
-}
+    const fetchUserData = async () => {
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
-.page-header {
-  margin-bottom: 1.5rem;
-}
+      try {
+        const response = await fetch(`${apiUrl}/api/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-.page-header h1 {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
+        if (!response.ok) {
+          localStorage.removeItem('bariplus_token');
+          throw new Error('Sessão inválida');
+        }
 
-.page-header p {
-  font-size: 1.1rem;
-  color: var(--text-light);
-  margin: 0;
-}
+        const userData = await response.json();
+        setUser(userData);
+      } catch (error) {
+        console.error('Erro ao carregar usuário:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-/* Media queries para responsividade */
-@media (max-width: 768px) {
-  .page-container {
-    padding: 1rem;
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    if ('serviceWorker' in navigator && messaging) {
+      onMessage(messaging, (payload) => {
+        toast.info(
+          <div>
+            <strong>{payload.notification.title}</strong>
+            <br />
+            {payload.notification.body}
+          </div>
+        );
+      });
+    }
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="loading-screen">
+        Carregando...
+      </div>
+    );
   }
-  
-  .page-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .page-header p {
-    font-size: 1rem;
-  }
+
+  return (
+    <>
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+      
+      <Router>
+        <HandleReferral />
+        <Routes>
+          {/* Rotas públicas */}
+          <Route path="/landing" element={<LandingPage />} />
+          <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
+          <Route path="/termos" element={<TermsPage />} />
+          <Route path="/privacidade" element={<PrivacyPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email/:token" element={<VerifyPage />} />
+          <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
+          <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
+
+          {/* Rotas intermediárias */}
+          <Route path="/planos" element={user ? <PricingPage /> : <Navigate to="/login" />} />
+          <Route path="/bem-vindo" element={user ? <OnboardingPage /> : <Navigate to="/login" />} />
+          <Route path="/verify-email" element={user ? <VerifyEmailPage /> : <Navigate to="/login" />} />
+
+          {/* Rota principal */}
+          <Route
+            path="/*"
+            element={
+              !user ? (
+                <Navigate to="/landing" />
+              ) : !user.isEmailVerified ? (
+                <Navigate to="/verify-email" state={{ email: user.email }} />
+              ) : !user.pagamentoEfetuado ? (
+                <Navigate to="/planos" />
+              ) : !user.onboardingCompleto ? (
+                <Navigate to="/bem-vindo" />
+              ) : (
+                <ProtectedRoutes user={user} />
+              )
+            }
+          />
+        </Routes>
+      </Router>
+    </>
+  );
 }
+
+export default App;
