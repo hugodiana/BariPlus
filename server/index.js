@@ -100,9 +100,9 @@ const UserSchema = new mongoose.Schema({
     },
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: String,
-    emailVerificationExpires: Date,
+    emailVerificationExpires: Number, 
     resetPasswordToken: String,
-    resetPasswordExpires: Date,
+    resetPasswordExpires: Number,
     mercadoPagoUserId: String
 }, { timestamps: true });
 
@@ -203,7 +203,7 @@ app.post('/api/register', async (req, res) => {
         
         // 3. Gera o código de verificação
         const verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = new Date(Date.now() + 3600000); // 1 hora
+        const verificationExpires = Date.now() + 3600000; // 1 hora a partir de AGORA
 
         const novoUsuario = new User({ 
             nome, sobrenome, username, email, password: hashedPassword,
@@ -260,6 +260,7 @@ app.post('/api/login', async (req, res) => {
 app.get('/api/verify-email/:token', async (req, res) => {
     try {
         const { token } = req.params;
+        // ✅ CORREÇÃO: Compara o timestamp de expiração com o timestamp de agora
         const usuario = await User.findOne({
             emailVerificationToken: token,
             emailVerificationExpires: { $gt: Date.now() }
@@ -310,7 +311,6 @@ app.post('/api/reset-password/:token', async (req, res) => {
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: Date.now() }
         });
-
         if (!usuario) return res.status(400).json({ message: "Token inválido ou expirado." });
 
         const hashedPassword = await bcrypt.hash(password, 10);
