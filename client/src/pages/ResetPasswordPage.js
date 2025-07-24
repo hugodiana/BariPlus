@@ -67,4 +67,11 @@ const ResetPasswordPage = () => {
             <form className="login-form" onSubmit={handleSubmit}>
                 <h2>Crie sua Nova Senha</h2>
                 <input type="password" placeholder="Nova Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                <input type="password" placeholder="Confirme a Nova Senha" value={confirmPassword
+                <input type="password" placeholder="Confirme a Nova Senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                <button type="submit" className="submit-button">Redefinir Senha</button>
+            </form>
+        </div>
+    );
+};
+
+export default ResetPasswordPage;
