@@ -1,15 +1,10 @@
-/* Importa uma fonte moderna e limpa do Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* Define as nossas "variáveis de design" para todo o projeto */
 :root {
   --primary-green: #37715b;
   --primary-light: #e9f5f2;
   --action-blue: #007aff;
   --danger-red: #c0392b;
   --error-light: #fceeee;
-  --affiliate-color: #1e40af;
-  --affiliate-light: #dbeafe;
   --background-light: #f4f7f6;
   --background-white: #ffffff;
   --text-dark: #2c3e50;
@@ -18,38 +13,25 @@
   --border-color: #e0e0e0;
   --shadow-color: rgba(0, 0, 0, 0.08);
 }
-
-/* Estilos Globais aplicados a todo o corpo da página */
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   background-color: var(--background-light);
   color: var(--text-dark);
 }
-
-* {
-  box-sizing: border-box;
-}
-
-/* Classes de Container Padrão para as páginas */
+* { box-sizing: border-box; }
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1.5rem;
 }
-
 .page-header {
   margin-bottom: 25px;
 }
-
 .page-header h1 {
   font-size: 2rem;
   margin: 0 0 5px 0;
-  color: var(--text-dark);
 }
-
 .page-header p {
   font-size: 1.1rem;
   color: var(--text-light);

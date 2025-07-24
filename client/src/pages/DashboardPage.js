@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
 import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 import Modal from '../components/Modal';
-import LoadingSpinner from '../components/LoadingSpinner'; // Usando o spinner
+import LoadingSpinner from '../components/LoadingSpinner';
 import './DashboardPage.css';
 
 const DashboardPage = () => {
-    // Voltando à nossa estrutura original de estados separados
     const [usuario, setUsuario] = useState(null);
     const [pesos, setPesos] = useState([]);
     const [dailyLog, setDailyLog] = useState(null);
@@ -23,13 +22,10 @@ const DashboardPage = () => {
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
 
     const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchDashboardData = useCallback(async () => {
-        if (!token) {
-            setLoading(false);
-            return;
-        }
+        if (!token) { setLoading(false); return; }
         setLoading(true);
         try {
             const endpoints = ['me', 'dailylog/today', 'checklist', 'consultas', 'medication', 'pesos'];
@@ -125,23 +121,40 @@ const DashboardPage = () => {
     };
 
     const getWelcomeMessage = () => {
-        if (!usuario) return 'Bem-vindo(a)!';
+        if (!usuario?.nome) return 'Bem-vindo(a)!';
         const nome = usuario.nome.split(' ')[0];
-        const hora = new Date().getHours();
-        let saudacao = 'Bom dia';
-        if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
-        if (hora >= 18 || hora < 5) saudacao = 'Boa noite';
-        return `${saudacao}, ${nome}!`;
+
+        // Se não houver detalhes da cirurgia, retorna uma mensagem padrão
+        if (!usuario.detalhesCirurgia?.dataCirurgia) {
+            const hora = new Date().getHours();
+            let saudacao = 'Bom dia';
+            if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
+            if (hora >= 18 || hora < 5) saudacao = 'Boa noite';
+            return `${saudacao}, ${nome}!`;
+        }
+
+        const { fezCirurgia, dataCirurgia } = usuario.detalhesCirurgia;
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const dataCirurgiaObj = parseISO(dataCirurgia);
+
+        if (fezCirurgia === 'sim') {
+            const diasDePosOp = differenceInDays(hoje, dataCirurgiaObj);
+            if (diasDePosOp >= 0) return `Olá, ${nome}! Você está no seu ${diasDePosOp + 1}º dia de pós-operatório.`;
+        } else if (fezCirurgia === 'nao') {
+            const diasParaCirurgia = differenceInDays(dataCirurgiaObj, hoje);
+            if (diasParaCirurgia > 1) return `Olá, ${nome}! Faltam ${diasParaCirurgia} dias para a sua cirurgia.`;
+            if (diasParaCirurgia === 1) return `Olá, ${nome}! Falta 1 dia para a sua cirurgia.`;
+            if (diasParaCirurgia === 0) return `Olá, ${nome}! A sua cirurgia é hoje! Boa sorte!`;
+        }
+        
+        return `Bem-vindo(a) de volta, ${nome}!`;
     };
 
-    if (loading) {
-        return <LoadingSpinner />;
-    }
-
-    if (!usuario) {
-        return <div className="loading-container">Não foi possível carregar os dados. Por favor, <a href="/login">faça o login</a> novamente.</div>;
-    }
-
+    if (loading) return <LoadingSpinner />;
+    if (!usuario) return <div className="loading-container">Não foi possível carregar. <a href="/login">Tente novamente</a>.</div>;
+    
     const proximasTarefas = ((usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || []).filter(t => !t.concluido).slice(0, 3);
     const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
     const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && !usuario.detalhesCirurgia.dataCirurgia;
@@ -154,7 +167,7 @@ const DashboardPage = () => {
                     <div className="dashboard-card special-action-card">
                         <h3>Jornada a Começar!</h3>
                         <p>Já tem a data da sua cirurgia? Registre-a para começar a contagem regressiva!</p>
-                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>Adicionar Data da Cirurgia</button>
+                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>Adicionar Data</button>
                     </div>
                 )}
                 <div className="dashboard-card-wrapper">
