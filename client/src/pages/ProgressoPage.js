@@ -12,6 +12,8 @@ import {
 } from 'chart.js';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Modal from '../components/Modal';
 import api from '../services/api';
 import './ProgressoPage.css';
