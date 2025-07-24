@@ -99,11 +99,10 @@ const UserSchema = new mongoose.Schema({
         weighInReminders: { type: Boolean, default: true }
     },
     isEmailVerified: { type: Boolean, default: false },
-    isEmailVerified: { type: Boolean, default: false },
-    verificationCode: String, // Para o código de 6 dígitos
-    verificationExpires: Number, // Agora é um timestamp
-    resetPasswordCode: String,
-    resetPasswordExpires: Number,
+    emailVerificationToken: String,
+    emailVerificationExpires: Date,
+    resetPasswordToken: String,
+    resetPasswordExpires: Date,
     mercadoPagoUserId: String
 }, { timestamps: true });
 
@@ -315,10 +314,13 @@ app.post('/api/reset-password/:token', async (req, res) => {
         const { password } = req.body;
 
         const usuario = await User.findOne({
-            resetPasswordToken: String,
-            resetPasswordExpires: Date
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() }
         });
-        if (!usuario) return res.status(400).json({ message: "Token inválido ou expirado." });
+        
+        if (!usuario) {
+            return res.status(400).json({ message: "Token inválido ou expirado." });
+        }
 
         const hashedPassword = await bcrypt.hash(password, 10);
         usuario.password = hashedPassword;
@@ -327,7 +329,10 @@ app.post('/api/reset-password/:token', async (req, res) => {
         await usuario.save();
 
         res.json({ message: "Senha redefinida com sucesso!" });
-    } catch (error) { console.error('Erro ao redefinir senha:', error); res.status(500).json({ message: "Erro ao redefinir senha." }); }
+    } catch (error) {
+        console.error('Erro ao redefinir senha:', error);
+        res.status(500).json({ message: "Erro ao redefinir senha." });
+    }
 });
 
 
