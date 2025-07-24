@@ -1,29 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { onMessage } from "firebase/messaging";
 import { messaging } from './firebase';
-import EmailVerificationHandler from './pages/EmailVerificationHandler';
 
-// Componentes
-import Layout from './components/Layout';
-import LoadingSpinner from './components/LoadingSpinner';
-
-// Páginas Públicas e Intermediárias
+// Importação de todas as páginas
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import VerifyEmailPage from './pages/VerifyEmailPage';
 import PricingPage from './pages/PricingPage';
-import OnboardingPage from './pages/OnboardingPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
-import PaymentStatusPage from './pages/PaymentStatusPage';
-
-// Páginas Protegidas (do App Principal)
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import OnboardingPage from './pages/OnboardingPage';
+import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
 import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
@@ -34,27 +27,34 @@ import ProfilePage from './pages/ProfilePage';
 import FoodDiaryPage from './pages/FoodDiaryPage';
 import GastosPage from './pages/GastosPage';
 
+// Componente auxiliar para capturar o código de referência do URL
+function HandleReferral() {
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      localStorage.setItem('bariplus_referral_code', refCode);
+    }
+  }, [searchParams]);
+  return null;
+}
 
-// Componente "Porteiro" que protege as rotas privadas
-const PrivateRoutes = ({ usuario }) => {
-  if (!usuario) {
-    return <Navigate to="/login" replace />;
-  }
-  if (!usuario.isEmailVerified) {
-    return <Navigate to="/verify-email" state={{ email: usuario.email }} replace />;
-  }
-  if (!usuario.pagamentoEfetuado) {
-    return <Navigate to="/planos" replace />;
-  }
-  if (!usuario.onboardingCompleto) {
-    return <Navigate to="/bem-vindo" replace />;
-  }
-  
-  // Se passou por todas as verificações, renderiza o Layout, 
-  // que por sua vez renderiza a página filha através do <Outlet />
+// Componente auxiliar para as rotas protegidas
+const AppRoutes = ({ usuario }) => {
   return (
     <Layout usuario={usuario}>
-      <Outlet /> 
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/progresso" element={<ProgressoPage />} />
+        <Route path="/checklist" element={<ChecklistPage />} />
+        <Route path="/consultas" element={<ConsultasPage />} />
+        <Route path="/medicacao" element={<MedicationPage />} />
+        <Route path="/perfil" element={<ProfilePage />} />
+        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
+        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+        <Route path="/gastos" element={<GastosPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
     </Layout>
   );
 };
@@ -71,21 +71,23 @@ function App() {
         .then(res => {
           if (!res.ok) {
             localStorage.removeItem('bariplus_token');
-            return null;
+            throw new Error('Sessão inválida');
           }
           return res.json();
         })
         .then(dadosCompletos => setUsuario(dadosCompletos))
-        .catch(() => setUsuario(null))
+        .catch(error => {
+          console.error(error);
+          setUsuario(null);
+        })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
     }
   }, []);
 
-  // useEffect para notificações com o app aberto
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && messaging) {
       onMessage(messaging, (payload) => {
         toast.info(<div><strong>{payload.notification.title}</strong><br/>{payload.notification.body}</div>);
       });
@@ -93,44 +95,37 @@ function App() {
   }, []);
 
   if (loading) {
-    return <LoadingSpinner />;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
   }
 
   return (
     <>
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
+        <HandleReferral />
         <Routes>
-          {/* --- ROTAS PÚBLICAS E INTERMEDIÁRIAS (acessíveis dependendo do estado de login) --- */}
+          {/* --- ROTAS PÚBLICAS (Acessíveis por qualquer pessoa, a qualquer momento) --- */}
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/login" element={!usuario ? <LoginPage /> : <Navigate to="/" />} />
+          <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/reset-password/:userId/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
+          <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
+          
+          {/* --- ROTAS INTERMEDIÁRIAS (precisam de usuário logado) --- */}
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
           <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
-          <Route path="/pagamento-sucesso" element={usuario ? <PaymentSuccessPage /> : <Navigate to="/login" />} />
-          <Route path="/pagamento-cancelado" element={usuario ? <PaymentCancelPage /> : <Navigate to="/login" />} />
-          <Route path="/pagamento-status" element={<PaymentStatusPage />} />
-          <Route path="/verify-email/:token" element={<EmailVerificationHandler />} />
-          <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> 
-
-          {/* --- ÁREA PRIVADA (o "Porteiro" decide se pode entrar) --- */}
-          <Route element={<PrivateRoutes usuario={usuario} />}>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/progresso" element={<ProgressoPage />} />
-            <Route path="/checklist" element={<ChecklistPage />} />
-            <Route path="/consultas" element={<ConsultasPage />} />
-            <Route path="/medicacao" element={<MedicationPage />} />
-            <Route path="/perfil" element={<ProfilePage />} />
-            <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
-            <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-            <Route path="/gastos" element={<GastosPage />} />
-          </Route>
           
-          {/* Rota final para qualquer endereço não encontrado */}
-          <Route path="*" element={<Navigate to={usuario ? "/" : "/landing"} />} />
+          {/* --- ROTA CORINGA (Catch-all) QUE GERE O ACESSO AO APP --- */}
+          <Route path="/*" element={
+            !usuario ? <Navigate to="/landing" /> :
+            !usuario.isEmailVerified ? <Navigate to="/verify-email" state={{ email: usuario.email }} /> :
+            !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
+            !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
+            <AppRoutes usuario={usuario} />
+          }/>
         </Routes>
       </Router>
     </>
