@@ -99,9 +99,10 @@ const UserSchema = new mongoose.Schema({
         weighInReminders: { type: Boolean, default: true }
     },
     isEmailVerified: { type: Boolean, default: false },
-    emailVerificationToken: String,
-    emailVerificationExpires: Number, 
-    resetPasswordToken: String,
+    isEmailVerified: { type: Boolean, default: false },
+    verificationCode: String, // Para o código de 6 dígitos
+    verificationExpires: Number, // Agora é um timestamp
+    resetPasswordCode: String,
     resetPasswordExpires: Number,
     mercadoPagoUserId: String
 }, { timestamps: true });
@@ -202,13 +203,13 @@ app.post('/api/register', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, 10);
         
         // 3. Gera o código de verificação
-        const verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = Date.now() + 3600000; // 1 hora a partir de AGORA
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // Código de 6 dígitos
+        const verificationExpires = Date.now() + 900000; // 15 minutos
 
         const novoUsuario = new User({ 
             nome, sobrenome, username, email, password: hashedPassword,
-            emailVerificationToken: verificationToken,
-            emailVerificationExpires: verificationExpires
+            verificationCode: verificationCode,
+            verificationExpires: verificationExpires,
             
         });
         await novoUsuario.save();
@@ -217,8 +218,8 @@ app.post('/api/register', async (req, res) => {
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: novoUsuario.email,
-            subject: "Ative a sua Conta no BariPlus",
-            html: `<h1>Bem-vindo(a)!</h1><p>Clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a>`,
+            subject: "Seu Código de Verificação BariPlus",
+            html: `<h1>Bem-vindo(a)!</h1><p>Seu código para ativar a conta é: <strong>${verificationCode}</strong></p>`,
         });
 
         // 4. Cria todos os documentos associados para o novo usuário
@@ -257,13 +258,14 @@ app.post('/api/login', async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Erro no servidor.' }); }
 });
 
-app.get('/api/verify-email/:token', async (req, res) => {
+app.get('/api/verify-email/', async (req, res) => {
     try {
         const { token } = req.params;
         // ✅ CORREÇÃO: Compara o timestamp de expiração com o timestamp de agora
         const usuario = await User.findOne({
-            emailVerificationToken: token,
-            emailVerificationExpires: { $gt: Date.now() }
+            email: email,
+            verificationCode: code,
+            verificationExpires: { $gt: Date.now() }
         });
         if (!usuario) return res.status(400).send("Link de verificação inválido ou expirado.");
         
@@ -1628,26 +1630,26 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
     }
 });
 
-app.get('/api/verify-payment/:paymentId', autenticar, async (req, res) => {
+app.post('/api/verify-payment-session', async (req, res) => {
     try {
-        const { paymentId } = req.params;
-        const payment = await new Payment(client).get({ id: paymentId });
+        const { sessionId } = req.body;
+        if (!sessionId) return res.status(400).json({ message: "ID da sessão não fornecido." });
 
-        if (payment && payment.status === 'approved') {
-            // Se o pagamento foi aprovado, atualizamos o nosso banco de dados
-            const userId = payment.external_reference;
-            await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
-            
-            console.log(`Pagamento Mercado Pago verificado e confirmado para o usuário: ${userId}`);
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+        if (session.payment_status === 'paid' && session.customer) {
+            const stripeCustomerId = session.customer;
+            await User.findOneAndUpdate({ stripeCustomerId }, { pagamentoEfetuado: true });
             return res.json({ paymentVerified: true });
         }
-
+        
         return res.json({ paymentVerified: false });
     } catch (error) {
-        console.error("Erro ao verificar pagamento no Mercado Pago:", error);
+        console.error("Erro ao verificar sessão:", error);
         res.status(500).json({ message: "Erro ao verificar pagamento." });
     }
 });
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);

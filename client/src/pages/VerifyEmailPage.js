@@ -1,56 +1,54 @@
-import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+// client/src/pages/VerifyEmailPage.js
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import './LoginPage.css'; // Reutilizando os estilos da página de login
+import './LoginPage.css'; // Reutilizando estilos
 
 const VerifyEmailPage = () => {
+    const [code, setCode] = useState('');
     const location = useLocation();
-    const email = location.state?.email; // Pega o email que passamos da página de cadastro
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const navigate = useNavigate();
+    const email = location.state?.email;
 
-    const handleResendEmail = async () => {
-        if (!email) {
-            toast.error("Nenhum e-mail encontrado para reenviar o código.");
-            return;
-        }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        const apiUrl = process.env.REACT_APP_API_URL;
         try {
-            const response = await fetch(`${apiUrl}/api/resend-verification-email`, {
+            const response = await fetch(`${apiUrl}/api/verify-email`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({ email, code }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
-            toast.info(data.message);
+            toast.success(data.message);
+            navigate('/login');
         } catch (error) {
             toast.error(error.message || "Ocorreu um erro.");
         }
     };
 
     if (!email) {
-        return (
-            <div className="login-page-container">
-                <div className="login-form-wrapper">
-                    <h2>Algo deu errado</h2>
-                    <p>Não conseguimos identificar o seu e-mail. Por favor, <Link to="/login">volte</Link> e tente se cadastrar novamente.</p>
-                </div>
-            </div>
-        );
+        return <div className="login-page-container">Página inválida. Por favor, <a href="/login">cadastre-se</a> novamente.</div>;
     }
 
     return (
         <div className="login-page-container">
-            <div className="login-form-wrapper" style={{ textAlign: 'center' }}>
-                <h2>Quase lá! Verifique seu E-mail</h2>
-                <p>Enviamos um link de ativação para o e-mail:</p>
-                <p><strong>{email}</strong></p>
-                <p>Por favor, clique no link para ativar a sua conta. Não se esqueça de verificar a sua pasta de spam.</p>
-                <button type="button" className="link-button" onClick={handleResendEmail}>
-                    Não recebeu o e-mail? Reenviar link.
-                </button>
-            </div>
+            <form className="login-form" onSubmit={handleSubmit}>
+                <h2>Verifique seu E-mail</h2>
+                <p>Enviamos um código de 6 dígitos para <strong>{email}</strong>. Por favor, insira-o abaixo.</p>
+                <input
+                    type="text"
+                    maxLength="6"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="_ _ _ _ _ _"
+                    required
+                    className="verification-code-input"
+                />
+                <button type="submit" className="submit-button">Verificar</button>
+            </form>
         </div>
     );
 };
-
 export default VerifyEmailPage;
