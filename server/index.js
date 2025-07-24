@@ -182,7 +182,11 @@ const isAffiliate = async (req, res, next) => {
 const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
 
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`, {
+        body: req.body,
+        params: req.params,
+        query: req.query
+    });
     next();
 });
 
@@ -310,10 +314,10 @@ app.post('/api/forgot-password', async (req, res) => {
         usuario.resetPasswordToken = resetToken;
         usuario.resetPasswordExpires = expirationDate;
         await usuario.save();
-        
-        const resetLink = `${process.env.CLIENT_URL}/reset-password/${encodeURIComponent(resetToken)}`;
+
+        const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${encodeURIComponent(resetToken)}`;
         console.log(`[FORGOT-PASSWORD] Link gerado: ${resetLink}`); // LOG
-        
+
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
@@ -382,6 +386,34 @@ app.post('/api/reset-password/:token', async (req, res) => {
     }
 });
 
+app.get('/api/validate-reset-token/:token', async (req, res) => {
+    try {
+        const token = decodeURIComponent(req.params.token);
+        console.log(`[VALIDATE-TOKEN] Token recebido: ${token}`);
+        console.log(`[VALIDATE-TOKEN] Hora atual: ${new Date()}`);
+
+        const usuario = await User.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: new Date() }
+        });
+
+        if (!usuario) {
+            const expiredUser = await User.findOne({ resetPasswordToken: token });
+            if (expiredUser) {
+                console.log(`[VALIDATE-TOKEN] Token expirado. Data: ${expiredUser.resetPasswordExpires}`);
+                return res.status(400).json({ valid: false, message: "Link expirado" });
+            }
+            console.log('[VALIDATE-TOKEN] Token não encontrado');
+            return res.status(400).json({ valid: false, message: "Link inválido" });
+        }
+
+        console.log(`[VALIDATE-TOKEN] Token válido para: ${usuario.email}`);
+        res.json({ valid: true, email: usuario.email });
+    } catch (error) {
+        console.error('[VALIDATE-TOKEN] Erro:', error);
+        res.status(500).json({ valid: false, message: "Erro na validação" });
+    }
+});
 
 // Rota de Perfil do Usuário
 app.get('/api/me', autenticar, async (req, res) => {

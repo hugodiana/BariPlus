@@ -112,7 +112,7 @@ function App() {
           <Route path="/privacidade" element={<PrivacyPage />} />
           
           {/* ✅ ROTAS DE E-MAIL CORRIGIDAS */}
-          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/verify-email/:token" element={<VerifyPage />} />
 
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
