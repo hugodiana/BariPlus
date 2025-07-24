@@ -301,7 +301,7 @@ app.post('/api/forgot-password', async (req, res) => {
 });
 
 // Rota de Redefinição de Senha
-aapp.post('/api/reset-password/:token', async (req, res) => {
+app.post('/api/reset-password/:token', async (req, res) => {
     try {
         const { token } = req.params;
         const { password } = req.body;
