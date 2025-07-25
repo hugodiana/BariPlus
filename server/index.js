@@ -1828,6 +1828,28 @@ app.post('/api/mercadopago-webhook', async (req, res) => {
     res.sendStatus(200);
 });
 
+app.get('/api/verify-payment/:paymentId', autenticar, async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        
+        // Usa a forma moderna de buscar o pagamento
+        const payment = await new Payment(client).get({ id: paymentId });
+
+        if (payment && payment.status === 'approved') {
+            const userId = payment.external_reference;
+            await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true, statusAssinatura: 'ativa' });
+            
+            console.log(`Pagamento Mercado Pago verificado e confirmado para o usuário: ${userId}`);
+            return res.json({ paymentVerified: true });
+        }
+
+        return res.json({ paymentVerified: false });
+    } catch (error) {
+        console.error("Erro ao verificar pagamento no Mercado Pago:", error);
+        res.status(500).json({ message: "Erro ao verificar pagamento." });
+    }
+});
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Erro interno no servidor' });
