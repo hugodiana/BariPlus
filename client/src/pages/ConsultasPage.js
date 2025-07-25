@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import './ConsultasPage.css';
 import Modal from '../components/Modal';
+import Card from '../components/ui/Card'; // ✅ Importa o nosso novo componente
+import { toast } from 'react-toastify';
 
 const ConsultasPage = () => {
     const [consultas, setConsultas] = useState([]);
@@ -120,7 +122,7 @@ const ConsultasPage = () => {
             </div>
             
             <div className="consultas-layout">
-                <div className="calendario-card">
+                <Card className="calendario-card">
                     <DayPicker
                         mode="single"
                         modifiers={{ comConsulta: diasComConsulta }}
@@ -128,15 +130,15 @@ const ConsultasPage = () => {
                         locale={ptBR}
                         showOutsideDays
                     />
-                </div>
-                <div className="lista-consultas-card">
+                </Card>
+                <Card className="lista-consultas-card">
                     <div className="lista-header">
                         <h3>Próximas Consultas</h3>
                         <button className="add-btn" onClick={handleOpenModalParaAdicionar}>+ Agendar</button>
                     </div>
-                    {consultas.filter(c => new Date(c.data) >= new Date()).length > 0 ? (
+                    {proximasConsultas.length > 0 ? (
                         <ul>
-                            {consultas.filter(c => new Date(c.data) >= new Date()).map(consulta => (
+                            {proximasConsultas.map(consulta => (
                                 <li key={consulta._id}>
                                     <div className="consulta-data">
                                         <span>{format(new Date(consulta.data), 'dd')}</span>
@@ -157,7 +159,7 @@ const ConsultasPage = () => {
                     ) : (
                         <p className="empty-list-message">Nenhuma consulta futura agendada.</p>
                     )}
-                </div>
+                </Card>
             </div>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
