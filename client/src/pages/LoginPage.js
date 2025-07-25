@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './LoginPage.css';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'; // Importa o novo componente
-import { Link, useNavigate } from 'react-router-dom';
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const LoginPage = () => {
-    const navigate = useNavigate();
+    const navigate = useNavigate(); // Hook para navegação
     const [isRegistering, setIsRegistering] = useState(false);
     const [identifier, setIdentifier] = useState('');
     const [nome, setNome] = useState('');
@@ -50,7 +50,7 @@ const LoginPage = () => {
         if (isRegistering) {
             if (email.toLowerCase() !== confirmEmail.toLowerCase()) return toast.error("Os e-mails não coincidem.");
             if (password !== confirmPassword) return toast.error("As senhas não coincidem.");
-            if (!validatePassword(password)) return toast.error("A sua senha não cumpre todos os requisitos.");
+            if (!validatePassword(password)) return toast.error("A sua senha não cumpre todos os requisitos de segurança.");
             if (!acceptedTerms) return toast.error("Você precisa de aceitar os Termos de Serviço.");
         }
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
@@ -63,17 +63,20 @@ const LoginPage = () => {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
+            
             if (isRegistering) {
+                // ✅ CORREÇÃO: Mostra a notificação e redireciona para a página de verificação
+                toast.success('Cadastro quase concluído!');
                 navigate('/verify-email', { state: { email: email } });
             } else {
                 localStorage.setItem('bariplus_token', data.token);
                 window.location.href = '/'; 
             }
-            } catch (error) {
+        } catch (error) {
             toast.error(error.message);
         }
     };
-  
+ 
     const handleForgotPassword = async (e) => {
         e.preventDefault();
         try {

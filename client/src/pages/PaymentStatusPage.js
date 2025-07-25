@@ -1,7 +1,7 @@
-// client/src/pages/PaymentStatusPage.js
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import './PricingPage.css';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const PaymentStatusPage = () => {
     const [searchParams] = useSearchParams();
@@ -9,23 +9,26 @@ const PaymentStatusPage = () => {
     const [isSuccess, setIsSuccess] = useState(false);
 
     useEffect(() => {
-        const sessionId = searchParams.get('session_id');
+        const paymentId = searchParams.get('payment_id');
+        const status = searchParams.get('status');
         const token = localStorage.getItem('bariplus_token');
         const apiUrl = process.env.REACT_APP_API_URL;
 
-        if (sessionId && token) {
+        if (status === 'approved' && paymentId) {
             const verifyOnServer = async () => {
                 try {
-                    const response = await fetch(`${apiUrl}/api/verify-payment-session`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                        body: JSON.stringify({ sessionId })
+                    const response = await fetch(`${apiUrl}/api/verify-payment/${paymentId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
                     });
                     const data = await response.json();
+                    
                     if (data.paymentVerified) {
-                        setStatusMessage('Pagamento Aprovado! Seja bem-vindo(a)!');
+                        setStatusMessage('Pagamento Aprovado! Seja bem-vindo(a) ao BariPlus.');
                         setIsSuccess(true);
-                        setTimeout(() => window.location.href = '/bem-vindo', 3000);
+                        setTimeout(() => {
+                            // ✅ CORREÇÃO: Força o recarregamento para o App.js buscar o novo status
+                            window.location.href = '/bem-vindo';
+                        }, 3000);
                     } else {
                         throw new Error('Verificação falhou.');
                     }
@@ -35,8 +38,11 @@ const PaymentStatusPage = () => {
                 }
             };
             verifyOnServer();
+        } else if (status === 'pending') {
+            setStatusMessage('O seu pagamento está pendente. Avisaremos quando for aprovado.');
+            setIsSuccess(false);
         } else {
-            setStatusMessage('Informações de pagamento não encontradas. Por favor, tente novamente.');
+            setStatusMessage('O pagamento falhou ou foi cancelado. Por favor, tente novamente.');
             setIsSuccess(false);
         }
     }, [searchParams]);
@@ -46,8 +52,10 @@ const PaymentStatusPage = () => {
             <div className="feedback-card">
                 <h2>{isSuccess ? 'Sucesso!' : 'Processando...'}</h2>
                 <p>{statusMessage}</p>
+                {isSuccess && <LoadingSpinner />}
             </div>
         </div>
     );
 };
+
 export default PaymentStatusPage;
