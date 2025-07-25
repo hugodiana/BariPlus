@@ -90,7 +90,7 @@ function App() {
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
           <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-          <Route path="/afiliados" element={<AffiliateProgramPage />} />
+          
           <Route path="/gastos" element={<GastosPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
@@ -110,6 +110,7 @@ function App() {
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
+          <Route path="/afiliados" element={<AffiliateProgramPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email/:token" element={<VerifyPage />} />
