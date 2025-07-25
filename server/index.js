@@ -50,6 +50,7 @@ app.use(express.json());
 
 // --- CONFIGURAÇÃO DO MERCADO PAGO ---
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+const preference = new Preference(client);
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
@@ -90,6 +91,9 @@ const UserSchema = new mongoose.Schema({
         pesoAtual: Number
     },
     pagamentoEfetuado: { type: Boolean, default: false },
+    plano: { type: String, enum: ['mensal', 'anual', null], default: null },
+    statusAssinatura: { type: String, enum: ['ativa', 'cancelada', 'pendente'], default: 'pendente' },
+    mercadoPagoSubscriptionId: String, // ID da assinatura do cliente
     role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
     affiliateCouponCode: String,
     fcmToken: String,
@@ -1739,6 +1743,79 @@ app.post('/api/verify-payment-session', async (req, res) => {
     }
 });
 
+// ✅ ROTA DE PAGAMENTO ATUALIZADA PARA CRIAR ASSINATURAS
+app.post('/api/create-subscription-preference', autenticar, async (req, res) => {
+    try {
+        const { planType } = req.body; // 'mensal' ou 'anual'
+        const usuario = await User.findById(req.userId);
+
+        let planId;
+        if (planType === 'mensal') {
+            planId = process.env.MERCADOPAGO_PLAN_ID_MENSAL;
+        } else if (planType === 'anual') {
+            planId = process.env.MERCADOPAGO_PLAN_ID_ANUAL;
+        } else {
+            return res.status(400).json({ message: "Tipo de plano inválido." });
+        }
+
+        const preferenceBody = {
+            preapproval_plan_id: planId,
+            payer: {
+                name: usuario.nome,
+                surname: usuario.sobrenome,
+                email: usuario.email,
+            },
+            back_urls: {
+                success: `${process.env.CLIENT_URL}/pagamento-status`,
+                failure: `${process.env.CLIENT_URL}/pagamento-status`,
+                pending: `${process.env.CLIENT_URL}/pagamento-status`,
+            },
+            auto_return: 'approved',
+            external_reference: req.userId,
+        };
+
+        const response = await preference.create({ body: preferenceBody });
+        res.json({ preferenceId: response.id });
+
+    } catch (error) {
+        console.error("Erro ao criar preferência de assinatura:", error);
+        res.status(500).json({ message: "Erro ao criar assinatura." });
+    }
+});
+
+// ✅ WEBHOOK ATUALIZADO PARA LIDAR COM ASSINATURAS
+app.post('/api/mercadopago-webhook', async (req, res) => {
+    const { type, data } = req.body;
+    
+    // O Mercado Pago envia notificações sobre o pré-pagamento (assinatura)
+    if (type === 'preapproval') {
+        try {
+            const subscription = await mercadopago.preapproval.findById(data.id);
+            const userId = subscription.body.external_reference;
+            const status = subscription.body.status; // ex: 'authorized', 'cancelled'
+            
+            let novoStatus = 'pendente';
+            if (status === 'authorized') {
+                novoStatus = 'ativa';
+            } else if (status === 'cancelled') {
+                novoStatus = 'cancelada';
+            }
+
+            // Atualiza o usuário no nosso banco de dados
+            await User.findByIdAndUpdate(userId, {
+                statusAssinatura: novoStatus,
+                mercadoPagoSubscriptionId: data.id
+            });
+            
+            console.log(`Webhook de assinatura recebido. Usuário ${userId} atualizado para status: ${novoStatus}`);
+
+        } catch (error) {
+            console.error('Erro ao processar webhook de assinatura do Mercado Pago:', error);
+        }
+    }
+    
+    res.sendStatus(200);
+});
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
