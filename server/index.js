@@ -1895,7 +1895,7 @@ app.get('/api/verify-payment/:paymentId', autenticar, async (req, res) => {
 });
 
 // ✅ NOVIDADE: Rota pública para um usuário se candidatar a afiliado
-aapp.post('/api/affiliate/apply', autenticar, async (req, res) => {
+app.post('/api/affiliate/apply', autenticar, async (req, res) => {
     try {
         const usuario = await User.findById(req.userId);
         if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
