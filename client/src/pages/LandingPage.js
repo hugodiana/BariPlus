@@ -86,6 +86,7 @@ const LandingPage = () => {
             <footer className="landing-footer">
                 <p>&copy; {new Date().getFullYear()} BariPlus. Todos os direitos reservados.</p>
                 <div className="footer-links">
+                    <Link to="/afiliados">Programa de Afiliados</Link>
                     <Link to="/termos">Termos de Serviço</Link>
                 </div>
             </footer>

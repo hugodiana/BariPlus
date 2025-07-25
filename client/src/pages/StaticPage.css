@@ -37,3 +37,8 @@
 .back-link:hover {
     text-decoration: underline;
 }
+
+.static-page-card form { margin-top: 2rem; }
+.static-page-card label { font-weight: bold; display: block; margin-bottom: 0.5rem; }
+.static-page-card input { width: 100%; padding: 12px; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 8px; }
+.static-page-card button { width: 100%; padding: 12px; font-size: 1rem; font-weight: bold; background: #37715b; color: white; border: none; border-radius: 8px; cursor: pointer; }

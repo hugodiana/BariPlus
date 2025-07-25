@@ -107,7 +107,11 @@ const UserSchema = new mongoose.Schema({
     emailVerificationExpires: Date,
     resetPasswordToken: String,
     resetPasswordExpires: Date,
-    mercadoPagoUserId: String
+    mercadoPagoUserId: String,
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    pixKey: { type: String, required: true },
+    status: { type: String, enum: ['pendente', 'aprovado'], default: 'pendente' },
+    // Podemos adicionar mais campos no futuro, como CPF, etc.
 }, { timestamps: true });
 
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
@@ -117,6 +121,7 @@ const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Typ
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
+const Affiliate = mongoose.model('Affiliate', AffiliateSchema);
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -1274,17 +1279,28 @@ app.post('/api/admin/grant-access/:userId', autenticar, isAdmin, async (req, res
     }
 });
 
-// ROTA DE ADMIN: Promover um usuário a afiliado e criar o seu cupom no Stripe
+// ROTA DE ADMIN: Promover um usuário a afiliado e criar o seu cupom
 app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
     try {
+        // ✅ CORREÇÃO: Usamos 'userId' para corresponder à definição da rota
         const { userId } = req.params;
         const { couponCode, commissionPercent } = req.body;
+
+        if (!couponCode || !commissionPercent) {
+            return res.status(400).json({ message: "Código do cupom e percentagem são obrigatórios." });
+        }
+        
+        // Verifica se o usuário a ser promovido existe
+        const userToPromote = await User.findById(userId);
+        if (!userToPromote) {
+            return res.status(404).json({ message: "Usuário a ser promovido não encontrado." });
+        }
 
         // 1. Cria o cupom no Stripe
         const coupon = await stripe.coupons.create({
             percent_off: commissionPercent,
             duration: 'once',
-            name: `Cupom para Afiliado: ${couponCode}`,
+            name: `Cupom para Afiliado: ${userToPromote.username}`,
         });
 
         // 2. Cria o código promocional que o cliente vai usar
@@ -1294,14 +1310,14 @@ app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (
         });
 
         // 3. Atualiza o usuário no nosso banco de dados
-        const usuario = await User.findByIdAndUpdate(userId, {
+        const usuarioAtualizado = await User.findByIdAndUpdate(userId, {
             $set: {
                 role: 'affiliate',
                 affiliateCouponCode: promotionCode.code
             }
         }, { new: true }).select('-password');
         
-        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
+        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario: usuarioAtualizado });
 
     } catch (error) {
         console.error("Erro ao promover afiliado:", error);
@@ -1847,6 +1863,31 @@ app.get('/api/verify-payment/:paymentId', autenticar, async (req, res) => {
     } catch (error) {
         console.error("Erro ao verificar pagamento no Mercado Pago:", error);
         res.status(500).json({ message: "Erro ao verificar pagamento." });
+    }
+});
+
+// ✅ NOVIDADE: Rota pública para um usuário se candidatar a afiliado
+app.post('/api/affiliates/apply', autenticar, async (req, res) => {
+    try {
+        const { pixKey } = req.body;
+        const userId = req.userId;
+
+        // Verifica se o usuário já é um afiliado ou tem uma aplicação pendente
+        const existingAffiliate = await Affiliate.findOne({ userId });
+        if (existingAffiliate) {
+            return res.status(400).json({ message: "Você já tem uma candidatura a afiliado." });
+        }
+
+        const newAffiliateApplication = new Affiliate({ userId, pixKey, status: 'pendente' });
+        await newAffiliateApplication.save();
+
+        // No futuro, podemos enviar um e-mail para o admin a avisar de uma nova candidatura
+        
+        res.status(201).json({ message: "Sua candidatura foi enviada com sucesso! Aguarde a aprovação." });
+
+    } catch (error) {
+        console.error("Erro na candidatura de afiliado:", error);
+        res.status(500).json({ message: "Erro no servidor." });
     }
 });
 
