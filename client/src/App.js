@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import PricingPage from './pages/PricingPage';
+import PaymentStatusPage from './pages/PaymentStatusPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
