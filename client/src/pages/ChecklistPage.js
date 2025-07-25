@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './ChecklistPage.css';
 import Modal from '../components/Modal'; // Precisamos do nosso Modal
+import Card from '../components/ui/Card'; // ✅ Importa o nosso novo componente
+import { toast } from 'react-toastify';
 
 const ChecklistPage = () => {
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
@@ -101,6 +103,7 @@ const ChecklistPage = () => {
     };
 
     if (loading) return <div>A carregar checklist...</div>;
+
     const itensDaAbaAtiva = checklist[activeTab] || [];
 
     return (
@@ -109,7 +112,9 @@ const ChecklistPage = () => {
                 <h1>O Meu Checklist</h1>
                 <p>Acompanhe aqui todas as suas tarefas importantes.</p>
             </div>
-            <div className="checklist-content">
+            
+            {/* ✅ SUBSTITUIÇÃO: O conteúdo principal agora está dentro de um Card */}
+            <Card>
                 <div className="tab-buttons">
                     <button className={`tab-btn ${activeTab === 'preOp' ? 'active' : ''}`} onClick={() => setActiveTab('preOp')}>
                         Pré-Operatório
@@ -118,26 +123,35 @@ const ChecklistPage = () => {
                         Pós-Operatório
                     </button>
                 </div>
+
                 <div className="tab-content">
                     <div className="add-task-container">
                         <button className="add-btn" onClick={handleOpenModalParaAdicionar}>+ Adicionar Nova Tarefa</button>
                     </div>
-                    <ul>
-                        {itensDaAbaAtiva.map(item => (
-                            <li key={item._id} className={item.concluido ? 'concluido' : ''}>
-                                <div className="checkbox-container" onClick={() => handleToggleConcluido(item)}>
-                                    <span className="checkmark">✓</span>
-                                </div>
-                                <span className="item-text">{item.descricao}</span>
-                                <div className="item-actions">
-                                    <button onClick={() => handleOpenModalParaEditar(item)} className="action-btn edit-btn">✎</button>
-                                    <button onClick={() => handleApagarItem(item._id)} className="action-btn delete-btn">×</button>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
+                    
+                    {itensDaAbaAtiva.length > 0 ? (
+                        <ul className="checklist-ul">
+                            {itensDaAbaAtiva.map(item => (
+                                <li key={item._id} className={item.concluido ? 'concluido' : ''}>
+                                    <div className="checkbox-container" onClick={() => handleToggleConcluido(item)}>
+                                        <span className="checkmark">✓</span>
+                                    </div>
+                                    <span className="item-text">{item.descricao}</span>
+                                    <div className="item-actions">
+                                        <button onClick={() => handleOpenModalParaEditar(item)} className="action-btn edit-btn">✎</button>
+                                        <button onClick={() => handleApagarItem(item._id)} className="action-btn delete-btn">×</button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <div className="empty-state-container">
+                            <h3>Lista Vazia</h3>
+                            <p>Ainda não há tarefas nesta lista. Comece por adicionar a sua primeira tarefa!</p>
+                        </div>
+                    )}
                 </div>
-            </div>
+            </Card>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>{tarefaEmEdicao ? 'Editar Tarefa' : 'Adicionar Nova Tarefa'}</h2>
@@ -149,7 +163,7 @@ const ChecklistPage = () => {
                         placeholder="Descrição da tarefa..."
                         required
                     />
-                    <button type="submit">{tarefaEmEdicao ? 'Guardar Alterações' : 'Adicionar Tarefa'}</button>
+                    <button type="submit">{tarefaEmEdicao ? 'Salvar Alterações' : 'Adicionar Tarefa'}</button>
                 </form>
             </Modal>
         </div>
