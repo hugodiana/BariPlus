@@ -212,3 +212,40 @@ td button:disabled {
     color: white;
     border: none;
 }
+/* Adicione no final de admin-client/src/App.css */
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+.view-filters button {
+    background: #e0e0e0;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-left: 10px;
+    cursor: pointer;
+    font-weight: 500;
+}
+.view-filters button.active {
+    background: var(--primary-green);
+    color: white;
+}
+.status-affiliate_pending {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+.approve-btn {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+}
+.modal-info {
+    font-size: 0.8rem;
+    color: #666;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
