@@ -1,86 +1,67 @@
+/* Importa a fonte do Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
+/* :root é onde definimos as nossas variáveis de design globais */
 :root {
-  /* Cores primárias */
+  /* Paleta de Cores */
   --primary-green: #37715b;
+  --primary-green-dark: #2a5a48;
   --primary-light: #e9f5f2;
-  
-  /* Cores de ação */
   --action-blue: #007aff;
   --danger-red: #c0392b;
   --error-light: #fceeee;
   
-  /* Cores de fundo */
+  /* Cores Neutras */
   --background-light: #f4f7f6;
   --background-white: #ffffff;
-  
-  /* Cores de texto */
   --text-dark: #2c3e50;
-  --text-medium: #555555;
+  --text-medium: #555;
   --text-light: #7f8c8d;
-  
-  /* Bordas e sombras */
   --border-color: #e0e0e0;
-  --shadow-color: rgba(0, 0, 0, 0.08);
+
+  /* Sombra Padrão */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+  /* Espaçamentos */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Bordas */
+  --border-radius: 8px;
 }
 
-/* Reset e estilos base */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* Estilos Globais */
 body {
+  margin: 0;
   font-family: 'Inter', sans-serif;
   background-color: var(--background-light);
   color: var(--text-dark);
-  line-height: 1.6;
 }
 
-/* Componentes reutilizáveis */
-.loading-screen {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 1.2rem;
-  color: var(--text-medium);
-}
+* { box-sizing: border-box; }
 
+/* Classes de Container Padrão */
 .page-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: var(--space-xl);
 }
 
 .page-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-xl);
 }
 
 .page-header h1 {
   font-size: 2rem;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+  margin: 0 0 5px 0;
 }
 
 .page-header p {
   font-size: 1.1rem;
   color: var(--text-light);
-  margin: 0;
-}
-
-/* Media queries para responsividade */
-@media (max-width: 768px) {
-  .page-container {
-    padding: 1rem;
-  }
-  
-  .page-header h1 {
-    font-size: 1.5rem;
-  }
-  
-  .page-header p {
-    font-size: 1rem;
-  }
+  margin-top: 0;
 }

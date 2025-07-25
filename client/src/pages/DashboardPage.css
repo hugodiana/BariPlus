@@ -10,7 +10,15 @@
 .dashboard-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
+    gap: var(--space-lg);
+}
+
+/* O estilo do card em si foi para o Card.css, aqui ficam só as customizações */
+.special-action-card {
+    background-color: var(--primary-light);
+    border: 1px solid var(--border-color);
+    grid-column: 1 / -1;
+    align-items: center;
 }
 
 .dashboard-card-wrapper {

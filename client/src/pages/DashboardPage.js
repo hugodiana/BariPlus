@@ -9,6 +9,7 @@ import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './DashboardPage.css';
+import Card from '../components/ui/Card';
 
 const DashboardPage = () => {
     const [usuario, setUsuario] = useState(null);
@@ -164,11 +165,11 @@ const DashboardPage = () => {
             <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
             <div className="dashboard-grid">
                 {mostrarCardAdicionarData && (
-                    <div className="dashboard-card special-action-card">
+                    <Card className="dashboard-card special-action-card">
                         <h3>Jornada a Começar!</h3>
                         <p>Já tem a data da sua cirurgia? Registre-a para começar a contagem regressiva!</p>
                         <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>Adicionar Data</button>
-                    </div>
+                    </Card>
                 )}
                 <div className="dashboard-card-wrapper">
                     <WeightProgressCard pesoInicial={usuario.detalhesCirurgia.pesoInicial} pesoAtual={usuario.detalhesCirurgia.pesoAtual} historico={pesos} />
@@ -182,32 +183,32 @@ const DashboardPage = () => {
                     )}
                 </div>
                 <div className="dashboard-card-wrapper">
-                    <div className="dashboard-card quick-actions-card">
+                    <Card className="dashboard-card quick-actions-card">
                         <h3>Ações Rápidas</h3>
                         <Link to="/progresso" className="quick-action-btn">Ver Progresso Completo</Link>
                         <Link to="/consultas" className="quick-action-btn">Agendar Consulta</Link>
                         <Link to="/checklist" className="quick-action-btn">Ver Checklist Completo</Link>
-                    </div>
+                    </Card>
                 </div>
                 <div className="dashboard-card-wrapper">
-                    <div className="dashboard-card summary-card">
+                    <Card className="dashboard-card summary-card">
                         <h3>Próximas Tarefas</h3>
                         {proximasTarefas.length > 0 ? (
                             <ul className="summary-list">{proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}</ul>
                         ) : (
                             <div className="summary-empty"><p>Nenhuma tarefa pendente! ✨</p><Link to="/checklist" className="summary-action-btn">Adicionar Tarefa</Link></div>
                         )}
-                    </div>
+                    </Card>
                 </div>
                 <div className="dashboard-card-wrapper">
-                    <div className="dashboard-card summary-card">
+                    <Card className="dashboard-card summary-card">
                         <h3>Próximas Consultas</h3>
                         {proximasConsultas.length > 0 ? (
                             <ul className="summary-list">{proximasConsultas.map(consulta => (<li key={consulta._id}><strong>{consulta.especialidade}</strong> - {format(new Date(consulta.data), "dd/MM/yyyy 'às' p", { locale: ptBR })}</li>))}</ul>
                         ) : (
                             <div className="summary-empty"><p>Nenhuma consulta agendada.</p><Link to="/consultas" className="summary-action-btn">Agendar Consulta</Link></div>
                         )}
-                    </div>
+                    </Card>
                 </div>
             </div>
             <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
