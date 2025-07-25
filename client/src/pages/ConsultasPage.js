@@ -1,182 +1,231 @@
-import React, { useState, useEffect } from 'react';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/dist/style.css';
-import { format } from 'date-fns';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
+import { format, differenceInDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import './ConsultasPage.css';
-import Modal from '../components/Modal';
-import Card from '../components/ui/Card';
 import { toast } from 'react-toastify';
 
-const ConsultasPage = () => {
+import WeightProgressCard from '../components/dashboard/WeightProgressCard';
+import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
+import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
+import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
+import Card from '../components/ui/Card';
+import './DashboardPage.css';
+
+const DashboardPage = () => {
+    const [usuario, setUsuario] = useState(null);
+    const [pesos, setPesos] = useState([]);
+    const [dailyLog, setDailyLog] = useState(null);
+    const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
+    const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [consultaEmEdicao, setConsultaEmEdicao] = useState(null);
-    const [especialidade, setEspecialidade] = useState('');
-    const [data, setData] = useState('');
-    const [local, setLocal] = useState('');
-    const [notas, setNotas] = useState('');
+    const [isDateModalOpen, setIsDateModalOpen] = useState(false);
+    const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    useEffect(() => {
-        const fetchConsultas = async () => {
-            if (!token) { setLoading(false); return; }
-            try {
-                const res = await fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const data = await res.json();
-                setConsultas(data);
-            } catch (error) {
-                console.error("Erro ao buscar consultas:", error);
-            } finally {
-                setLoading(false);
+    const fetchDashboardData = useCallback(async () => {
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const endpoints = ['me', 'dailylog/today', 'checklist', 'consultas', 'medication', 'pesos'];
+            const responses = await Promise.all(
+                endpoints.map(endpoint => fetch(`${apiUrl}/api/${endpoint}`, { headers: { 'Authorization': `Bearer ${token}` } }))
+            );
+
+            for (const res of responses) {
+                if (res.status === 401) {
+                    localStorage.removeItem('bariplus_token');
+                    window.location.href = '/login';
+                    throw new Error('Sessão inválida. Por favor, faça o login novamente.');
+                }
+                if (!res.ok) {
+                    throw new Error('Falha ao carregar os dados do painel.');
+                }
             }
-        };
-        fetchConsultas();
+
+            const [dadosUsuario, dadosLog, dadosChecklist, dadosConsultas, dadosMedication, dadosPesos] = await Promise.all(responses.map(res => res.json()));
+
+            setUsuario(dadosUsuario);
+            setDailyLog(dadosLog);
+            setChecklist(dadosChecklist);
+            setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
+            setMedicationData(dadosMedication);
+            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
+
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
+        }
     }, [token, apiUrl]);
 
     useEffect(() => {
-        if (consultaEmEdicao) {
-            setEspecialidade(consultaEmEdicao.especialidade);
-            setData(format(new Date(consultaEmEdicao.data), "yyyy-MM-dd'T'HH:mm"));
-            setLocal(consultaEmEdicao.local || '');
-            setNotas(consultaEmEdicao.notas || '');
-        }
-    }, [consultaEmEdicao]);
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
-    const handleOpenModalParaAdicionar = () => {
-        setConsultaEmEdicao(null);
-        setEspecialidade('');
-        setData('');
-        setLocal('');
-        setNotas('');
-        setIsModalOpen(true);
-    };
-
-    const handleOpenModalParaEditar = (consulta) => {
-        setConsultaEmEdicao(consulta);
-        setIsModalOpen(true);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const dadosConsulta = { especialidade, data, local, notas };
-        const method = consultaEmEdicao ? 'PUT' : 'POST';
-        const url = consultaEmEdicao ? `${apiUrl}/api/consultas/${consultaEmEdicao._id}` : `${apiUrl}/api/consultas`;
-
+    const handleTrack = async (type, amount) => {
         try {
-            const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(dadosConsulta)
+            const response = await fetch(`${apiUrl}/api/dailylog/track`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, amount })
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Falha ao salvar consulta');
+            if (!response.ok) throw new Error('Falha ao registrar');
+            const updatedLog = await response.json();
+            setDailyLog(updatedLog);
+        } catch (error) {
+            toast.error(error.message);
+        }
+    };
 
-            if (consultaEmEdicao) {
-                setConsultas(consultas.map(c => c._id === data._id ? data : c));
-                toast.success("Consulta atualizada com sucesso!");
-            } else {
-                setConsultas(prev => [...prev, data]);
-                toast.success("Consulta agendada com sucesso!");
-            }
-            setIsModalOpen(false);
+    const handleSetSurgeryDate = async (e) => {
+        e.preventDefault();
+        if (!novaDataCirurgia) return;
+        try {
+            const response = await fetch(`${apiUrl}/api/user/surgery-date`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dataCirurgia: novaDataCirurgia })
+            });
+            if (!response.ok) throw new Error('Falha ao atualizar data');
+            const updatedUser = await response.json();
+            setUsuario(updatedUser);
+            setIsDateModalOpen(false);
+            setNovaDataCirurgia('');
+            toast.success('Data da cirurgia atualizada!');
         } catch (error) {
             toast.error(error.message);
         }
     };
     
-    const handleApagarConsulta = async (consultaId) => {
-        if (window.confirm("Tem certeza que deseja apagar esta consulta?")) {
-            try {
-                await fetch(`${apiUrl}/api/consultas/${consultaId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                setConsultas(consultas.filter(c => c._id !== consultaId));
-                toast.info("Consulta apagada.");
-            } catch (error) {
-                toast.error("Erro ao apagar consulta.");
-            }
+    const handleToggleMedToma = async (medId, totalDoses) => {
+        try {
+            const hoje = new Date().toISOString().split('T')[0];
+            const historicoDeHoje = (medicationData.historico && medicationData.historico[hoje]) || {};
+            const tomasAtuais = historicoDeHoje[medId] || 0;
+            const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
+
+            const newHistoryState = { ...medicationData.historico };
+            if (!newHistoryState[hoje]) { newHistoryState[hoje] = {}; }
+            newHistoryState[hoje][medId] = novasTomas;
+            setMedicationData({ ...medicationData, historico: newHistoryState });
+            
+            await fetch(`${apiUrl}/api/medication/log/update`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
+            });
+        } catch (error) {
+            toast.error("Erro ao atualizar medicação.");
         }
     };
 
-    if (loading) return <div>A carregar consultas...</div>;
+    const getWelcomeMessage = () => {
+        if (!usuario?.nome) return 'Bem-vindo(a)!';
+        const nome = usuario.nome.split(' ')[0];
 
-    // ✅ CORREÇÃO: A linha que faltava está aqui
-    const proximasConsultas = consultas
-        .filter(c => new Date(c.data) >= new Date())
-        .sort((a, b) => new Date(a.data) - new Date(b.data));
+        if (!usuario.detalhesCirurgia || !usuario.detalhesCirurgia.dataCirurgia) {
+            const hora = new Date().getHours();
+            let saudacao = 'Bom dia';
+            if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
+            if (hora >= 18 || hora < 5) saudacao = 'Boa noite';
+            return `${saudacao}, ${nome}!`;
+        }
+
+        const { fezCirurgia, dataCirurgia } = usuario.detalhesCirurgia;
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const dataCirurgiaObj = parseISO(dataCirurgia);
+
+        if (fezCirurgia === 'sim') {
+            const diasDePosOp = differenceInDays(hoje, dataCirurgiaObj);
+            if (diasDePosOp >= 0) return `Olá, ${nome}! Você está no seu ${diasDePosOp + 1}º dia de pós-operatório.`;
+        } else if (fezCirurgia === 'nao') {
+            const diasParaCirurgia = differenceInDays(dataCirurgiaObj, hoje);
+            if (diasParaCirurgia > 1) return `Olá, ${nome}! Faltam ${diasParaCirurgia} dias para a sua cirurgia.`;
+            if (diasParaCirurgia === 1) return `Olá, ${nome}! Falta 1 dia para a sua cirurgia.`;
+            if (diasParaCirurgia === 0) return `Olá, ${nome}! A sua cirurgia é hoje! Boa sorte!`;
+        }
+        
+        return `Bem-vindo(a) de volta, ${nome}!`;
+    };
+
+    if (loading) return <LoadingSpinner />;
+    if (!usuario) return <div className="loading-container">Não foi possível carregar os dados. Por favor, <a href="/login">faça o login</a> novamente.</div>;
     
-    const diasComConsulta = consultas.map(c => new Date(c.data));
+    const tarefasAtivas = ((usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || []);
+    const proximasTarefas = tarefasAtivas.filter(t => !t.concluido).slice(0, 3);
+    const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
+    const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && !usuario.detalhesCirurgia.dataCirurgia;
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <h1>As Minhas Consultas</h1>
-                <p>Registe e organize todos os seus compromissos médicos.</p>
-            </div>
-            
-            <div className="consultas-layout">
-                <Card className="calendario-card">
-                    <DayPicker
-                        mode="single"
-                        modifiers={{ comConsulta: diasComConsulta }}
-                        modifiersClassNames={{ comConsulta: 'dia-com-consulta' }}
-                        locale={ptBR}
-                        showOutsideDays
+            <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
+            <div className="dashboard-grid">
+                {mostrarCardAdicionarData && (
+                    <Card className="special-action-card">
+                        <h3>Jornada a Começar!</h3>
+                        <p>Já tem a data da sua cirurgia? Registre-a para começar a contagem regressiva!</p>
+                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>Adicionar Data da Cirurgia</button>
+                    </Card>
+                )}
+                <WeightProgressCard 
+                    pesoInicial={usuario.detalhesCirurgia.pesoInicial}
+                    pesoAtual={usuario.detalhesCirurgia.pesoAtual}
+                    historico={pesos}
+                />
+                {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
+                
+                {medicationData?.medicamentos?.length > 0 && (
+                    <DailyMedicationCard 
+                        medicamentos={medicationData.medicamentos}
+                        historico={medicationData.historico || {}}
+                        onToggleToma={handleToggleMedToma}
                     />
+                )}
+
+                <Card className="quick-actions-card">
+                    <h3>Ações Rápidas</h3>
+                    <Link to="/progresso" className="quick-action-btn">Ver Progresso Completo</Link>
+                    <Link to="/consultas" className="quick-action-btn">Agendar Consulta</Link>
+                    <Link to="/checklist" className="quick-action-btn">Ver Checklist Completo</Link>
                 </Card>
 
-                <Card className="lista-consultas-card">
-                    <div className="lista-header">
-                        <h3>Próximas Consultas</h3>
-                        <button className="add-btn" onClick={handleOpenModalParaAdicionar}>+ Agendar</button>
-                    </div>
-                    {proximasConsultas.length > 0 ? (
-                        <ul>
-                            {proximasConsultas.map(consulta => (
-                                <li key={consulta._id}>
-                                    <div className="consulta-data">
-                                        <span>{format(new Date(consulta.data), 'dd')}</span>
-                                        <span>{format(new Date(consulta.data), 'MMM', { locale: ptBR })}</span>
-                                    </div>
-                                    <div className="consulta-info">
-                                        <strong>{consulta.especialidade}</strong>
-                                        <span>{format(new Date(consulta.data), 'p', { locale: ptBR })} - {consulta.local || 'Local não informado'}</span>
-                                        {consulta.notas && <small>Nota: {consulta.notas}</small>}
-                                    </div>
-                                    <div className="consulta-actions">
-                                        <button onClick={() => handleOpenModalParaEditar(consulta)} className="action-btn edit-btn">✎</button>
-                                        <button onClick={() => handleApagarConsulta(consulta._id)} className="action-btn delete-btn">×</button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
+                <Card className="summary-card">
+                    <h3>Próximas Tarefas</h3>
+                    {proximasTarefas.length > 0 ? (
+                        <ul className="summary-list">{proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}</ul>
                     ) : (
-                        <p className="empty-list-message">Nenhuma consulta futura agendada.</p>
+                        <div className="summary-empty"><p>Nenhuma tarefa pendente! ✨</p><Link to="/checklist" className="summary-action-btn">Adicionar Tarefa</Link></div>
+                    )}
+                </Card>
+
+                <Card className="summary-card">
+                    <h3>Próximas Consultas</h3>
+                    {proximasConsultas.length > 0 ? (
+                        <ul className="summary-list">{proximasConsultas.map(consulta => (<li key={consulta._id}><strong>{consulta.especialidade}</strong> - {format(new Date(consulta.data), "dd/MM/yyyy 'às' p", { locale: ptBR })}</li>))}</ul>
+                    ) : (
+                        <div className="summary-empty"><p>Nenhuma consulta agendada.</p><Link to="/consultas" className="summary-action-btn">Agendar Consulta</Link></div>
                     )}
                 </Card>
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>{consultaEmEdicao ? 'Editar Consulta' : 'Agendar Nova Consulta'}</h2>
-                <form onSubmit={handleSubmit} className="consulta-form">
-                    <label>Especialidade</label>
-                    <input type="text" placeholder="Ex: Nutricionista" value={especialidade} onChange={e => setEspecialidade(e.target.value)} required />
-                    <label>Data e Hora</label>
-                    <input type="datetime-local" value={data} onChange={e => setData(e.target.value)} required />
-                    <label>Local</label>
-                    <input type="text" placeholder="Ex: Consultório Dr. Silva, Sala 10" value={local} onChange={e => setLocal(e.target.value)} />
-                    <label>Notas</label>
-                    <textarea placeholder="Ex: Levar últimos exames de sangue." value={notas} onChange={e => setNotas(e.target.value)}></textarea>
-                    <button type="submit">Salvar Consulta</button>
+            <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
+                <h2>Registrar Data da Cirurgia</h2>
+                <form onSubmit={handleSetSurgeryDate}>
+                    <label>Qual é a data agendada para a sua cirurgia?</label>
+                    <input type="date" className="date-input" value={novaDataCirurgia} onChange={e => setNovaDataCirurgia(e.target.value)} required />
+                    <button type="submit" className="submit-btn">Salvar Data</button>
                 </form>
             </Modal>
         </div>
     );
 };
-
-export default ConsultasPage;
+export default DashboardPage;

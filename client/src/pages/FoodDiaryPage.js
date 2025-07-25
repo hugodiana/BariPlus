@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './FoodDiaryPage.css';
 import Modal from '../components/Modal';
+import Card from '../components/ui/Card';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { format } from 'date-fns';
 import { toast } from 'react-toastify';
+import { formatDate, formatCurrency } from '../utils/formatHelpers';
 
 const FoodDiaryPage = () => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -43,11 +46,16 @@ const FoodDiaryPage = () => {
         setSearchResults([]);
         setMessage('');
         try {
-            const response = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const response = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             if (!response.ok) throw new Error('Erro ao buscar alimentos.');
             const data = await response.json();
-            if (data.length === 0) setMessage(`Nenhum resultado encontrado para "${searchTerm}".`);
-            else setSearchResults(data);
+            if (data.length === 0) {
+                setMessage(`Nenhum resultado encontrado para "${searchTerm}".`);
+            } else {
+                setSearchResults(data);
+            }
         } catch (error) {
             setMessage("Ocorreu um erro na busca. Tente novamente.");
         } finally {
@@ -112,25 +120,43 @@ const FoodDiaryPage = () => {
         </div>
     );
 
+    if (loadingDiary) {
+        return <LoadingSpinner />;
+    }
+
     return (
         <div className="page-container">
-            <div className="page-header"><h1>Diário Alimentar</h1><p>Pesquise e registre suas refeições diárias.</p></div>
-            <div className="food-diary-content">
+            <div className="page-header">
+                <h1>Diário Alimentar</h1>
+                <p>Pesquise e registre suas refeições diárias.</p>
+            </div>
+            <Card>
                 <div className="date-selector">
                     <label htmlFor="diary-date">Selecione a data:</label>
                     <input type="date" id="diary-date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
                 </div>
                 <div className="search-container">
                     <form onSubmit={handleSearch}>
-                        <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Ex: Frango grelhado, maçã, etc." className="search-input"/>
-                        <button type="submit" className="search-button" disabled={loadingSearch}>{loadingSearch ? 'Buscando...' : 'Pesquisar'}</button>
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Ex: Frango grelhado, maçã, etc."
+                            className="search-input"
+                        />
+                        <button type="submit" className="search-button" disabled={loadingSearch}>
+                            {loadingSearch ? 'Buscando...' : 'Pesquisar'}
+                        </button>
                     </form>
                 </div>
-                <div className="results-container">
-                    {loadingSearch && <p className="info-message">Carregando...</p>}
-                    {message && !loadingSearch && searchResults.length === 0 && <p className="info-message">{message}</p>}
-                    {searchResults.length > 0 && (
-                        <ul className="results-list">{searchResults.map(food => (
+            </Card>
+
+            <div className="results-container">
+                {loadingSearch && <p className="info-message">Carregando...</p>}
+                {message && !loadingSearch && searchResults.length === 0 && <p className="info-message">{message}</p>}
+                {searchResults.length > 0 && (
+                    <ul className="results-list">
+                        {searchResults.map(food => (
                             <li key={food.id} className="result-item" onClick={() => handleSelectFood(food)}>
                                 <img src={food.imageUrl || 'https://via.placeholder.com/60'} alt={food.name} className="food-image" />
                                 <div className="food-info">
@@ -138,25 +164,26 @@ const FoodDiaryPage = () => {
                                     <div className="food-brand">{food.brand}</div>
                                     <div className="food-nutrients">(por 100g) Cals: {food.nutrients.calories} | Prot: {food.nutrients.proteins}g</div>
                                 </div>
-                            </li>))}
-                        </ul>
-                    )}
-                </div>
-                <div className="diary-view">
-                    {/* ✅ CORREÇÃO: Removida a barra '\' desnecessária */}
-                    <h2>Refeições de {format(new Date(selectedDate.replace(/-/g, '/')), 'dd/MM/yyyy')}</h2>
-                    {loadingDiary ? <p>Carregando diário...</p> : (
-                        diary && diary.refeicoes ? (
-                            <div className="meals-grid">
-                                {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
-                                {renderMealSection("Almoço", "almoco", diary.refeicoes.almoco)}
-                                {renderMealSection("Jantar", "jantar", diary.refeicoes.jantar)}
-                                {renderMealSection("Lanches", "lanches", diary.refeicoes.lanches)}
-                            </div>
-                        ) : <p>Não foi possível carregar o diário para este dia.</p>
-                    )}
-                </div>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </div>
+
+            <Card className="diary-view">
+                <h2>Refeições de {format(new Date(selectedDate.replace(/-/g, '/')), 'dd/MM/yyyy')}</h2>
+                {diary && diary.refeicoes ? (
+                    <div className="meals-grid">
+                        {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
+                        {renderMealSection("Almoço", "almoco", diary.refeicoes.almoco)}
+                        {renderMealSection("Jantar", "jantar", diary.refeicoes.jantar)}
+                        {renderMealSection("Lanches", "lanches", diary.refeicoes.lanches)}
+                    </div>
+                ) : (
+                    <p>Não foi possível carregar o diário para este dia.</p>
+                )}
+            </Card>
+            
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 {selectedFood ? (
                     <div className="food-details-modal">
@@ -176,9 +203,12 @@ const FoodDiaryPage = () => {
                             <button onClick={() => handleLogFood('lanches')}>Lanches</button>
                         </div>
                     </div>
-                ) : <p>Carregando detalhes...</p>}
+                ) : (
+                    <p>Carregando detalhes do alimento...</p>
+                )}
             </Modal>
         </div>
     );
 };
+
 export default FoodDiaryPage;

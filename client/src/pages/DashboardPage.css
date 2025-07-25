@@ -1,7 +1,5 @@
-/* DashboardPage.css - Versão Final Padronizada */
-
 .dashboard-welcome {
-    color: var(--text-dark); /* ✅ Usa variável global */
+    color: var(--text-dark);
     font-size: 1.75rem;
     margin-bottom: 1.5rem;
     font-weight: 700;
@@ -13,41 +11,13 @@
     gap: var(--space-lg);
 }
 
-/* O estilo do card em si foi para o Card.css, aqui ficam só as customizações */
+/* O estilo do card agora é global. Aqui ficam apenas as customizações. */
 .special-action-card {
     background-color: var(--primary-light);
     border: 1px solid var(--border-color);
     grid-column: 1 / -1;
     align-items: center;
-}
-
-.dashboard-card-wrapper {
-    min-width: 0; /* Previne que o conteúdo estoure em grids */
-}
-
-.dashboard-card {
-    background: var(--background-white); /* ✅ Usa variável global */
-    border-radius: 12px;
-    box-shadow: 0 4px 12px var(--shadow-color); /* ✅ Usa variável global */
-    padding: 1.5rem;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.dashboard-card h3 {
-    color: var(--primary-green); /* ✅ Usa variável global */
-    font-size: 1.25rem;
-    margin-top: 0;
-    margin-bottom: 1rem;
-}
-
-/* Card especial para adicionar data */
-.special-action-card {
-    background-color: var(--primary-light, #f0f7f4); /* ✅ Usa variável global */
-    border: 1px solid var(--border-color); /* ✅ Usa variável global */
-    grid-column: 1 / -1;
-    align-items: center;
+    text-align: center;
 }
 
 .quick-actions-card {
@@ -56,36 +26,34 @@
 
 .quick-action-btn {
     display: block;
-    background-color: var(--primary-green); /* ✅ Usa variável global */
+    background-color: var(--primary-green);
     color: white;
     padding: 0.75rem;
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     text-align: center;
     text-decoration: none;
     font-weight: 500;
     transition: background-color 0.2s ease;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md);
 }
-
 .quick-action-btn:last-child {
     margin-bottom: 0;
 }
-
 .quick-action-btn:hover {
-    background-color: #2a5a48; /* Tom mais escuro do verde primário */
+    background-color: var(--primary-green-dark);
 }
 
 .summary-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    flex-grow: 1; /* Faz a lista crescer para empurrar o 'empty' para baixo */
 }
 
 .summary-list li {
     padding: 0.75rem 0;
-    border-bottom: 1px solid var(--border-color); /* ✅ Usa variável global */
+    border-bottom: 1px solid var(--border-color);
 }
-
 .summary-list li:last-child {
     border-bottom: none;
 }
@@ -93,32 +61,32 @@
 .summary-empty {
     text-align: center;
     padding: 1rem 0;
-    color: var(--text-light); /* ✅ Usa variável global */
+    color: var(--text-light);
+    margin-top: auto; /* Empurra para o final do card se a lista estiver vazia */
 }
 
 .summary-action-btn {
     display: inline-block;
-    background-color: var(--primary-light, #e9f5f2); /* ✅ Usa variável global */
-    color: var(--primary-green); /* ✅ Usa variável global */
+    background-color: var(--primary-light);
+    color: var(--primary-green);
     padding: 0.5rem 1rem;
     border-radius: 6px;
     text-decoration: none;
     margin-top: 0.75rem;
-    font-size: 0.875rem;
     font-weight: 600;
 }
 
 .date-input {
     width: 100%;
     padding: 0.75rem;
-    border: 1px solid var(--border-color); /* ✅ Usa variável global */
+    border: 1px solid var(--border-color);
     border-radius: 6px;
     margin: 1rem 0;
     font-size: 1rem;
 }
 
 .submit-btn {
-    background-color: var(--primary-green); /* ✅ Usa variável global */
+    background-color: var(--primary-green);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -129,11 +97,9 @@
 }
 
 .loading-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 200px;
-    color: var(--text-light); /* ✅ Usa variável global */
+    padding: 40px;
+    text-align: center;
+    color: var(--text-light);
 }
 
 @media (max-width: 768px) {

@@ -1,56 +1,40 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import PropTypes from 'prop-types';
 import './AffiliatePortalPage.css';
-import LoadingSpinner from '../components/LoadingSpinner';
-import EmptyState from '../components/EmptyState';
+import LoadingSpinner from '../components/LoadingSpinner'; // Nosso componente padrão
+import Card from '../components/ui/Card'; // Nosso componente de Card
 import { formatDate, formatCurrency } from '../utils/formatHelpers';
 
 const AffiliatePortalPage = () => {
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [activeTab, setActiveTab] = useState('sales');
     const [copied, setCopied] = useState(false);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    useEffect(() => {
-        const fetchAffiliateStats = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                
-                const response = await fetch(`${apiUrl}/api/affiliate/stats`, {
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Não foi possível carregar os dados.");
-                }
-                
-                const data = await response.json();
-                setStats(data);
-            } catch (error) {
-                console.error('Erro ao buscar dados:', error);
-                setError(error.message);
-                toast.error(error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        
-        fetchAffiliateStats();
+    const fetchAffiliateStats = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/affiliate/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || "Não foi possível carregar os dados.");
+            setStats(data);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
+        }
     }, [token, apiUrl]);
+
+    useEffect(() => {
+        fetchAffiliateStats();
+    }, [fetchAffiliateStats]);
 
     const copyToClipboard = () => {
         if (!stats?.couponCode) return;
-        
         navigator.clipboard.writeText(stats.couponCode)
             .then(() => {
                 setCopied(true);
@@ -61,156 +45,78 @@ const AffiliatePortalPage = () => {
     };
 
     if (loading) {
-        return (
-            <div className="affiliate-portal-container">
-                <LoadingSpinner message="Carregando portal do afiliado..." />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="affiliate-portal-container">
-                <EmptyState 
-                    title="Erro ao carregar dados"
-                    message={error}
-                    actionText="Tentar novamente"
-                    onAction={() => window.location.reload()}
-                />
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     if (!stats) {
         return (
-            <div className="affiliate-portal-container">
-                <EmptyState 
-                    title="Nenhum dado encontrado"
-                    message="Você ainda não possui dados de afiliado."
-                />
+            <div className="page-container">
+                <p>Não foi possível carregar seus dados de afiliado.</p>
             </div>
         );
     }
 
+    // Calcula a comissão (30% do valor final)
+    const commission = stats.totalRevenueInCents * 0.30;
+
     return (
-        <div className="affiliate-portal-container">
-            <div className="portal-header">
+        <div className="page-container">
+            <div className="page-header">
                 <h1>Portal do Afiliado</h1>
-                <p className="subtitle">Acompanhe o desempenho do seu cupom de desconto</p>
+                <p>Acompanhe aqui o desempenho do seu cupom de desconto.</p>
             </div>
 
-            <div className="stats-summary">
-                <div className="stat-card highlight">
-                    <h3>Seu Cupom</h3>
+            <div className="affiliate-stats-grid">
+                <Card>
+                    <h3>Seu Cupom de Desconto</h3>
                     <div className="coupon-container">
                         <span className="coupon-code">{stats.couponCode}</span>
-                        <button 
-                            onClick={copyToClipboard}
-                            className={`copy-btn ${copied ? 'copied' : ''}`}
-                            aria-label="Copiar cupom"
-                            disabled={!stats.couponCode}
-                        >
-                            {copied ? '✓ Copiado!' : 'Copiar'}
+                        <button onClick={copyToClipboard} className="copy-btn">
+                            {copied ? '✓ Copiado' : 'Copiar'}
                         </button>
                     </div>
-                    <p className="stat-description">Compartilhe este cupom para ganhar comissões</p>
-                </div>
-
-                <div className="stat-card">
+                </Card>
+                <Card>
                     <h3>Vendas Realizadas</h3>
-                    <p className="stat-value">{stats.salesCount}</p>
-                    <p className="stat-description">Total de vendas com seu cupom</p>
-                </div>
-
-                <div className="stat-card">
-                    <h3>Receita Gerada</h3>
-                    <p className="stat-value">{formatCurrency(stats.totalRevenueInCents / 100)}</p>
-                    <p className="stat-description">Total em comissões</p>
-                </div>
+                    <p className="stat-number">{stats.salesCount}</p>
+                </Card>
+                <Card>
+                    <h3>Seus Ganhos (30%)</h3>
+                    <p className="stat-number">{formatCurrency(commission)}</p>
+                </Card>
             </div>
 
-            <div className="portal-tabs">
-                <button 
-                    className={`tab-btn ${activeTab === 'sales' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('sales')}
-                    aria-selected={activeTab === 'sales'}
-                >
-                    Vendas
-                </button>
-                <button 
-                    className={`tab-btn ${activeTab === 'performance' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('performance')}
-                    aria-selected={activeTab === 'performance'}
-                >
-                    Desempenho
-                </button>
-            </div>
-
-            <div className="tab-content">
-                {activeTab === 'sales' ? (
-                    <div className="sales-table-container">
-                        <h3>Histórico de Vendas</h3>
-                        {stats.salesDetails?.length > 0 ? (
-                            <div className="table-responsive">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>Cliente</th>
-                                            <th>Valor</th>
-                                            <th>Comissão</th>
-                                            <th>Data</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {stats.salesDetails.map((sale, index) => (
-                                            <tr key={`sale-${index}`}>
-                                                <td data-label="Cliente">{sale.customerEmail}</td>
-                                                <td data-label="Valor">{formatCurrency(sale.amount)}</td>
-                                                <td data-label="Comissão">{formatCurrency(sale.commission)}</td>
-                                                <td data-label="Data">{formatDate(sale.date)}</td>
-                                                <td data-label="Status">
-                                                    <span className={`status-badge ${sale.status}`}>
-                                                        {sale.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ) : (
-                            <EmptyState 
-                                title="Nenhuma venda encontrada"
-                                message="Quando você realizar vendas com seu cupom, elas aparecerão aqui."
-                                icon="📊"
-                            />
-                        )}
+            <Card>
+                <h3>Detalhes das Vendas</h3>
+                {stats.salesDetails && stats.salesDetails.length > 0 ? (
+                    <div className="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cliente (Email)</th>
+                                    <th>Valor da Venda</th>
+                                    <th>Sua Comissão</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {stats.salesDetails.map((sale, index) => (
+                                    <tr key={index}>
+                                        <td>{sale.customerEmail}</td>
+                                        <td>{formatCurrency(sale.amount * 100)}</td>
+                                        <td>{formatCurrency(sale.amount * 100 * 0.30)}</td>
+                                        <td>{formatDate(sale.date)}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
                 ) : (
-                    <div className="performance-container">
-                        <h3>Métricas de Desempenho</h3>
-                        <div className="metrics-grid">
-                            <div className="metric-card">
-                                <h4>Taxa de Conversão</h4>
-                                <p className="metric-value">{stats.conversionRate || '0%'}</p>
-                                <p className="metric-description">Porcentagem de visitantes que usaram seu cupom</p>
-                            </div>
-                            <div className="metric-card">
-                                <h4>Clientes Recorrentes</h4>
-                                <p className="metric-value">{stats.recurringCustomers || 0}</p>
-                                <p className="metric-description">Clientes que usaram seu cupom mais de uma vez</p>
-                            </div>
-                        </div>
-                    </div>
+                    <p>Ainda não há vendas registradas com o seu cupom.</p>
                 )}
-            </div>
+            </Card>
         </div>
     );
-};
-
-AffiliatePortalPage.propTypes = {
-    // Adicione PropTypes se necessário
 };
 
 export default AffiliatePortalPage;
