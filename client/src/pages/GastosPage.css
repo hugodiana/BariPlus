@@ -1,34 +1,144 @@
-/* Adicione os seus estilos .page-container e .page-header aqui */
+.date-filter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+.date-filter h2 {
+    margin: 0;
+    color: var(--text-dark);
+    font-size: 1.5rem;
+}
+.date-filter button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--primary-green);
+}
 
-.gastos-content { /* ... */ }
-.date-filter { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.date-filter h2 { margin: 0; color: #333; }
-.date-filter button { background: none; border: 1px solid #ccc; padding: 5px 10px; border-radius: 4px; cursor: pointer; }
-.summary-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px; }
-.summary-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
-.summary-card span { display: block; color: #666; }
-.summary-card strong { display: block; font-size: 2rem; color: #37715b; }
-.gastos-main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-.gastos-list-card, .gastos-chart-card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.list-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px; }
-.gastos-list-card ul { list-style: none; padding: 0; }
-.gastos-list-card li { display: flex; align-items: center; gap: 15px; padding: 10px 0; border-bottom: 1px solid #eee; }
-.gasto-categoria { font-size: 10px; font-weight: bold; padding: 3px 6px; border-radius: 4px; color: white; }
+.summary-card {
+    background: var(--primary-light);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius);
+    text-align: center;
+}
+.summary-card span {
+    display: block;
+    color: var(--primary-green);
+    margin-bottom: var(--space-sm);
+}
+.summary-card strong {
+    display: block;
+    font-size: 2.2rem;
+    color: var(--primary-green);
+}
+
+.gastos-main-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-xl);
+    margin-top: var(--space-xl);
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-md);
+}
+.list-header h3 {
+    margin: 0;
+    color: var(--text-dark);
+}
+
+.add-btn {
+    background-color: var(--action-blue);
+    color: white;
+    border: none;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.gastos-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.gastos-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.gastos-list li:last-child {
+    border-bottom: none;
+}
+.gasto-categoria {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
 .gasto-categoria[data-category="Consultas"] { background-color: #36a2eb; }
 .gasto-categoria[data-category="Suplementos"] { background-color: #ff9f40; }
 .gasto-categoria[data-category="Farmácia"] { background-color: #ff6384; }
 .gasto-categoria[data-category="Alimentação"] { background-color: #cc65fe; }
 .gasto-categoria[data-category="Academia"] { background-color: #37715b; }
 .gasto-categoria[data-category="Outros"] { background-color: #aaa; }
-.gasto-info { flex-grow: 1; }
-.gasto-info small { color: #888; font-size: 12px; }
+.gasto-info {
+    flex-grow: 1;
+}
+.gasto-info span { display: block; }
+.gasto-info small { color: var(--text-light); }
 .gasto-valor { font-weight: bold; }
-.delete-btn { background: none; border: none; color: #aaa; cursor: pointer; font-size: 20px; }
-.delete-btn:hover { color: red; }
-.empty-state { text-align: center; color: #888; padding: 20px; }
-.gasto-form label, .gasto-form input, .gasto-form select, .gasto-form button { display: block; width: 100%; box-sizing: border-box; margin-bottom: 10px; padding: 10px; }
+.delete-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 20px; }
+.delete-btn:hover { color: var(--danger-red); }
 
-@media (max-width: 768px) {
-    .gastos-main-grid { grid-template-columns: 1fr; }
-    .gastos-chart-card { order: -1; }
+.chart-container {
+    height: 300px; /* Altura para o gráfico de rosca */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-light);
+    padding: var(--space-lg);
+}
+
+.gasto-form label,
+.gasto-form input,
+.gasto-form select,
+.gasto-form button {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: var(--space-md);
+}
+.gasto-form input, .gasto-form select {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+.gasto-form button {
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--primary-green);
+    color: white;
+    font-weight: 600;
+}
+
+@media (max-width: 900px) {
+    .gastos-main-grid {
+        grid-template-columns: 1fr;
+    }
 }

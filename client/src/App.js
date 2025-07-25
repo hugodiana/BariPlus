@@ -75,8 +75,8 @@ function App() {
     }
   }, []);
   
-  // ✅ CORREÇÃO: O componente auxiliar agora está DENTRO do App para aceder ao 'usuario'
-  const ProtectedRoutes = () => {
+  // ✅ CORREÇÃO: A definição do AppRoutes que estava em falta
+  const AppRoutes = () => {
     return (
       <Layout usuario={usuario}>
         <Routes>
@@ -110,7 +110,6 @@ function App() {
           <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
-          {/* ✅ CORREÇÃO: A rota agora espera o token */}
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email/:token" element={<VerifyPage />} />
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
@@ -123,15 +122,12 @@ function App() {
 
           {/* Rota Principal */}
           <Route path="/*" element={
-            !usuario ? <Navigate to="/landing" /> :
-            usuario.role === 'admin' ? <AppRoutes usuario={usuario} /> : // Admin sempre tem acesso
-            usuario.statusAssinatura !== 'ativa' ? <Navigate to="/planos" /> :
-            !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
-            <AppRoutes usuario={usuario} />
+              !usuario ? <Navigate to="/landing" />
+            : !usuario.isEmailVerified ? <Navigate to="/verify-email" state={{ email: usuario.email }} />
+            : !usuario.pagamentoEfetuado ? <Navigate to="/planos" />
+            : !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" />
+            : <AppRoutes />
           }/>
-          
-          <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
-          <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
         </Routes>
       </Router>
     </>
