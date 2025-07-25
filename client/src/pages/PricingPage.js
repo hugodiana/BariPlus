@@ -1,75 +1,92 @@
 import React, { useState } from 'react';
 import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 import './PricingPage.css';
+import { toast } from 'react-toastify';
 
 const PricingPage = () => {
     const [preferenceId, setPreferenceId] = useState(null);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const [planType, setPlanType] = useState('anual'); // 'anual' ou 'mensal'
 
-    // ✅ INICIALIZAÇÃO: Use a sua Public Key do Mercado Pago
     // Lembre-se de adicionar REACT_APP_MERCADOPAGO_PUBLIC_KEY nas suas variáveis de ambiente
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
-    const createPaymentPreference = async () => {
+    const createSubscriptionPreference = async () => {
         setLoading(true);
-        setError(null);
         const token = localStorage.getItem('bariplus_token');
         const apiUrl = process.env.REACT_APP_API_URL;
 
         try {
-            const response = await fetch(`${apiUrl}/api/create-payment-preference`, {
+            const response = await fetch(`${apiUrl}/api/create-subscription-preference`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
+                body: JSON.stringify({ planType: planType }), // Envia o tipo de plano escolhido
             });
-
             const data = await response.json();
-
-            if (response.ok) {
-                // Guarda o ID da preferência para o botão de pagamento usar
-                setPreferenceId(data.preferenceId);
-            } else {
-                throw new Error(data.message || 'Falha ao criar preferência de pagamento.');
-            }
+            if (!response.ok) throw new Error(data.message || 'Falha ao criar assinatura.');
+            
+            setPreferenceId(data.preferenceId);
         } catch (err) {
-            setError(err.message);
-        } finally {
+            toast.error(err.message);
             setLoading(false);
         }
     };
+    
+    // Detalhes dos planos
+    const plans = {
+        mensal: { title: "Plano Mensal", price: "R$ 49,99", term: "/mês" },
+        anual: { title: "Plano Anual", price: "R$ 120,00", term: "/ano" }
+    };
+    const currentPlan = plans[planType];
 
     return (
         <div className="pricing-page-container">
             <div className="pricing-card">
-                <h1 className="pricing-title">BariPlus - Acesso Vitalício</h1>
+                <h1 className="pricing-title">Escolha o seu plano</h1>
                 <p className="pricing-description">
-                    Adquira acesso completo e permanente a todas as funcionalidades do BariPlus com um único pagamento.
+                    Acesso completo e ilimitado a todas as ferramentas do BariPlus.
                 </p>
-                <div className="price-tag">
-                    <span className="price-amount">R$ 79,99</span>
-                    <span className="price-term">Pagamento Único</span>
+
+                <div className="plan-toggle">
+                    <button 
+                        className={planType === 'mensal' ? 'active' : ''}
+                        onClick={() => setPlanType('mensal')}
+                    >
+                        Mensal
+                    </button>
+                    <button 
+                        className={planType === 'anual' ? 'active' : ''}
+                        onClick={() => setPlanType('anual')}
+                    >
+                        Anual
+                    </button>
                 </div>
-                <ul className="features-list">
-                    <li>✓ Painel de Controle Inteligente</li>
-                    <li>✓ Checklist Pré e Pós-Operatório</li>
-                    <li>✓ Registro de Progresso com Fotos e Medidas</li>
-                    <li>✓ Diário Alimentar com Consulta Nutricional</li>
-                </ul>
                 
-                {/* O botão de pagamento agora é condicional */}
+                <div className="price-tag">
+                    <span className="price-amount">{currentPlan.price}</span>
+                    <span className="price-term">{currentPlan.term}</span>
+                </div>
+                {planType === 'anual' && <span className="anual-benefit">Equivale a apenas R$ 10,00 por mês!</span>}
+                
+                <ul className="features-list">
+                    <li>✓ Acompanhamento de Progresso Completo</li>
+                    <li>✓ Controle de Medicação e Vitaminas</li>
+                    <li>✓ Diário Alimentar e Checklist</li>
+                    <li>✓ Acesso ao Portal de Afiliados</li>
+                </ul>
+
                 {!preferenceId ? (
-                    <button className="checkout-button" onClick={createPaymentPreference} disabled={loading}>
-                        {loading ? 'Aguarde...' : 'Ir para o Pagamento'}
+                    <button className="checkout-button" onClick={createSubscriptionPreference} disabled={loading}>
+                        {loading ? 'A gerar link...' : `Assinar Plano ${currentPlan.title}`}
                     </button>
                 ) : (
-                    // O componente <Wallet> renderiza o botão de pagamento do Mercado Pago
-                    <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                    <div className="mp-wallet-container">
+                        <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                    </div>
                 )}
-
-                {error && <p className="error-message">{error}</p>}
             </div>
         </div>
     );

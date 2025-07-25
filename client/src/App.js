@@ -5,7 +5,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { onMessage } from 'firebase/messaging';
 import { messaging } from './firebase';
 
-// Importação de páginas
+// Importação de todas as páginas
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import TermsPage from './pages/TermsPage';
@@ -31,145 +31,107 @@ import VerifyPage from './pages/VerifyPage';
 // Componente para manipulação de código de referência
 function HandleReferral() {
   const [searchParams] = useSearchParams();
-
   useEffect(() => {
     const refCode = searchParams.get('ref');
     if (refCode) {
       localStorage.setItem('bariplus_referral_code', refCode);
     }
   }, [searchParams]);
-
   return null;
 }
 
-// Componente para rotas protegidas
-const ProtectedRoutes = ({ user }) => {
-  return (
-    <Layout user={user}>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/progresso" element={<ProgressoPage />} />
-        <Route path="/checklist" element={<ChecklistPage />} />
-        <Route path="/consultas" element={<ConsultasPage />} />
-        <Route path="/medicacao" element={<MedicationPage />} />
-        <Route path="/perfil" element={<ProfilePage />} />
-        <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
-        <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-        <Route path="/gastos" element={<GastosPage />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </Layout>
-  );
-};
-
 function App() {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [usuario, setUsuario] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
-
-    const fetchUserData = async () => {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${apiUrl}/api/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          localStorage.removeItem('bariplus_token');
-          throw new Error('Sessão inválida');
-        }
-
-        const userData = await response.json();
-        setUser(userData);
-      } catch (error) {
-        console.error('Erro ao carregar usuário:', error);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchUserData();
+    if (token) {
+      fetch(`${apiUrl}/api/me`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => {
+          if (!res.ok) {
+            localStorage.removeItem('bariplus_token');
+            throw new Error('Sessão inválida');
+          }
+          return res.json();
+        })
+        .then(dadosCompletos => setUsuario(dadosCompletos))
+        .catch(error => {
+          console.error('Erro ao carregar usuário:', error);
+          setUsuario(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
     if ('serviceWorker' in navigator && messaging) {
       onMessage(messaging, (payload) => {
-        toast.info(
-          <div>
-            <strong>{payload.notification.title}</strong>
-            <br />
-            {payload.notification.body}
-          </div>
-        );
+        toast.info(<div><strong>{payload.notification.title}</strong><br />{payload.notification.body}</div>);
       });
     }
   }, []);
-
-  if (isLoading) {
+  
+  // ✅ CORREÇÃO: O componente auxiliar agora está DENTRO do App para aceder ao 'usuario'
+  const ProtectedRoutes = () => {
     return (
-      <div className="loading-screen">
-        Carregando...
-      </div>
+      <Layout usuario={usuario}>
+        <Routes>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/progresso" element={<ProgressoPage />} />
+          <Route path="/checklist" element={<ChecklistPage />} />
+          <Route path="/consultas" element={<ConsultasPage />} />
+          <Route path="/medicacao" element={<MedicationPage />} />
+          <Route path="/perfil" element={<ProfilePage />} />
+          <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
+          <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
+          <Route path="/gastos" element={<GastosPage />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </Layout>
     );
+  };
+
+  if (loading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Carregando...</div>;
   }
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
-      
+      <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <HandleReferral />
         <Routes>
-          {/* Rotas públicas */}
+          {/* Rotas Públicas */}
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
+          <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* ✅ CORREÇÃO: A rota agora espera o token */}
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email/:token" element={<VerifyPage />} />
           <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
           <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
 
-          {/* Rotas intermediárias */}
-          <Route path="/planos" element={user ? <PricingPage /> : <Navigate to="/login" />} />
-          <Route path="/bem-vindo" element={user ? <OnboardingPage /> : <Navigate to="/login" />} />
-          <Route path="/verify-email" element={user ? <VerifyEmailPage /> : <Navigate to="/login" />} />
+          {/* Rotas Intermediárias */}
+          <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
+          <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
+          <Route path="/verify-email" element={usuario ? <VerifyEmailPage /> : <Navigate to="/login" />} />
 
-          {/* Rota principal */}
-          <Route
-            path="/*"
-            element={
-              !user ? (
-                <Navigate to="/landing" />
-              ) : !user.isEmailVerified ? (
-                <Navigate to="/verify-email" state={{ email: user.email }} />
-              ) : !user.pagamentoEfetuado ? (
-                <Navigate to="/planos" />
-              ) : !user.onboardingCompleto ? (
-                <Navigate to="/bem-vindo" />
-              ) : (
-                <ProtectedRoutes user={user} />
-              )
-            }
-          />
+          {/* Rota Principal */}
+          <Route path="/*" element={
+            !usuario ? <Navigate to="/landing" /> :
+            usuario.role === 'admin' ? <AppRoutes usuario={usuario} /> : // Admin sempre tem acesso
+            usuario.statusAssinatura !== 'ativa' ? <Navigate to="/planos" /> :
+            !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
+            <AppRoutes usuario={usuario} />
+          }/>
+          
+          <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
+          <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
         </Routes>
       </Router>
     </>
