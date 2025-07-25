@@ -1746,19 +1746,30 @@ app.post('/api/verify-payment-session', async (req, res) => {
 // ✅ ROTA DE PAGAMENTO ATUALIZADA PARA CRIAR ASSINATURAS
 app.post('/api/create-subscription-preference', autenticar, async (req, res) => {
     try {
-        const { planType } = req.body; // 'mensal' ou 'anual'
+        const { planType } = req.body;
         const usuario = await User.findById(req.userId);
 
         let planId;
+        let planDetails = {};
+
         if (planType === 'mensal') {
             planId = process.env.MERCADOPAGO_PLAN_ID_MENSAL;
+            planDetails = { title: 'BariPlus - Plano Mensal', price: 49.99 };
         } else if (planType === 'anual') {
             planId = process.env.MERCADOPAGO_PLAN_ID_ANUAL;
+            planDetails = { title: 'BariPlus - Plano Anual', price: 120.00 };
         } else {
             return res.status(400).json({ message: "Tipo de plano inválido." });
         }
 
         const preferenceBody = {
+            // ✅ CORREÇÃO: Adicionamos o array 'items' que estava em falta
+            items: [{
+                title: planDetails.title,
+                unit_price: planDetails.price,
+                quantity: 1,
+                currency_id: 'BRL',
+            }],
             preapproval_plan_id: planId,
             payer: {
                 name: usuario.nome,
