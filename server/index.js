@@ -121,8 +121,14 @@ const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Typ
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
-const Affiliate = mongoose.model('Affiliate', AffiliateSchema);
+const AffiliateSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    pixKey: { type: String, required: true },
+    status: { type: String, enum: ['pendente', 'aprovado'], default: 'pendente' },
+}, { timestamps: true });
 
+
+const Affiliate = mongoose.model('Affiliate', AffiliateSchema);
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
 const Peso = mongoose.model('Peso', PesoSchema);
