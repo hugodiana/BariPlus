@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const LoginPage = () => {
-    const navigate = useNavigate(); // Hook para navegação
+    const navigate = useNavigate();
     const [isRegistering, setIsRegistering] = useState(false);
     const [identifier, setIdentifier] = useState('');
     const [nome, setNome] = useState('');
@@ -28,10 +28,8 @@ const LoginPage = () => {
 
     const validatePassword = (pass) => {
         const validations = {
-            length: pass.length >= 8,
-            uppercase: /[A-Z]/.test(pass),
-            number: /[0-9]/.test(pass),
-            specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(pass),
+            length: pass.length >= 8, uppercase: /[A-Z]/.test(pass),
+            number: /[0-9]/.test(pass), specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(pass),
         };
         setPasswordValidations(validations);
         return Object.values(validations).every(Boolean);
@@ -65,8 +63,7 @@ const LoginPage = () => {
             if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
             
             if (isRegistering) {
-                // ✅ CORREÇÃO: Mostra a notificação e redireciona para a página de verificação
-                toast.success('Cadastro quase concluído!');
+                toast.success('Cadastro quase concluído! Verifique o seu e-mail.');
                 navigate('/verify-email', { state: { email: email } });
             } else {
                 localStorage.setItem('bariplus_token', data.token);

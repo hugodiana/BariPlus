@@ -103,31 +103,26 @@ function App() {
     <>
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
-        <HandleReferral />
         <Routes>
-          {/* Rotas Públicas */}
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/login" element={usuario ? <Navigate to="/" /> : <LoginPage />} />
+          <Route path="/login" element={<LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email/:token" element={<VerifyPage />} />
-          <Route path="/pagamento-sucesso" element={<PaymentSuccessPage />} />
-          <Route path="/pagamento-cancelado" element={<PaymentCancelPage />} />
-
-          {/* Rotas Intermediárias */}
+          <Route path="/pagamento-status" element={<PaymentStatusPage />} />
+          
+          <Route path="/*" element={
+            !usuario ? <Navigate to="/landing" /> :
+            !usuario.isEmailVerified ? <Navigate to="/verify-email" state={{ email: usuario.email }} /> :
+            !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
+            !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
+            <AppRoutes usuario={usuario} />
+          }/>
+          
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
           <Route path="/bem-vindo" element={usuario ? <OnboardingPage /> : <Navigate to="/login" />} />
           <Route path="/verify-email" element={usuario ? <VerifyEmailPage /> : <Navigate to="/login" />} />
-
-          {/* Rota Principal */}
-          <Route path="/*" element={
-              !usuario ? <Navigate to="/landing" />
-            : !usuario.isEmailVerified ? <Navigate to="/verify-email" state={{ email: usuario.email }} />
-            : !usuario.pagamentoEfetuado ? <Navigate to="/planos" />
-            : !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" />
-            : <AppRoutes />
-          }/>
         </Routes>
       </Router>
     </>
