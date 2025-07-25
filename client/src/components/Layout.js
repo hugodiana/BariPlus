@@ -99,15 +99,9 @@ const Layout = ({ children, usuario }) => {
           <NavLink to="/perfil" className={({ isActive }) => isActive ? 'active' : ''}>
             Meu Perfil
           </NavLink>
+          <NavLink to="/seja-afiliado">Seja um Afiliado</NavLink>
 
-          {usuario?.role === 'affiliate' && (
-            <NavLink 
-              to="/portal-afiliado" 
-              className={({ isActive }) => `affiliate-link ${isActive ? 'active' : ''}`}
-            >
-              Portal do Afiliado
-            </NavLink>
-          )}
+             
         </nav>
 
         <div className="sidebar-footer">

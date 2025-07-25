@@ -29,6 +29,7 @@ import GastosPage from './pages/GastosPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyPage from './pages/VerifyPage';
 import AffiliateProgramPage from './pages/AffiliateProgramPage';
+import BecomeAffiliatePage from './pages/BecomeAffiliatePage';
 
 // Componente para manipulação de código de referência
 function HandleReferral() {
@@ -89,6 +90,8 @@ function App() {
           <Route path="/medicacao" element={<MedicationPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
+          <Route path="/seja-afiliado" element={<BecomeAffiliatePage />} />
+
           <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
           
           <Route path="/gastos" element={<GastosPage />} />

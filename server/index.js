@@ -94,7 +94,7 @@ const UserSchema = new mongoose.Schema({
     plano: { type: String, enum: ['mensal', 'anual', null], default: null },
     statusAssinatura: { type: String, enum: ['ativa', 'cancelada', 'pendente'], default: 'pendente' },
     mercadoPagoSubscriptionId: String, // ID da assinatura do cliente
-    role: { type: String, enum: ['user', 'admin', 'affiliate'], default: 'user' },
+    role: { type: String, enum: ['user', 'admin', 'affiliate', 'affiliate_pending'], default: 'user' },
     affiliateCouponCode: String,
     fcmToken: String,
     notificationSettings: {
@@ -1331,6 +1331,28 @@ app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (
     }
 });
 
+app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const { couponCode } = req.body; // O admin define o código do cupom
+
+        if (!couponCode) {
+            return res.status(400).json({ message: "O código do cupom é obrigatório." });
+        }
+        
+        // IMPORTANTE: Neste modelo, assumimos que você, admin, cria o cupom manualmente no
+        // painel do Mercado Pago. A API apenas associa o código ao usuário.
+        
+        const usuario = await User.findByIdAndUpdate(userId, {
+            $set: { role: 'affiliate', affiliateCouponCode: couponCode }
+        }, { new: true }).select('-password');
+        
+        res.json({ message: "Afiliado aprovado com sucesso!", usuario });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao aprovar afiliado." });
+    }
+});
+
 app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     try {
         const affiliateUser = await User.findById(req.userId);
@@ -1873,27 +1895,22 @@ app.get('/api/verify-payment/:paymentId', autenticar, async (req, res) => {
 });
 
 // ✅ NOVIDADE: Rota pública para um usuário se candidatar a afiliado
-app.post('/api/affiliates/apply', autenticar, async (req, res) => {
+aapp.post('/api/affiliate/apply', autenticar, async (req, res) => {
     try {
-        const { pixKey } = req.body;
-        const userId = req.userId;
+        const usuario = await User.findById(req.userId);
+        if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
 
-        // Verifica se o usuário já é um afiliado ou tem uma aplicação pendente
-        const existingAffiliate = await Affiliate.findOne({ userId });
-        if (existingAffiliate) {
-            return res.status(400).json({ message: "Você já tem uma candidatura a afiliado." });
+        if (['affiliate', 'affiliate_pending', 'admin'].includes(usuario.role)) {
+            return res.status(400).json({ message: "Ação não permitida para esta conta." });
         }
-
-        const newAffiliateApplication = new Affiliate({ userId, pixKey, status: 'pendente' });
-        await newAffiliateApplication.save();
-
-        // No futuro, podemos enviar um e-mail para o admin a avisar de uma nova candidatura
         
-        res.status(201).json({ message: "Sua candidatura foi enviada com sucesso! Aguarde a aprovação." });
-
+        usuario.role = 'affiliate_pending';
+        await usuario.save();
+        
+        // No futuro, podemos enviar um e-mail para o admin a avisar da nova candidatura
+        res.json({ message: "Candidatura enviada com sucesso! Você será notificado quando for aprovada." });
     } catch (error) {
-        console.error("Erro na candidatura de afiliado:", error);
-        res.status(500).json({ message: "Erro no servidor." });
+        res.status(500).json({ message: 'Erro ao processar a sua candidatura.' });
     }
 });
 
