@@ -1,8 +1,7 @@
-/* ConsultasPage.css - Versão Final Padronizada */
-
 .consultas-layout {
     display: grid;
-    grid-template-columns: auto 1fr; /* Calendário com tamanho automático, lista preenche o resto */
+    /* Em telas grandes, o calendário tem tamanho automático e a lista ocupa o resto */
+    grid-template-columns: auto 1fr; 
     gap: var(--space-xl);
 }
 
@@ -96,9 +95,15 @@
     color: white;
 }
 
-/* Responsividade */
+/* 📱 CORREÇÃO DE RESPONSIVIDADE */
 @media (max-width: 900px) {
     .consultas-layout {
+        /* Em telas menores, o layout vira uma única coluna */
         grid-template-columns: 1fr;
+    }
+
+    .calendario-card {
+        display: flex;
+        justify-content: center;
     }
 }
