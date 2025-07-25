@@ -8,19 +8,26 @@ const BecomeAffiliatePage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const handleApply = async () => {
-        if (!window.confirm("Você confirma o seu interesse em se tornar um afiliado do BariPlus?")) return;
-        try {
-            const response = await fetch(`${apiUrl}/api/affiliate/apply`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message);
-            toast.success(data.message);
-        } catch (error) {
-            toast.error(error.message || "Ocorreu um erro ao enviar a sua candidatura.");
-        }
-    };
+    if (!window.confirm("Você confirma o seu interesse em se tornar um afiliado do BariPlus?")) return;
+
+    try {
+        const response = await fetch(`${apiUrl}/api/affiliate/apply`, {
+            method: 'POST',
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                // ✅ Adicione esta linha de 'Content-Type'
+                'Content-Type': 'application/json'
+            },
+            // ✅ Adicione esta linha com um corpo vazio
+            body: JSON.stringify({}) 
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+        toast.success(data.message);
+    } catch (error) {
+        toast.error(error.message || "Ocorreu um erro ao enviar a sua candidatura.");
+    }
+};
 
     return (
         <div className="page-container">
