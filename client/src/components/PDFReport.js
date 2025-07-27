@@ -1,33 +1,34 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
-import { format } from 'date-fns';
 import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
+import { format } from 'date-fns';
 
-// Registra a fonte (opcional, mas deixa o PDF mais bonito)
-// Font.register({ family: 'Inter', src: 'URL_DA_FONTE_INTER_AQUI' }); // Podemos adicionar depois
-
-// Define os estilos para o PDF, como se fosse CSS
+// Define os estilos para o PDF
 const styles = StyleSheet.create({
     page: {
         flexDirection: 'column',
         backgroundColor: '#FFFFFF',
         padding: 30,
-        fontFamily: 'Helvetica' // Fonte padrão segura
+        fontFamily: 'Helvetica'
     },
     header: {
-        fontSize: 12,
+        fontSize: 10,
         marginBottom: 20,
         textAlign: 'center',
         color: 'grey',
     },
     title: {
-        fontSize: 24,
+        fontSize: 22,
         textAlign: 'center',
         marginBottom: 10,
     },
     subtitle: {
         fontSize: 14,
         textAlign: 'center',
+        marginBottom: 25,
+    },
+    chartImage: {
+        width: '100%',
+        height: 'auto',
         marginBottom: 20,
     },
     table: { 
@@ -35,17 +36,18 @@ const styles = StyleSheet.create({
         width: "auto", 
         borderStyle: "solid", 
         borderWidth: 1, 
+        borderColor: '#bfbfbf',
         borderRightWidth: 0, 
         borderBottomWidth: 0 
     },
     tableRow: { 
-        margin: "auto", 
         flexDirection: "row" 
     },
     tableColHeader: { 
         width: "25%", 
         borderStyle: "solid", 
         borderWidth: 1, 
+        borderColor: '#bfbfbf',
         borderLeftWidth: 0, 
         borderTopWidth: 0,
         backgroundColor: '#f2f2f2',
@@ -55,17 +57,17 @@ const styles = StyleSheet.create({
         width: "25%", 
         borderStyle: "solid", 
         borderWidth: 1, 
+        borderColor: '#bfbfbf',
         borderLeftWidth: 0, 
         borderTopWidth: 0,
         padding: 5
     },
     tableCellHeader: {
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: 'bold'
     },
     tableCell: { 
-        margin: "auto", 
-        fontSize: 10 
+        fontSize: 9 
     },
     footer: {
         position: 'absolute',
@@ -76,33 +78,25 @@ const styles = StyleSheet.create({
         color: 'grey',
         fontSize: 10,
     },
-    chartImage: {
-        width: '100%',
-        height: 'auto',
-        marginBottom: 20,
-    }
-
 });
 
-// O nosso componente de Relatório de Progresso
-const ProgressReport = ({ usuario, historico }) => (
+const ProgressReport = ({ usuario, historico, chartImage }) => (
     <Document>
         <Page size="A4" style={styles.page}>
             <Text style={styles.header}>Relatório Gerado pelo BariPlus - www.bariplus.com.br</Text>
             
             <Text style={styles.title}>Relatório de Progresso</Text>
             <Text style={styles.subtitle}>Paciente: {usuario.nome} {usuario.sobrenome}</Text>
-            {chartImage && <Image src={chartImage} style={styles.chartImage} />}
 
+            {chartImage && <Image src={chartImage} style={styles.chartImage} />}
+            
             <View style={styles.table}>
-                {/* Cabeçalho da Tabela */}
                 <View style={styles.tableRow}>
                     <View style={styles.tableColHeader}><Text style={styles.tableCellHeader}>Data</Text></View>
                     <View style={styles.tableColHeader}><Text style={styles.tableCellHeader}>Peso (kg)</Text></View>
                     <View style={styles.tableColHeader}><Text style={styles.tableCellHeader}>Cintura (cm)</Text></View>
                     <View style={styles.tableColHeader}><Text style={styles.tableCellHeader}>Quadril (cm)</Text></View>
                 </View>
-                {/* Linhas da Tabela */}
                 {historico.map((item, index) => (
                     <View style={styles.tableRow} key={index}>
                         <View style={styles.tableCol}><Text style={styles.tableCell}>{format(new Date(item.data), 'dd/MM/yyyy')}</Text></View>
