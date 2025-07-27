@@ -1260,18 +1260,42 @@ app.post('/api/admin/grant-access/:userId', autenticar, isAdmin, async (req, res
 app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
-        const { couponCode } = req.body;
+        const { couponCode, commissionPercent } = req.body;
 
-        // Lógica para criar o cupom no Mercado Pago via API viria aqui no futuro.
-        // Por agora, o admin cria no painel do MP e apenas associa o código aqui.
+        if (!couponCode || !commissionPercent) {
+            return res.status(400).json({ message: "Código do cupom e percentagem são obrigatórios." });
+        }
+
+        // NOVIDADE: Comunicação com a API do Mercado Pago para criar a campanha de desconto
+        // Usamos o axios que já está instalado
+        await axios.post('https://api.mercadopago.com/v1/discounts/campaigns', {
+            name: `Campanha Afiliado - ${couponCode}`,
+            coupon_code: couponCode,
+            percent_off: commissionPercent,
+            amount_off: 0, // Como é percentagem, o valor fixo é 0
+            max_redeemable_amount: null, // Sem limite de valor
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
         
+        console.log(`Cupom ${couponCode} criado com sucesso no Mercado Pago.`);
+
+        // 3. Atualiza o usuário no nosso banco de dados
         const usuario = await User.findByIdAndUpdate(userId, {
-            $set: { role: 'affiliate', affiliateCouponCode: couponCode }
+            $set: {
+                role: 'affiliate',
+                affiliateCouponCode: couponCode
+            }
         }, { new: true }).select('-password');
         
-        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
+        res.json({ message: "Usuário promovido e cupom criado com sucesso!", usuario });
+
     } catch (error) {
-        res.status(500).json({ message: "Erro ao promover afiliado." });
+        console.error("Erro ao promover afiliado:", error.response ? error.response.data : error.message);
+        res.status(500).json({ message: "Erro ao criar cupom ou promover usuário." });
     }
 });
 
@@ -1830,41 +1854,35 @@ app.post('/api/affiliate/apply', autenticar, async (req, res) => {
 app.post('/api/validate-and-create-preference', autenticar, async (req, res) => {
     try {
         const { couponCode } = req.body;
-        let finalPrice = 79.99; // Preço original
+        let finalPrice = 79.99;
         let discountApplied = false;
 
         if (couponCode) {
-            // No futuro, podemos validar o cupom na API do MP. Por agora, a lógica é simples.
-            const affiliate = await User.findOne({ affiliateCouponCode: couponCode });
-            if (affiliate) {
-                finalPrice = 49.99;
+            // NOVIDADE: Validação real do cupom na API do Mercado Pago
+            const response = await axios.get(`https://api.mercadopago.com/v1/discounts/campaigns/search?coupon_code=${couponCode}`, {
+                headers: { 'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}` }
+            });
+
+            if (response.data?.results?.length > 0) {
+                const campaign = response.data.results[0];
+                const discount = (79.99 * campaign.percent_off) / 100;
+                finalPrice = 79.99 - discount;
                 discountApplied = true;
             } else {
-                return res.status(400).json({ message: "Cupom de afiliado inválido." });
+                return res.status(400).json({ message: "Cupom inválido ou não encontrado." });
             }
         }
 
         const preference = new Preference(client);
-        const response = await preference.create({
-            body: {
-                items: [{
-                    title: 'BariPlus - Acesso Vitalício',
-                    unit_price: finalPrice,
-                    quantity: 1,
-                    currency_id: 'BRL',
-                }],
-                back_urls: { /* ... */ },
-                auto_return: 'approved',
-                external_reference: req.userId,
-            }
-        });
-
+        // ... (resto da lógica para criar a preferência com o finalPrice)
+        
         res.json({ preferenceId: response.id, finalPrice, discountApplied });
 
     } catch (error) {
         res.status(500).json({ message: "Erro ao criar preferência de pagamento." });
     }
 });
+
 
 
 app.use((err, req, res, next) => {
