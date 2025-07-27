@@ -4,11 +4,13 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 
 import './ExamsPage.css';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
+import ExamsReport from '../components/ExamsReport';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -24,9 +26,9 @@ const predefinedExams = [
 
 const ExamsPage = () => {
     const [examsData, setExamsData] = useState({ examEntries: [] });
+    const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeExamId, setActiveExamId] = useState(null);
-
     const [modalType, setModalType] = useState(null);
     const [currentExamEntry, setCurrentExamEntry] = useState(null);
     const [currentResult, setCurrentResult] = useState(null);
@@ -34,30 +36,53 @@ const ExamsPage = () => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    const fetchExams = useCallback(async () => {
+    const fetchExamsData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${apiUrl}/api/exams`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!res.ok) throw new Error("Falha ao carregar exames.");
-            const data = await res.json();
-            setExamsData(data);
-        } catch (error) { toast.error(error.message); }
-        finally { setLoading(false); }
+            const [resExams, resMe] = await Promise.all([
+                fetch(`${apiUrl}/api/exams`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+            if (!resExams.ok || !resMe.ok) throw new Error("Falha ao carregar dados.");
+            
+            const dataExams = await resExams.json();
+            const dataMe = await resMe.json();
+            
+            setExamsData(dataExams);
+            setUsuario(dataMe);
+        } catch (error) { 
+            toast.error(error.message); 
+        } finally { 
+            setLoading(false); 
+        }
     }, [token, apiUrl]);
 
-    useEffect(() => { fetchExams(); }, [fetchExams]);
+    useEffect(() => { 
+        fetchExamsData(); 
+    }, [fetchExamsData]);
 
     const toggleAccordion = (examId) => {
         setActiveExamId(prevId => (prevId === examId ? null : examId));
     };
 
-    if (loading) return <LoadingSpinner />;
+    if (loading || !usuario) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <h1>Meus Exames</h1>
-                <p>Acompanhe a evolução dos seus exames laboratoriais.</p>
+            <div className="page-header-actions">
+                <div className="page-header">
+                    <h1>Meus Exames</h1>
+                    <p>Acompanhe a evolução dos seus exames laboratoriais.</p>
+                </div>
+                {examsData.examEntries.length > 0 && (
+                    <PDFDownloadLink
+                        document={<ExamsReport usuario={usuario} examsData={examsData} />}
+                        fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                        className="pdf-link"
+                    >
+                        {({ loading }) => (loading ? 'A gerar PDF...' : 'Exportar Relatório')}
+                    </PDFDownloadLink>
+                )}
             </div>
             
             <button className="add-btn-main" onClick={() => setModalType('add_type')}>+ Adicionar Tipo de Exame</button>
@@ -72,7 +97,7 @@ const ExamsPage = () => {
                             onToggle={() => toggleAccordion(exam._id)}
                             onAddResult={() => { setCurrentExamEntry(exam); setModalType('add_result'); }}
                             onEditResult={(result) => { setCurrentExamEntry(exam); setCurrentResult(result); setModalType('edit_result'); }}
-                            onDeleteResult={fetchExams}
+                            onDeleteResult={fetchExamsData}
                         />
                     ))}
                 </div>
@@ -80,9 +105,9 @@ const ExamsPage = () => {
                 <Card><p style={{textAlign: 'center'}}>Nenhum tipo de exame adicionado. Comece por adicionar o seu primeiro!</p></Card>
             )}
 
-            {modalType === 'add_type' && <AddExamTypeModal onClose={() => setModalType(null)} onSave={fetchExams} />}
-            {modalType === 'add_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExams} examEntry={currentExamEntry} />}
-            {modalType === 'edit_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExams} examEntry={currentExamEntry} resultToEdit={currentResult} />}
+            {modalType === 'add_type' && <AddExamTypeModal onClose={() => setModalType(null)} onSave={fetchExamsData} />}
+            {modalType === 'add_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExamsData} examEntry={currentExamEntry} />}
+            {modalType === 'edit_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExamsData} examEntry={currentExamEntry} resultToEdit={currentResult} />}
         </div>
     );
 };
