@@ -7,7 +7,7 @@ import { ptBR } from 'date-fns/locale';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import html2canvas from 'html2canvas';
 
-import './ExamsPage.css';
+
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
