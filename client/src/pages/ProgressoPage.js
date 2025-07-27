@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
@@ -18,47 +18,47 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 // Componente auxiliar para o botão de PDF
 const DownloadPDFButton = ({ usuario, historico }) => {
     const [chartImage, setChartImage] = useState(null);
-    const [loading, setLoading] = useState(false);
-    
-    const generateChartImage = async () => {
-        setLoading(true);
-        // O elemento 'progress-chart' precisa de estar visível para ser capturado
-        const chartElement = document.getElementById('progress-chart');
+    const [isGenerating, setIsGenerating] = useState(false);
+
+    const generatePDF = async () => {
+        setIsGenerating(true);
+        toast.info("A preparar o seu relatório PDF...");
+        const chartElement = document.getElementById('progress-chart-for-pdf');
+        
         if (chartElement) {
             try {
-                const canvas = await html2canvas(chartElement, { backgroundColor: null }); // Fundo transparente
+                const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
                 setChartImage(canvas.toDataURL('image/png'));
             } catch (error) {
                 toast.error("Erro ao gerar a imagem do gráfico.");
-                console.error(error);
+                setIsGenerating(false);
             }
         } else {
-            toast.error("Não foi possível encontrar o gráfico para exportar.");
+            toast.warn("Gráfico não encontrado para exportação. Tente novamente.");
+            setIsGenerating(false);
         }
-        setLoading(false);
     };
 
-    if (!usuario || historico.length === 0) return null;
+    if (!usuario || historico.length < 2) return null;
+
+    if (chartImage) {
+        return (
+            <PDFDownloadLink
+                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage} />}
+                fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                className="pdf-link ready"
+            >
+                {({ loading }) => (loading ? 'A preparar...' : 'Baixar PDF Agora')}
+            </PDFDownloadLink>
+        );
+    }
 
     return (
-        <div className="pdf-link-container">
-            {chartImage ? (
-                <PDFDownloadLink
-                    document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage} />}
-                    fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                    className="pdf-link ready"
-                >
-                    {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
-                </PDFDownloadLink>
-            ) : (
-                <button onClick={generateChartImage} className="pdf-link generate" disabled={loading}>
-                    {loading ? 'A gerar gráfico...' : 'Exportar para PDF'}
-                </button>
-            )}
-        </div>
+        <button onClick={generatePDF} className="pdf-link generate" disabled={isGenerating}>
+            {isGenerating ? 'A gerar gráfico...' : 'Exportar para PDF'}
+        </button>
     );
 };
-
 
 const ProgressoPage = () => {
     const [historico, setHistorico] = useState([]);
@@ -166,7 +166,7 @@ const ProgressoPage = () => {
 
             {historico.length > 0 ? (
                 <div className="progresso-content">
-                    <Card className="chart-card" id="progress-chart">
+                    <Card className="chart-card" id="progress-chart-for-pdf">
                         <Line options={chartOptions} data={chartData} />
                     </Card>
                     {historico.filter(item => item.fotoUrl).length > 0 && (

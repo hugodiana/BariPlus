@@ -2,7 +2,6 @@ import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 
-// Define os estilos para o PDF
 const styles = StyleSheet.create({
     page: {
         flexDirection: 'column',
