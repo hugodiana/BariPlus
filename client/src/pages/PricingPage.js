@@ -1,59 +1,43 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { initMercadoPago, CardPayment } from '@mercadopago/sdk-react';
-import { toast } from 'react-toastify';
+import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 import './PricingPage.css';
+import { toast } from 'react-toastify';
 
 const PricingPage = () => {
-    const navigate = useNavigate();
-    const [isLoading, setIsLoading] = useState(false);
-    
-    // ✅ INICIALIZAÇÃO: Use a sua Public Key do Mercado Pago
+    const [preferenceId, setPreferenceId] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [couponCode, setCouponCode] = useState('');
+    const [finalPrice, setFinalPrice] = useState(79.99);
+    const [discountApplied, setDiscountApplied] = useState(false);
+
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
-    
-    // Função chamada quando o formulário é submetido
-    const onSubmit = async (formData) => {
-        setIsLoading(true);
+    const handleApplyCouponAndCreatePreference = async () => {
+        setLoading(true);
+        const token = localStorage.getItem('bariplus_token');
+        const apiUrl = process.env.REACT_APP_API_URL;
+        
         try {
-            const response = await fetch(`${apiUrl}/api/process-payment`, {
+            const response = await fetch(`${apiUrl}/api/validate-and-create-preference`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(formData)
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ couponCode }),
             });
-
             const data = await response.json();
-            if (!response.ok) {
-                throw new Error(data.message || 'Ocorreu um erro no pagamento.');
-            }
+            if (!response.ok) throw new Error(data.message);
 
-            if (data.status === 'approved') {
-                toast.success('Pagamento aprovado! Bem-vindo(a) ao BariPlus.');
-                // Força o recarregamento da aplicação para o App.js ler o novo status
-                window.location.href = '/bem-vindo';
-            } else {
-                toast.warn(`O seu pagamento está ${data.status}. Avisaremos quando for aprovado.`);
+            setPreferenceId(data.preferenceId);
+            setFinalPrice(data.finalPrice);
+            if (data.discountApplied) {
+                toast.success("Cupom de afiliado aplicado com sucesso!");
+                setDiscountApplied(true);
             }
-        } catch (error) {
-            toast.error(error.message);
+        } catch (err) {
+            toast.error(err.message || 'Falha ao processar cupom.');
+            setPreferenceId(null);
         } finally {
-            setIsLoading(false);
+            setLoading(false);
         }
-    };
-    
-    // Personalização do Brick de Pagamento
-    const initialization = {
-        amount: 79.99, // O valor do produto
-    };
-    const customization = {
-        paymentMethods: {
-            maxInstallments: 1, // Limita a 1 parcela para pagamento único
-        },
     };
 
     return (
@@ -61,24 +45,35 @@ const PricingPage = () => {
             <div className="pricing-card">
                 <h1 className="pricing-title">BariPlus - Acesso Vitalício</h1>
                 <p className="pricing-description">Acesso completo com um único pagamento.</p>
+                
                 <div className="price-tag">
-                    <span className="price-amount">R$ 79,99</span>
+                    {discountApplied && <span className="original-price">R$ 79,99</span>}
+                    <span className="price-amount">R$ {finalPrice.toFixed(2)}</span>
                 </div>
                 
-                {/* ✅ O formulário de pagamento agora é o componente CardPayment */}
-                <div id="card-payment-container">
-                    <CardPayment
-                        initialization={initialization}
-                        customization={customization}
-                        onSubmit={onSubmit}
-                        onError={(error) => console.error(error)}
-                        onReady={() => console.log('Brick de Cartão pronto!')}
-                    />
-                </div>
-                {isLoading && <div className="loading-overlay">A processar o seu pagamento...</div>}
+                {!preferenceId ? (
+                    <div className="coupon-and-buy-section">
+                        <div className="coupon-container">
+                            <input
+                                type="text"
+                                placeholder="Código de Cupom (opcional)"
+                                value={couponCode}
+                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                className="coupon-input"
+                            />
+                        </div>
+                        <button className="checkout-button" onClick={handleApplyCouponAndCreatePreference} disabled={loading}>
+                            {loading ? 'Aguarde...' : 'Aplicar Cupom e Pagar'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="wallet-container">
+                        <p>Prossiga com o pagamento seguro via Mercado Pago.</p>
+                        <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                    </div>
+                )}
             </div>
         </div>
     );
 };
-
 export default PricingPage;

@@ -81,3 +81,19 @@
     font-weight: bold;
     border-radius: 12px; /* Para corresponder ao card */
 }
+
+.coupon-input {
+    width: 100%;
+    padding: 10px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+.original-price {
+    text-decoration: line-through;
+    color: var(--text-light);
+    font-size: 1rem;
+    margin-right: 10px;
+}
+.wallet-container { margin-top: 20px; }

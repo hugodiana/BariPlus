@@ -8,7 +8,7 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const { MercadoPagoConfig, Payment } = require('mercadopago');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
@@ -1262,30 +1262,19 @@ app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (
         const { userId } = req.params;
         const { couponCode } = req.body;
 
-        if (!couponCode) {
-            return res.status(400).json({ message: "O código do cupom é obrigatório." });
-        }
+        // Lógica para criar o cupom no Mercado Pago via API viria aqui no futuro.
+        // Por agora, o admin cria no painel do MP e apenas associa o código aqui.
         
-        // Neste modelo, assumimos que você cria o cupom manualmente no painel do Mercado Pago.
-        // A API apenas associa o código ao usuário no nosso banco de dados.
         const usuario = await User.findByIdAndUpdate(userId, {
-            $set: { 
-                role: 'affiliate', 
-                affiliateCouponCode: couponCode 
-            }
+            $set: { role: 'affiliate', affiliateCouponCode: couponCode }
         }, { new: true }).select('-password');
         
-        if (!usuario) {
-            return res.status(404).json({ message: "Usuário não encontrado." });
-        }
-
         res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
-
     } catch (error) {
-        console.error("Erro ao promover afiliado:", error);
         res.status(500).json({ message: "Erro ao promover afiliado." });
     }
 });
+
 
 app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
     try {
@@ -1837,6 +1826,46 @@ app.post('/api/affiliate/apply', autenticar, async (req, res) => {
         res.status(500).json({ message: 'Erro ao processar a sua candidatura.' });
     }
 });
+
+app.post('/api/validate-and-create-preference', autenticar, async (req, res) => {
+    try {
+        const { couponCode } = req.body;
+        let finalPrice = 79.99; // Preço original
+        let discountApplied = false;
+
+        if (couponCode) {
+            // No futuro, podemos validar o cupom na API do MP. Por agora, a lógica é simples.
+            const affiliate = await User.findOne({ affiliateCouponCode: couponCode });
+            if (affiliate) {
+                finalPrice = 49.99;
+                discountApplied = true;
+            } else {
+                return res.status(400).json({ message: "Cupom de afiliado inválido." });
+            }
+        }
+
+        const preference = new Preference(client);
+        const response = await preference.create({
+            body: {
+                items: [{
+                    title: 'BariPlus - Acesso Vitalício',
+                    unit_price: finalPrice,
+                    quantity: 1,
+                    currency_id: 'BRL',
+                }],
+                back_urls: { /* ... */ },
+                auto_return: 'approved',
+                external_reference: req.userId,
+            }
+        });
+
+        res.json({ preferenceId: response.id, finalPrice, discountApplied });
+
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao criar preferência de pagamento." });
+    }
+});
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
