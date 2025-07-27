@@ -1247,46 +1247,31 @@ app.post('/api/admin/grant-access/:userId', autenticar, isAdmin, async (req, res
 // ROTA DE ADMIN: Promover um usuário a afiliado e criar o seu cupom
 app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
     try {
-        // ✅ CORREÇÃO: Usamos 'userId' para corresponder à definição da rota
         const { userId } = req.params;
-        const { couponCode, commissionPercent } = req.body;
+        const { couponCode } = req.body;
 
-        if (!couponCode || !commissionPercent) {
-            return res.status(400).json({ message: "Código do cupom e percentagem são obrigatórios." });
+        if (!couponCode) {
+            return res.status(400).json({ message: "O código do cupom é obrigatório." });
         }
         
-        // Verifica se o usuário a ser promovido existe
-        const userToPromote = await User.findById(userId);
-        if (!userToPromote) {
-            return res.status(404).json({ message: "Usuário a ser promovido não encontrado." });
-        }
-
-        // 1. Cria o cupom no Stripe
-        const coupon = await stripe.coupons.create({
-            percent_off: commissionPercent,
-            duration: 'once',
-            name: `Cupom para Afiliado: ${userToPromote.username}`,
-        });
-
-        // 2. Cria o código promocional que o cliente vai usar
-        const promotionCode = await stripe.promotionCodes.create({
-            coupon: coupon.id,
-            code: couponCode,
-        });
-
-        // 3. Atualiza o usuário no nosso banco de dados
-        const usuarioAtualizado = await User.findByIdAndUpdate(userId, {
-            $set: {
-                role: 'affiliate',
-                affiliateCouponCode: promotionCode.code
+        // Neste modelo, assumimos que você cria o cupom manualmente no painel do Mercado Pago.
+        // A API apenas associa o código ao usuário no nosso banco de dados.
+        const usuario = await User.findByIdAndUpdate(userId, {
+            $set: { 
+                role: 'affiliate', 
+                affiliateCouponCode: couponCode 
             }
         }, { new: true }).select('-password');
         
-        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario: usuarioAtualizado });
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+
+        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
 
     } catch (error) {
         console.error("Erro ao promover afiliado:", error);
-        res.status(500).json({ message: "Erro ao criar cupom ou promover usuário." });
+        res.status(500).json({ message: "Erro ao promover afiliado." });
     }
 });
 
