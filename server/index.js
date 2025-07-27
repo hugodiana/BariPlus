@@ -147,52 +147,16 @@ const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.T
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
 const AffiliateProfileSchema = new mongoose.Schema({
-    userId: { 
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User', 
-        required: true,
-        unique: true // Garante que um usuário tenha apenas um perfil de afiliado
-    },
-    
-    // Informações de contato
-    whatsapp: {
-        type: String,
-        validate: {
-            validator: function(v) {
-                return /^(\+?55)?[\s-]?[0-9]{2}[\s-]?[0-9]{4,5}[\s-]?[0-9]{4}$/.test(v);
-            },
-            message: props => `${props.value} não é um número de WhatsApp válido!`
-        }
-    },
-    
-    // Informações de pagamento
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    whatsapp: String,
     pixKeyType: {
         type: String,
-        enum: ['CPF', 'CNPJ', 'Email', 'Telefone', 'Chave Aleatória'],
+        // CORREÇÃO: Adicionamos os valores corretos
+        enum: ['CPF', 'CNPJ', 'Email', 'Telefone', 'Chave Aleatória', 'Celular'], 
         required: true
     },
-    pixKey: {
-        type: String,
-        required: true,
-        index: true
-    },
-    bankAccount: {
-        bankCode: String,
-        agency: String,
-        account: String,
-        accountType: { type: String, enum: ['CONTA_CORRENTE', 'CONTA_POUPANCA'] }
-    },
-    
-    // Dados de afiliação
-    couponCode: {
-        type: String,
-        required: true,
-        unique: true,
-        uppercase: true,
-        match: [/^[A-Z0-9]{6,10}$/, 'Código de cupom inválido']
-    },
-    customLink: String, // Link personalizado de afiliado
-    
+    pixKey: { type: String, required: true },
+    couponCode: { type: String }, // Não é obrigatório na criação
     // Estatísticas
     totalRevenueInCents: {
         type: Number,
@@ -212,11 +176,8 @@ const AffiliateProfileSchema = new mongoose.Schema({
     },
     
     // Status e aprovação
-    status: { 
-        type: String, 
-        enum: ['pending', 'approved', 'rejected', 'suspended'], 
-        default: 'pending' 
-    },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+
     statusReason: String, // Motivo de rejeição ou suspensão
     approvedAt: Date,
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -2104,7 +2065,7 @@ app.post('/api/affiliate/apply', autenticar, async (req, res) => {
         }
 
         // Cria o novo perfil de afiliado
-        await new AffiliateProfile({ userId: req.userId, whatsapp, pixKeyType, pixKey, status: 'pending' }).save();
+        await new AffiliateProfile({ userId: req.userId, whatsapp, pixKeyType, pixKey }).save();
         
         // Atualiza a função do usuário para 'pendente'
         usuario.role = 'affiliate_pending';
