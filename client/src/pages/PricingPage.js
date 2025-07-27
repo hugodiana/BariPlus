@@ -1,92 +1,81 @@
 import React, { useState } from 'react';
-import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
-import './PricingPage.css';
+import { useNavigate } from 'react-router-dom';
+import { initMercadoPago, CardPayment } from '@mercadopago/sdk-react';
 import { toast } from 'react-toastify';
+import './PricingPage.css';
 
 const PricingPage = () => {
-    const [preferenceId, setPreferenceId] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [planType, setPlanType] = useState('anual'); // 'anual' ou 'mensal'
-
-    // Lembre-se de adicionar REACT_APP_MERCADOPAGO_PUBLIC_KEY nas suas variáveis de ambiente
+    const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // ✅ INICIALIZAÇÃO: Use a sua Public Key do Mercado Pago
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
-    const createSubscriptionPreference = async () => {
-        setLoading(true);
-        const token = localStorage.getItem('bariplus_token');
-        const apiUrl = process.env.REACT_APP_API_URL;
-
+    const token = localStorage.getItem('bariplus_token');
+    const apiUrl = process.env.REACT_APP_API_URL;
+    
+    // Função chamada quando o formulário é submetido
+    const onSubmit = async (formData) => {
+        setIsLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/create-subscription-preference`, {
+            const response = await fetch(`${apiUrl}/api/process-payment`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ planType: planType }), // Envia o tipo de plano escolhido
+                body: JSON.stringify(formData)
             });
+
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Falha ao criar assinatura.');
-            
-            setPreferenceId(data.preferenceId);
-        } catch (err) {
-            toast.error(err.message);
-            setLoading(false);
+            if (!response.ok) {
+                throw new Error(data.message || 'Ocorreu um erro no pagamento.');
+            }
+
+            if (data.status === 'approved') {
+                toast.success('Pagamento aprovado! Bem-vindo(a) ao BariPlus.');
+                // Força o recarregamento da aplicação para o App.js ler o novo status
+                window.location.href = '/bem-vindo';
+            } else {
+                toast.warn(`O seu pagamento está ${data.status}. Avisaremos quando for aprovado.`);
+            }
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setIsLoading(false);
         }
     };
     
-    // Detalhes dos planos
-    const plans = {
-        mensal: { title: "Plano Mensal", price: "R$ 49,99", term: "/mês" },
-        anual: { title: "Plano Anual", price: "R$ 120,00", term: "/ano" }
+    // Personalização do Brick de Pagamento
+    const initialization = {
+        amount: 79.99, // O valor do produto
     };
-    const currentPlan = plans[planType];
+    const customization = {
+        paymentMethods: {
+            maxInstallments: 1, // Limita a 1 parcela para pagamento único
+        },
+    };
 
     return (
         <div className="pricing-page-container">
             <div className="pricing-card">
-                <h1 className="pricing-title">Escolha o seu plano</h1>
-                <p className="pricing-description">
-                    Acesso completo e ilimitado a todas as ferramentas do BariPlus.
-                </p>
-
-                <div className="plan-toggle">
-                    <button 
-                        className={planType === 'mensal' ? 'active' : ''}
-                        onClick={() => setPlanType('mensal')}
-                    >
-                        Mensal
-                    </button>
-                    <button 
-                        className={planType === 'anual' ? 'active' : ''}
-                        onClick={() => setPlanType('anual')}
-                    >
-                        Anual
-                    </button>
-                </div>
-                
+                <h1 className="pricing-title">BariPlus - Acesso Vitalício</h1>
+                <p className="pricing-description">Acesso completo com um único pagamento.</p>
                 <div className="price-tag">
-                    <span className="price-amount">{currentPlan.price}</span>
-                    <span className="price-term">{currentPlan.term}</span>
+                    <span className="price-amount">R$ 79,99</span>
                 </div>
-                {planType === 'anual' && <span className="anual-benefit">Equivale a apenas R$ 10,00 por mês!</span>}
                 
-                <ul className="features-list">
-                    <li>✓ Acompanhamento de Progresso Completo</li>
-                    <li>✓ Controle de Medicação e Vitaminas</li>
-                    <li>✓ Diário Alimentar e Checklist</li>
-                    <li>✓ Acesso ao Portal de Afiliados</li>
-                </ul>
-
-                {!preferenceId ? (
-                    <button className="checkout-button" onClick={createSubscriptionPreference} disabled={loading}>
-                        {loading ? 'A gerar link...' : `Assinar Plano ${currentPlan.title}`}
-                    </button>
-                ) : (
-                    <div className="mp-wallet-container">
-                        <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
-                    </div>
-                )}
+                {/* ✅ O formulário de pagamento agora é o componente CardPayment */}
+                <div id="card-payment-container">
+                    <CardPayment
+                        initialization={initialization}
+                        customization={customization}
+                        onSubmit={onSubmit}
+                        onError={(error) => console.error(error)}
+                        onReady={() => console.log('Brick de Cartão pronto!')}
+                    />
+                </div>
+                {isLoading && <div className="loading-overlay">A processar o seu pagamento...</div>}
             </div>
         </div>
     );

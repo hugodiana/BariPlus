@@ -8,7 +8,7 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const { MercadoPagoConfig, Payment } = require('mercadopago');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
@@ -99,7 +99,7 @@ const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-const preference = new Preference(client);
+const payment = new Payment(client);
 
 
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
@@ -1687,39 +1687,41 @@ app.post('/api/resend-verification-email', async (req, res) => {
     }
 });
 
-app.post('/api/create-payment-preference', autenticar, async (req, res) => {
+app.post('/api/process-payment', autenticar, async (req, res) => {
     try {
-        const { couponCode } = req.body;
-        let finalPrice = 79.99;
+        const { token, issuer_id, payment_method_id, transaction_amount, installments, payer } = req.body;
 
-        if (couponCode && couponCode.startsWith('AFILIADO')) {
-            finalPrice = 49.99;
+        const paymentData = {
+            body: {
+                transaction_amount: transaction_amount,
+                token: token,
+                description: 'BariPlus - Acesso Vitalício',
+                installments: installments,
+                payment_method_id: payment_method_id,
+                payer: {
+                    email: payer.email,
+                },
+                external_reference: req.userId, // ID do nosso usuário
+            }
+        };
+
+        const paymentResponse = await payment.create(paymentData);
+        
+        // Se o pagamento for aprovado, atualiza o nosso banco de dados na hora
+        if (paymentResponse.status === 'approved') {
+            await User.findByIdAndUpdate(req.userId, { pagamentoEfetuado: true });
+            console.log(`Pagamento APROVADO via Checkout Bricks para o usuário: ${req.userId}`);
         }
 
-        const preference = new Preference(client);
-
-        const response = await preference.create({
-            body: {
-                items: [{
-                    title: 'BariPlus - Acesso Vitalício',
-                    unit_price: finalPrice,
-                    quantity: 1,
-                    currency_id: 'BRL', // Moeda brasileira
-                }],
-                back_urls: {
-                    success: `${process.env.CLIENT_URL}/pagamento-sucesso`,
-                    failure: `${process.env.CLIENT_URL}/pagamento-cancelado`,
-                },
-                auto_return: 'approved',
-                external_reference: req.userId,
-            }
+        res.status(201).json({
+            status: paymentResponse.status,
+            message: paymentResponse.status_detail
         });
 
-        res.json({ preferenceId: response.id });
-
     } catch (error) {
-        console.error("Erro ao criar preferência de pagamento:", error);
-        res.status(500).json({ error: { message: "Erro ao criar pagamento." } });
+        console.error("Erro ao processar pagamento:", error);
+        const errorMessage = error.cause?.message || "Erro desconhecido ao processar pagamento.";
+        res.status(500).json({ message: errorMessage });
     }
 });
 
