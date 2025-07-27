@@ -1337,41 +1337,28 @@ app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req
 // ✅ NOVA ROTA DE ADMIN: Buscar todos os afiliados e as suas estatísticas
 app.get('/api/admin/affiliates', autenticar, isAdmin, async (req, res) => {
     try {
-        const affiliates = await User.find({ role: 'affiliate' });
-        const affiliateStats = [];
+        // Busca todos os usuários com a função 'affiliate' e inclui os seus perfis
+        const affiliates = await User.find({ role: 'affiliate' })
+            .populate('affiliateProfile'); // Supondo que você tem um campo de referência no UserSchema
+        
+        // Se não tiver a referência, buscamos separadamente:
+        const affiliateUsers = await User.find({ role: 'affiliate' }).select('-password');
+        const affiliateProfiles = await AffiliateProfile.find({
+            userId: { $in: affiliateUsers.map(u => u._id) }
+        });
+        
+        // Combina os dados
+        const fullAffiliateData = affiliateUsers.map(user => {
+            const profile = affiliateProfiles.find(p => p.userId.equals(user._id));
+            return {
+                ...user.toObject(),
+                profile
+            };
+        });
 
-        for (const affiliate of affiliates) {
-            // Reutiliza a lógica da rota de stats para cada afiliado
-            const couponCode = affiliate.affiliateCouponCode;
-            let salesCount = 0;
-            let totalRevenueInCents = 0;
-
-            if (couponCode) {
-                // Lógica para buscar no Mercado Pago...
-                // (Esta parte pode ser otimizada no futuro para não chamar a API em loop)
-                const sessions = await new Preference(client).list({ expand: 'data.discounts.promotion_code' }); // Exemplo
-                const affiliateSales = sessions.filter(s =>
-                    s.payment_status === 'paid' &&
-                    s.discounts?.some(d => d.promotion_code?.code.toLowerCase() === couponCode.toLowerCase())
-                );
-                salesCount = affiliateSales.length;
-                totalRevenueInCents = affiliateSales.reduce((sum, s) => sum + s.amount_total, 0);
-            }
-            
-            const profile = await AffiliateProfile.findOne({ userId: affiliate._id });
-
-            affiliateStats.push({
-                _id: affiliate._id,
-                nome: affiliate.nome,
-                email: affiliate.email,
-                couponCode: affiliate.affiliateCouponCode,
-                salesCount,
-                totalRevenueInCents,
-                profile: profile // Inclui dados de PIX, WhatsApp, etc.
-            });
-        }
-        res.json(affiliateStats);
+        res.json(fullAffiliateData);
     } catch (error) {
+        console.error("Erro ao buscar afiliados:", error);
         res.status(500).json({ message: "Erro ao buscar afiliados." });
     }
 });
