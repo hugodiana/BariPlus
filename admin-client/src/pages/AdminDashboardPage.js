@@ -55,55 +55,10 @@ const AdminDashboardPage = () => {
         fetchStats();
     };
 
-    // Componente de Loading embutido
-    const LoadingSpinner = () => (
-        <div className="spinner-container">
-            <div className="loading-spinner"></div>
-        </div>
-    );
-
-    // Componente de Error embutido
-    const ErrorMessage = ({ message, onRetry }) => (
-        <div className="error-container">
-            <p className="error-message">{message}</p>
-            <button onClick={onRetry} className="retry-button">
-                Tentar novamente
-            </button>
-        </div>
-    );
-
-    // Componente StatsCard embutido
-    const StatsCard = ({ value, label, icon, trend }) => {
-        const getTrendClass = () => {
-            if (!trend) return '';
-            return trend > 0 ? 'trend-up' : 'trend-down';
-        };
-
-        const getTrendIcon = () => {
-            if (!trend) return null;
-            return trend > 0 ? '↑' : '↓';
-        };
-
-        return (
-            <div className="stats-card">
-                <div className="stats-card-header">
-                    <span className="stats-icon">{icon || '📊'}</span>
-                    {trend && (
-                        <span className={`trend-indicator ${getTrendClass()}`}>
-                            {getTrendIcon()} {Math.abs(trend)}%
-                        </span>
-                    )}
-                </div>
-                <div className="stats-value">{value}</div>
-                <div className="stats-label">{label}</div>
-            </div>
-        );
-    };
-
     if (loading) {
         return (
-            <div className="loading-state">
-                <LoadingSpinner />
+            <div className="dashboard-loading">
+                <div className="loading-spinner"></div>
                 <p>Carregando dashboard...</p>
             </div>
         );
@@ -111,43 +66,41 @@ const AdminDashboardPage = () => {
 
     if (error) {
         return (
-            <div className="dashboard-container">
-                <ErrorMessage 
-                    message={error}
-                    onRetry={handleRetry}
-                />
+            <div className="dashboard-error">
+                <p className="error-message">{error}</p>
+                <button onClick={handleRetry} className="retry-button">
+                    Tentar novamente
+                </button>
             </div>
         );
     }
 
     return (
-        <div className="admin-dashboard-container">
+        <div className="admin-dashboard">
             <header className="dashboard-header">
-                <h1 className="dashboard-title">Dashboard</h1>
-                <p className="dashboard-subtitle">Visão geral do desempenho do sistema</p>
+                <h1>Dashboard Administrativo</h1>
+                <p>Visão geral do sistema</p>
             </header>
 
-            <section className="stats-section">
-                <div className="stats-grid">
-                    <StatsCard 
-                        value={stats?.totalUsers || 0} 
-                        label="Usuários Totais" 
-                        icon="👥"
-                        trend={stats?.userGrowthRate}
-                    />
-                    <StatsCard 
-                        value={stats?.paidUsers || 0} 
-                        label="Contas Ativas" 
-                        icon="💰"
-                        trend={stats?.paidUserGrowthRate}
-                    />
-                    <StatsCard 
-                        value={stats?.newUsersLast7Days || 0} 
-                        label="Novos (7 dias)" 
-                        icon="🆕"
-                    />
+            <div className="stats-grid">
+                <div className="stat-card">
+                    <div className="stat-icon">👥</div>
+                    <div className="stat-value">{stats?.totalUsers || 0}</div>
+                    <div className="stat-label">Usuários Totais</div>
                 </div>
-            </section>
+                
+                <div className="stat-card">
+                    <div className="stat-icon">💰</div>
+                    <div className="stat-value">{stats?.paidUsers || 0}</div>
+                    <div className="stat-label">Contas Ativas</div>
+                </div>
+                
+                <div className="stat-card">
+                    <div className="stat-icon">🆕</div>
+                    <div className="stat-value">{stats?.newUsersLast7Days || 0}</div>
+                    <div className="stat-label">Novos (7 dias)</div>
+                </div>
+            </div>
         </div>
     );
 };
