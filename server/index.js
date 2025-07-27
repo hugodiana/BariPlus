@@ -46,10 +46,26 @@ const limiter = rateLimit({
 app.use('/api/login', limiter);
 app.use('/api/forgot-password', limiter);
 
+app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const { type, data } = req.body;
+    if (type === 'payment') {
+        try {
+            const payment = await mercadopago.payment.findById(data.id);
+            if (payment.body.status === 'approved') {
+                const userId = payment.body.external_reference;
+                await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
+                console.log(`Pagamento Mercado Pago APROVADO para o usuário: ${userId}`);
+            }
+        } catch (error) {
+            console.error('Erro ao processar webhook do Mercado Pago:', error);
+        }
+    }
+    res.sendStatus(200);
+});
+
 app.use(express.json());
 
 // --- CONFIGURAÇÃO DO MERCADO PAGO ---
-const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
 const preference = new Preference(client);
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
@@ -73,47 +89,21 @@ const upload = multer({ storage });
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
+const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+if (process.env.FIREBASE_PRIVATE_KEY) 
+    if (!admin.apps.length) {
+        try {
+            const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
+            const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
+            const serviceAccount = JSON.parse(decodedKey);
+            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+        } catch (error) { console.error('Erro ao inicializar Firebase Admin:', error); }
+    }
+
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({
-    nome: { type: String, required: true },
-    sobrenome: { type: String, required: true },
-    username: { type: String, unique: true, required: true },
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: {
-        fezCirurgia: String,
-        dataCirurgia: Date,
-        altura: Number,
-        pesoInicial: Number,
-        pesoAtual: Number
-    },
-    pagamentoEfetuado: { type: Boolean, default: false },
-    plano: { type: String, enum: ['mensal', 'anual', null], default: null },
-    statusAssinatura: { type: String, enum: ['ativa', 'cancelada', 'pendente'], default: 'pendente' },
-    mercadoPagoSubscriptionId: String, // ID da assinatura do cliente
-    role: { type: String, enum: ['user', 'admin', 'affiliate', 'affiliate_pending'], default: 'user' },
-    affiliateCouponCode: String,
-    fcmToken: String,
-    notificationSettings: {
-        appointmentReminders: { type: Boolean, default: true },
-        medicationReminders: { type: Boolean, default: true },
-        weighInReminders: { type: Boolean, default: true }
-    },
-    isEmailVerified: { type: Boolean, default: false },
-    emailVerificationToken: String,
-    emailVerificationExpires: Date,
-    resetPasswordToken: String,
-    resetPasswordExpires: Date,
-    mercadoPagoUserId: String,
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    pixKey: { type: String, required: true },
-    status: { type: String, enum: ['pendente', 'aprovado'], default: 'pendente' },
-    // Podemos adicionar mais campos no futuro, como CPF, etc.
-}, { timestamps: true });
-
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, isEmailVerified: { type: Boolean, default: false }, emailVerificationToken: String, emailVerificationExpires: Date, resetPasswordToken: String, resetPasswordExpires: Date, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate', 'affiliate_pending'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, mercadoPagoUserId: String }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
@@ -121,14 +111,7 @@ const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Typ
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
-const AffiliateSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    pixKey: { type: String, required: true },
-    status: { type: String, enum: ['pendente', 'aprovado'], default: 'pendente' },
-}, { timestamps: true });
 
-
-const Affiliate = mongoose.model('Affiliate', AffiliateSchema);
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
 const Peso = mongoose.model('Peso', PesoSchema);
@@ -1907,9 +1890,9 @@ app.post('/api/affiliate/apply', autenticar, async (req, res) => {
         usuario.role = 'affiliate_pending';
         await usuario.save();
         
-        // No futuro, podemos enviar um e-mail para o admin a avisar da nova candidatura
         res.json({ message: "Candidatura enviada com sucesso! Você será notificado quando for aprovada." });
     } catch (error) {
+        console.error("Erro ao processar candidatura:", error);
         res.status(500).json({ message: 'Erro ao processar a sua candidatura.' });
     }
 });
