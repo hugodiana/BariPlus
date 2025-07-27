@@ -243,6 +243,21 @@ AffiliateProfileSchema.pre('save', function(next) {
     next();
 });
 
+const ExamsSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    // Um array com todos os tipos de exame que o usuário monitoriza
+    examEntries: [{
+        name: { type: String, required: true }, // Ex: "Glicemia em Jejum"
+        unit: { type: String, required: true }, // Ex: "mg/dL"
+        // O histórico de resultados para este tipo de exame
+        history: [{
+            date: { type: Date, required: true },
+            value: { type: Number, required: true },
+            notes: String
+        }]
+    }]
+}, { timestamps: true });
+
 module.exports = mongoose.model('AffiliateProfile', AffiliateProfileSchema);
 
 const User = mongoose.model('User', UserSchema);
@@ -254,6 +269,7 @@ const Medication = mongoose.model('Medication', MedicationSchema);
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 const Gasto = mongoose.model('Gasto', GastoSchema);
 const AffiliateProfile = mongoose.model('AffiliateProfile', AffiliateProfileSchema);
+const Exams = mongoose.model('Exams', ExamsSchema); // ✅ NOVO MODELO
 
 // --- FUNÇÃO DE VALIDAÇÃO DE SENHA ---
 const validatePassword = (password) => {
@@ -359,7 +375,9 @@ app.post('/api/register', async (req, res) => {
             new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
             new Medication({ userId: novoUsuario._id }).save(),
             new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-            new Gasto({ userId: novoUsuario._id }).save()
+            new Gasto({ userId: novoUsuario._id }).save(),
+            new Exams({ userId: novoUsuario._id, examEntries: [] }).save() // ✅ NOVO
+
         ]);
         
         res.status(201).json({ message: 'Usuário cadastrado com sucesso! Verifique seu e-mail para ativar sua conta.' });
@@ -2177,6 +2195,91 @@ app.get('/api/admin/pending-affiliates', autenticar, isAdmin, async (req, res) =
         res.status(500).json({ message: 'Erro ao buscar candidaturas pendentes.' });
     }
 });
+
+// ✅ NOVIDADE: ROTAS COMPLETAS PARA O MÓDULO DE EXAMES
+// Busca todos os dados de exames do usuário
+app.get('/api/exams', autenticar, async (req, res) => {
+    try {
+        const exams = await Exams.findOne({ userId: req.userId });
+        if (!exams) {
+            // Se por algum motivo não existir, cria um documento vazio
+            const newExamsDoc = new Exams({ userId: req.userId, examEntries: [] });
+            await newExamsDoc.save();
+            return res.json(newExamsDoc);
+        }
+        res.json(exams);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar exames." });
+    }
+});
+
+// Adiciona um novo TIPO de exame à lista do usuário
+app.post('/api/exams/type', autenticar, async (req, res) => {
+    try {
+        const { name, unit } = req.body;
+        const exams = await Exams.findOneAndUpdate(
+            { userId: req.userId },
+            { $push: { examEntries: { name, unit, history: [] } } },
+            { new: true, upsert: true }
+        );
+        res.status(201).json(exams.examEntries[exams.examEntries.length - 1]);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao adicionar tipo de exame." });
+    }
+});
+
+// Adiciona um novo RESULTADO a um tipo de exame existente
+app.post('/api/exams/result/:examEntryId', autenticar, async (req, res) => {
+    try {
+        const { examEntryId } = req.params;
+        const { date, value, notes } = req.body;
+
+        const exams = await Exams.findOneAndUpdate(
+            { "examEntries._id": examEntryId, userId: req.userId },
+            { $push: { "examEntries.$.history": { date, value, notes } } },
+            { new: true }
+        );
+        res.status(201).json(exams);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao adicionar resultado." });
+    }
+});
+
+// Edita um resultado de exame específico
+app.put('/api/exams/result/:examEntryId/:resultId', autenticar, async (req, res) => {
+    try {
+        const { examEntryId, resultId } = req.params;
+        const { date, value, notes } = req.body;
+
+        const exams = await Exams.findOne({ userId: req.userId, "examEntries._id": examEntryId });
+        const examEntry = exams.examEntries.id(examEntryId);
+        const result = examEntry.history.id(resultId);
+        
+        result.date = date;
+        result.value = value;
+        result.notes = notes;
+        
+        await exams.save();
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao editar resultado." });
+    }
+});
+
+// Apaga um resultado de exame específico
+app.delete('/api/exams/result/:examEntryId/:resultId', autenticar, async (req, res) => {
+    try {
+        const { examEntryId, resultId } = req.params;
+        await Exams.findOneAndUpdate(
+            { userId: req.userId, "examEntries._id": examEntryId },
+            { $pull: { "examEntries.$.history": { _id: resultId } } }
+        );
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao apagar resultado." });
+    }
+});
+
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
