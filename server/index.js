@@ -65,9 +65,6 @@ app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), 
 
 app.use(express.json());
 
-// --- CONFIGURAÇÃO DO MERCADO PAGO ---
-const preference = new Preference(client);
-
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
     if (!admin.apps.length) {
@@ -90,15 +87,8 @@ const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-if (process.env.FIREBASE_PRIVATE_KEY) 
-    if (!admin.apps.length) {
-        try {
-            const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
-            const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
-            const serviceAccount = JSON.parse(decodedKey);
-            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-        } catch (error) { console.error('Erro ao inicializar Firebase Admin:', error); }
-    }
+const preference = new Preference(client);
+
 
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
@@ -1805,40 +1795,6 @@ app.post('/api/create-subscription-preference', autenticar, async (req, res) => 
         console.error("Erro ao criar preferência de assinatura:", error);
         res.status(500).json({ message: "Erro ao criar assinatura." });
     }
-});
-
-// ✅ WEBHOOK ATUALIZADO PARA LIDAR COM ASSINATURAS
-app.post('/api/mercadopago-webhook', async (req, res) => {
-    const { type, data } = req.body;
-    
-    // O Mercado Pago envia notificações sobre o pré-pagamento (assinatura)
-    if (type === 'preapproval') {
-        try {
-            const subscription = await mercadopago.preapproval.findById(data.id);
-            const userId = subscription.body.external_reference;
-            const status = subscription.body.status; // ex: 'authorized', 'cancelled'
-            
-            let novoStatus = 'pendente';
-            if (status === 'authorized') {
-                novoStatus = 'ativa';
-            } else if (status === 'cancelled') {
-                novoStatus = 'cancelada';
-            }
-
-            // Atualiza o usuário no nosso banco de dados
-            await User.findByIdAndUpdate(userId, {
-                statusAssinatura: novoStatus,
-                mercadoPagoSubscriptionId: data.id
-            });
-            
-            console.log(`Webhook de assinatura recebido. Usuário ${userId} atualizado para status: ${novoStatus}`);
-
-        } catch (error) {
-            console.error('Erro ao processar webhook de assinatura do Mercado Pago:', error);
-        }
-    }
-    
-    res.sendStatus(200);
 });
 
 app.get('/api/verify-payment/:paymentId', autenticar, async (req, res) => {
