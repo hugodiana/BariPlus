@@ -3,7 +3,7 @@ import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { format, parseISO } from 'date-fns';
 
 import './ExamsPage.css';
 import Modal from '../components/Modal';
