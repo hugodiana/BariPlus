@@ -112,6 +112,13 @@ const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Typ
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
+const AffiliateProfileSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    whatsapp: { type: String, required: true },
+    pixKeyType: { type: String, required: true, enum: ['CPF/CNPJ', 'Celular', 'E-mail', 'Aleatória'] },
+    pixKey: { type: String, required: true },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
+}, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -121,6 +128,7 @@ const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
 const Gasto = mongoose.model('Gasto', GastoSchema);
+const AffiliateProfile = mongoose.model('AffiliateProfile', AffiliateProfileSchema);
 
 // --- FUNÇÃO DE VALIDAÇÃO DE SENHA ---
 const validatePassword = (password) => {
@@ -1291,68 +1299,47 @@ app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (
 app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
-        const { couponCode } = req.body; // O admin define o código do cupom
+        const { couponCode } = req.body;
 
-        if (!couponCode) {
-            return res.status(400).json({ message: "O código do cupom é obrigatório." });
-        }
+        // Lógica para criar cupom de 30% no Mercado Pago via API
+        // (Simplificado por agora, assumindo que o painel do MP permite criar cupons de percentagem)
+        // await mercadopago.coupons.create({ code: couponCode, percent_off: 30 });
         
-        // IMPORTANTE: Neste modelo, assumimos que você, admin, cria o cupom manualmente no
-        // painel do Mercado Pago. A API apenas associa o código ao usuário.
-        
+        const affiliateProfile = await AffiliateProfile.findOneAndUpdate({ userId }, { status: 'approved' });
         const usuario = await User.findByIdAndUpdate(userId, {
             $set: { role: 'affiliate', affiliateCouponCode: couponCode }
         }, { new: true }).select('-password');
         
         res.json({ message: "Afiliado aprovado com sucesso!", usuario });
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao aprovar afiliado." });
-    }
+    } catch (error) { res.status(500).json({ message: "Erro ao aprovar afiliado." }); }
 });
 
 app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
     try {
         const affiliateUser = await User.findById(req.userId);
         const couponCode = affiliateUser.affiliateCouponCode;
+        if (!couponCode) return res.status(400).json({ message: "Nenhum cupom associado." });
 
-        if (!couponCode) {
-            return res.status(400).json({ message: "Nenhum código de cupom associado a esta conta." });
-        }
+        // ... (lógica para buscar as vendas no Mercado Pago usando o couponCode)
+        const affiliateSales = []; // Substituir pela busca real no MP
 
-        // 1. Busca todas as sessões de pagamento bem-sucedidas
-        const sessions = await stripe.checkout.sessions.list({
-            limit: 100, // Busca as últimas 100 sessões
-            expand: ['data.customer', 'data.discounts.promotion_code'], // Garante que temos os dados do cliente e do cupom
-        });
-
-        // 2. ✅ CORREÇÃO: Nova lógica de filtro, muito mais robusta
-        // Filtra para encontrar as sessões que foram pagas E que usaram o código de cupom do nosso afiliado
-        const affiliateSales = sessions.data.filter(session =>
-            session.payment_status === 'paid' &&
-            session.discounts?.some(d => d.promotion_code?.code.toLowerCase() === couponCode.toLowerCase())
-        );
-
-        // 3. Calcula os totais e os detalhes (esta parte continua igual)
         const salesCount = affiliateSales.length;
-        const totalRevenueInCents = affiliateSales.reduce((sum, session) => sum + session.amount_total, 0);
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-        const salesDetails = affiliateSales.map(session => ({
-            customerEmail: session.customer?.email || 'Email não disponível',
-            amount: (session.amount_total / 100).toFixed(2),
-            date: new Date(session.created * 1000).toLocaleDateString('pt-BR')
-        }));
+        // Calcula a comissão apenas sobre as vendas com mais de 7 dias
+        const commissionableRevenueInCents = affiliateSales
+            .filter(sale => new Date(sale.date_approved) < sevenDaysAgo)
+            .reduce((sum, sale) => sum + sale.transaction_amount, 0);
+        
+        const commissionInCents = commissionableRevenueInCents * 0.30;
 
         res.json({
-            couponCode: couponCode,
-            salesCount: salesCount,
-            totalRevenueInCents: totalRevenueInCents,
-            salesDetails: salesDetails
+            couponCode,
+            salesCount,
+            commissionInCents,
+            salesDetails: affiliateSales.map(s => ({ /* ... */ }))
         });
-
-    } catch (error) {
-        console.error("Erro ao buscar estatísticas de afiliado:", error);
-        res.status(500).json({ message: "Erro ao buscar estatísticas." });
-    }
+    } catch (error) { res.status(500).json({ message: "Erro ao buscar estatísticas." }); }
 });
 
 // --- ROTAS DE NOTIFICAÇÃO ---
@@ -1822,22 +1809,26 @@ app.get('/api/verify-payment/:paymentId', autenticar, async (req, res) => {
 // ✅ NOVIDADE: Rota pública para um usuário se candidatar a afiliado
 app.post('/api/affiliate/apply', autenticar, async (req, res) => {
     try {
-        const usuario = await User.findById(req.userId);
-        if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
-
-        if (['affiliate', 'affiliate_pending', 'admin'].includes(usuario.role)) {
-            return res.status(400).json({ message: "Ação não permitida para esta conta." });
+        const { whatsapp, pixKeyType, pixKey } = req.body;
+        if (!whatsapp || !pixKeyType || !pixKey) {
+            return res.status(400).json({ message: "Todos os campos são obrigatórios." });
         }
-        
+
+        const usuario = await User.findById(req.userId);
+        if (['affiliate', 'affiliate_pending', 'admin'].includes(usuario.role)) {
+            return res.status(400).json({ message: "Ação não permitida." });
+        }
+
+        // Cria o perfil de afiliado
+        await new AffiliateProfile({ userId: req.userId, whatsapp, pixKeyType, pixKey }).save();
+        // Atualiza a role do usuário
         usuario.role = 'affiliate_pending';
         await usuario.save();
         
         res.json({ message: "Candidatura enviada com sucesso! Você será notificado quando for aprovada." });
-    } catch (error) {
-        console.error("Erro ao processar candidatura:", error);
-        res.status(500).json({ message: 'Erro ao processar a sua candidatura.' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Erro ao processar a sua candidatura.' }); }
 });
+
 
 app.post('/api/validate-and-create-preference', autenticar, async (req, res) => {
     try {
