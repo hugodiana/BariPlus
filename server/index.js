@@ -8,7 +8,7 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const { MercadoPagoConfig, Preference } = require('mercadopago');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
@@ -46,22 +46,35 @@ const limiter = rateLimit({
 app.use('/api/login', limiter);
 app.use('/api/forgot-password', limiter);
 
-app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    const { type, data } = req.body;
-    if (type === 'payment') {
-        try {
-            const payment = await mercadopago.payment.findById(data.id);
-            if (payment.body.status === 'approved') {
-                const userId = payment.body.external_reference;
-                await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
-                console.log(`Pagamento Mercado Pago APROVADO para o usuário: ${userId}`);
+app.post('/api/mercadopago-webhook', async (req, res) => {
+    // O Mercado Pago envia a informação principal no 'query'
+    const { query } = req;
+    const topic = query.topic || query.type;
+    
+    console.log("Webhook Mercado Pago recebido:", { topic, query });
+
+    if (topic === 'payment') {
+        const paymentId = query.id || query['data.id'];
+        if (paymentId) {
+            try {
+                // Usamos o ID para buscar os detalhes completos do pagamento de forma segura
+                const payment = await new Payment(client).get({ id: paymentId });
+                
+                // Verificamos o status e a referência externa (nosso userId)
+                if (payment && payment.status === 'approved' && payment.external_reference) {
+                    const userId = payment.external_reference;
+                    await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
+                    console.log(`Pagamento Mercado Pago APROVADO e verificado para o usuário: ${userId}`);
+                }
+            } catch (error) {
+                console.error('Erro ao processar webhook do Mercado Pago:', error);
             }
-        } catch (error) {
-            console.error('Erro ao processar webhook do Mercado Pago:', error);
         }
     }
+    // Respondemos sempre com 200 OK para o Mercado Pago saber que recebemos a notificação
     res.sendStatus(200);
 });
+
 
 app.use(express.json());
 
