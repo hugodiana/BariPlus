@@ -1,4 +1,3 @@
-// Exemplo para AdminDashboardPage.js
 import React from 'react';
-const AdminDashboardPage = () => <div>Página do Dashboard</div>;
-export default AdminDashboardPage;
+const ManageUsersPage = () => <div>Página de Usuários</div>;
+export default ManageUsersPage;
