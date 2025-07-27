@@ -113,18 +113,140 @@ const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.T
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
 const AffiliateProfileSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    whatsapp: String,
-    pixKeyType: String,
-    pixKey: String,
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-    // ✅ NOVO: Campo para guardar o histórico de pagamentos de comissão
+    userId: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        required: true,
+        unique: true // Garante que um usuário tenha apenas um perfil de afiliado
+    },
+    
+    // Informações de contato
+    whatsapp: {
+        type: String,
+        validate: {
+            validator: function(v) {
+                return /^(\+?55)?[\s-]?[0-9]{2}[\s-]?[0-9]{4,5}[\s-]?[0-9]{4}$/.test(v);
+            },
+            message: props => `${props.value} não é um número de WhatsApp válido!`
+        }
+    },
+    
+    // Informações de pagamento
+    pixKeyType: {
+        type: String,
+        enum: ['CPF', 'CNPJ', 'Email', 'Telefone', 'Chave Aleatória'],
+        required: true
+    },
+    pixKey: {
+        type: String,
+        required: true,
+        index: true
+    },
+    bankAccount: {
+        bankCode: String,
+        agency: String,
+        account: String,
+        accountType: { type: String, enum: ['CONTA_CORRENTE', 'CONTA_POUPANCA'] }
+    },
+    
+    // Dados de afiliação
+    couponCode: {
+        type: String,
+        required: true,
+        unique: true,
+        uppercase: true,
+        match: [/^[A-Z0-9]{6,10}$/, 'Código de cupom inválido']
+    },
+    customLink: String, // Link personalizado de afiliado
+    
+    // Estatísticas
+    totalRevenueInCents: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    salesCount: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
+    commissionRate: {
+        type: Number,
+        default: 30, // 30% como padrão
+        min: 0,
+        max: 100
+    },
+    
+    // Status e aprovação
+    status: { 
+        type: String, 
+        enum: ['pending', 'approved', 'rejected', 'suspended'], 
+        default: 'pending' 
+    },
+    statusReason: String, // Motivo de rejeição ou suspensão
+    approvedAt: Date,
+    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    
+    // Histórico de pagamentos
     payoutHistory: [{
         date: { type: Date, default: Date.now },
-        amountInCents: Number,
-        receiptUrl: String // Link do Cloudinary para o comprovativo
-    }]
-}, { timestamps: true });
+        amountInCents: { 
+            type: Number, 
+            required: true,
+            min: 0 
+        },
+        receiptUrl: String,
+        receiptPublicId: String, // ID do Cloudinary para gerenciamento
+        processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        paymentMethod: { 
+            type: String, 
+            enum: ['PIX', 'TED', 'DOC'], 
+            default: 'PIX' 
+        },
+        transactionId: String,
+        notes: String
+    }],
+    
+    // Configurações
+    notificationPreferences: {
+        email: { type: Boolean, default: true },
+        whatsapp: { type: Boolean, default: false }
+    },
+    
+    // Auditoria
+    lastActivityAt: Date
+    
+}, { 
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+// Virtual para calcular o saldo disponível
+AffiliateProfileSchema.virtual('availableBalanceInCents').get(function() {
+    const totalPaid = this.payoutHistory.reduce((sum, payout) => sum + payout.amountInCents, 0);
+    return this.totalRevenueInCents - totalPaid;
+});
+
+// Virtual para formatar o saldo disponível em reais
+AffiliateProfileSchema.virtual('availableBalance').get(function() {
+    return (this.availableBalanceInCents / 100).toFixed(2);
+});
+
+// Indexes para melhor performance
+AffiliateProfileSchema.index({ couponCode: 1 });
+AffiliateProfileSchema.index({ status: 1 });
+AffiliateProfileSchema.index({ userId: 1 }, { unique: true });
+
+// Middleware para validação antes de salvar
+AffiliateProfileSchema.pre('save', function(next) {
+    if (this.isModified('status') && this.status === 'approved') {
+        this.approvedAt = new Date();
+    }
+    next();
+});
+
+module.exports = mongoose.model('AffiliateProfile', AffiliateProfileSchema);
 
 const User = mongoose.model('User', UserSchema);
 const Checklist = mongoose.model('Checklist', ChecklistSchema);
@@ -1337,29 +1459,60 @@ app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req
 // ✅ NOVA ROTA DE ADMIN: Buscar todos os afiliados e as suas estatísticas
 app.get('/api/admin/affiliates', autenticar, isAdmin, async (req, res) => {
     try {
-        // Busca todos os usuários com a função 'affiliate' e inclui os seus perfis
+        // Busca todos os usuários afiliados e popula o perfil de afiliado em uma única consulta
         const affiliates = await User.find({ role: 'affiliate' })
-            .populate('affiliateProfile'); // Supondo que você tem um campo de referência no UserSchema
-        
-        // Se não tiver a referência, buscamos separadamente:
-        const affiliateUsers = await User.find({ role: 'affiliate' }).select('-password');
-        const affiliateProfiles = await AffiliateProfile.find({
-            userId: { $in: affiliateUsers.map(u => u._id) }
-        });
-        
-        // Combina os dados
-        const fullAffiliateData = affiliateUsers.map(user => {
-            const profile = affiliateProfiles.find(p => p.userId.equals(user._id));
-            return {
-                ...user.toObject(),
-                profile
-            };
-        });
+            .select('-password') // Remove o campo de senha
+            .populate({
+                path: 'affiliateProfile',
+                select: 'pixKey couponCode totalRevenueInCents salesCount' // Seleciona apenas os campos necessários
+            })
+            .lean(); // Converte para objeto JavaScript puro
 
-        res.json(fullAffiliateData);
+        // Se não existir o populate, fazemos a busca manual
+        if (!affiliates[0]?.affiliateProfile) {
+            const affiliateUsers = await User.find({ role: 'affiliate' })
+                .select('-password')
+                .lean();
+
+            const affiliateProfiles = await AffiliateProfile.find({
+                userId: { $in: affiliateUsers.map(u => u._id) }
+            }).select('userId pixKey couponCode totalRevenueInCents salesCount')
+              .lean();
+
+            const profileMap = affiliateProfiles.reduce((acc, profile) => {
+                acc[profile.userId] = profile;
+                return acc;
+            }, {});
+
+            const fullAffiliateData = affiliateUsers.map(user => ({
+                ...user,
+                profile: profileMap[user._id] || null
+            }));
+
+            return res.json(fullAffiliateData);
+        }
+
+        // Formata os dados para o frontend
+        const formattedAffiliates = affiliates.map(affiliate => ({
+            _id: affiliate._id,
+            nome: affiliate.name || affiliate.email.split('@')[0],
+            email: affiliate.email,
+            couponCode: affiliate.affiliateProfile?.couponCode || 'N/A',
+            salesCount: affiliate.affiliateProfile?.salesCount || 0,
+            totalRevenueInCents: affiliate.affiliateProfile?.totalRevenueInCents || 0,
+            profile: {
+                pixKey: affiliate.affiliateProfile?.pixKey || 'Não cadastrado',
+                ...affiliate.affiliateProfile
+            }
+        }));
+
+        res.json(formattedAffiliates);
     } catch (error) {
         console.error("Erro ao buscar afiliados:", error);
-        res.status(500).json({ message: "Erro ao buscar afiliados." });
+        res.status(500).json({ 
+            message: "Erro ao buscar afiliados.",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
