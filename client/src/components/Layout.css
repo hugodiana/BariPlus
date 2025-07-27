@@ -4,6 +4,7 @@
     display: flex;
 }
 
+/* --- Sidebar (Menu Lateral) --- */
 .sidebar {
     height: 100vh;
     width: 250px;
@@ -14,26 +15,37 @@
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     border-right: 1px solid var(--border-color);
     z-index: 1001;
-    
-    /* ✅ CORREÇÃO: Transforma a sidebar num container flexível em coluna */
     display: flex;
     flex-direction: column;
+    transition: transform 0.3s ease-in-out;
 }
 
+/* --- Conteúdo Principal --- */
+.main-content {
+    flex-grow: 1;
+    padding: 2.5rem;
+    margin-left: 250px; /* Margem padrão para desktop */
+    transition: margin-left 0.3s ease-in-out;
+}
+
+/* --- Cabeçalho da Sidebar --- */
 .sidebar-header {
     padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0; /* Impede que o cabeçalho encolha */
+    flex-shrink: 0;
 }
 
 .sidebar-logo {
     height: 40px;
 }
 
+/* --- Navegação Principal --- */
 .sidebar-nav {
     padding: 20px;
-    /* ✅ CORREÇÃO: Faz a navegação crescer e ocupar o espaço, empurrando o rodapé */
-    flex-grow: 1; 
+    flex-grow: 1; /* Faz esta área crescer e empurrar o rodapé para baixo */
     overflow-y: auto; /* Adiciona scroll se houver muitos links */
 }
 
@@ -48,7 +60,7 @@
     font-weight: 500;
 }
 
-.sidebar-nav a.active {
+.sidebar-nav a.active, .sidebar-nav a:hover {
     background-color: var(--primary-light);
     color: var(--primary-green);
     font-weight: 600;
@@ -59,11 +71,11 @@
     color: var(--affiliate-color) !important;
 }
 
-/* ✅ NOVIDADE: Rodapé da Sidebar */
+/* --- Rodapé da Sidebar --- */
 .sidebar-footer {
     padding: 20px;
     border-top: 1px solid var(--border-color);
-    flex-shrink: 0; /* Impede que o rodapé encolha */
+    flex-shrink: 0;
 }
 
 .user-info {
@@ -101,126 +113,53 @@
     cursor: pointer;
 }
 
-.main-content {
-    flex-grow: 1;
-    padding: 2.5rem;
-    margin-left: 250px;
+/* --- Lógica para o Menu Mobile --- */
+.hamburger-btn, .sidebar-close-btn, .overlay {
+    display: none; /* Escondidos por padrão em telas grandes */
 }
 
-/* Botão de Sair */
-.logout-btn {
-    margin: 20px; /* Garante um espaçamento no fundo */
-    padding: 15px;
-    border: none;
-    background-color: var(--error-light, #fceeee);
-    color: var(--danger-red, #c0392b);
-    border-radius: 8px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-}
-
-/* Conteúdo Principal */
-.main-content {
-    flex-grow: 1;
-    padding: 2.5rem;
-    margin-left: 0; /* Começa sem margem em mobile */
-}
-
-/* Botões do Menu Mobile */
-.hamburger-btn, .sidebar-close-btn {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    z-index: 1002;
-    color: var(--text-dark);
-}
-
-.hamburger-btn {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-}
-
-.sidebar-close-btn {
-    padding: 0;
-}
-
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    z-index: 1000;
-}
-
-
-/* ---- Media Queries para Responsividade ---- */
-
-/* A partir de 769px (tablets e desktops), o menu fica fixo e visível */
-@media (min-width: 769px) {
-    .sidebar {
-        transform: translateX(0);
-    }
-    .main-content {
-        margin-left: 250px;
-    }
-    .hamburger-btn, .sidebar-close-btn, .overlay {
-        display: none;
-    }
-}
-
-/* Até 768px (celulares), o menu fica escondido e o hamburger aparece */
+/* ---- Media Queries para Responsividade (Telas Pequenas) ---- */
 @media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%); /* Menu escondido por padrão */
+    }
+    .sidebar.open {
+        transform: translateX(0); /* Mostra o menu */
+    }
     .main-content {
+        margin-left: 0; /* Remove a margem lateral */
         padding: 1.5rem;
         padding-top: 80px; /* Espaço para o botão hamburger */
     }
-}
-
-.sidebar-footer {
-    margin-top: auto; /* Empurra o rodapé para o fundo */
-    padding-top: 20px;
-    border-top: 1px solid var(--border-color);
-}
-
-.user-info {
-    padding: 0 20px 20px 20px;
-    text-align: center;
-}
-
-.user-name {
-    display: block;
-    font-weight: 600;
-    color: var(--text-dark);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Adiciona "..." se o nome for muito longo */
-}
-
-.user-email {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--text-light);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.logout-btn {
-    display: block; /* Garante que ocupa a linha toda */
-    width: 100%;
-    padding: 15px;
-    border: none;
-    background-color: var(--error-light, #fceeee);
-    color: var(--danger-red, #c0392b);
-    text-align: center; /* Centraliza o texto */
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
-    border-radius: 0; /* Remove o radius para um look mais integrado */
+    .hamburger-btn, .sidebar-close-btn, .overlay {
+        display: block; /* Mostra os controlos mobile */
+    }
+    .hamburger-btn {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: var(--background-white);
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        padding: 10px;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 1002;
+    }
+    .sidebar-close-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        padding: 0;
+    }
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1000;
+    }
 }
