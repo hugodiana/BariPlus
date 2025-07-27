@@ -3,7 +3,9 @@ import { NavLink } from 'react-router-dom';
 import './Layout.css';
 
 const Layout = ({ children, usuario }) => {
-  const [isSidebarOpen, setSidebarOpen] = in_useState(false);
+  // ✅ CORREÇÃO: O nome da função foi corrigido para useState
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
+  
   const toggleSidebar = () => {
     setSidebarOpen(!isSidebarOpen);
     if (document.activeElement) document.activeElement.blur();
@@ -16,7 +18,9 @@ const Layout = ({ children, usuario }) => {
 
   return (
     <div className="layout-container">
-      {!isSidebarOpen && ( <button className="hamburger-btn" onClick={toggleSidebar}>&#9776;</button> )}
+      {!isSidebarOpen && (
+        <button className="hamburger-btn" onClick={toggleSidebar}>&#9776;</button>
+      )}
       {isSidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
 
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
@@ -41,7 +45,6 @@ const Layout = ({ children, usuario }) => {
           )}
         </nav>
 
-        {/* ✅ NOVIDADE: Rodapé da Sidebar */}
         <div className="sidebar-footer">
           {usuario && (
             <div className="user-info">
