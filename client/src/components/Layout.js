@@ -1,109 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import PropTypes from 'prop-types';
+import React, { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import './Layout.css';
 
 const Layout = ({ children, usuario }) => {
-  const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
-  
-  // Fecha a sidebar ao mudar de rota (mobile)
-  useEffect(() => {
-    setSidebarOpen(false);
-  }, [location]);
-
+  const [isSidebarOpen, setSidebarOpen] = in_useState(false);
   const toggleSidebar = () => {
-    setSidebarOpen(prev => !prev);
+    setSidebarOpen(!isSidebarOpen);
+    if (document.activeElement) document.activeElement.blur();
   };
 
   const handleLogout = () => {
     localStorage.removeItem('bariplus_token');
-    // Usando window.location.assign para melhor rastreamento
-    window.location.assign('/login');
+    window.location.href = '/login';
   };
-
-  // Verifica se é mobile baseado no tamanho da tela
-  const isMobile = window.innerWidth <= 768;
 
   return (
     <div className="layout-container">
-      {/* Botão hamburguer apenas em mobile */}
-      {isMobile && !isSidebarOpen && (
-        <button 
-          className="hamburger-btn" 
-          onClick={toggleSidebar}
-          aria-label="Abrir menu"
-          aria-expanded={isSidebarOpen}
-        >
-          &#9776;
-        </button>
-      )}
+      {!isSidebarOpen && ( <button className="hamburger-btn" onClick={toggleSidebar}>&#9776;</button> )}
+      {isSidebarOpen && <div className="overlay" onClick={toggleSidebar}></div>}
 
-      {/* Overlay apenas em mobile */}
-      {isMobile && isSidebarOpen && (
-        <div 
-          className="overlay" 
-          onClick={toggleSidebar}
-          role="button"
-          aria-label="Fechar menu"
-          tabIndex={0}
-        />
-      )}
-
-      <aside 
-        className={`sidebar ${isSidebarOpen ? 'open' : ''}`}
-        aria-hidden={!isSidebarOpen && isMobile}
-      >
+      <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
-          <img 
-            src="/bariplus_logo.png" 
-            alt="BariPlus Logo" 
-            className="sidebar-logo" 
-            width="150"
-            height="50"
-          />
-          {isMobile && (
-            <button 
-              className="sidebar-close-btn" 
-              onClick={toggleSidebar}
-              aria-label="Fechar menu"
-            >
-              &times;
-            </button>
-          )}
+          <img src="/bariplus_logo.png" alt="BariPlus Logo" className="sidebar-logo" />
+          <button className="sidebar-close-btn" onClick={toggleSidebar}>&times;</button>
         </div>
-
-        <nav className="sidebar-nav" aria-label="Navegação principal">
-          <NavLink to="/" end className={({ isActive }) => isActive ? 'active' : ''}>
-            Painel
-          </NavLink>
-          <NavLink to="/checklist" className={({ isActive }) => isActive ? 'active' : ''}>
-            Checklist
-          </NavLink>
-          <NavLink to="/progresso" className={({ isActive }) => isActive ? 'active' : ''}>
-            Meu Progresso
-          </NavLink>
-          <NavLink to="/consultas" className={({ isActive }) => isActive ? 'active' : ''}>
-            Minhas Consultas
-          </NavLink>
-          <NavLink to="/gastos" className={({ isActive }) => isActive ? 'active' : ''}>
-            Controle de Gastos
-          </NavLink>
-          
-          <NavLink to="/diario-alimentar" className={({ isActive }) => isActive ? 'active' : ''}>
-            Diário Alimentar
-          </NavLink>
-          <NavLink to="/medicacao" className={({ isActive }) => isActive ? 'active' : ''}>
-            Medicação
-          </NavLink>
-          <NavLink to="/perfil" className={({ isActive }) => isActive ? 'active' : ''}>
-            Meu Perfil
-          </NavLink>
-          <NavLink to="/seja-afiliado">Seja um Afiliado</NavLink>
-
-             
+        <nav className="sidebar-nav">
+          <NavLink to="/" end>Painel</NavLink>
+          <NavLink to="/checklist">Checklist</NavLink>
+          <NavLink to="/progresso">Meu Progresso</NavLink>
+          <NavLink to="/consultas">Minhas Consultas</NavLink>
+          <NavLink to="/diario-alimentar">Diário Alimentar</NavLink>
+          <NavLink to="/medicacao">Medicação</NavLink>
+          <NavLink to="/gastos">Meus Gastos</NavLink>
+          <NavLink to="/perfil">Meu Perfil</NavLink>
+          {usuario && usuario.role === 'affiliate' && (
+            <NavLink to="/portal-afiliado" className="affiliate-link">Portal do Afiliado</NavLink>
+          )}
+          {usuario && usuario.role === 'user' && (
+            <NavLink to="/seja-afiliado">Seja um Afiliado</NavLink>
+          )}
         </nav>
 
+        {/* ✅ NOVIDADE: Rodapé da Sidebar */}
         <div className="sidebar-footer">
           {usuario && (
             <div className="user-info">
@@ -114,25 +52,12 @@ const Layout = ({ children, usuario }) => {
           <button onClick={handleLogout} className="logout-btn">Sair</button>
         </div>
       </aside>
-
-      <main 
-        className="main-content" 
-        id="main-content"
-        tabIndex={-1}
-      >
+      
+      <main className="main-content">
         {children}
       </main>
     </div>
   );
-};
-
-Layout.propTypes = {
-  children: PropTypes.node.isRequired,
-  usuario: PropTypes.shape({
-    nome: PropTypes.string,
-    email: PropTypes.string,
-    role: PropTypes.oneOf(['user', 'affiliate', 'admin'])
-  })
 };
 
 export default Layout;

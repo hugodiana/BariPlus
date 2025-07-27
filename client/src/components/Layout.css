@@ -4,7 +4,6 @@
     display: flex;
 }
 
-/* Sidebar (Menu Lateral) */
 .sidebar {
     height: 100vh;
     width: 250px;
@@ -14,63 +13,98 @@
     background-color: var(--background-white);
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
     border-right: 1px solid var(--border-color);
-    transform: translateX(-100%);
-    transition: transform 0.3s ease-in-out;
     z-index: 1001;
+    
+    /* ✅ CORREÇÃO: Transforma a sidebar num container flexível em coluna */
     display: flex;
     flex-direction: column;
 }
 
-.sidebar.open {
-    transform: translateX(0);
-}
-
 .sidebar-header {
     padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Impede que o cabeçalho encolha */
 }
 
 .sidebar-logo {
     height: 40px;
 }
 
-/* Navegação Principal */
 .sidebar-nav {
     padding: 20px;
-    flex-grow: 1; /* Faz esta área crescer e empurrar o botão de sair para baixo */
+    /* ✅ CORREÇÃO: Faz a navegação crescer e ocupar o espaço, empurrando o rodapé */
+    flex-grow: 1; 
+    overflow-y: auto; /* Adiciona scroll se houver muitos links */
 }
 
 .sidebar-nav a {
     display: flex;
     align-items: center;
-    gap: 10px;
     padding: 12px 15px;
     margin-bottom: 5px;
-    border-radius: 8px;
+    border-radius: var(--border-radius);
     text-decoration: none;
     color: var(--text-medium);
     font-weight: 500;
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.sidebar-nav a:hover {
-    background-color: #f4f7f6; /* Um cinzento muito claro */
 }
 
 .sidebar-nav a.active {
-    background-color: var(--primary-light, #e9f5f2); /* Usa a variável de App.css se existir */
-    color: var(--primary-green, #37715b);
+    background-color: var(--primary-light);
+    color: var(--primary-green);
     font-weight: 600;
 }
 
-/* Link especial para afiliados */
 .affiliate-link {
-    background-color: var(--affiliate-light, #dbeafe);
-    color: var(--affiliate-color, #1e40af) !important;
-    font-weight: bold;
+    background-color: var(--affiliate-light);
+    color: var(--affiliate-color) !important;
+}
+
+/* ✅ NOVIDADE: Rodapé da Sidebar */
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0; /* Impede que o rodapé encolha */
+}
+
+.user-info {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.user-name {
+    display: block;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-email {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.logout-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background-color: var(--error-light);
+    color: var(--danger-red);
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.main-content {
+    flex-grow: 1;
+    padding: 2.5rem;
+    margin-left: 250px;
 }
 
 /* Botão de Sair */
