@@ -42,3 +42,39 @@
 .static-page-card label { font-weight: bold; display: block; margin-bottom: 0.5rem; }
 .static-page-card input { width: 100%; padding: 12px; margin-bottom: 1rem; border: 1px solid #ccc; border-radius: 8px; }
 .static-page-card button { width: 100%; padding: 12px; font-size: 1rem; font-weight: bold; background: #37715b; color: white; border: none; border-radius: 8px; cursor: pointer; }
+
+/* Adicione no final de StaticPage.css */
+
+.form-title {
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+}
+
+.affiliate-form {
+    margin-top: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+
+.cta-button:disabled {
+    background-color: var(--text-light);
+    cursor: not-allowed;
+}
