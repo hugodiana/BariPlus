@@ -157,7 +157,7 @@ const AffiliateProfileSchema = new mongoose.Schema({
     },
     pixKey: { type: String, required: true },
     couponCode: {
-    type: String, // Simplesmente um texto
+        type: String, // Simplesmente um texto
     },
     // Estatísticas
     totalRevenueInCents: {
