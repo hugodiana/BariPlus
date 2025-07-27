@@ -1,99 +1,18 @@
-.pricing-page-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    background-color: var(--background-light);
-    padding: 20px;
-}
-
-.pricing-card {
-    background: var(--background-white);
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: var(--shadow-md);
-    width: 100%;
-    max-width: 450px;
-    text-align: center;
-}
-
-.pricing-title { color: var(--text-dark); }
-.pricing-description { color: var(--text-light); margin-bottom: 30px; }
-
-.plan-toggle {
-    display: flex;
-    justify-content: center;
-    background-color: var(--background-light);
-    border-radius: 8px;
-    padding: 5px;
-    margin-bottom: 20px;
-}
-.plan-toggle button {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 6px;
-    background-color: transparent;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-}
-.plan-toggle button.active {
-    background-color: var(--background-white);
-    color: var(--primary-green);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.price-tag { margin-bottom: 10px; }
-.price-amount { font-size: 2.5rem; font-weight: bold; color: var(--text-dark); }
-.price-term { color: var(--text-light); }
-.anual-benefit { display: block; margin-bottom: 20px; color: var(--primary-green); font-weight: 600; }
-
-.features-list { list-style: none; padding: 0; text-align: left; margin: 30px 0; display: inline-block; }
-.features-list li { margin-bottom: 10px; color: var(--text-medium); }
-
-.checkout-button {
-    width: 100%;
-    padding: 15px;
-    border: none;
-    border-radius: 8px;
-    background-color: var(--action-blue);
-    color: white;
-    font-size: 18px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.mp-wallet-container {
-    margin-top: 20px;
-}
-
-.loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    border-radius: 12px; /* Para corresponder ao card */
-}
-
-.coupon-input {
-    width: 100%;
-    padding: 10px;
-    text-align: center;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    margin-bottom: 10px;
-}
-.original-price {
-    text-decoration: line-through;
-    color: var(--text-light);
-    font-size: 1rem;
-    margin-right: 10px;
-}
-.wallet-container { margin-top: 20px; }
+.pricing-page-container { max-width: 900px; margin: 40px auto; padding: 20px; }
+.pricing-header { text-align: center; margin-bottom: 40px; }
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+.pricing-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; text-align: center; background: var(--background-white); }
+.pricing-card.highlighted { border: 2px solid var(--primary-green); position: relative; }
+.highlight-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--primary-green); color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.plan-title { font-size: 1.5rem; margin-bottom: 15px; }
+.price-tag { margin-bottom: 25px; }
+.price-amount { font-size: 2.5rem; font-weight: bold; }
+.features-list { list-style: none; padding: 0; margin-bottom: 30px; text-align: left; }
+.features-list li { margin-bottom: 10px; }
+.checkout-button { width: 100%; padding: 15px; border: none; border-radius: 8px; background: var(--primary-green); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; }
+.pricing-card:not(.highlighted) .checkout-button { background: #f0f0f0; color: var(--text-dark); border: 1px solid var(--border-color); }
+.coupon-section { text-align: center; margin-top: 30px; }
+.coupon-input { padding: 10px; width: 100%; max-width: 300px; border: 1px solid var(--border-color); border-radius: 8px; text-align: center; }
+.payment-modal-content { text-align: center; }
+.payment-modal-content h3 { color: var(--primary-green); }
+@media (max-width: 768px) { .pricing-grid { grid-template-columns: 1fr; } }

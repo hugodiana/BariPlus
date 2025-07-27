@@ -8,7 +8,7 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const nodemailer = require('nodemailer');
 const axios = require('axios');
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const { MercadoPagoConfig, Preference } = require('mercadopago');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
@@ -1872,7 +1872,54 @@ app.post('/api/validate-and-create-preference', autenticar, async (req, res) => 
     }
 });
 
+// ✅ ROTA DE PAGAMENTO FINAL: Lida com planos e cupons
+app.post('/api/create-payment-preference', autenticar, async (req, res) => {
+    try {
+        const { planType, couponCode } = req.body; // 'lifetime' ou 'annual'
+        
+        let title = '';
+        let unit_price = 0;
 
+        if (planType === 'lifetime') {
+            title = 'BariPlus - Acesso Vitalício';
+            unit_price = 79.99;
+        } else if (planType === 'annual') {
+            title = 'BariPlus - Assinatura Anual';
+            unit_price = 49.99; // Exemplo de preço anual
+        } else {
+            return res.status(400).json({ message: "Tipo de plano inválido." });
+        }
+
+        // Lógica de cupom de afiliado
+        if (couponCode) {
+            const affiliate = await User.findOne({ affiliateCouponCode: couponCode });
+            if (affiliate && planType === 'lifetime') { // Desconto só no plano vitalício
+                unit_price = 49.99;
+            } else if (affiliate && planType === 'annual') {
+                unit_price = 29.99; // Exemplo de desconto no anual
+            }
+        }
+
+        const preference = new Preference(client);
+        const response = await preference.create({
+            body: {
+                items: [{ title, unit_price, quantity: 1, currency_id: 'BRL' }],
+                back_urls: {
+                    success: `${process.env.CLIENT_URL}/pagamento-status`,
+                    failure: `${process.env.CLIENT_URL}/pagamento-status`,
+                    pending: `${process.env.CLIENT_URL}/pagamento-status`,
+                },
+                auto_return: 'approved',
+                external_reference: req.userId,
+            }
+        });
+
+        res.json({ preferenceId: response.id });
+
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao criar preferência de pagamento." });
+    }
+});
 
 app.use((err, req, res, next) => {
     console.error(err.stack);
