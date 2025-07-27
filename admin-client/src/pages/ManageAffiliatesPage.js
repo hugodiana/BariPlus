@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
-import './ManageAffiliatesPage.css'; // Vamos criar este CSS
+import './ManageAffiliatesPage.css';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const ManageAffiliatesPage = () => {
     const [affiliates, setAffiliates] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // Estados do modal de pagamento
     const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
     const [affiliateToPay, setAffiliateToPay] = useState(null);
     const [payoutAmount, setPayoutAmount] = useState('');
@@ -62,7 +62,9 @@ const ManageAffiliatesPage = () => {
         }
     };
 
-    if (loading) return <div>Carregando afiliados...</div>;
+    if (loading) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <div className="admin-page-container">
@@ -86,8 +88,8 @@ const ManageAffiliatesPage = () => {
                             return (
                                 <tr key={affiliate._id}>
                                     <td>{affiliate.nome}<br/><small>{affiliate.email}</small></td>
-                                    <td><span className="coupon-badge">{affiliate.couponCode}</span></td>
-                                    <td>{affiliate.salesCount}</td>
+                                    <td><span className="coupon-badge">{affiliate.couponCode || affiliate.affiliateCouponCode}</span></td>
+                                    <td>{affiliate.salesCount || 0}</td>
                                     <td>{commissionDue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
                                     <td className="actions">
                                         <button className="btn-primary" onClick={() => openPayoutModal(affiliate)}>Registrar Pagamento</button>
@@ -103,7 +105,7 @@ const ManageAffiliatesPage = () => {
                 {affiliateToPay && (
                     <form onSubmit={handlePayoutSubmit} className="modal-form">
                         <p>Pagamento para: <strong>{affiliateToPay.nome}</strong></p>
-                        <p><strong>Chave PIX:</strong> {affiliateToPay.profile.pixKey}</p>
+                        <p><strong>Chave PIX:</strong> {affiliateToPay.profile?.pixKey || 'Não informada'}</p>
                         <div className="form-group">
                             <label>Valor Pago (R$)</label>
                             <input type="number" step="0.01" value={payoutAmount} onChange={e => setPayoutAmount(e.target.value)} required />
@@ -122,4 +124,5 @@ const ManageAffiliatesPage = () => {
         </div>
     );
 };
+
 export default ManageAffiliatesPage;
