@@ -1,0 +1,12 @@
+.coupon-badge {
+    background-color: #e0e7ff;
+    color: #4338ca;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+    font-family: monospace;
+}
+td small {
+    color: #666;
+    font-size: 12px;
+}

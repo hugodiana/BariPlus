@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import PropTypes from 'prop-types';
-import '../App.css';
+import './AdminLoginPage.css';
 
 const AdminLoginPage = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({

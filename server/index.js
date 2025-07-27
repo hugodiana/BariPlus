@@ -121,7 +121,7 @@ const AffiliateProfileSchema = new mongoose.Schema({
     // ✅ NOVO: Campo para guardar o histórico de pagamentos de comissão
     payoutHistory: [{
         date: { type: Date, default: Date.now },
-        amount: Number, // Em centavos
+        amountInCents: Number,
         receiptUrl: String // Link do Cloudinary para o comprovativo
     }]
 }, { timestamps: true });
@@ -1337,13 +1337,67 @@ app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req
 // ✅ NOVA ROTA DE ADMIN: Buscar todos os afiliados e as suas estatísticas
 app.get('/api/admin/affiliates', autenticar, isAdmin, async (req, res) => {
     try {
-        const afiliados = await User.find({ role: 'affiliate' }).populate('affiliateProfile');
-        // No futuro, podemos adicionar a lógica para buscar as vendas de cada um aqui
-        res.json(afiliados);
+        const affiliates = await User.find({ role: 'affiliate' });
+        const affiliateStats = [];
+
+        for (const affiliate of affiliates) {
+            // Reutiliza a lógica da rota de stats para cada afiliado
+            const couponCode = affiliate.affiliateCouponCode;
+            let salesCount = 0;
+            let totalRevenueInCents = 0;
+
+            if (couponCode) {
+                // Lógica para buscar no Mercado Pago...
+                // (Esta parte pode ser otimizada no futuro para não chamar a API em loop)
+                const sessions = await new Preference(client).list({ expand: 'data.discounts.promotion_code' }); // Exemplo
+                const affiliateSales = sessions.filter(s =>
+                    s.payment_status === 'paid' &&
+                    s.discounts?.some(d => d.promotion_code?.code.toLowerCase() === couponCode.toLowerCase())
+                );
+                salesCount = affiliateSales.length;
+                totalRevenueInCents = affiliateSales.reduce((sum, s) => sum + s.amount_total, 0);
+            }
+            
+            const profile = await AffiliateProfile.findOne({ userId: affiliate._id });
+
+            affiliateStats.push({
+                _id: affiliate._id,
+                nome: affiliate.nome,
+                email: affiliate.email,
+                couponCode: affiliate.affiliateCouponCode,
+                salesCount,
+                totalRevenueInCents,
+                profile: profile // Inclui dados de PIX, WhatsApp, etc.
+            });
+        }
+        res.json(affiliateStats);
     } catch (error) {
         res.status(500).json({ message: "Erro ao buscar afiliados." });
     }
 });
+
+app.post('/api/admin/affiliate-payout/:profileId', autenticar, isAdmin, upload.single('receipt'), async (req, res) => {
+    try {
+        const { profileId } = req.params;
+        const { amount } = req.body;
+        let receiptUrl = '';
+
+        if (req.file) {
+            const b64 = Buffer.from(req.file.buffer).toString("base64");
+            let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+            const result = await cloudinary.uploader.upload(dataURI, { folder: "bariplus_payouts" });
+            receiptUrl = result.secure_url;
+        }
+
+        const payout = { amountInCents: parseFloat(amount) * 100, receiptUrl };
+        await AffiliateProfile.findByIdAndUpdate(profileId, { $push: { payoutHistory: payout } });
+
+        res.status(201).json({ message: 'Pagamento de comissão registado com sucesso.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao registar pagamento.' });
+    }
+});
+
 
 // ✅ NOVA ROTA DE ADMIN: Anexar um comprovativo de pagamento de comissão
 app.post('/api/admin/affiliate-payout/:profileId', autenticar, isAdmin, upload.single('receipt'), async (req, res) => {
