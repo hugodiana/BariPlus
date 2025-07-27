@@ -1811,22 +1811,28 @@ app.post('/api/affiliate/apply', autenticar, async (req, res) => {
     try {
         const { whatsapp, pixKeyType, pixKey } = req.body;
         if (!whatsapp || !pixKeyType || !pixKey) {
-            return res.status(400).json({ message: "Todos os campos são obrigatórios." });
+            return res.status(400).json({ message: "Todos os campos do formulário são obrigatórios." });
         }
 
         const usuario = await User.findById(req.userId);
+        if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
+
         if (['affiliate', 'affiliate_pending', 'admin'].includes(usuario.role)) {
-            return res.status(400).json({ message: "Ação não permitida." });
+            return res.status(400).json({ message: "Você já é um afiliado ou tem uma candidatura em andamento." });
         }
 
-        // Cria o perfil de afiliado
-        await new AffiliateProfile({ userId: req.userId, whatsapp, pixKeyType, pixKey }).save();
-        // Atualiza a role do usuário
+        // Cria o novo perfil de afiliado
+        await new AffiliateProfile({ userId: req.userId, whatsapp, pixKeyType, pixKey, status: 'pending' }).save();
+        
+        // Atualiza a função do usuário para 'pendente'
         usuario.role = 'affiliate_pending';
         await usuario.save();
         
-        res.json({ message: "Candidatura enviada com sucesso! Você será notificado quando for aprovada." });
-    } catch (error) { res.status(500).json({ message: 'Erro ao processar a sua candidatura.' }); }
+        res.json({ message: "Candidatura enviada com sucesso! Entraremos em contato assim que for aprovada." });
+    } catch (error) {
+        console.error("Erro ao processar candidatura de afiliado:", error);
+        res.status(500).json({ message: 'Erro ao processar a sua candidatura.' });
+    }
 });
 
 
