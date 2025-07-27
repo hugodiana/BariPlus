@@ -1,0 +1,112 @@
+.add-btn-main {
+    background-color: var(--action-blue);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 1rem;
+    margin-bottom: var(--space-lg);
+}
+
+.exams-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.exam-entry {
+    transition: all 0.3s ease-in-out;
+}
+
+.exam-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.exam-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.exam-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.exam-latest-result {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    margin-top: var(--space-xs);
+}
+
+.accordion-icon {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-green);
+}
+
+.exam-content {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--border-color);
+    animation: fadeInContent 0.5s ease-in-out;
+}
+
+@keyframes fadeInContent {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.exam-chart-container {
+    height: 200px;
+    margin-bottom: var(--space-lg);
+}
+
+.add-result-btn {
+    display: inline-block;
+    margin-bottom: var(--space-lg);
+    background-color: var(--primary-light);
+    color: var(--primary-green);
+    border: 1px solid var(--primary-green);
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.table-responsive { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: var(--space-md); text-align: left; border-bottom: 1px solid var(--border-color); }
+td.actions { display: flex; gap: var(--space-sm); }
+.action-btn { background:transparent; border:none; cursor:pointer; font-size: 1.2rem; }
+
+/* Estilos dos formulários nos modais */
+form { display: flex; flex-direction: column; gap: var(--space-md); }
+form label { font-weight: 600; }
+form input, form select, form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+form button {
+    padding: 12px;
+    border: none;
+    border-radius: var(--border-radius);
+    background-color: var(--primary-green);
+    color: white;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: var(--space-sm);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .page-header { text-align: center; }
+    .add-btn-main { width: 100%; }
+}

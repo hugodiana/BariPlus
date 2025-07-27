@@ -30,6 +30,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyPage from './pages/VerifyPage';
 import AffiliateProgramPage from './pages/AffiliateProgramPage';
 import BecomeAffiliatePage from './pages/BecomeAffiliatePage';
+import ExamsPage from './pages/ExamsPage';
 
 // Componente para manipulação de código de referência
 function HandleReferral() {
@@ -88,6 +89,7 @@ function App() {
           <Route path="/checklist" element={<ChecklistPage />} />
           <Route path="/consultas" element={<ConsultasPage />} />
           <Route path="/medicacao" element={<MedicationPage />} />
+          <Route path="/exames" element={<ExamsPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
           <Route path="/seja-afiliado" element={<BecomeAffiliatePage />} />

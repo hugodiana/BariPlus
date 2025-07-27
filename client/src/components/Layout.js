@@ -36,6 +36,7 @@ const Layout = ({ children, usuario }) => {
           <NavLink to="/diario-alimentar">Diário Alimentar</NavLink>
           <NavLink to="/medicacao">Medicação</NavLink>
           <NavLink to="/gastos">Meus Gastos</NavLink>
+          <NavLink to="/exames">Meus Exames</NavLink>
           <NavLink to="/perfil">Meu Perfil</NavLink>
           {usuario && usuario.role === 'affiliate' && (
             <NavLink to="/portal-afiliado" className="affiliate-link">Portal do Afiliado</NavLink>
