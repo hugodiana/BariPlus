@@ -1,18 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { format } from 'date-fns';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import './ExamsPage.css';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// Base de exames pré-definidos
 const predefinedExams = [
     { name: 'Vitamina B12', unit: 'pg/mL' },
     { name: 'Vitamina D', unit: 'ng/mL' },
@@ -26,10 +25,9 @@ const predefinedExams = [
 const ExamsPage = () => {
     const [examsData, setExamsData] = useState({ examEntries: [] });
     const [loading, setLoading] = useState(true);
-    const [activeExamId, setActiveExamId] = useState(null); // Para o acordeão
+    const [activeExamId, setActiveExamId] = useState(null);
 
-    // Estados para os modais
-    const [modalType, setModalType] = useState(null); // 'add_type', 'add_result', 'edit_result'
+    const [modalType, setModalType] = useState(null);
     const [currentExamEntry, setCurrentExamEntry] = useState(null);
     const [currentResult, setCurrentResult] = useState(null);
 
@@ -43,7 +41,7 @@ const ExamsPage = () => {
             if (!res.ok) throw new Error("Falha ao carregar exames.");
             const data = await res.json();
             setExamsData(data);
-        } catch (error) { toast.error(error.message); } 
+        } catch (error) { toast.error(error.message); }
         finally { setLoading(false); }
     }, [token, apiUrl]);
 
@@ -74,7 +72,7 @@ const ExamsPage = () => {
                             onToggle={() => toggleAccordion(exam._id)}
                             onAddResult={() => { setCurrentExamEntry(exam); setModalType('add_result'); }}
                             onEditResult={(result) => { setCurrentExamEntry(exam); setCurrentResult(result); setModalType('edit_result'); }}
-                            onDeleteResult={fetchExams} // Recarrega tudo após apagar
+                            onDeleteResult={fetchExams}
                         />
                     ))}
                 </div>
@@ -82,7 +80,6 @@ const ExamsPage = () => {
                 <Card><p style={{textAlign: 'center'}}>Nenhum tipo de exame adicionado. Comece por adicionar o seu primeiro!</p></Card>
             )}
 
-            {/* Modais centralizados */}
             {modalType === 'add_type' && <AddExamTypeModal onClose={() => setModalType(null)} onSave={fetchExams} />}
             {modalType === 'add_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExams} examEntry={currentExamEntry} />}
             {modalType === 'edit_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExams} examEntry={currentExamEntry} resultToEdit={currentResult} />}
@@ -90,7 +87,6 @@ const ExamsPage = () => {
     );
 };
 
-// Componente para cada entrada de exame (acordeão)
 const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDeleteResult }) => {
     const sortedHistory = useMemo(() => 
         [...exam.history].sort((a, b) => new Date(a.date) - new Date(b.date)), 
@@ -107,7 +103,7 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDele
             tension: 0.3
         }]
     };
-    const chartOptions = { responsive: true, maintainAspectRatio: false };
+    const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
     const latestResult = sortedHistory[sortedHistory.length - 1];
 
     const handleDelete = async (resultId) => {
@@ -169,7 +165,6 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDele
     );
 };
 
-// Modal para adicionar um NOVO TIPO de exame
 const AddExamTypeModal = ({ onClose, onSave }) => {
     const [selectedPredefined, setSelectedPredefined] = useState('');
     const [customName, setCustomName] = useState('');
@@ -224,7 +219,6 @@ const AddExamTypeModal = ({ onClose, onSave }) => {
     );
 };
 
-// Modal para adicionar ou editar um RESULTADO
 const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
     const [date, setDate] = useState(resultToEdit ? format(parseISO(resultToEdit.date), 'yyyy-MM-dd') : new Date().toISOString().split('T')[0]);
     const [value, setValue] = useState(resultToEdit ? resultToEdit.value : '');
