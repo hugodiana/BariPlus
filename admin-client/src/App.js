@@ -4,7 +4,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
-// Importa o novo Layout e as novas Páginas
+// Importa o Layout e as Páginas
 import AdminLayout from './components/AdminLayout';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
@@ -14,11 +14,10 @@ import ManageAffiliatesPage from './pages/ManageAffiliatesPage';
 function App() {
   const [token, setToken] = useState(localStorage.getItem('bariplus_admin_token'));
   const [loading, setLoading] = useState(true);
-  const [usuario, setUsuario] = useState(null); // Adicionado para passar ao Layout
+  const [usuario, setUsuario] = useState(null);
 
   const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-  // Busca os dados do usuário admin logado
   const fetchMe = useCallback(async (currentToken) => {
     if (!currentToken) {
         setUsuario(null);
@@ -30,10 +29,11 @@ function App() {
             const data = await res.json();
             setUsuario(data);
         } else {
-            setUsuario(null);
+            // Se o token for inválido, faz logout
+            handleLogout();
         }
     } catch (error) {
-        setUsuario(null);
+        handleLogout();
     }
   }, [apiUrl]);
 
@@ -46,7 +46,7 @@ function App() {
   const handleLoginSuccess = (newToken) => {
     localStorage.setItem('bariplus_admin_token', newToken);
     setToken(newToken);
-    fetchMe(newToken); // Busca os dados do usuário após o login
+    fetchMe(newToken);
   };
   
   const handleLogout = () => {
@@ -64,10 +64,7 @@ function App() {
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <Routes>
-          {!token ? (
-            // Se não houver token, só a rota de login é acessível
-            <Route path="/login" element={<AdminLoginPage onLoginSuccess={handleLoginSuccess} />} />
-          ) : (
+          {token ? (
             // Se houver token, carrega as rotas protegidas
             <Route path="/*" element={
               <AdminLayout handleLogout={handleLogout} usuario={usuario}>
@@ -79,9 +76,13 @@ function App() {
                 </Routes>
               </AdminLayout>
             }/>
+          ) : (
+            // Se não houver token, só a rota de login é acessível
+            <>
+              <Route path="/login" element={<AdminLoginPage onLoginSuccess={handleLoginSuccess} />} />
+              <Route path="*" element={<Navigate to="/login" />} />
+            </>
           )}
-           {/* Se não houver token, qualquer outra rota redireciona para o login */}
-          <Route path="*" element={<Navigate to={token ? "/dashboard" : "/login"} />} />
         </Routes>
       </Router>
     </>

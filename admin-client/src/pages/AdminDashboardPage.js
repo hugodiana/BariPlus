@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import './AdminDashboardPage.css'; // Vamos criar este CSS a seguir
+import './AdminDashboardPage.css';
 
 const AdminDashboardPage = () => {
     const [stats, setStats] = useState(null);
@@ -11,6 +11,7 @@ const AdminDashboardPage = () => {
 
     useEffect(() => {
         const fetchStats = async () => {
+            setLoading(true);
             try {
                 const response = await fetch(`${apiUrl}/api/admin/stats`, {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -39,7 +40,7 @@ const AdminDashboardPage = () => {
             <h1 className="page-title">Dashboard</h1>
             <p className="page-subtitle">Visão geral do desempenho do seu aplicativo.</p>
 
-            {stats && (
+            {stats ? (
                 <div className="stats-grid">
                     <div className="stat-card">
                         <h2>{stats.totalUsers}</h2>
@@ -47,13 +48,15 @@ const AdminDashboardPage = () => {
                     </div>
                     <div className="stat-card">
                         <h2>{stats.paidUsers}</h2>
-                        <p>Contas Ativas (Pagas)</p>
+                        <p>Contas Ativas</p>
                     </div>
                     <div className="stat-card">
                         <h2>{stats.newUsersLast7Days}</h2>
                         <p>Novos nos últimos 7 dias</p>
                     </div>
                 </div>
+            ) : (
+                <p>Não foi possível carregar as estatísticas.</p>
             )}
         </div>
     );
