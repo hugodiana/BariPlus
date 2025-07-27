@@ -191,46 +191,33 @@ app.use((req, res, next) => {
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
     try {
-        const { nome, sobrenome, username, email, password } = req.body;
-
-        // 1. Valida a senha primeiro
+        const { nome, sobrenome, username, email, password, whatsapp } = req.body;
+        
         if (!validatePassword(password)) {
             return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
         }
+        if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
         
-        // 2. Verifica se o email ou username já existem
-        if (await User.findOne({ email })) {
-            return res.status(400).json({ message: 'Este e-mail já está em uso.' });
-        }
-        if (await User.findOne({ username })) {
-            return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // 3. Gera o código de verificação
         const verificationToken = crypto.randomBytes(32).toString('hex');
         const verificationExpires = new Date(Date.now() + 3600000); // 1 hora
 
-        const novoUsuario = new User({ 
-            nome, sobrenome, username, email, password: hashedPassword,
+        const novoUsuario = new User({
+            nome, sobrenome, username, email, whatsapp, password: hashedPassword,
             emailVerificationToken: verificationToken,
             emailVerificationExpires: verificationExpires,
-            isEmailVerified: false
-            
         });
         await novoUsuario.save();
 
-        // Envia o e-mail de verificação
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         await transporter.sendMail({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: novoUsuario.email,
             subject: "Ative a sua Conta no BariPlus",
-            html: `<h1>Bem-vindo(a)!</h1><p>Clique no link a seguir para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a>`,
+            html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
         });
 
-        // Cria os outros documentos associados
+        // ✅ CORREÇÃO: Passando o 'userId' para cada novo documento
         await Promise.all([
             new Checklist({ userId: novoUsuario._id }).save(),
             new Peso({ userId: novoUsuario._id }).save(),
@@ -242,10 +229,9 @@ app.post('/api/register', async (req, res) => {
         ]);
         
         res.status(201).json({ message: 'Usuário cadastrado com sucesso! Verifique seu e-mail para ativar sua conta.' });
-
-    } catch (error) { 
-        console.error("Erro fatal no registro:", error);
-        res.status(500).json({ message: 'Erro no servidor.' }); 
+    } catch (error) {
+        console.error("Erro no registro:", error);
+        res.status(500).json({ message: 'Erro no servidor.' });
     }
 });
 
