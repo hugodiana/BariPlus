@@ -105,8 +105,23 @@ form button {
     margin-top: var(--space-sm);
 }
 
-/* Responsividade */
+/* ✅ NOVIDADE: Responsividade para Celulares */
 @media (max-width: 768px) {
     .page-header { text-align: center; }
     .add-btn-main { width: 100%; }
+
+    .exam-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .accordion-icon {
+        align-self: flex-end; /* Manda o ícone para a direita */
+        margin-top: -30px; /* Sobe o ícone para alinhar */
+    }
+    
+    th, td {
+        padding: var(--space-sm); /* Diminui o espaçamento interno da tabela */
+        font-size: 14px; /* Diminui o tamanho da fonte */
+    }
 }
