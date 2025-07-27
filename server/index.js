@@ -114,10 +114,16 @@ const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Type
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
 const AffiliateProfileSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    whatsapp: { type: String, required: true },
-    pixKeyType: { type: String, required: true, enum: ['CPF/CNPJ', 'Celular', 'E-mail', 'Aleatória'] },
-    pixKey: { type: String, required: true },
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
+    whatsapp: String,
+    pixKeyType: String,
+    pixKey: String,
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    // ✅ NOVO: Campo para guardar o histórico de pagamentos de comissão
+    payoutHistory: [{
+        date: { type: Date, default: Date.now },
+        amount: Number, // Em centavos
+        receiptUrl: String // Link do Cloudinary para o comprovativo
+    }]
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);
@@ -1309,9 +1315,57 @@ app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req
         const usuario = await User.findByIdAndUpdate(userId, {
             $set: { role: 'affiliate', affiliateCouponCode: couponCode }
         }, { new: true }).select('-password');
+        if (usuario) {
+            await transporter.sendMail({
+                from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+                to: usuario.email,
+                subject: "🚀 Parabéns! Você agora é um Afiliado BariPlus!",
+                html: `
+                    <h1>Olá, ${usuario.nome}!</h1>
+                    <p>A sua candidatura para o nosso programa de afiliados foi aprovada com sucesso!</p>
+                    <p>O seu cupom de desconto exclusivo para partilhar é: <strong>${couponCode}</strong></p>
+                    <p>Você já pode aceder ao seu Portal do Afiliado dentro do aplicativo para acompanhar as suas métricas.</p>
+                    <p>Boas vendas!</p>
+                `,
+            });
+        }
         
-        res.json({ message: "Afiliado aprovado com sucesso!", usuario });
+        res.json({ message: "Afiliado aprovado e notificado com sucesso!", usuario });
     } catch (error) { res.status(500).json({ message: "Erro ao aprovar afiliado." }); }
+});
+
+// ✅ NOVA ROTA DE ADMIN: Buscar todos os afiliados e as suas estatísticas
+app.get('/api/admin/affiliates', autenticar, isAdmin, async (req, res) => {
+    try {
+        const afiliados = await User.find({ role: 'affiliate' }).populate('affiliateProfile');
+        // No futuro, podemos adicionar a lógica para buscar as vendas de cada um aqui
+        res.json(afiliados);
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar afiliados." });
+    }
+});
+
+// ✅ NOVA ROTA DE ADMIN: Anexar um comprovativo de pagamento de comissão
+app.post('/api/admin/affiliate-payout/:profileId', autenticar, isAdmin, upload.single('receipt'), async (req, res) => {
+    try {
+        const { profileId } = req.params;
+        const { amount } = req.body;
+        let receiptUrl = '';
+
+        if (req.file) {
+            const b64 = Buffer.from(req.file.buffer).toString("base64");
+            let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+            const result = await cloudinary.uploader.upload(dataURI, { folder: "bariplus_payouts" });
+            receiptUrl = result.secure_url;
+        }
+
+        const payout = { amount: parseFloat(amount) * 100, receiptUrl };
+        await AffiliateProfile.findByIdAndUpdate(profileId, { $push: { payoutHistory: payout } });
+
+        res.status(201).json({ message: 'Pagamento de comissão registado com sucesso.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao registar pagamento.' });
+    }
 });
 
 app.get('/api/affiliate/stats', autenticar, isAffiliate, async (req, res) => {
