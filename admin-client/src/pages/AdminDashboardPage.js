@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import PropTypes from 'prop-types';
 import './AdminDashboardPage.css';
-
-// Componentes auxiliares
-import LoadingSpinner from '../components/LoadingSpinner';
-import ErrorMessage from '../components/ErrorMessage';
-import StatsCard from '../components/StatsCard';
 
 const AdminDashboardPage = () => {
     const [stats, setStats] = useState(null);
@@ -39,7 +33,6 @@ const AdminDashboardPage = () => {
 
             const data = await response.json();
             
-            // Validação básica dos dados recebidos
             if (!data || typeof data !== 'object') {
                 throw new Error('Dados recebidos são inválidos');
             }
@@ -62,9 +55,54 @@ const AdminDashboardPage = () => {
         fetchStats();
     };
 
+    // Componente de Loading embutido
+    const LoadingSpinner = () => (
+        <div className="spinner-container">
+            <div className="loading-spinner"></div>
+        </div>
+    );
+
+    // Componente de Error embutido
+    const ErrorMessage = ({ message, onRetry }) => (
+        <div className="error-container">
+            <p className="error-message">{message}</p>
+            <button onClick={onRetry} className="retry-button">
+                Tentar novamente
+            </button>
+        </div>
+    );
+
+    // Componente StatsCard embutido
+    const StatsCard = ({ value, label, icon, trend }) => {
+        const getTrendClass = () => {
+            if (!trend) return '';
+            return trend > 0 ? 'trend-up' : 'trend-down';
+        };
+
+        const getTrendIcon = () => {
+            if (!trend) return null;
+            return trend > 0 ? '↑' : '↓';
+        };
+
+        return (
+            <div className="stats-card">
+                <div className="stats-card-header">
+                    <span className="stats-icon">{icon || '📊'}</span>
+                    {trend && (
+                        <span className={`trend-indicator ${getTrendClass()}`}>
+                            {getTrendIcon()} {Math.abs(trend)}%
+                        </span>
+                    )}
+                </div>
+                <div className="stats-value">{value}</div>
+                <div className="stats-label">{label}</div>
+            </div>
+        );
+    };
+
     if (loading) {
         return (
-            <div className="loading-container">
+            <div className="loading-state">
                 <LoadingSpinner />
                 <p>Carregando dashboard...</p>
             </div>
@@ -73,10 +111,12 @@ const AdminDashboardPage = () => {
 
     if (error) {
         return (
-            <ErrorMessage 
-                message={error}
-                onRetry={handleRetry}
-            />
+            <div className="dashboard-container">
+                <ErrorMessage 
+                    message={error}
+                    onRetry={handleRetry}
+                />
+            </div>
         );
     }
 
@@ -90,26 +130,21 @@ const AdminDashboardPage = () => {
             <section className="stats-section">
                 <div className="stats-grid">
                     <StatsCard 
-                        value={stats.totalUsers} 
+                        value={stats?.totalUsers || 0} 
                         label="Usuários Totais" 
                         icon="👥"
-                        trend={stats.userGrowthRate}
+                        trend={stats?.userGrowthRate}
                     />
                     <StatsCard 
-                        value={stats.paidUsers} 
+                        value={stats?.paidUsers || 0} 
                         label="Contas Ativas" 
                         icon="💰"
-                        trend={stats.paidUserGrowthRate}
+                        trend={stats?.paidUserGrowthRate}
                     />
                     <StatsCard 
-                        value={stats.newUsersLast7Days} 
+                        value={stats?.newUsersLast7Days || 0} 
                         label="Novos (7 dias)" 
                         icon="🆕"
-                    />
-                    <StatsCard 
-                        value={stats.activeUsers} 
-                        label="Usuários Ativos" 
-                        icon="📈"
                     />
                 </div>
             </section>
