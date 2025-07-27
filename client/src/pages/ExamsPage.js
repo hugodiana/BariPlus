@@ -5,6 +5,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PDFDownloadLink } from '@react-pdf/renderer';
+import html2canvas from 'html2canvas';
 
 import './ExamsPage.css';
 import Modal from '../components/Modal';
@@ -23,6 +24,55 @@ const predefinedExams = [
     { name: 'Colesterol Total', unit: 'mg/dL' },
     { name: 'Triglicerídeos', unit: 'mg/dL' },
 ];
+
+const DownloadExamsPDFButton = ({ usuario, examsData }) => {
+    const [chartImages, setChartImages] = useState({});
+    const [loading, setLoading] = useState(false);
+
+    const generateAllChartImages = async () => {
+        setLoading(true);
+        const images = {};
+        const examsWithCharts = examsData.examEntries.filter(exam => exam.history.length > 1);
+        
+        for (const exam of examsWithCharts) {
+            const chartElement = document.getElementById(`exam-chart-${exam._id}`);
+            if (chartElement) {
+                try {
+                    const canvas = await html2canvas(chartElement, { backgroundColor: null });
+                    images[exam._id] = canvas.toDataURL('image/png');
+                } catch (error) {
+                    console.error("Erro ao gerar imagem do gráfico:", error);
+                    toast.error(`Falha ao gerar gráfico para ${exam.name}`);
+                }
+            }
+        }
+        setChartImages(images);
+        setLoading(false);
+    };
+
+    if (!usuario || examsData.examEntries.length === 0) return null;
+
+    const allChartsGenerated = Object.keys(chartImages).length === examsData.examEntries.filter(e => e.history.length > 1).length;
+    
+    return (
+        <div className="pdf-link-container">
+            {allChartsGenerated ? (
+                <PDFDownloadLink
+                    document={<ExamsReport usuario={usuario} examsData={examsData} chartImages={chartImages} />}
+                    fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                    className="pdf-link ready"
+                >
+                    {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
+                </PDFDownloadLink>
+            ) : (
+                <button onClick={generateAllChartImages} className="pdf-link generate" disabled={loading}>
+                    {loading ? 'A gerar gráficos...' : 'Exportar Relatório'}
+                </button>
+            )}
+        </div>
+    );
+};
+
 
 const ExamsPage = () => {
     const [examsData, setExamsData] = useState({ examEntries: [] });
@@ -74,15 +124,7 @@ const ExamsPage = () => {
                     <h1>Meus Exames</h1>
                     <p>Acompanhe a evolução dos seus exames laboratoriais.</p>
                 </div>
-                {examsData.examEntries.length > 0 && (
-                    <PDFDownloadLink
-                        document={<ExamsReport usuario={usuario} examsData={examsData} />}
-                        fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                        className="pdf-link"
-                    >
-                        {({ loading }) => (loading ? 'A gerar PDF...' : 'Exportar Relatório')}
-                    </PDFDownloadLink>
-                )}
+                <DownloadExamsPDFButton usuario={usuario} examsData={examsData} />
             </div>
             
             <button className="add-btn-main" onClick={() => setModalType('add_type')}>+ Adicionar Tipo de Exame</button>
@@ -161,7 +203,7 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDele
             {isActive && (
                 <div className="exam-content">
                     {sortedHistory.length > 1 && (
-                        <div className="exam-chart-container">
+                        <div className="exam-chart-container" id={`exam-chart-${exam._id}`}>
                             <Line data={chartData} options={chartOptions} />
                         </div>
                     )}

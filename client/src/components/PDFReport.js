@@ -1,6 +1,7 @@
 import React from 'react';
 import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
 import { format } from 'date-fns';
+import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
 
 // Registra a fonte (opcional, mas deixa o PDF mais bonito)
 // Font.register({ family: 'Inter', src: 'URL_DA_FONTE_INTER_AQUI' }); // Podemos adicionar depois
@@ -75,6 +76,12 @@ const styles = StyleSheet.create({
         color: 'grey',
         fontSize: 10,
     },
+    chartImage: {
+        width: '100%',
+        height: 'auto',
+        marginBottom: 20,
+    }
+
 });
 
 // O nosso componente de Relatório de Progresso
@@ -85,6 +92,7 @@ const ProgressReport = ({ usuario, historico }) => (
             
             <Text style={styles.title}>Relatório de Progresso</Text>
             <Text style={styles.subtitle}>Paciente: {usuario.nome} {usuario.sobrenome}</Text>
+            {chartImage && <Image src={chartImage} style={styles.chartImage} />}
 
             <View style={styles.table}>
                 {/* Cabeçalho da Tabela */}

@@ -1,17 +1,64 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
+import html2canvas from 'html2canvas';
+
 import './ProgressoPage.css';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
-import ProgressReport from '../components/PDFReport'; // Garanta que este componente existe
+import ProgressReport from '../components/PDFReport';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+
+// Componente auxiliar para o botão de PDF
+const DownloadPDFButton = ({ usuario, historico }) => {
+    const [chartImage, setChartImage] = useState(null);
+    const [loading, setLoading] = useState(false);
+    
+    const generateChartImage = async () => {
+        setLoading(true);
+        // O elemento 'progress-chart' precisa de estar visível para ser capturado
+        const chartElement = document.getElementById('progress-chart');
+        if (chartElement) {
+            try {
+                const canvas = await html2canvas(chartElement, { backgroundColor: null }); // Fundo transparente
+                setChartImage(canvas.toDataURL('image/png'));
+            } catch (error) {
+                toast.error("Erro ao gerar a imagem do gráfico.");
+                console.error(error);
+            }
+        } else {
+            toast.error("Não foi possível encontrar o gráfico para exportar.");
+        }
+        setLoading(false);
+    };
+
+    if (!usuario || historico.length === 0) return null;
+
+    return (
+        <div className="pdf-link-container">
+            {chartImage ? (
+                <PDFDownloadLink
+                    document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage} />}
+                    fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                    className="pdf-link ready"
+                >
+                    {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
+                </PDFDownloadLink>
+            ) : (
+                <button onClick={generateChartImage} className="pdf-link generate" disabled={loading}>
+                    {loading ? 'A gerar gráfico...' : 'Exportar para PDF'}
+                </button>
+            )}
+        </div>
+    );
+};
+
 
 const ProgressoPage = () => {
     const [historico, setHistorico] = useState([]);
@@ -28,7 +75,6 @@ const ProgressoPage = () => {
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    // ✅ CORREÇÃO: Apenas UMA função para buscar todos os dados
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -50,7 +96,6 @@ const ProgressoPage = () => {
         }
     }, [token, apiUrl]);
 
-    // ✅ CORREÇÃO: Apenas UM useEffect para chamar a função
     useEffect(() => {
         fetchData();
     }, [fetchData]);
@@ -79,7 +124,7 @@ const ProgressoPage = () => {
             toast.success('Progresso registrado com sucesso!');
             setIsModalOpen(false);
             setNovoPeso(''); setCintura(''); setQuadril(''); setBraco(''); setFoto(null);
-            fetchData(); // Recarrega todos os dados
+            fetchData();
         } catch (error) {
             toast.error('Erro ao salvar progresso.');
         }
@@ -96,6 +141,7 @@ const ProgressoPage = () => {
             tension: 0.3
         }]
     };
+
     const chartOptions = {
         responsive: true,
         plugins: {
@@ -113,22 +159,14 @@ const ProgressoPage = () => {
                     <h1>Meu Progresso</h1>
                     <p>Visualize sua evolução de peso, medidas e fotos.</p>
                 </div>
-                {historico.length > 0 && usuario && (
-                    <PDFDownloadLink
-                        document={<ProgressReport usuario={usuario} historico={historico} />}
-                        fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                        className="pdf-link"
-                    >
-                        {({ loading }) => (loading ? 'A gerar PDF...' : 'Exportar para PDF')}
-                    </PDFDownloadLink>
-                )}
+                <DownloadPDFButton usuario={usuario} historico={historico} />
             </div>
 
             <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar Novo Registro</button>
 
             {historico.length > 0 ? (
                 <div className="progresso-content">
-                    <Card className="chart-card">
+                    <Card className="chart-card" id="progress-chart">
                         <Line options={chartOptions} data={chartData} />
                     </Card>
                     {historico.filter(item => item.fotoUrl).length > 0 && (
@@ -181,7 +219,6 @@ const ProgressoPage = () => {
                     <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar Novo Registro</button>
                 </div>
             )}
-
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>Novo Registro de Progresso</h2>
                 <form onSubmit={handleSubmitProgresso} className="progresso-form">

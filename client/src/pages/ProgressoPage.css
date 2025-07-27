@@ -106,3 +106,9 @@
     text-decoration: none;
     font-weight: 600;
 }
+
+.chart-card {
+    position: relative; /* Essencial para o gráfico se ajustar */
+    height: 350px;      /* Altura fixa para o gráfico principal */
+    padding: var(--space-md);
+}
