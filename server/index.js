@@ -1257,45 +1257,34 @@ app.post('/api/admin/grant-access/:userId', autenticar, isAdmin, async (req, res
 });
 
 // ROTA DE ADMIN: Promover um usuário a afiliado e criar o seu cupom
+// Em server/index.js
+
 app.post('/api/admin/promote-to-affiliate/:userId', autenticar, isAdmin, async (req, res) => {
     try {
         const { userId } = req.params;
-        const { couponCode, commissionPercent } = req.body;
+        const { couponCode } = req.body;
 
-        if (!couponCode || !commissionPercent) {
-            return res.status(400).json({ message: "Código do cupom e percentagem são obrigatórios." });
+        if (!couponCode) {
+            return res.status(400).json({ message: "O código do cupom é obrigatório." });
         }
-
-        // NOVIDADE: Comunicação com a API do Mercado Pago para criar a campanha de desconto
-        // Usamos o axios que já está instalado
-        await axios.post('https://api.mercadopago.com/v1/discounts/campaigns', {
-            name: `Campanha Afiliado - ${couponCode}`,
-            coupon_code: couponCode,
-            percent_off: commissionPercent,
-            amount_off: 0, // Como é percentagem, o valor fixo é 0
-            max_redeemable_amount: null, // Sem limite de valor
-        }, {
-            headers: {
-                'Authorization': `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}`,
-                'Content-Type': 'application/json'
-            }
-        });
         
-        console.log(`Cupom ${couponCode} criado com sucesso no Mercado Pago.`);
-
-        // 3. Atualiza o usuário no nosso banco de dados
+        // Apenas atualiza o usuário no nosso banco de dados com o código do cupom
         const usuario = await User.findByIdAndUpdate(userId, {
-            $set: {
-                role: 'affiliate',
-                affiliateCouponCode: couponCode
+            $set: { 
+                role: 'affiliate', 
+                affiliateCouponCode: couponCode 
             }
         }, { new: true }).select('-password');
         
-        res.json({ message: "Usuário promovido e cupom criado com sucesso!", usuario });
+        if (!usuario) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+
+        res.json({ message: "Usuário promovido a afiliado com sucesso!", usuario });
 
     } catch (error) {
-        console.error("Erro ao promover afiliado:", error.response ? error.response.data : error.message);
-        res.status(500).json({ message: "Erro ao criar cupom ou promover usuário." });
+        console.error("Erro ao promover afiliado:", error);
+        res.status(500).json({ message: "Erro ao promover afiliado." });
     }
 });
 
