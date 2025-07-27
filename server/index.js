@@ -1917,6 +1917,22 @@ app.post('/api/create-payment-preference', autenticar, async (req, res) => {
     }
 });
 
+// Rota de Admin para buscar apenas os afiliados com candidatura pendente
+app.get('/api/admin/pending-affiliates', autenticar, isAdmin, async (req, res) => {
+    try {
+        // Encontra os perfis de afiliados pendentes e já inclui os dados do usuário associado
+        const pendingProfiles = await AffiliateProfile.find({ status: 'pending' })
+            .populate({
+                path: 'userId',
+                select: 'nome sobrenome email username' // Seleciona apenas os campos que queremos mostrar
+            });
+        
+        res.json(pendingProfiles);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar candidaturas pendentes.' });
+    }
+});
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Erro interno no servidor' });
