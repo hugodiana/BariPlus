@@ -135,3 +135,34 @@ form button {
     opacity: 0; /* Garante que é invisível */
     z-index: -10; /* Garante que não fica por cima de nada */
 }
+
+.pdf-link-container {
+    display: flex;
+    align-items: center;
+}
+
+.pdf-link {
+    background-color: var(--primary-green);
+    color: white;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.pdf-link:disabled {
+    background-color: var(--text-light);
+    cursor: not-allowed;
+}
+
+.pdf-link.ready {
+    background-color: var(--action-blue);
+}
+
+.pdf-link:hover {
+    opacity: 0.9;
+}

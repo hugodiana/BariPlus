@@ -15,7 +15,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// Componente auxiliar para o botão de PDF
 const DownloadPDFButton = ({ usuario, historico }) => {
     const [chartImage, setChartImage] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -28,27 +27,26 @@ const DownloadPDFButton = ({ usuario, historico }) => {
         if (chartElement) {
             try {
                 const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
-                setChartImage(canvas.toDataURL('image/png'));
+                setChartImage(canvas.toDataURL('image/png', 0.9));
             } catch (error) {
                 toast.error("Erro ao gerar a imagem do gráfico.");
                 setIsGenerating(false);
             }
         } else {
-            toast.warn("Gráfico não encontrado para exportação. Tente novamente.");
-            setIsGenerating(false);
+            setChartImage('no-chart'); // Define um valor para indicar que não há gráfico, mas o PDF pode ser gerado
         }
     };
 
-    if (!usuario || historico.length < 2) return null;
+    if (!usuario || historico.length === 0) return null;
 
     if (chartImage) {
         return (
             <PDFDownloadLink
-                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage} />}
+                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage !== 'no-chart' ? chartImage : null} />}
                 fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
                 className="pdf-link ready"
             >
-                {({ loading }) => (loading ? 'A preparar...' : 'Baixar PDF Agora')}
+                {({ loading }) => (loading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
             </PDFDownloadLink>
         );
     }
@@ -59,6 +57,7 @@ const DownloadPDFButton = ({ usuario, historico }) => {
         </button>
     );
 };
+
 
 const ProgressoPage = () => {
     const [historico, setHistorico] = useState([]);
