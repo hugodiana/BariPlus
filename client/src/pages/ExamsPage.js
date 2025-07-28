@@ -28,55 +28,80 @@ const predefinedExams = [
 const DownloadExamsPDFButton = ({ usuario, examsData }) => {
     const [chartImages, setChartImages] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [shouldRenderChartsForPDF, setShouldRenderChartsForPDF] = useState(false);
 
-    const generateAllChartImages = async () => {
-        setIsGenerating(true);
-        toast.info("A preparar os gráficos para o relatório...");
-        
-        const images = {};
-        // Encontra todos os exames que têm um gráfico visível (dentro de um acordeão aberto)
-        const examsWithCharts = examsData.examEntries.filter(exam => exam.history.length > 1);
+    // Este useEffect é acionado DEPOIS de os gráficos serem renderizados no "estúdio"
+    useEffect(() => {
+        if (!shouldRenderChartsForPDF) return;
 
-        for (const exam of examsWithCharts) {
-            const chartElement = document.getElementById(`exam-chart-${exam._id}`);
-            if (chartElement) {
-                try {
-                    const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
-                    images[exam._id] = canvas.toDataURL('image/png', 0.9);
-                } catch (error) {
-                    console.error("Erro ao gerar imagem do gráfico:", error);
+        const generateImages = async () => {
+            const images = {};
+            const examsWithCharts = examsData.examEntries.filter(exam => exam.history.length > 1);
+
+            for (const exam of examsWithCharts) {
+                const chartElement = document.getElementById(`pdf-chart-${exam._id}`);
+                if (chartElement) {
+                    try {
+                        const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
+                        images[exam._id] = canvas.toDataURL('image/png', 0.9);
+                    } catch (error) { console.error("Erro ao gerar imagem:", error); }
                 }
             }
-        }
-        setChartImages(images);
-        setIsGenerating(false);
-        if (Object.keys(images).length > 0) {
+            setChartImages(images);
+            setIsGenerating(false);
+            setShouldRenderChartsForPDF(false); // Limpa o estúdio
             toast.success("Gráficos prontos! Pode baixar o seu PDF.");
-        } else {
-            toast.warn("Nenhum gráfico visível para exportar. Abra os exames que deseja incluir no relatório.");
-        }
+        };
+        
+        // Pequeno delay para garantir que o React renderizou os gráficos no estúdio
+        const timer = setTimeout(generateImages, 100); 
+        return () => clearTimeout(timer);
+
+    }, [shouldRenderChartsForPDF, examsData, usuario]);
+
+
+    const handlePreparePDF = () => {
+        setIsGenerating(true);
+        toast.info("A preparar os gráficos para o relatório...");
+        // Ativa a renderização dos gráficos no "estúdio"
+        setShouldRenderChartsForPDF(true);
     };
 
     if (!usuario || examsData.examEntries.length === 0) return null;
 
-    if (chartImages) {
-        return (
-            <PDFDownloadLink
-                document={<ExamsReport usuario={usuario} examsData={examsData} chartImages={chartImages} />}
-                fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                className="pdf-link ready"
-            >
-                {({ loading }) => (loading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
-            </PDFDownloadLink>
-        );
-    }
-
     return (
-        <button onClick={generateAllChartImages} className="pdf-link generate" disabled={isGenerating}>
-            {isGenerating ? 'A gerar gráficos...' : 'Exportar Relatório'}
-        </button>
+        <>
+            {chartImages ? (
+                <PDFDownloadLink
+                    document={<ExamsReport usuario={usuario} examsData={examsData} chartImages={chartImages} />}
+                    fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                    className="pdf-link ready"
+                >
+                    {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
+                </PDFDownloadLink>
+            ) : (
+                <button onClick={handlePreparePDF} className="pdf-link generate" disabled={isGenerating}>
+                    {isGenerating ? 'A gerar gráficos...' : 'Exportar Relatório'}
+                </button>
+            )}
+
+            {/* O "Estúdio Fotográfico" Invisível */}
+            <div className="pdf-chart-studio">
+                {shouldRenderChartsForPDF && examsData.examEntries.map(exam =>
+                    exam.history.length > 1 && (
+                        <div key={exam._id} style={{ width: '500px', height: '300px' }} id={`pdf-chart-${exam._id}`}>
+                            <Line data={{
+                                labels: exam.history.map(h => format(parseISO(h.date), 'dd/MM/yy')),
+                                datasets: [{ label: exam.name, data: exam.history.map(h => h.value), borderColor: '#007aff', backgroundColor: 'rgba(0, 122, 255, 0.1)', fill: true }]
+                            }} options={{ animation: false, responsive: true }} />
+                        </div>
+                    )
+                )}
+            </div>
+        </>
     );
 };
+
 
 
 const ExamsPage = () => {

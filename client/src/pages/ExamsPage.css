@@ -128,3 +128,10 @@ form button {
         font-size: 14px; /* Diminui o tamanho da fonte */
     }
 }
+.pdf-chart-studio {
+    position: absolute;
+    left: -9999px; /* Joga o estúdio para muito longe da tela */
+    top: -9999px;
+    opacity: 0; /* Garante que é invisível */
+    z-index: -10; /* Garante que não fica por cima de nada */
+}
