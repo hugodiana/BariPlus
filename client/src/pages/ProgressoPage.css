@@ -33,7 +33,5 @@
 .form-row { display: flex; gap: var(--space-md); }
 .form-group { flex: 1; }
 
-@media (max-width: 768px) {
-    .photo-gallery { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
-    .photo-item img { height: 100px; }
-}
+.chart-container { position: relative; height: 300px; width: 100%; }
+@media (max-width: 768px) { .chart-container { height: 250px; } }
