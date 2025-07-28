@@ -729,6 +729,38 @@ app.get('/api/pesos', autenticar, async (req, res) => {
     }
 });
 
+app.put('/api/user/profile', autenticar, async (req, res) => {
+    try {
+        const { nome, sobrenome, whatsapp, detalhesCirurgia } = req.body;
+
+        // Monta o objeto de atualização apenas com os campos fornecidos
+        const updateData = {
+            nome,
+            sobrenome,
+            whatsapp,
+            'detalhesCirurgia.fezCirurgia': detalhesCirurgia.fezCirurgia,
+            'detalhesCirurgia.dataCirurgia': detalhesCirurgia.dataCirurgia,
+            'detalhesCirurgia.altura': detalhesCirurgia.altura,
+            'detalhesCirurgia.pesoInicial': detalhesCirurgia.pesoInicial,
+        };
+
+        const usuarioAtualizado = await User.findByIdAndUpdate(
+            req.userId,
+            { $set: updateData },
+            { new: true, runValidators: true } // 'new: true' retorna o documento atualizado
+        ).select('-password');
+
+        if (!usuarioAtualizado) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+
+        res.json(usuarioAtualizado);
+    } catch (error) {
+        console.error("Erro ao atualizar perfil:", error);
+        res.status(500).json({ message: 'Erro ao atualizar o perfil.' });
+    }
+});
+
 // --- ROTAS DE CHECKLIST ---
 app.get('/api/checklist', autenticar, async (req, res) => {
     try {
