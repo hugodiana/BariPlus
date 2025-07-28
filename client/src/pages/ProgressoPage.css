@@ -33,5 +33,9 @@
 .form-row { display: flex; gap: var(--space-md); }
 .form-group { flex: 1; }
 
-.chart-container { position: relative; height: 300px; width: 100%; }
+.chart-container {
+    position: relative; /* Essencial para o gráfico se ajustar */
+    height: 300px;      /* Altura fixa para o gráfico principal */
+    width: 100%;        /* Garante que ocupa a largura do card */
+}
 @media (max-width: 768px) { .chart-container { height: 250px; } }

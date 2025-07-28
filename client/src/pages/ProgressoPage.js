@@ -174,8 +174,10 @@ const ProgressoPage = () => {
 
             {historico.length > 0 ? (
                 <div className="progresso-content">
-                    <Card className="chart-card" id="progress-chart-for-pdf">
-                        <Line options={chartOptions} data={chartData} />
+                    <Card>
+                        <div className="chart-container" id="progress-chart-for-pdf">
+                            <Line options={chartOptions} data={chartData} />
+                        </div>
                     </Card>
                     {historico.filter(item => item.fotoUrl).length > 0 && (
                         <Card>
