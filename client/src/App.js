@@ -12,8 +12,6 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import PricingPage from './pages/PricingPage';
 import PaymentStatusPage from './pages/PaymentStatusPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import PaymentCancelPage from './pages/PaymentCancelPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import OnboardingPage from './pages/OnboardingPage';
 import Layout from './components/Layout';
@@ -28,7 +26,6 @@ import FoodDiaryPage from './pages/FoodDiaryPage';
 import GastosPage from './pages/GastosPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyPage from './pages/VerifyPage';
-import AffiliateProgramPage from './pages/AffiliateProgramPage';
 import BecomeAffiliatePage from './pages/BecomeAffiliatePage';
 import ExamsPage from './pages/ExamsPage';
 
@@ -78,8 +75,8 @@ function App() {
       });
     }
   }, []);
-  
 
+  // ✅ CORREÇÃO: Movido para dentro do 'App' para aceder ao 'usuario'
   const AppRoutes = () => {
     return (
       <Layout usuario={usuario}>
@@ -109,11 +106,12 @@ function App() {
     <>
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
+        {/* ✅ CORREÇÃO: Adicionado o componente HandleReferral aqui */}
+        <HandleReferral /> 
         <Routes>
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/termos" element={<TermsPage />} />
-          <Route path="/afiliados" element={<AffiliateProgramPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
           <Route path="/verify-email/:token" element={<VerifyPage />} />
@@ -124,7 +122,7 @@ function App() {
             !usuario.isEmailVerified ? <Navigate to="/verify-email" state={{ email: usuario.email }} /> :
             !usuario.pagamentoEfetuado ? <Navigate to="/planos" /> :
             !usuario.onboardingCompleto ? <Navigate to="/bem-vindo" /> :
-            <AppRoutes usuario={usuario} />
+            <AppRoutes /> // Removido 'usuario={usuario}' pois AppRoutes já o "enxerga"
           }/>
           
           <Route path="/planos" element={usuario ? <PricingPage /> : <Navigate to="/login" />} />
