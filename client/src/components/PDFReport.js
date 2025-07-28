@@ -19,6 +19,7 @@ const styles = StyleSheet.create({
         fontSize: 22,
         textAlign: 'center',
         marginBottom: 10,
+        fontFamily: 'Helvetica-Bold',
     },
     subtitle: {
         fontSize: 14,
@@ -50,7 +51,7 @@ const styles = StyleSheet.create({
         borderLeftWidth: 0, 
         borderTopWidth: 0,
         backgroundColor: '#f2f2f2',
-        padding: 5
+        padding: 6
     },
     tableCol: { 
         width: "25%", 
@@ -59,11 +60,11 @@ const styles = StyleSheet.create({
         borderColor: '#bfbfbf',
         borderLeftWidth: 0, 
         borderTopWidth: 0,
-        padding: 5
+        padding: 6
     },
     tableCellHeader: {
         fontSize: 11,
-        fontWeight: 'bold'
+        fontFamily: 'Helvetica-Bold',
     },
     tableCell: { 
         fontSize: 9 
@@ -71,8 +72,8 @@ const styles = StyleSheet.create({
     footer: {
         position: 'absolute',
         bottom: 30,
-        left: 30,
-        right: 30,
+        left: 0,
+        right: 40,
         textAlign: 'center',
         color: 'grey',
         fontSize: 10,
@@ -82,7 +83,7 @@ const styles = StyleSheet.create({
 const ProgressReport = ({ usuario, historico, chartImage }) => (
     <Document>
         <Page size="A4" style={styles.page}>
-            <Text style={styles.header}>Relatório Gerado pelo BariPlus - www.bariplus.com.br</Text>
+            <Text style={styles.header} fixed>Relatório Gerado pelo BariPlus</Text>
             
             <Text style={styles.title}>Relatório de Progresso</Text>
             <Text style={styles.subtitle}>Paciente: {usuario.nome} {usuario.sobrenome}</Text>
@@ -106,7 +107,9 @@ const ProgressReport = ({ usuario, historico, chartImage }) => (
                 ))}
             </View>
             
-            <Text style={styles.footer}>Gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}</Text>
+            <Text style={styles.footer} fixed>
+                Gerado em {format(new Date(), 'dd/MM/yyyy HH:mm')}
+            </Text>
         </Page>
     </Document>
 );
