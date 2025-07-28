@@ -1,4 +1,9 @@
-.progresso-content { display: flex; flex-direction: column; gap: var(--space-xl); }
+.progresso-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
 .add-btn {
     background-color: var(--action-blue);
     color: white;
@@ -9,33 +14,160 @@
     cursor: pointer;
     font-size: 14px;
     margin-bottom: var(--space-lg);
-    align-self: flex-start; /* Alinha o botão à esquerda */
+    align-self: flex-start;
 }
-.chart-card { position: relative; height: 350px; padding: var(--space-md); }
-.progresso-content h3 { margin-top: 0; color: var(--primary-green); }
-.photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-md); }
-.photo-item img { width: 100%; height: 120px; object-fit: cover; border-radius: var(--border-radius); border: 2px solid var(--border-color); }
-.photo-item time { font-size: 12px; color: var(--text-light); margin-top: var(--space-sm); display: block; text-align: center; }
-.table-responsive { overflow-x: auto; }
-.progresso-content table { width: 100%; border-collapse: collapse; margin-top: var(--space-md); }
-.progresso-content th, .progresso-content td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); }
-.progresso-content th { color: var(--text-light); }
-.progresso-form label { display: block; margin-bottom: var(--space-sm); font-weight: 600; }
-.progresso-form input { width: 100%; padding: 12px; margin-bottom: var(--space-md); border: 1px solid var(--border-color); border-radius: 4px; }
-.progresso-form button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary-green); color: white; }
+
+.chart-card {
+    position: relative;
+    height: 350px;
+    padding: var(--space-md);
+}
+
+.progresso-content h3 {
+    margin-top: 0;
+    color: var(--primary-green);
+}
+
+.photo-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-md);
+}
+
+.photo-item img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
+}
+
+.photo-item time {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: var(--space-sm);
+    display: block;
+    text-align: center;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.progresso-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: var(--space-md);
+}
+
+.progresso-content th,
+.progresso-content td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    word-break: break-word;
+    max-width: 120px;
+}
+
+.progresso-content th {
+    color: var(--text-light);
+}
+
+.progresso-form label {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-weight: 600;
+}
+
+.progresso-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.progresso-form button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--primary-green);
+    color: white;
+}
 
 /* ✅ NOVOS ESTILOS PARA RESPONSIVIDADE E FORMULÁRIO */
-.page-header-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: var(--space-lg); }
-.pdf-link { background-color: var(--primary-green); color: white; padding: 10px 15px; border-radius: var(--border-radius); text-decoration: none; font-weight: 600; border: none; cursor: pointer; }
-.pdf-link.ready { background-color: var(--action-blue); }
-.pdf-link:disabled { background-color: var(--text-light); }
+.page-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: var(--space-lg);
+}
 
-.form-row { display: flex; gap: var(--space-md); }
-.form-group { flex: 1; }
+.pdf-link {
+    background-color: var(--primary-green);
+    color: white;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+
+.pdf-link.ready {
+    background-color: var(--action-blue);
+}
+
+.pdf-link:disabled {
+    background-color: var(--text-light);
+}
+
+.form-row {
+    display: flex;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.form-group {
+    flex: 1;
+}
 
 .chart-container {
-    position: relative; /* Essencial para o gráfico se ajustar */
-    height: 300px;      /* Altura fixa para o gráfico principal */
-    width: 100%;        /* Garante que ocupa a largura do card */
+    position: relative;
+    height: 300px;
+    width: 100%;
 }
-@media (max-width: 768px) { .chart-container { height: 250px; } }
+
+/* ✅ RESPONSIVIDADE */
+@media (max-width: 768px) {
+    .chart-container {
+        height: 250px;
+    }
+
+    .form-row {
+        flex-direction: column;
+    }
+
+    .add-btn {
+        align-self: center;
+        width: 100%;
+    }
+
+    .page-header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+@media (max-width: 500px) {
+    .chart-container {
+        height: 200px;
+    }
+
+    .photo-gallery {
+        grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    }
+}
