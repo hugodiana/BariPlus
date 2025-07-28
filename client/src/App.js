@@ -79,7 +79,7 @@ function App() {
     }
   }, []);
   
-  // ✅ CORREÇÃO: A definição do AppRoutes que estava em falta
+
   const AppRoutes = () => {
     return (
       <Layout usuario={usuario}>
@@ -93,9 +93,7 @@ function App() {
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
           <Route path="/seja-afiliado" element={<BecomeAffiliatePage />} />
-
           <Route path="/portal-afiliado" element={<AffiliatePortalPage />} />
-          
           <Route path="/gastos" element={<GastosPage />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
