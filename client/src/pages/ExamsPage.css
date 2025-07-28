@@ -62,10 +62,12 @@
 }
 
 .exam-chart-container {
-    position: relative; /* Essencial para o gráfico se ajustar */
-    height: 200px;      /* Altura para os gráficos menores de cada exame */
+    position: relative; 
+    height: 250px; /* Altura fixa para o gráfico */
+    width: 100%;
     margin-bottom: var(--space-lg);
 }
+
 
 .add-result-btn {
     display: inline-block;

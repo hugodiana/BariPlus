@@ -26,53 +26,52 @@ const predefinedExams = [
 ];
 
 const DownloadExamsPDFButton = ({ usuario, examsData }) => {
-    const [chartImages, setChartImages] = useState({});
-    const [loading, setLoading] = useState(false);
+    const [chartImages, setChartImages] = useState(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const generateAllChartImages = async () => {
-        setLoading(true);
+        setIsGenerating(true);
+        toast.info("A preparar os gráficos para o relatório...");
         const images = {};
         const examsWithCharts = examsData.examEntries.filter(exam => exam.history.length > 1);
-        
+
         for (const exam of examsWithCharts) {
             const chartElement = document.getElementById(`exam-chart-${exam._id}`);
             if (chartElement) {
                 try {
-                    const canvas = await html2canvas(chartElement, { backgroundColor: null });
-                    images[exam._id] = canvas.toDataURL('image/png');
+                    const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
+                    images[exam._id] = canvas.toDataURL('image/png', 0.9);
                 } catch (error) {
-                    console.error("Erro ao gerar imagem do gráfico:", error);
+                    console.error("Erro ao gerar imagem:", error);
                     toast.error(`Falha ao gerar gráfico para ${exam.name}`);
                 }
             }
         }
         setChartImages(images);
-        setLoading(false);
+        setIsGenerating(false);
+        toast.success("Gráficos prontos! Pode baixar o seu PDF.");
     };
 
     if (!usuario || examsData.examEntries.length === 0) return null;
 
-    const allChartsGenerated = Object.keys(chartImages).length === examsData.examEntries.filter(e => e.history.length > 1).length;
-    
+    if (chartImages) {
+        return (
+            <PDFDownloadLink
+                document={<ExamsReport usuario={usuario} examsData={examsData} chartImages={chartImages} />}
+                fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                className="pdf-link ready"
+            >
+                {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
+            </PDFDownloadLink>
+        );
+    }
+
     return (
-        <div className="pdf-link-container">
-            {allChartsGenerated ? (
-                <PDFDownloadLink
-                    document={<ExamsReport usuario={usuario} examsData={examsData} chartImages={chartImages} />}
-                    fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                    className="pdf-link ready"
-                >
-                    {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
-                </PDFDownloadLink>
-            ) : (
-                <button onClick={generateAllChartImages} className="pdf-link generate" disabled={loading}>
-                    {loading ? 'A gerar gráficos...' : 'Exportar Relatório'}
-                </button>
-            )}
-        </div>
+        <button onClick={generateAllChartImages} className="pdf-link generate" disabled={isGenerating}>
+            {isGenerating ? 'A gerar gráficos...' : 'Exportar Relatório'}
+        </button>
     );
 };
-
 
 const ExamsPage = () => {
     const [examsData, setExamsData] = useState({ examEntries: [] });
@@ -247,7 +246,7 @@ const AddExamTypeModal = ({ onClose, onSave }) => {
             : predefinedExams.find(ex => ex.name === selectedPredefined);
         
         if (!examToAdd || !examToAdd.name || !examToAdd.unit) {
-            return toast.error("Por favor, preencha todos os campos.");
+            return toast.error("Por favor, selecione ou preencha os dados do exame.");
         }
 
         try {
