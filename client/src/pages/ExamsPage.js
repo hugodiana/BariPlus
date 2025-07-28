@@ -32,7 +32,9 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
     const generateAllChartImages = async () => {
         setIsGenerating(true);
         toast.info("A preparar os gráficos para o relatório...");
+        
         const images = {};
+        // Encontra todos os exames que têm um gráfico visível (dentro de um acordeão aberto)
         const examsWithCharts = examsData.examEntries.filter(exam => exam.history.length > 1);
 
         for (const exam of examsWithCharts) {
@@ -42,14 +44,17 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
                     const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
                     images[exam._id] = canvas.toDataURL('image/png', 0.9);
                 } catch (error) {
-                    console.error("Erro ao gerar imagem:", error);
-                    toast.error(`Falha ao gerar gráfico para ${exam.name}`);
+                    console.error("Erro ao gerar imagem do gráfico:", error);
                 }
             }
         }
         setChartImages(images);
         setIsGenerating(false);
-        toast.success("Gráficos prontos! Pode baixar o seu PDF.");
+        if (Object.keys(images).length > 0) {
+            toast.success("Gráficos prontos! Pode baixar o seu PDF.");
+        } else {
+            toast.warn("Nenhum gráfico visível para exportar. Abra os exames que deseja incluir no relatório.");
+        }
     };
 
     if (!usuario || examsData.examEntries.length === 0) return null;
@@ -61,7 +66,7 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
                 fileName={`Relatorio_Exames_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
                 className="pdf-link ready"
             >
-                {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
+                {({ loading }) => (loading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
             </PDFDownloadLink>
         );
     }
@@ -72,6 +77,7 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
         </button>
     );
 };
+
 
 const ExamsPage = () => {
     const [examsData, setExamsData] = useState({ examEntries: [] });

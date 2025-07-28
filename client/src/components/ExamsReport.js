@@ -1,13 +1,12 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Image } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Image } from '@react--pdf/renderer';
 import { format, parseISO } from 'date-fns';
 
-// Define os estilos para o PDF
 const styles = StyleSheet.create({
     page: {
         flexDirection: 'column',
         backgroundColor: '#FFFFFF',
-        padding: 40,
+        padding: 30,
         fontFamily: 'Helvetica'
     },
     header: {
@@ -25,15 +24,14 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 14,
         textAlign: 'center',
-        marginBottom: 30,
+        marginBottom: 25,
     },
     examBlock: {
-        marginBottom: 25,
-        // Evita que um bloco quebre no meio da página
-        breakInside: 'avoid',
+        marginBottom: 20,
+        breakInside: 'avoid', // Tenta evitar que um bloco quebre no meio da página
     },
     examTitle: {
-        fontSize: 16,
+        fontSize: 14,
         fontFamily: 'Helvetica-Bold',
         backgroundColor: '#f0f0f0',
         padding: 8,
@@ -82,7 +80,7 @@ const styles = StyleSheet.create({
         fontFamily: 'Helvetica-Bold',
     },
     tableCell: { 
-        fontSize: 10 
+        fontSize: 9 
     },
     footer: {
         position: 'absolute',
@@ -95,11 +93,11 @@ const styles = StyleSheet.create({
     },
 });
 
-// O nosso componente de Relatório de Exames
+// ✅ CORREÇÃO: O componente agora recebe 'chartImages' (no plural) como um objeto
 const ExamsReport = ({ usuario, examsData, chartImages }) => (
     <Document>
         <Page size="A4" style={styles.page}>
-            <Text style={styles.header}>Relatório Gerado pelo BariPlus - www.bariplus.com.br</Text>
+            <Text style={styles.header} fixed>Relatório Gerado pelo BariPlus</Text>
             
             <Text style={styles.title}>Relatório de Exames Laboratoriais</Text>
             <Text style={styles.subtitle}>Paciente: {usuario.nome} {usuario.sobrenome}</Text>
@@ -108,19 +106,18 @@ const ExamsReport = ({ usuario, examsData, chartImages }) => (
                 <View key={exam._id} style={styles.examBlock}>
                     <Text style={styles.examTitle}>{exam.name} ({exam.unit})</Text>
                     
+                    {/* ✅ Exibe a imagem do gráfico correspondente se ela existir */}
                     {chartImages && chartImages[exam._id] && (
                         <Image src={chartImages[exam._id]} style={styles.chartImage} />
                     )}
 
                     <View style={styles.table}>
-                        {/* Cabeçalho da Tabela */}
                         <View style={styles.tableRow}>
                             <View style={styles.tableColHeader}><Text style={styles.tableCellHeader}>Data</Text></View>
                             <View style={styles.tableColHeader}><Text style={styles.tableCellHeader}>Valor</Text></View>
                             <View style={styles.tableColHeader}><Text style={styles.tableCellHeader}>Notas</Text></View>
                         </View>
-                        {/* Linhas da Tabela */}
-                        {exam.history.sort((a, b) => new Date(b.date) - new Date(a.date)).map((result) => (
+                        {exam.history.sort((a, b) => new Date(a.date) - new Date(b.date)).map((result) => (
                             <View style={styles.tableRow} key={result._id}>
                                 <View style={styles.tableCol}><Text style={styles.tableCell}>{format(parseISO(result.date), 'dd/MM/yyyy')}</Text></View>
                                 <View style={styles.tableCol}><Text style={styles.tableCell}>{result.value}</Text></View>
