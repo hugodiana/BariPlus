@@ -140,7 +140,22 @@ const UserSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
-const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { cintura: Number, quadril: Number, braco: Number } }] });
+const PesoSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    registros: [{
+        peso: Number,
+        data: Date,
+        fotoUrl: String,
+        medidas: {
+            cintura: Number,
+            quadril: Number,
+            // ✅ NOVIDADE: Campos de braço separados
+            bracoDireito: Number,
+            bracoEsquerdo: Number
+        }
+    }]
+});
+
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
 const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
@@ -660,7 +675,7 @@ app.put('/api/user/surgery-date', autenticar, async (req, res) => {
 // Rota para Registrar Peso
 app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
     try {
-        const { peso, cintura, quadril, braco } = req.body;
+        const { peso, cintura, quadril, bracoDireito, bracoEsquerdo } = req.body;
         
         if (!peso) {
             return res.status(400).json({ message: 'O peso é obrigatório.' });
@@ -694,7 +709,9 @@ app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
             medidas: {
                 cintura: parseFloat(cintura) || null,
                 quadril: parseFloat(quadril) || null,
-                braco: parseFloat(braco) || null
+                bracoDireito: parseFloat(bracoDireito) || null,
+                bracoEsquerdo: parseFloat(bracoEsquerdo) || null
+
             }
         };
 

@@ -1,11 +1,4 @@
-/* ProgressoPage.css - Versão Final Padronizada */
-
-.progresso-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xl);
-}
-
+.progresso-content { display: flex; flex-direction: column; gap: var(--space-xl); }
 .add-btn {
     background-color: var(--action-blue);
     color: white;
@@ -18,128 +11,29 @@
     margin-bottom: var(--space-lg);
     align-self: flex-start; /* Alinha o botão à esquerda */
 }
+.chart-card { position: relative; height: 350px; padding: var(--space-md); }
+.progresso-content h3 { margin-top: 0; color: var(--primary-green); }
+.photo-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-md); }
+.photo-item img { width: 100%; height: 120px; object-fit: cover; border-radius: var(--border-radius); border: 2px solid var(--border-color); }
+.photo-item time { font-size: 12px; color: var(--text-light); margin-top: var(--space-sm); display: block; text-align: center; }
+.table-responsive { overflow-x: auto; }
+.progresso-content table { width: 100%; border-collapse: collapse; margin-top: var(--space-md); }
+.progresso-content th, .progresso-content td { padding: 12px; text-align: center; border-bottom: 1px solid var(--border-color); }
+.progresso-content th { color: var(--text-light); }
+.progresso-form label { display: block; margin-bottom: var(--space-sm); font-weight: 600; }
+.progresso-form input { width: 100%; padding: 12px; margin-bottom: var(--space-md); border: 1px solid var(--border-color); border-radius: 4px; }
+.progresso-form button { width: 100%; padding: 12px; border: none; border-radius: 4px; background-color: var(--primary-green); color: white; }
 
-/* Os cards agora são estilizados pelo componente Card.css, aqui só ficam os detalhes internos */
-.progresso-content h3 {
-    margin-top: 0;
-    color: var(--primary-green);
-}
+/* ✅ NOVOS ESTILOS PARA RESPONSIVIDADE E FORMULÁRIO */
+.page-header-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: var(--space-lg); }
+.pdf-link { background-color: var(--primary-green); color: white; padding: 10px 15px; border-radius: var(--border-radius); text-decoration: none; font-weight: 600; border: none; cursor: pointer; }
+.pdf-link.ready { background-color: var(--action-blue); }
+.pdf-link:disabled { background-color: var(--text-light); }
 
-/* Galeria de Fotos */
-.photo-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: var(--space-md);
-}
-.photo-item {
-    text-align: center;
-}
-.photo-item img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
-    border-radius: var(--border-radius);
-    border: 2px solid var(--border-color);
-    transition: transform 0.2s;
-}
-.photo-item img:hover {
-    transform: scale(1.05);
-}
-.photo-item time {
-    font-size: 12px;
-    color: var(--text-light);
-    margin-top: var(--space-sm);
-    display: block;
-}
+.form-row { display: flex; gap: var(--space-md); }
+.form-group { flex: 1; }
 
-/* Tabela de Histórico */
-.table-responsive {
-    overflow-x: auto; /* Adiciona scroll horizontal em telas pequenas */
-}
-.progresso-content table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: var(--space-md);
-}
-.progresso-content th, .progresso-content td {
-    padding: 12px;
-    text-align: center;
-    border-bottom: 1px solid var(--border-color);
-}
-.progresso-content th {
-    color: var(--text-light);
-}
-
-/* Formulário no Modal */
-.progresso-form label {
-    display: block;
-    margin-bottom: var(--space-sm);
-    font-weight: 600;
-}
-.progresso-form input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: var(--space-md);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-.progresso-form button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    background-color: var(--primary-green);
-    color: white;
-}
-
-.page-header-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--space-lg);
-}
-.page-header-actions a { /* Estilo para o PDFDownloadLink */
-    background-color: var(--primary-green);
-    color: white;
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.chart-card {
-    position: relative; /* Essencial para o gráfico se ajustar */
-    height: 350px;      /* Altura fixa para o gráfico principal */
-    padding: var(--space-md);
-}
-
-.pdf-link-container {
-    display: flex;
-    align-items: center;
-}
-
-.pdf-link {
-    background-color: var(--primary-green);
-    color: white;
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.pdf-link:disabled {
-    background-color: var(--text-light);
-    cursor: not-allowed;
-}
-
-.pdf-link.ready {
-    background-color: var(--action-blue);
-}
-
-.pdf-link:hover {
-    opacity: 0.9;
+@media (max-width: 768px) {
+    .photo-gallery { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    .photo-item img { height: 100px; }
 }

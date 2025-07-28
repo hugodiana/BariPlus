@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, 'useState, useEffect, useCallback } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
@@ -15,19 +15,16 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// Componente auxiliar para o botão de PDF
 const DownloadPDFButton = ({ usuario, historico }) => {
     const [chartImage, setChartImage] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const generateChartImage = async () => {
+    const generatePDF = async () => {
         setIsGenerating(true);
         toast.info("A preparar o seu relatório PDF...");
         
-        // Pequeno delay para garantir que o gráfico está visível no DOM
         setTimeout(async () => {
             const chartElement = document.getElementById('progress-chart-for-pdf');
-            
             if (chartElement) {
                 try {
                     const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
@@ -38,30 +35,28 @@ const DownloadPDFButton = ({ usuario, historico }) => {
                     console.error("Erro html2canvas:", error);
                 }
             } else {
-                toast.error("Não foi possível encontrar o gráfico para exportar. Tente novamente.");
+                setChartImage('no-chart');
             }
             setIsGenerating(false);
-        }, 100); // 100ms de delay
+        }, 100);
     };
 
-    if (!usuario || historico.length < 2) {
-        return null; // Não mostra o botão se não houver dados suficientes para um gráfico
-    }
+    if (!usuario || historico.length < 2) return null;
 
     if (chartImage) {
         return (
             <PDFDownloadLink
-                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage} />}
+                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage !== 'no-chart' ? chartImage : null} />}
                 fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
                 className="pdf-link ready"
             >
-                {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar...' : 'Baixar PDF Agora')}
+                {({ loading }) => (loading ? 'A preparar...' : 'Baixar PDF Agora')}
             </PDFDownloadLink>
         );
     }
 
     return (
-        <button onClick={generateChartImage} className="pdf-link generate" disabled={isGenerating}>
+        <button onClick={generatePDF} className="pdf-link generate" disabled={isGenerating}>
             {isGenerating ? 'A gerar gráfico...' : 'Exportar para PDF'}
         </button>
     );
@@ -76,7 +71,8 @@ const ProgressoPage = () => {
     const [novoPeso, setNovoPeso] = useState('');
     const [cintura, setCintura] = useState('');
     const [quadril, setQuadril] = useState('');
-    const [braco, setBraco] = useState('');
+    const [bracoDireito, setBracoDireito] = useState('');
+    const [bracoEsquerdo, setBracoEsquerdo] = useState('');
     const [foto, setFoto] = useState(null);
 
     const token = localStorage.getItem('bariplus_token');
@@ -117,7 +113,8 @@ const ProgressoPage = () => {
         formData.append('peso', novoPeso);
         formData.append('cintura', cintura);
         formData.append('quadril', quadril);
-        formData.append('braco', braco);
+        formData.append('bracoDireito', bracoDireito);
+        formData.append('bracoEsquerdo', bracoEsquerdo);
         if (foto) {
             formData.append('foto', foto);
         }
@@ -130,7 +127,7 @@ const ProgressoPage = () => {
             });
             toast.success('Progresso registrado com sucesso!');
             setIsModalOpen(false);
-            setNovoPeso(''); setCintura(''); setQuadril(''); setBraco(''); setFoto(null);
+            setNovoPeso(''); setCintura(''); setQuadril(''); setBracoDireito(''); setBracoEsquerdo(''); setFoto(null);
             fetchData();
         } catch (error) {
             toast.error('Erro ao salvar progresso.');
@@ -157,7 +154,7 @@ const ProgressoPage = () => {
             title: { display: true, text: 'Evolução de Peso' }
         },
         animation: {
-            duration: 0 // Desativa a animação para a captura ser instantânea
+            duration: 0
         }
     };
 
@@ -204,8 +201,8 @@ const ProgressoPage = () => {
                                         <th>Data</th>
                                         <th>Peso (kg)</th>
                                         <th>Cintura (cm)</th>
-                                        <th>Quadril (cm)</th>
-                                        <th>Braço (cm)</th>
+                                        <th>Braço D. (cm)</th>
+                                        <th>Braço E. (cm)</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -214,8 +211,8 @@ const ProgressoPage = () => {
                                             <td>{format(new Date(item.data), 'dd/MM/yyyy')}</td>
                                             <td>{item.peso?.toFixed(1) || '-'}</td>
                                             <td>{item.medidas?.cintura || '-'}</td>
-                                            <td>{item.medidas?.quadril || '-'}</td>
-                                            <td>{item.medidas?.braco || '-'}</td>
+                                            <td>{item.medidas?.bracoDireito || '-'}</td>
+                                            <td>{item.medidas?.bracoEsquerdo || '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -237,10 +234,16 @@ const ProgressoPage = () => {
                     <input type="number" step="0.1" value={novoPeso} onChange={e => setNovoPeso(e.target.value)} required />
                     <label>Medida da Cintura (cm)</label>
                     <input type="number" step="0.1" value={cintura} onChange={e => setCintura(e.target.value)} />
-                    <label>Medida do Quadril (cm)</label>
-                    <input type="number" step="0.1" value={quadril} onChange={e => setQuadril(e.target.value)} />
-                    <label>Medida do Braço (cm)</label>
-                    <input type="number" step="0.1" value={braco} onChange={e => setBraco(e.target.value)} />
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Braço Direito (cm)</label>
+                            <input type="number" step="0.1" value={bracoDireito} onChange={e => setBracoDireito(e.target.value)} />
+                        </div>
+                        <div className="form-group">
+                            <label>Braço Esquerdo (cm)</label>
+                            <input type="number" step="0.1" value={bracoEsquerdo} onChange={e => setBracoEsquerdo(e.target.value)} />
+                        </div>
+                    </div>
                     <label>Foto de Progresso (opcional)</label>
                     <input type="file" accept="image/*" onChange={handleFileChange} />
                     <button type="submit">Salvar Registro</button>
