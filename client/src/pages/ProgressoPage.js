@@ -15,49 +15,57 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
+// Componente auxiliar para o botão de PDF
 const DownloadPDFButton = ({ usuario, historico }) => {
     const [chartImage, setChartImage] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const generatePDF = async () => {
+    const generateChartImage = async () => {
         setIsGenerating(true);
         toast.info("A preparar o seu relatório PDF...");
-        const chartElement = document.getElementById('progress-chart-for-pdf');
         
-        if (chartElement) {
-            try {
-                const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
-                setChartImage(canvas.toDataURL('image/png', 0.9));
-            } catch (error) {
-                toast.error("Erro ao gerar a imagem do gráfico.");
-                setIsGenerating(false);
+        // Pequeno delay para garantir que o gráfico está visível no DOM
+        setTimeout(async () => {
+            const chartElement = document.getElementById('progress-chart-for-pdf');
+            
+            if (chartElement) {
+                try {
+                    const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
+                    setChartImage(canvas.toDataURL('image/png', 0.9));
+                    toast.success("Gráfico pronto! Pode baixar o seu PDF.");
+                } catch (error) {
+                    toast.error("Erro ao gerar a imagem do gráfico.");
+                    console.error("Erro html2canvas:", error);
+                }
+            } else {
+                toast.error("Não foi possível encontrar o gráfico para exportar. Tente novamente.");
             }
-        } else {
-            setChartImage('no-chart'); // Define um valor para indicar que não há gráfico, mas o PDF pode ser gerado
-        }
+            setIsGenerating(false);
+        }, 100); // 100ms de delay
     };
 
-    if (!usuario || historico.length === 0) return null;
+    if (!usuario || historico.length < 2) {
+        return null; // Não mostra o botão se não houver dados suficientes para um gráfico
+    }
 
     if (chartImage) {
         return (
             <PDFDownloadLink
-                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage !== 'no-chart' ? chartImage : null} />}
+                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage} />}
                 fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
                 className="pdf-link ready"
             >
-                {({ loading }) => (loading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
+                {({ loading: pdfLoading }) => (pdfLoading ? 'A preparar...' : 'Baixar PDF Agora')}
             </PDFDownloadLink>
         );
     }
 
     return (
-        <button onClick={generatePDF} className="pdf-link generate" disabled={isGenerating}>
+        <button onClick={generateChartImage} className="pdf-link generate" disabled={isGenerating}>
             {isGenerating ? 'A gerar gráfico...' : 'Exportar para PDF'}
         </button>
     );
 };
-
 
 const ProgressoPage = () => {
     const [historico, setHistorico] = useState([]);
@@ -143,9 +151,13 @@ const ProgressoPage = () => {
 
     const chartOptions = {
         responsive: true,
+        maintainAspectRatio: false,
         plugins: {
             legend: { display: false },
             title: { display: true, text: 'Evolução de Peso' }
+        },
+        animation: {
+            duration: 0 // Desativa a animação para a captura ser instantânea
         }
     };
 
