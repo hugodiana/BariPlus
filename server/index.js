@@ -13,6 +13,7 @@ const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const translate = require('@iamtraction/google-translate');
+const { Resend } = require('resend');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -101,6 +102,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
 const payment = new Payment(client);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
@@ -410,10 +412,10 @@ app.post('/api/register', async (req, res) => {
         await novoUsuario.save();
 
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        await transporter.sendMail({
-            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+        await resend.emails.send({
+            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
             to: novoUsuario.email,
-            subject: "Ative a sua Conta no BariPlus",
+            subject: 'Ative a sua Conta no BariPlus',
             html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
         });
 
@@ -504,12 +506,12 @@ app.post('/api/forgot-password', async (req, res) => {
         const resetLink = `${process.env.CLIENT_URL}/reset-password?token=${encodeURIComponent(resetToken)}`;
         console.log(`[FORGOT-PASSWORD] Link gerado: ${resetLink}`); // LOG
 
-        await transporter.sendMail({
-            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
-            to: usuario.email,
-            subject: "Redefinição de Senha",
-            html: `<p>Clique <a href="${resetLink}">aqui</a> para redefinir sua senha (válido por 1 hora)</p>`
-        });
+        await resend.emails.send({
+        from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+        to: usuario.email,
+        subject: 'Redefinição de Senha - BariPlus',
+        html: `<p>Olá ${usuario.nome}, clique no link para redefinir sua senha:</p><a href="${resetLink}">Redefinir Senha</a>`,
+    });
         
         console.log(`[FORGOT-PASSWORD] E-mail enviado para: ${usuario.email}`); // LOG
         res.json({ message: "Link de redefinição enviado com sucesso." });
