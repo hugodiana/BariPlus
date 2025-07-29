@@ -1905,16 +1905,24 @@ app.post('/api/cron/send-weigh-in-reminders', async (req, res) => {
 // ✅ NOVIDADE: ROTAS PARA O CONTROLE DE GASTOS
 app.get('/api/gastos', autenticar, async (req, res) => {
     try {
-        const { year, month } = req.query; // ex: ?year=2025&month=7
+        const { year, month } = req.query;
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
 
-        const gastos = await Gasto.find({
-            userId: req.userId,
-            data: { $gte: startDate, $lte: endDate }
-        }).sort({ data: -1 });
+        // A lógica de busca precisa de estar no subdocumento 'registros'
+        const gastoDoc = await Gasto.findOne({ userId: req.userId });
 
-        res.json(gastos);
+        if (!gastoDoc) {
+            return res.json([]);
+        }
+
+        const gastosDoMes = gastoDoc.registros.filter(r => {
+            const dataRegistro = new Date(r.data);
+            return dataRegistro >= startDate && dataRegistro <= endDate;
+        });
+
+        res.json(gastosDoMes.sort((a, b) => new Date(b.data) - new Date(a.data)));
+
     } catch (error) {
         res.status(500).json({ message: "Erro ao buscar gastos." });
     }

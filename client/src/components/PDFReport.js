@@ -54,13 +54,28 @@ const ProgressReport = ({ usuario, historico, chartImages }) => (
             <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Histórico de Registros</Text>
                 <View style={styles.table}>
-                    <View style={styles.tableRow}><View style={styles.tableColHeader}><Text>Data</Text></View><View style={styles.tableColHeader}><Text>Peso</Text></View><View style={styles.tableColHeader}><Text>Braço D.</Text></View><View style={styles.tableColHeader}><Text>Braço E.</Text></View></View>
+                    <View style={styles.tableRow}>
+                      <View style={styles.tableColHeader}><Text>Data</Text></View>
+                      <View style={styles.tableColHeader}><Text>Peso</Text></View>
+                      <View style={styles.tableColHeader}><Text>Pescoço</Text></View>
+                      <View style={styles.tableColHeader}><Text>Tórax</Text></View>
+                      <View style={styles.tableColHeader}><Text>Cintura</Text></View>
+                      <View style={styles.tableColHeader}><Text>Abdômen</Text></View>
+                      <View style={styles.tableColHeader}><Text>Quadril</Text></View>
+                      <View style={styles.tableColHeader}><Text>Braço D.</Text></View>
+                      <View style={styles.tableColHeader}><Text>Braço E.</Text></View>
+                </View>
                     {historico.map((item, index) => (
                         <View style={styles.tableRow} key={index}>
-                            <View style={styles.tableCol}><Text style={styles.tableCell}>{format(new Date(item.data), 'dd/MM/yyyy')}</Text></View>
-                            <View style={styles.tableCol}><Text style={styles.tableCell}>{item.peso?.toFixed(1) || '-'}</Text></View>
-                            <View style={styles.tableCol}><Text style={styles.tableCell}>{item.medidas?.bracoDireito || '-'}</Text></View>
-                            <View style={styles.tableCol}><Text style={styles.tableCell}>{item.medidas?.bracoEsquerdo || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{format(new Date(item.data), 'dd/MM/yyyy')}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.peso?.toFixed(1) || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.medidas?.pescoco || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.medidas?.torax || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.medidas?.cintura || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.medidas?.abdomen || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.medidas?.quadril || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.medidas?.bracoDireito || '-'}</Text></View>
+                            <View style={styles.tableCol}><Text>{item.medidas?.bracoEsquerdo || '-'}</Text></View>
                         </View>
                     ))}
                 </View>
