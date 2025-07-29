@@ -15,60 +15,64 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
-// Função auxiliar para criar os dados para cada gráfico
 const createChartData = (label, data, color) => ({
     labels: data.map(item => format(new Date(item.date), 'dd/MM')),
     datasets: [{
         label: label,
         data: data.map(item => item.value),
         borderColor: color,
-        backgroundColor: `${color}1A`, // Cor com 10% de opacidade
+        backgroundColor: `${color}20`,
         fill: true,
         tension: 0.3
     }]
 });
+
 const chartOptions = (title) => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
         legend: { display: false },
-        title: { display: true, text: title }
+        title: { display: true, text: title, font: { size: 14 } }
     },
     animation: { duration: 0 }
 });
 
 const DownloadPDFButton = ({ usuario, historico }) => {
-    const [chartImage, setChartImage] = useState(null);
+    const [chartImages, setChartImages] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
     const generatePDF = async () => {
         setIsGenerating(true);
         toast.info("A preparar o seu relatório PDF...");
-        
+
         setTimeout(async () => {
-            const chartElement = document.getElementById('progress-chart-for-pdf'); // Assume um gráfico principal
-            if (chartElement) {
-                try {
-                    const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
-                    setChartImage(canvas.toDataURL('image/png', 0.9));
-                    toast.success("Gráfico pronto! Pode baixar o seu PDF.");
-                } catch (error) {
-                    toast.error("Erro ao gerar a imagem do gráfico.");
-                    console.error("Erro html2canvas:", error);
+            const chartIds = ['peso-chart', 'cintura-chart', 'quadril-chart', 'braco-d-chart'];
+            const images = {};
+            
+            for (const id of chartIds) {
+                const chartElement = document.getElementById(id);
+                if (chartElement) {
+                    try {
+                        const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
+                        images[id] = canvas.toDataURL('image/png', 0.9);
+                    } catch (error) {
+                        console.error(`Erro ao gerar imagem para o gráfico ${id}:`, error);
+                    }
                 }
-            } else {
-                setChartImage('no-chart');
             }
+            
+            setChartImages(images);
             setIsGenerating(false);
+            toast.success("Gráficos prontos! Pode baixar o seu PDF.");
         }, 100);
     };
 
     if (!usuario || historico.length === 0) return null;
 
-    if (chartImage) {
+    if (chartImages) {
         return (
             <PDFDownloadLink
-                document={<ProgressReport usuario={usuario} historico={historico} chartImage={chartImage !== 'no-chart' ? chartImage : null} />}
+                document={<ProgressReport usuario={usuario} historico={historico} chartImages={chartImages} />}
                 fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
                 className="pdf-link ready"
             >
@@ -79,10 +83,11 @@ const DownloadPDFButton = ({ usuario, historico }) => {
 
     return (
         <button onClick={generatePDF} className="pdf-link generate" disabled={isGenerating}>
-            {isGenerating ? 'A gerar gráfico...' : 'Exportar para PDF'}
+            {isGenerating ? 'A gerar gráficos...' : 'Exportar para PDF'}
         </button>
     );
 };
+
 
 const ProgressoPage = () => {
     const [historico, setHistorico] = useState([]);
@@ -90,22 +95,11 @@ const ProgressoPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
-    // Estados para todos os campos do formulário
-    const [novoPeso, setNovoPeso] = useState('');
-    const [cintura, setCintura] = useState('');
-    const [quadril, setQuadril] = useState('');
-    const [pescoco, setPescoco] = useState('');
-    const [torax, setTorax] = useState('');
-    const [abdomen, setAbdomen] = useState('');
-    const [bracoDireito, setBracoDireito] = useState('');
-    const [bracoEsquerdo, setBracoEsquerdo] = useState('');
-    const [antebracoDireito, setAntebracoDireito] = useState('');
-    const [antebracoEsquerdo, setAntebracoEsquerdo] = useState('');
-    const [coxaDireita, setCoxaDireita] = useState('');
-    const [coxaEsquerda, setCoxaEsquerda] = useState('');
-    const [panturrilhaDireita, setPanturrilhaDireita] = useState('');
-    const [panturrilhaEsquerda, setPanturrilhaEsquerda] = useState('');
-    const [foto, setFoto] = useState(null);
+    const [formState, setFormState] = useState({
+        peso: '', cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+        bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
+        coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
+    });
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -131,53 +125,51 @@ const ProgressoPage = () => {
         }
     }, [token, apiUrl]);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormState(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleFileChange = (e) => {
-        setFoto(e.target.files[0]);
+        setFormState(prev => ({ ...prev, foto: e.target.files[0] }));
     };
 
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
         const formData = new FormData();
-        formData.append('peso', novoPeso);
-        formData.append('cintura', cintura);
-        formData.append('quadril', quadril);
-        formData.append('pescoco', pescoco);
-        formData.append('torax', torax);
-        formData.append('abdomen', abdomen);
-        formData.append('bracoDireito', bracoDireito);
-        formData.append('bracoEsquerdo', bracoEsquerdo);
-        formData.append('antebracoDireito', antebracoDireito);
-        formData.append('antebracoEsquerdo', antebracoEsquerdo);
-        formData.append('coxaDireita', coxaDireita);
-        formData.append('coxaEsquerda', coxaEsquerda);
-        formData.append('panturrilhaDireita', panturrilhaDireita);
-        formData.append('panturrilhaEsquerda', panturrilhaEsquerda);
-        if (foto) formData.append('foto', foto);
-
+        Object.keys(formState).forEach(key => {
+            if (formState[key]) formData.append(key, formState[key]);
+        });
+        
         try {
-            await fetch(`${apiUrl}/api/pesos`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData,
-            });
+            await fetch(`${apiUrl}/api/pesos`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
             toast.success('Progresso registrado com sucesso!');
             setIsModalOpen(false);
-            // Limpa todos os campos
-            setNovoPeso(''); setCintura(''); setQuadril(''); setPescoco(''); setTorax(''); setAbdomen('');
-            setBracoDireito(''); setBracoEsquerdo(''); setAntebracoDireito(''); setAntebracoEsquerdo('');
-            setCoxaDireita(''); setCoxaEsquerda(''); setPanturrilhaDireita(''); setPanturrilhaEsquerda('');
-            setFoto(null);
+            setFormState({
+                peso: '', cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+                bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
+                coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
+            });
             fetchData();
         } catch (error) {
             toast.error('Erro ao salvar progresso.');
         }
     };
     
-    // Prepara os dados para todos os gráficos
+    const { pesoPerdido, imc } = useMemo(() => {
+        if (!usuario || !historico.length) return { pesoPerdido: 0, imc: 0 };
+        const pesoInicial = usuario.detalhesCirurgia?.pesoInicial || 0;
+        const pesoAtual = usuario.detalhesCirurgia?.pesoAtual || 0;
+        const alturaEmMetros = (usuario.detalhesCirurgia?.altura || 0) / 100;
+        
+        const pesoPerdido = pesoInicial - pesoAtual;
+        const imc = alturaEmMetros > 0 ? (pesoAtual / (alturaEmMetros * alturaEmMetros)) : 0;
+        
+        return { pesoPerdido, imc };
+    }, [usuario, historico]);
+    
     const chartDataSets = useMemo(() => {
         if (historico.length === 0) return {};
         return {
@@ -204,26 +196,22 @@ const ProgressoPage = () => {
 
             {historico.length > 0 ? (
                 <div className="progresso-content">
+                    <div className="summary-stats-grid">
+                        <Card className="stat-item-small"><h3>Peso Perdido</h3><p>{pesoPerdido.toFixed(1)} kg</p></Card>
+                        <Card className="stat-item-small"><h3>IMC Atual</h3><p>{imc.toFixed(1)}</p></Card>
+                    </div>
+
                     <div className="charts-grid">
-                        {chartDataSets.peso?.datasets[0].data.length > 1 && <Card><div className="chart-container" id="progress-chart-for-pdf"><Line options={chartOptions('Evolução de Peso (kg)')} data={chartDataSets.peso} /></div></Card>}
-                        {chartDataSets.cintura?.datasets[0].data.length > 1 && <Card><div className="chart-container"><Line options={chartOptions('Evolução da Cintura (cm)')} data={chartDataSets.cintura} /></div></Card>}
-                        {chartDataSets.quadril?.datasets[0].data.length > 1 && <Card><div className="chart-container"><Line options={chartOptions('Evolução do Quadril (cm)')} data={chartDataSets.quadril} /></div></Card>}
-                        {chartDataSets.bracoDireito?.datasets[0].data.length > 1 && <Card><div className="chart-container"><Line options={chartOptions('Evolução Braço Direito (cm)')} data={chartDataSets.bracoDireito} /></div></Card>}
+                        {chartDataSets.peso?.datasets[0].data.length > 1 && <Card><div id="peso-chart" className="chart-container"><Line options={chartOptions('Evolução de Peso (kg)')} data={chartDataSets.peso} /></div></Card>}
+                        {chartDataSets.cintura?.datasets[0].data.length > 1 && <Card><div id="cintura-chart" className="chart-container"><Line options={chartOptions('Evolução da Cintura (cm)')} data={chartDataSets.cintura} /></div></Card>}
+                        {chartDataSets.quadril?.datasets[0].data.length > 1 && <Card><div id="quadril-chart" className="chart-container"><Line options={chartOptions('Evolução do Quadril (cm)')} data={chartDataSets.quadril} /></div></Card>}
+                        {chartDataSets.bracoDireito?.datasets[0].data.length > 1 && <Card><div id="braco-d-chart" className="chart-container"><Line options={chartOptions('Evolução Braço Direito (cm)')} data={chartDataSets.bracoDireito} /></div></Card>}
                     </div>
 
                     {historico.filter(item => item.fotoUrl).length > 0 && (
                         <Card>
                             <h3>Galeria de Fotos</h3>
-                            <div className="photo-gallery">
-                                {historico.filter(item => item.fotoUrl).map(item => (
-                                    <div key={item._id} className="photo-item">
-                                        <a href={item.fotoUrl} target="_blank" rel="noopener noreferrer">
-                                            <img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} />
-                                        </a>
-                                        <time>{format(new Date(item.data), 'dd MMM yyyy', { locale: ptBR })}</time>
-                                    </div>
-                                ))}
-                            </div>
+                            <div className="photo-gallery">{historico.filter(item => item.fotoUrl).map(item => (<div key={item._id} className="photo-item"><a href={item.fotoUrl} target="_blank" rel="noopener noreferrer"><img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} /></a><time>{format(new Date(item.data), 'dd MMM yyyy', { locale: ptBR })}</time></div>))}</div>
                         </Card>
                     )}
                     
@@ -231,19 +219,7 @@ const ProgressoPage = () => {
                         <h3>Histórico Completo</h3>
                         <div className="table-responsive">
                             <table>
-                                <thead>
-                                    <tr>
-                                        <th>Data</th>
-                                        <th>Peso</th>
-                                        <th>Pescoço</th>
-                                        <th>Tórax</th>
-                                        <th>Abdômen</th>
-                                        <th>Cintura</th>
-                                        <th>Quadril</th>
-                                        <th>Braço D.</th>
-                                        <th>Braço E.</th>
-                                    </tr>
-                                </thead>
+                                <thead><tr><th>Data</th><th>Peso</th><th>Pescoço</th><th>Tórax</th><th>Cintura</th><th>Abdômen</th><th>Quadril</th><th>Braço D.</th><th>Braço E.</th></tr></thead>
                                 <tbody>
                                     {[...historico].reverse().map(item => (
                                         <tr key={item._id}>
@@ -251,8 +227,8 @@ const ProgressoPage = () => {
                                             <td>{item.peso?.toFixed(1) || '-'}</td>
                                             <td>{item.medidas?.pescoco || '-'}</td>
                                             <td>{item.medidas?.torax || '-'}</td>
-                                            <td>{item.medidas?.abdomen || '-'}</td>
                                             <td>{item.medidas?.cintura || '-'}</td>
+                                            <td>{item.medidas?.abdomen || '-'}</td>
                                             <td>{item.medidas?.quadril || '-'}</td>
                                             <td>{item.medidas?.bracoDireito || '-'}</td>
                                             <td>{item.medidas?.bracoEsquerdo || '-'}</td>
@@ -266,7 +242,7 @@ const ProgressoPage = () => {
             ) : (
                 <div className="empty-state-container">
                     <h3>Sem Registros de Progresso</h3>
-                    <p>Clique no botão abaixo para adicionar o seu primeiro registro.</p>
+                    <p>Clique no botão para adicionar o seu primeiro registro de avaliação física.</p>
                     <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar Novo Registro</button>
                 </div>
             )}
@@ -275,16 +251,16 @@ const ProgressoPage = () => {
                 <h2>Novo Registro de Avaliação Física</h2>
                 <form onSubmit={handleSubmitProgresso} className="progresso-form">
                     <label>Peso (kg) *</label>
-                    <input type="number" step="0.1" value={novoPeso} onChange={e => setNovoPeso(e.target.value)} required />
+                    <input name="peso" type="number" step="0.1" value={formState.peso} onChange={handleInputChange} required />
                     <hr/>
                     <h4>Circunferências (cm)</h4>
-                    <div className="form-row"><div className="form-group"><label>Pescoço</label><input type="number" step="0.1" value={pescoco} onChange={e => setPescoco(e.target.value)} /></div><div className="form-group"><label>Tórax</label><input type="number" step="0.1" value={torax} onChange={e => setTorax(e.target.value)} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Cintura</label><input type="number" step="0.1" value={cintura} onChange={e => setCintura(e.target.value)} /></div><div className="form-group"><label>Abdômen</label><input type="number" step="0.1" value={abdomen} onChange={e => setAbdomen(e.target.value)} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Quadril</label><input type="number" step="0.1" value={quadril} onChange={e => setQuadril(e.target.value)} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Braço Direito</label><input type="number" step="0.1" value={bracoDireito} onChange={e => setBracoDireito(e.target.value)} /></div><div className="form-group"><label>Braço Esquerdo</label><input type="number" step="0.1" value={bracoEsquerdo} onChange={e => setBracoEsquerdo(e.target.value)} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Antebraço Direito</label><input type="number" step="0.1" value={antebracoDireito} onChange={e => setAntebracoDireito(e.target.value)} /></div><div className="form-group"><label>Antebraço Esquerdo</label><input type="number" step="0.1" value={antebracoEsquerdo} onChange={e => setAntebracoEsquerdo(e.target.value)} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Coxa Direita</label><input type="number" step="0.1" value={coxaDireita} onChange={e => setCoxaDireita(e.target.value)} /></div><div className="form-group"><label>Coxa Esquerda</label><input type="number" step="0.1" value={coxaEsquerda} onChange={e => setCoxaEsquerda(e.target.value)} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Panturrilha Direita</label><input type="number" step="0.1" value={panturrilhaDireita} onChange={e => setPanturrilhaDireita(e.target.value)} /></div><div className="form-group"><label>Panturrilha Esquerda</label><input type="number" step="0.1" value={panturrilhaEsquerda} onChange={e => setPanturrilhaEsquerda(e.target.value)} /></div></div>
+                    <div className="form-row"><div className="form-group"><label>Pescoço</label><input name="pescoco" type="number" step="0.1" value={formState.pescoco} onChange={handleInputChange} /></div><div className="form-group"><label>Tórax</label><input name="torax" type="number" step="0.1" value={formState.torax} onChange={handleInputChange} /></div></div>
+                    <div className="form-row"><div className="form-group"><label>Cintura</label><input name="cintura" type="number" step="0.1" value={formState.cintura} onChange={handleInputChange} /></div><div className="form-group"><label>Abdômen</label><input name="abdomen" type="number" step="0.1" value={formState.abdomen} onChange={handleInputChange} /></div></div>
+                    <div className="form-row"><div className="form-group"><label>Quadril</label><input name="quadril" type="number" step="0.1" value={formState.quadril} onChange={handleInputChange} /></div></div>
+                    <div className="form-row"><div className="form-group"><label>Braço Direito</label><input name="bracoDireito" type="number" step="0.1" value={formState.bracoDireito} onChange={handleInputChange} /></div><div className="form-group"><label>Braço Esquerdo</label><input name="bracoEsquerdo" type="number" step="0.1" value={formState.bracoEsquerdo} onChange={handleInputChange} /></div></div>
+                    <div className="form-row"><div className="form-group"><label>Antebraço Direito</label><input name="antebracoDireito" type="number" step="0.1" value={formState.antebracoDireito} onChange={handleInputChange} /></div><div className="form-group"><label>Antebraço Esquerdo</label><input name="antebracoEsquerdo" type="number" step="0.1" value={formState.antebracoEsquerdo} onChange={handleInputChange} /></div></div>
+                    <div className="form-row"><div className="form-group"><label>Coxa Direita</label><input name="coxaDireita" type="number" step="0.1" value={formState.coxaDireita} onChange={handleInputChange} /></div><div className="form-group"><label>Coxa Esquerda</label><input name="coxaEsquerda" type="number" step="0.1" value={formState.coxaEsquerda} onChange={handleInputChange} /></div></div>
+                    <div className="form-row"><div className="form-group"><label>Panturrilha Direita</label><input name="panturrilhaDireita" type="number" step="0.1" value={formState.panturrilhaDireita} onChange={handleInputChange} /></div><div className="form-group"><label>Panturrilha Esquerda</label><input name="panturrilhaEsquerda" type="number" step="0.1" value={formState.panturrilhaEsquerda} onChange={handleInputChange} /></div></div>
                     <hr/>
                     <label>Foto de Progresso (opcional)</label>
                     <input type="file" accept="image/*" onChange={handleFileChange} />

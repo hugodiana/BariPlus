@@ -15,16 +15,7 @@
     margin-bottom: var(--space-lg);
     align-self: flex-start;
 }
-.charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
-}
-.charts-grid .card {
-    position: relative;
-    height: 250px;
-    padding: var(--space-md);
-}
+
 .progresso-content h3 {
     margin-top: 0;
     color: var(--primary-green);
@@ -119,4 +110,42 @@
 }
 .form-group {
     flex: 1;
+}
+
+/* ✅ NOVOS ESTILOS PARA OS CARDS DE RESUMO */
+.summary-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+}
+.stat-item-small {
+    padding: var(--space-md);
+    text-align: center;
+}
+.stat-item-small h3 {
+    margin: 0 0 5px 0;
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+.stat-item-small p {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-green);
+}
+
+/* ✅ CORREÇÃO: Estilos para o grid de gráficos e responsividade */
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-lg);
+}
+.charts-grid .card {
+    padding: var(--space-md);
+}
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
 }
