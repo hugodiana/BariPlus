@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator'; // Reutilizando nosso componente
+import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const ResetPasswordPage = () => {
-    // useParams pega o token diretamente do URL (ex: /reset-password/TOKEN123)
     const { token } = useParams();
     const navigate = useNavigate();
 
@@ -12,7 +11,6 @@ const ResetPasswordPage = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     
-    // Estado para a validação da senha forte
     const [passwordValidations, setPasswordValidations] = useState({
         length: false,
         uppercase: false,
@@ -63,7 +61,7 @@ const ResetPasswordPage = () => {
             navigate('/login');
         } catch (error) {
             toast.error(error.message || "Link inválido ou expirado.");
-            navigate('/login'); // Redireciona em caso de erro também
+            navigate('/login');
         } finally {
             setLoading(false);
         }
