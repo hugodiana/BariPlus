@@ -1365,68 +1365,7 @@ app.get('/api/food-diary/:date', autenticar, async (req, res) => {
     }
 });
 
-Nossa, peço imensas desculpas! Você está absolutamente certo, a minha última resposta foi um erro completo de formatação e ficou incompreensível. Falha grave da minha parte.
-
-Vamos tentar de novo, com calma e com o código correto. Obrigado pela paciência.
-
-A sua ideia é excelente: traduzir os resultados da busca de alimentos de volta para português e aprimorar o modal para calcular os nutrientes com base na porção. Vamos implementar estas duas melhorias agora.
-
-Missão 1: O Back-end Inteligente (Tradução e Novo Log)
-Vamos ensinar o nosso servidor a traduzir os resultados da busca e a salvar os novos dados de porção e nutrientes calculados que o front-end irá enviar.
-
-Ação: Substitua todo o conteúdo do seu ficheiro server/index.js por esta versão completa e corrigida.
-
-JavaScript
-
-require('dotenv').config();
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const multer = require('multer');
-const { v2: cloudinary } = require('cloudinary');
-const nodemailer = require('nodemailer');
-const axios = require('axios');
-const translate = require('@iamtraction/google-translate');
-// ... (outros imports)
-
-const app = express();
-// ... (toda a sua configuração de CORS, webhook, express.json, etc.)
-
-// --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({ /* ... */ }, { timestamps: true });
-
-// ✅ ATUALIZAÇÃO: Schema do Diário Alimentar agora guarda mais detalhes
-const FoodLogSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    date: String,
-    refeicoes: {
-        cafeDaManha: [{
-            name: String,
-            brand: String,
-            portion: Number, // ex: 150 (em gramas)
-            nutrients: { calories: Number, proteins: Number, carbs: Number, fats: Number }
-        }],
-        almoco: [{ name: String, brand: String, portion: Number, nutrients: { calories: Number, proteins: Number, carbs: Number, fats: Number } }],
-        jantar: [{ name: String, brand: String, portion: Number, nutrients: { calories: Number, proteins: Number, carbs: Number, fats: Number } }],
-        lanches: [{ name: String, brand: String, portion: Number, nutrients: { calories: Number, proteins: Number, carbs: Number, fats: Number } }]
-    }
-}, { timestamps: true });
-
-// ... (outros Schemas: Checklist, Peso, etc.)
-const User = mongoose.model('User', UserSchema);
-const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
-// ... (outros Models)
-
-// --- MIDDLEWARES e TRANSPORTER ---
-// ... (autenticar, isAdmin, etc.)
-
-// --- ROTAS DA API ---
-// ... (todas as suas rotas existentes)
-
-// ✅ ROTA DE BUSCA DE ALIMENTOS ATUALIZADA (com tradução de volta para PT)
-app.get('/api/foods/search', autenticar, async (req, res) => {
+aapp.get('/api/foods/search', autenticar, async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).json({ message: "É necessário um termo de busca." });
 
