@@ -170,7 +170,15 @@ const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Typ
 const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
-const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
+const GastoSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    registros: [{
+        descricao: { type: String, required: true },
+        valor: { type: Number, required: true },
+        data: { type: Date, default: Date.now },
+        categoria: { type: String, default: 'Outros' }
+    }]
+});
 const AffiliateProfileSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     whatsapp: String,
@@ -1909,13 +1917,13 @@ app.get('/api/gastos', autenticar, async (req, res) => {
         const startDate = new Date(year, month - 1, 1);
         const endDate = new Date(year, month, 0, 23, 59, 59);
 
-        // A lógica de busca precisa de estar no subdocumento 'registros'
         const gastoDoc = await Gasto.findOne({ userId: req.userId });
 
         if (!gastoDoc) {
-            return res.json([]);
+            return res.json([]); // Retorna um array vazio se o usuário ainda não tiver nenhum gasto
         }
 
+        // Filtra os registros dentro do array para o mês selecionado
         const gastosDoMes = gastoDoc.registros.filter(r => {
             const dataRegistro = new Date(r.data);
             return dataRegistro >= startDate && dataRegistro <= endDate;
@@ -1924,6 +1932,7 @@ app.get('/api/gastos', autenticar, async (req, res) => {
         res.json(gastosDoMes.sort((a, b) => new Date(b.data) - new Date(a.data)));
 
     } catch (error) {
+        console.error("Erro ao buscar gastos:", error);
         res.status(500).json({ message: "Erro ao buscar gastos." });
     }
 });
@@ -1931,19 +1940,28 @@ app.get('/api/gastos', autenticar, async (req, res) => {
 app.post('/api/gastos', autenticar, async (req, res) => {
     try {
         const { descricao, valor, categoria, data } = req.body;
-        const novoGasto = new Gasto({
-            userId: req.userId,
+        const novoRegistro = {
             descricao,
             valor: parseFloat(valor),
             categoria,
             data: data ? new Date(data) : new Date()
-        });
-        await novoGasto.save();
-        res.status(201).json(novoGasto);
+        };
+
+        // Encontra o documento de gastos do usuário e adiciona o novo registro ao array
+        const gastoDoc = await Gasto.findOneAndUpdate(
+            { userId: req.userId },
+            { $push: { registros: novoRegistro } },
+            { new: true, upsert: true } // 'upsert: true' cria o documento se ele não existir
+        );
+        
+        // Retorna apenas o último registro adicionado
+        res.status(201).json(gastoDoc.registros[gastoDoc.registros.length - 1]);
     } catch (error) {
+        console.error("Erro ao adicionar gasto:", error);
         res.status(500).json({ message: "Erro ao adicionar gasto." });
     }
 });
+
 
 app.delete('/api/gastos/:id', autenticar, async (req, res) => {
     try {
