@@ -12,6 +12,7 @@ const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');const 
 const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const translate = require('@iamtraction/google-translate');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -1354,33 +1355,47 @@ app.get('/api/foods/search', autenticar, async (req, res) => {
     if (!query) {
         return res.status(400).json({ message: "É necessário um termo de busca." });
     }
-    const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&lc=pt`;
-    
+
     try {
+        // 1. Traduz o termo de busca de português para inglês
+        const translation = await translate(query, { from: 'pt', to: 'en' });
+        const englishQuery = translation.text;
+
+        // 2. Faz a busca na API da USDA com o termo em inglês
+        const searchUrl = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(englishQuery)}&api_key=${process.env.USDA_API_KEY}&dataType=Foundation,SR%20Legacy`;
+        
         const response = await axios.get(searchUrl);
 
-        // Verifica se a resposta contém a propriedade 'products'
-        if (!response.data || !Array.isArray(response.data.products)) {
-            // Se a API externa não responder como esperado, retorna uma lista vazia
+        if (!response.data || !Array.isArray(response.data.foods)) {
             return res.json([]);
         }
 
-        const products = response.data.products.map(food => ({
-            id: food.id,
-            name: food.product_name_pt || food.product_name || 'Nome não disponível',
-            brand: food.brands || 'Marca não informada',
-            imageUrl: food.image_front_small_url || food.image_front_url || null,
-            nutrients: {
-                calories: food.nutriments['energy-kcal_100g'] || food.nutriments.energy_kcal_100g || 'N/A',
-                proteins: food.nutriments.proteins_100g || 'N/A',
-                carbs: food.nutriments.carbohydrates_100g || 'N/A',
-                fats: food.nutriments.fat_100g || 'N/A'
-            }
-        }));
+        // 3. Mapeia a resposta complexa da USDA para o nosso formato simples
+        const products = response.data.foods.map(food => {
+            const nutrients = food.foodNutrients;
+            
+            const findNutrient = (name) => {
+                const nutrient = nutrients.find(n => n.nutrientName.toLowerCase().includes(name.toLowerCase()));
+                return nutrient ? Math.round(nutrient.value) : 'N/A';
+            };
+
+            return {
+                id: food.fdcId,
+                name: food.description,
+                brand: food.brandOwner || 'Genérico/Não informado',
+                imageUrl: null, // A API da USDA não fornece imagens
+                nutrients: {
+                    calories: findNutrient('Energy'), // Em kcal
+                    proteins: findNutrient('Protein'),
+                    carbs: findNutrient('Carbohydrate'),
+                    fats: findNutrient('Total Lipid (fat)')
+                }
+            };
+        }).slice(0, 20); // Limita a 20 resultados
         
         res.json(products);
     } catch (error) {
-        console.error("Erro ao buscar na Open Food Facts:", error);
+        console.error("Erro ao buscar na API de alimentos:", error);
         res.status(500).json({ message: "Erro ao comunicar com o serviço de busca de alimentos." });
     }
 });
