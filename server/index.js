@@ -1349,6 +1349,42 @@ app.get('/api/food-diary/:date', autenticar, async (req, res) => {
     }
 });
 
+app.get('/api/foods/search', autenticar, async (req, res) => {
+    const { query } = req.query;
+    if (!query) {
+        return res.status(400).json({ message: "É necessário um termo de busca." });
+    }
+    const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20&lc=pt`;
+    
+    try {
+        const response = await axios.get(searchUrl);
+
+        // Verifica se a resposta contém a propriedade 'products'
+        if (!response.data || !Array.isArray(response.data.products)) {
+            // Se a API externa não responder como esperado, retorna uma lista vazia
+            return res.json([]);
+        }
+
+        const products = response.data.products.map(food => ({
+            id: food.id,
+            name: food.product_name_pt || food.product_name || 'Nome não disponível',
+            brand: food.brands || 'Marca não informada',
+            imageUrl: food.image_front_small_url || food.image_front_url || null,
+            nutrients: {
+                calories: food.nutriments['energy-kcal_100g'] || food.nutriments.energy_kcal_100g || 'N/A',
+                proteins: food.nutriments.proteins_100g || 'N/A',
+                carbs: food.nutriments.carbohydrates_100g || 'N/A',
+                fats: food.nutriments.fat_100g || 'N/A'
+            }
+        }));
+        
+        res.json(products);
+    } catch (error) {
+        console.error("Erro ao buscar na Open Food Facts:", error);
+        res.status(500).json({ message: "Erro ao comunicar com o serviço de busca de alimentos." });
+    }
+});
+
 app.post('/api/food-diary/log', autenticar, async (req, res) => {
     try {
         const { date, mealType, food } = req.body;
