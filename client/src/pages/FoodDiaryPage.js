@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import './FoodDiaryPage.css';
-import Card from '../components/ui/Card';
 import Modal from '../components/Modal';
+import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 const FoodDiaryPage = () => {
@@ -17,7 +16,6 @@ const FoodDiaryPage = () => {
     const [loadingDiary, setLoadingDiary] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
-    const [portion, setPortion] = useState(100);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -31,7 +29,6 @@ const FoodDiaryPage = () => {
             setDiary(data);
         } catch (error) {
             toast.error(error.message);
-            setDiary({ refeicoes: {} }); // Garante que diary nunca é null
         } finally {
             setLoadingDiary(false);
         }
@@ -48,9 +45,7 @@ const FoodDiaryPage = () => {
         setSearchResults([]);
         setMessage('');
         try {
-            const response = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!response.ok) throw new Error('Erro ao buscar alimentos.');
             const data = await response.json();
             if (data.length === 0) {
@@ -67,40 +62,27 @@ const FoodDiaryPage = () => {
     
     const handleSelectFood = (food) => {
         setSelectedFood(food);
-        setPortion(100);
         setIsModalOpen(true);
     };
     
     const handleLogFood = async (mealType) => {
-        if (!selectedFood || !portion) return toast.error("Por favor, insira uma porção.");
-        
-        const factor = portion / 100;
-        const calculatedNutrients = {
-            calories: Math.round((selectedFood.nutrients.calories || 0) * factor),
-            proteins: parseFloat(((selectedFood.nutrients.proteins || 0) * factor).toFixed(1)),
-            carbs: parseFloat(((selectedFood.nutrients.carbs || 0) * factor).toFixed(1)),
-            fats: parseFloat(((selectedFood.nutrients.fats || 0) * factor).toFixed(1)),
-        };
-
-        const foodToLog = {
-            name: selectedFood.name,
-            brand: selectedFood.brand,
-            portion: portion,
-            nutrients: calculatedNutrients,
-        };
-
+        if (!selectedFood) return;
         try {
             const res = await fetch(`${apiUrl}/api/food-diary/log`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ food: foodToLog, mealType, date: selectedDate })
+                body: JSON.stringify({ food: selectedFood, mealType, date: selectedDate })
             });
-            if (!res.ok) throw new Error("Falha ao registrar refeição.");
-            
-            toast.success(`${selectedFood.name} adicionado com sucesso!`);
+            const data = await res.json();
+            setDiary(data);
             setIsModalOpen(false);
-            fetchDiary(selectedDate);
-        } catch (error) { toast.error(error.message); }
+            setSelectedFood(null);
+            setSearchResults([]);
+            setSearchTerm('');
+            toast.success(`${selectedFood.name || 'Alimento'} adicionado com sucesso!`);
+        } catch (error) {
+            toast.error("Erro ao registrar refeição.");
+        }
     };
 
     const handleDeleteFood = async (mealType, itemId) => {
@@ -117,19 +99,14 @@ const FoodDiaryPage = () => {
         }
     };
 
-    const renderMealSection = (title, mealKey, mealArray = []) => (
+    const renderMealSection = (title, mealKey, mealArray) => (
         <div className="meal-section">
             <h4>{title}</h4>
-            {mealArray.length > 0 ? (
+            {mealArray && mealArray.length > 0 ? (
                 <ul className="logged-food-list">
                     {mealArray.map((item) => (
-                        <li key={item._id}>
-                            <div className="logged-food-info">
-                                <span>{item.name} <small>({item.portion}g)</small></span>
-                                <small className="logged-food-nutrients">
-                                    Cals: {item.nutrients.calories} | P: {item.nutrients.proteins}g
-                                </small>
-                            </div>
+                        <li key={item._id || item.id}>
+                            <span>{item.name} <small>({item.brand})</small></span>
                             <button onClick={() => handleDeleteFood(mealKey, item._id)} className="delete-food-btn">×</button>
                         </li>
                     ))}
@@ -140,18 +117,9 @@ const FoodDiaryPage = () => {
         </div>
     );
 
-    const calculatedNutrientsForModal = useMemo(() => {
-        if (!selectedFood || !portion) return { calories: 0, proteins: 0, carbs: 0, fats: 0 };
-        const factor = parseFloat(portion) / 100;
-        return {
-            calories: Math.round((selectedFood.nutrients.calories || 0) * factor),
-            proteins: ((selectedFood.nutrients.proteins || 0) * factor).toFixed(1),
-            carbs: ((selectedFood.nutrients.carbs || 0) * factor).toFixed(1),
-            fats: ((selectedFood.nutrients.fats || 0) * factor).toFixed(1),
-        };
-    }, [selectedFood, portion]);
-
-    if (loadingDiary) return <LoadingSpinner />;
+    if (loadingDiary) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <div className="page-container">
@@ -166,7 +134,13 @@ const FoodDiaryPage = () => {
                 </div>
                 <div className="search-container">
                     <form onSubmit={handleSearch}>
-                        <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Ex: Frango grelhado, maçã, etc." className="search-input" />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Ex: Frango grelhado, maçã, etc."
+                            className="search-input"
+                        />
                         <button type="submit" className="search-button" disabled={loadingSearch}>
                             {loadingSearch ? 'Buscando...' : 'Pesquisar'}
                         </button>
@@ -194,33 +168,30 @@ const FoodDiaryPage = () => {
             </div>
 
             <Card className="diary-view">
-                <h2>Refeições de {format(parseISO(selectedDate), 'dd/MM/yyyy', { locale: ptBR })}</h2>
-                <div className="meals-grid">
-                    {renderMealSection("Café da Manhã", "cafeDaManha", diary?.refeicoes?.cafeDaManha)}
-                    {renderMealSection("Almoço", "almoco", diary?.refeicoes?.almoco)}
-                    {renderMealSection("Jantar", "jantar", diary?.refeicoes?.jantar)}
-                    {renderMealSection("Lanches", "lanches", diary?.refeicoes?.lanches)}
-                </div>
+                <h2>Refeições de {format(parseISO(`${selectedDate}T12:00:00`), 'dd/MM/yyyy')}</h2>
+                {diary && diary.refeicoes ? (
+                    <div className="meals-grid">
+                        {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
+                        {renderMealSection("Almoço", "almoco", diary.refeicoes.almoco)}
+                        {renderMealSection("Jantar", "jantar", diary.refeicoes.jantar)}
+                        {renderMealSection("Lanches", "lanches", diary.refeicoes.lanches)}
+                    </div>
+                ) : (
+                    <p>Não foi possível carregar o diário para este dia.</p>
+                )}
             </Card>
             
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 {selectedFood ? (
                     <div className="food-details-modal">
                         <h2>{selectedFood.name}</h2>
-                        <small>{selectedFood.brand}</small>
-                        <div className="portion-input">
-                            <label htmlFor="portion">Porção (gramas)</label>
-                            <input id="portion" type="number" value={portion} onChange={e => setPortion(e.target.value)} />
+                        <div className="nutrient-details">
+                            <span><strong>Calorias:</strong> {selectedFood.nutrients.calories} kcal</span>
+                            <span><strong>Proteínas:</strong> {selectedFood.nutrients.proteins} g</span>
+                            <span><strong>Carboidratos:</strong> {selectedFood.nutrients.carbs} g</span>
+                            <span><strong>Gorduras:</strong> {selectedFood.nutrients.fats} g</span>
                         </div>
-                        <div className="calculated-nutrients">
-                            <h4>Nutrientes para {portion}g:</h4>
-                            <ul>
-                                <li><strong>Calorias:</strong> {calculatedNutrientsForModal.calories} kcal</li>
-                                <li><strong>Proteínas:</strong> {calculatedNutrientsForModal.proteins} g</li>
-                                <li><strong>Carboidratos:</strong> {calculatedNutrientsForModal.carbs} g</li>
-                                <li><strong>Gorduras:</strong> {calculatedNutrientsForModal.fats} g</li>
-                            </ul>
-                        </div>
+                        <p className="details-serving">Valores por 100g/100ml</p>
                         <h4>Adicionar em qual refeição?</h4>
                         <div className="meal-log-buttons">
                             <button onClick={() => handleLogFood('cafeDaManha')}>Café da Manhã</button>
@@ -230,7 +201,7 @@ const FoodDiaryPage = () => {
                         </div>
                     </div>
                 ) : (
-                    <LoadingSpinner />
+                    <p>Carregando detalhes do alimento...</p>
                 )}
             </Modal>
         </div>
