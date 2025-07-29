@@ -1,179 +1,122 @@
-/* === Variáveis e Utilitários === */
-:root {
-  --btn-padding: 10px 15px;
-}
-
-/* === Layouts Gerais === */
 .progresso-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
 }
-.page-header-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: var(--space-lg);
-}
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* === Botões Base === */
-.btn {
-  padding: var(--btn-padding);
-  border-radius: var(--border-radius);
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  color: white;
-  transition: all 0.3s ease;
-}
-.btn:hover {
-  opacity: 0.9;
-}
-.btn:focus {
-  outline: 2px solid var(--primary-green);
-  outline-offset: 2px;
-}
-
-/* === Botões Específicos === */
 .add-btn {
-  background-color: var(--action-blue);
-  font-size: 14px;
-  margin-bottom: var(--space-lg);
-  align-self: flex-start;
+    background-color: var(--action-blue);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    margin-bottom: var(--space-lg);
+    align-self: flex-start;
 }
-.pdf-link {
-  background-color: var(--primary-green);
-  text-decoration: none;
-}
-.pdf-link.ready {
-  background-color: var(--action-blue);
-}
-.pdf-link:disabled {
-  background-color: var(--text-light);
-  cursor: not-allowed;
-}
-
-/* === Tabela === */
-.progresso-content table {
-  width: 100%;
-  min-width: 800px;
-  border-collapse: collapse;
-  margin-top: var(--space-md);
-}
-.progresso-content th,
-.progresso-content td {
-  padding: 12px;
-  text-align: center;
-  border-bottom: 1px solid var(--border-color);
-  white-space: nowrap;
-}
-
-/* === Grids === */
 .charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-lg);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
 }
 .charts-grid .card {
-  position: relative;
-  height: 250px;
-  padding: var(--space-md);
+    position: relative;
+    height: 250px;
+    padding: var(--space-md);
+}
+.progresso-content h3 {
+    margin-top: 0;
+    color: var(--primary-green);
 }
 .photo-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: var(--space-md);
-}
-
-/* === Galeria === */
-.photo-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-md);
 }
 .photo-item img {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  border-radius: var(--border-radius);
-  border: 2px solid var(--border-color);
-  transition: transform 0.3s ease;
-}
-.photo-item img:hover {
-  transform: scale(1.03);
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: var(--border-radius);
+    border: 2px solid var(--border-color);
 }
 .photo-item time {
-  font-size: 12px;
-  color: var(--text-light);
-  margin-top: var(--space-sm);
-  text-align: center;
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: var(--space-sm);
+    display: block;
+    text-align: center;
 }
 
-/* === Formulário === */
+/* ✅ INÍCIO DA CORREÇÃO DA TABELA */
+.table-responsive {
+    width: 100%;
+    overflow-x: auto; /* Permite a rolagem horizontal */
+    -webkit-overflow-scrolling: touch; /* Melhora a experiência em iOS */
+}
+.progresso-content table {
+    width: 100%;
+    min-width: 800px; /* Força uma largura mínima para a tabela não espremer */
+    border-collapse: collapse;
+    margin-top: var(--space-md);
+}
+.progresso-content th, .progresso-content td {
+    padding: 12px;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap; /* Impede que o texto quebre em várias linhas */
+}
+/* FIM DA CORREÇÃO DA TABELA */
+
 .progresso-form label {
-  display: block;
-  margin-bottom: var(--space-sm);
-  font-weight: 600;
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-weight: 600;
 }
 .progresso-form input {
-  width: 100%;
-  padding: 12px;
-  margin-bottom: var(--space-md);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: var(--space-md);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
 }
 .progresso-form button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  background-color: var(--primary-green);
-  color: white;
-  transition: all 0.3s ease;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    background-color: var(--primary-green);
+    color: white;
 }
-.progresso-form button:hover {
-  opacity: 0.9;
+.page-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: var(--space-lg);
 }
-
-/* === Form Rows === */
+.pdf-link {
+    background-color: var(--primary-green);
+    color: white;
+    padding: 10px 15px;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+}
+.pdf-link.ready {
+    background-color: var(--action-blue);
+}
+.pdf-link:disabled {
+    background-color: var(--text-light);
+}
 .form-row {
-  display: flex;
-  gap: var(--space-md);
+    display: flex;
+    gap: var(--space-md);
 }
 .form-group {
-  flex: 1;
-}
-
-/* === Títulos === */
-.progresso-content h3 {
-  margin-top: 0;
-  color: var(--primary-green);
-}
-
-/* === Responsivo === */
-@media (max-width: 600px) {
-  .form-row {
-    flex-direction: column;
-  }
-
-  .add-btn,
-  .pdf-link {
-    width: 100%;
-    text-align: center;
-  }
-
-  .charts-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .photo-gallery {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  }
+    flex: 1;
 }
