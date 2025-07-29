@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import './GastosPage.css';
@@ -16,13 +16,10 @@ const GastosPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
-    // Estados para o formulário
     const [descricao, setDescricao] = useState('');
     const [valor, setValor] = useState('');
     const [categoria, setCategoria] = useState('Consultas');
     const [data, setData] = useState(new Date().toISOString().split('T')[0]);
-
-    // Estados para o filtro de data
     const [currentDate, setCurrentDate] = useState(new Date());
 
     const token = localStorage.getItem('bariplus_token');
@@ -56,11 +53,11 @@ const GastosPage = () => {
                 body: JSON.stringify({ descricao, valor, categoria, data })
             });
             if (!res.ok) throw new Error("Falha ao adicionar gasto.");
-            const novoGasto = await res.json();
-            setGastos(prev => [novoGasto, ...prev].sort((a, b) => new Date(b.data) - new Date(a.data)));
+            
             setIsModalOpen(false);
             setDescricao(''); setValor(''); setCategoria('Consultas'); setData(new Date().toISOString().split('T')[0]);
             toast.success("Gasto adicionado com sucesso!");
+            fetchGastos(); // Recarrega a lista
         } catch (error) {
             toast.error(error.message || "Erro ao adicionar gasto.");
         }
@@ -131,7 +128,7 @@ const GastosPage = () => {
                                     <span className="gasto-categoria" data-category={gasto.categoria}></span>
                                     <div className="gasto-info">
                                         <span>{gasto.descricao}</span>
-                                        <small>{format(new Date(gasto.data), 'dd/MM/yyyy')}</small>
+                                        <small>{format(parseISO(gasto.data), 'dd/MM/yyyy')}</small>
                                     </div>
                                     <span className="gasto-valor">{gasto.valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                                     <button onClick={() => handleDeleteGasto(gasto._id)} className="delete-btn">×</button>
