@@ -6,7 +6,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-const nodemailer = require('nodemailer');
 const axios = require('axios');
 const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');const admin = require('firebase-admin');
 const crypto = require('crypto');
