@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import './ChecklistPage.css';
 import Modal from '../components/Modal'; // Precisamos do nosso Modal
 import Card from '../components/ui/Card'; // ✅ Importa o nosso novo componente
-import { toast } from 'react-toastify';
 
 const ChecklistPage = () => {
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });

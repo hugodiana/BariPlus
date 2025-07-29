@@ -3,7 +3,6 @@ import { toast } from 'react-toastify';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import html2canvas from 'html2canvas';
 
