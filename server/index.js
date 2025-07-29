@@ -1542,7 +1542,7 @@ app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req
             $set: { role: 'affiliate', affiliateCouponCode: couponCode }
         }, { new: true }).select('-password');
         if (usuario) {
-            await transporter.sendMail({
+            await resend.emails.send({
                 from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
                 to: usuario.email,
                 subject: "🚀 Parabéns! Você agora é um Afiliado BariPlus!",
@@ -2031,7 +2031,7 @@ app.post('/api/resend-verification-email', async (req, res) => {
         
         // Reenvia o e-mail
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        await transporter.sendMail({
+        await resend.emails.send({
             from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
             subject: "Seu Novo Link de Verificação BariPlus",
