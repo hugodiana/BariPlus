@@ -737,9 +737,20 @@ app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
         
         let fotoUrl = '';
         if (req.file) {
-            // ... (sua lógica de upload para o Cloudinary)
+            try {
+                const b64 = Buffer.from(req.file.buffer).toString('base64');
+                const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+                const result = await cloudinary.uploader.upload(dataURI, {
+                    resource_type: 'auto',
+                    folder: 'bariplus_progress'
+                });
+                fotoUrl = result.secure_url;
+            } catch (uploadError) {
+                console.error('Erro no upload da foto:', uploadError);
+                return res.status(500).json({ message: 'Erro ao fazer upload da foto.' });
+            }
         }
-        
+
         const pesoNum = parseFloat(peso);
         const novoRegistro = {
             peso: pesoNum,
@@ -774,7 +785,6 @@ app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
         res.status(500).json({ message: 'Erro ao registrar peso.' });
     }
 });
-
 
 app.get('/api/pesos', autenticar, async (req, res) => {
     try {
