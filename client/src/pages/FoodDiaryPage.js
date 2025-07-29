@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale'; // ✅ A linha que faltava
+import { ptBR } from 'date-fns/locale';
 import './FoodDiaryPage.css';
 import Card from '../components/ui/Card';
 import Modal from '../components/Modal';
@@ -31,10 +31,11 @@ const FoodDiaryPage = () => {
             setDiary(data);
         } catch (error) {
             toast.error(error.message);
+            setDiary({ refeicoes: {} }); // Garante que diary nunca é null
         } finally {
             setLoadingDiary(false);
         }
-    }, [token, apiUrl, selectedDate]); // Adicionado selectedDate para garantir a busca correta
+    }, [token, apiUrl]);
 
     useEffect(() => {
         fetchDiary(selectedDate);
@@ -116,17 +117,17 @@ const FoodDiaryPage = () => {
         }
     };
 
-    const renderMealSection = (title, mealKey, mealArray) => (
+    const renderMealSection = (title, mealKey, mealArray = []) => (
         <div className="meal-section">
             <h4>{title}</h4>
-            {mealArray && mealArray.length > 0 ? (
+            {mealArray.length > 0 ? (
                 <ul className="logged-food-list">
                     {mealArray.map((item) => (
                         <li key={item._id}>
                             <div className="logged-food-info">
                                 <span>{item.name} <small>({item.portion}g)</small></span>
                                 <small className="logged-food-nutrients">
-                                    Cals: {item.nutrients.calories} | P: {item.nutrients.proteins}g | C: {item.nutrients.carbs}g | G: {item.nutrients.fats}g
+                                    Cals: {item.nutrients.calories} | P: {item.nutrients.proteins}g
                                 </small>
                             </div>
                             <button onClick={() => handleDeleteFood(mealKey, item._id)} className="delete-food-btn">×</button>
@@ -165,13 +166,7 @@ const FoodDiaryPage = () => {
                 </div>
                 <div className="search-container">
                     <form onSubmit={handleSearch}>
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Ex: Frango grelhado, maçã, etc."
-                            className="search-input"
-                        />
+                        <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Ex: Frango grelhado, maçã, etc." className="search-input" />
                         <button type="submit" className="search-button" disabled={loadingSearch}>
                             {loadingSearch ? 'Buscando...' : 'Pesquisar'}
                         </button>
@@ -200,16 +195,12 @@ const FoodDiaryPage = () => {
 
             <Card className="diary-view">
                 <h2>Refeições de {format(parseISO(selectedDate), 'dd/MM/yyyy', { locale: ptBR })}</h2>
-                {diary && diary.refeicoes ? (
-                    <div className="meals-grid">
-                        {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
-                        {renderMealSection("Almoço", "almoco", diary.refeicoes.almoco)}
-                        {renderMealSection("Jantar", "jantar", diary.refeicoes.jantar)}
-                        {renderMealSection("Lanches", "lanches", diary.refeicoes.lanches)}
-                    </div>
-                ) : (
-                    <p className="empty-meal">Nenhum registro para este dia.</p>
-                )}
+                <div className="meals-grid">
+                    {renderMealSection("Café da Manhã", "cafeDaManha", diary?.refeicoes?.cafeDaManha)}
+                    {renderMealSection("Almoço", "almoco", diary?.refeicoes?.almoco)}
+                    {renderMealSection("Jantar", "jantar", diary?.refeicoes?.jantar)}
+                    {renderMealSection("Lanches", "lanches", diary?.refeicoes?.lanches)}
+                </div>
             </Card>
             
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
