@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import './FoodDiaryPage.css';
-import Modal from '../components/Modal';
-import Card from '../components/ui/Card';
-import LoadingSpinner from '../components/LoadingSpinner';
-import { format } from 'date-fns';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import { formatDate, formatCurrency } from '../utils/formatHelpers';
+import { format, parseISO } from 'date-fns';
+import './FoodDiaryPage.css';
+import Card from '../components/ui/Card';
+import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const FoodDiaryPage = () => {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -17,6 +16,7 @@ const FoodDiaryPage = () => {
     const [loadingDiary, setLoadingDiary] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFood, setSelectedFood] = useState(null);
+    const [portion, setPortion] = useState(100);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
@@ -65,27 +65,40 @@ const FoodDiaryPage = () => {
     
     const handleSelectFood = (food) => {
         setSelectedFood(food);
+        setPortion(100);
         setIsModalOpen(true);
     };
     
     const handleLogFood = async (mealType) => {
-        if (!selectedFood) return;
+        if (!selectedFood || !portion) return toast.error("Por favor, insira uma porção.");
+        
+        const factor = portion / 100;
+        const calculatedNutrients = {
+            calories: Math.round((selectedFood.nutrients.calories || 0) * factor),
+            proteins: parseFloat(((selectedFood.nutrients.proteins || 0) * factor).toFixed(1)),
+            carbs: parseFloat(((selectedFood.nutrients.carbs || 0) * factor).toFixed(1)),
+            fats: parseFloat(((selectedFood.nutrients.fats || 0) * factor).toFixed(1)),
+        };
+
+        const foodToLog = {
+            name: selectedFood.name,
+            brand: selectedFood.brand,
+            portion: portion,
+            nutrients: calculatedNutrients,
+        };
+
         try {
             const res = await fetch(`${apiUrl}/api/food-diary/log`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ food: selectedFood, mealType, date: selectedDate })
+                body: JSON.stringify({ food: foodToLog, mealType, date: selectedDate })
             });
-            const data = await res.json();
-            setDiary(data);
-            setIsModalOpen(false);
-            setSelectedFood(null);
-            setSearchResults([]);
-            setSearchTerm('');
+            if (!res.ok) throw new Error("Falha ao registrar refeição.");
+            
             toast.success(`${selectedFood.name} adicionado com sucesso!`);
-        } catch (error) {
-            toast.error("Erro ao registrar refeição.");
-        }
+            setIsModalOpen(false);
+            fetchDiary(selectedDate);
+        } catch (error) { toast.error(error.message); }
     };
 
     const handleDeleteFood = async (mealType, itemId) => {
@@ -109,7 +122,12 @@ const FoodDiaryPage = () => {
                 <ul className="logged-food-list">
                     {mealArray.map((item) => (
                         <li key={item._id}>
-                            <span>{item.name} <small>({item.brand})</small></span>
+                            <div className="logged-food-info">
+                                <span>{item.name} <small>({item.portion}g)</small></span>
+                                <small className="logged-food-nutrients">
+                                    Cals: {item.nutrients.calories} | P: {item.nutrients.proteins}g | C: {item.nutrients.carbs}g | G: {item.nutrients.fats}g
+                                </small>
+                            </div>
                             <button onClick={() => handleDeleteFood(mealKey, item._id)} className="delete-food-btn">×</button>
                         </li>
                     ))}
@@ -120,9 +138,18 @@ const FoodDiaryPage = () => {
         </div>
     );
 
-    if (loadingDiary) {
-        return <LoadingSpinner />;
-    }
+    const calculatedNutrientsForModal = useMemo(() => {
+        if (!selectedFood || !portion) return { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+        const factor = parseFloat(portion) / 100;
+        return {
+            calories: Math.round((selectedFood.nutrients.calories || 0) * factor),
+            proteins: ((selectedFood.nutrients.proteins || 0) * factor).toFixed(1),
+            carbs: ((selectedFood.nutrients.carbs || 0) * factor).toFixed(1),
+            fats: ((selectedFood.nutrients.fats || 0) * factor).toFixed(1),
+        };
+    }, [selectedFood, portion]);
+
+    if (loadingDiary) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
@@ -171,7 +198,7 @@ const FoodDiaryPage = () => {
             </div>
 
             <Card className="diary-view">
-                <h2>Refeições de {format(new Date(selectedDate.replace(/-/g, '/')), 'dd/MM/yyyy')}</h2>
+                <h2>Refeições de {format(parseISO(selectedDate), 'dd/MM/yyyy', { locale: ptBR })}</h2>
                 {diary && diary.refeicoes ? (
                     <div className="meals-grid">
                         {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
@@ -180,7 +207,7 @@ const FoodDiaryPage = () => {
                         {renderMealSection("Lanches", "lanches", diary.refeicoes.lanches)}
                     </div>
                 ) : (
-                    <p>Não foi possível carregar o diário para este dia.</p>
+                    <p className="empty-meal">Nenhum registro para este dia.</p>
                 )}
             </Card>
             
@@ -188,13 +215,20 @@ const FoodDiaryPage = () => {
                 {selectedFood ? (
                     <div className="food-details-modal">
                         <h2>{selectedFood.name}</h2>
-                        <div className="nutrient-details">
-                            <span><strong>Calorias:</strong> {selectedFood.nutrients.calories} kcal</span>
-                            <span><strong>Proteínas:</strong> {selectedFood.nutrients.proteins} g</span>
-                            <span><strong>Carboidratos:</strong> {selectedFood.nutrients.carbs} g</span>
-                            <span><strong>Gorduras:</strong> {selectedFood.nutrients.fats} g</span>
+                        <small>{selectedFood.brand}</small>
+                        <div className="portion-input">
+                            <label htmlFor="portion">Porção (gramas)</label>
+                            <input id="portion" type="number" value={portion} onChange={e => setPortion(e.target.value)} />
                         </div>
-                        <p className="details-serving">Valores por 100g/100ml</p>
+                        <div className="calculated-nutrients">
+                            <h4>Nutrientes para {portion}g:</h4>
+                            <ul>
+                                <li><strong>Calorias:</strong> {calculatedNutrientsForModal.calories} kcal</li>
+                                <li><strong>Proteínas:</strong> {calculatedNutrientsForModal.proteins} g</li>
+                                <li><strong>Carboidratos:</strong> {calculatedNutrientsForModal.carbs} g</li>
+                                <li><strong>Gorduras:</strong> {calculatedNutrientsForModal.fats} g</li>
+                            </ul>
+                        </div>
                         <h4>Adicionar em qual refeição?</h4>
                         <div className="meal-log-buttons">
                             <button onClick={() => handleLogFood('cafeDaManha')}>Café da Manhã</button>
@@ -204,7 +238,7 @@ const FoodDiaryPage = () => {
                         </div>
                     </div>
                 ) : (
-                    <p>Carregando detalhes do alimento...</p>
+                    <LoadingSpinner />
                 )}
             </Modal>
         </div>
