@@ -162,6 +162,20 @@
     }
 }
 
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+}
+.charts-grid .card {
+    position: relative;
+    height: 250px;
+    padding: var(--space-md);
+}
+
+.progresso-form h4 { color: var(--primary-green); margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem; }
+.progresso-form hr { border: none; border-top: 1px solid var(--border-color); margin: 1rem 0; }
+
 @media (max-width: 500px) {
     .chart-container {
         height: 200px;
