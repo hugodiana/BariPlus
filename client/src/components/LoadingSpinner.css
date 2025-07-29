@@ -1,9 +1,6 @@
 .spinner-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background-color: rgba(255, 255, 255, 0.8);
   display: flex;
   justify-content: center;
@@ -13,12 +10,22 @@
 
 .spinner {
   border: 5px solid rgba(0, 0, 0, 0.1);
-  /* ✅ Usa a nossa cor azul padrão definida no App.css */
-  border-top-color: var(--action-blue); 
+  border-top-color: var(--action-blue, #007bff); /* fallback azul */
   border-radius: 50%;
   width: 50px;
   height: 50px;
   animation: spin 1s linear infinite;
+}
+
+/* Modo escuro */
+@media (prefers-color-scheme: dark) {
+  .spinner-overlay {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .spinner {
+    border: 5px solid rgba(255, 255, 255, 0.1);
+  }
 }
 
 @keyframes spin {
