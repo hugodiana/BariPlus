@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, 'useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale'; // ✅ A linha que faltava
 import './FoodDiaryPage.css';
 import Card from '../components/ui/Card';
 import Modal from '../components/Modal';
@@ -33,7 +34,7 @@ const FoodDiaryPage = () => {
         } finally {
             setLoadingDiary(false);
         }
-    }, [token, apiUrl]);
+    }, [token, apiUrl, selectedDate]); // Adicionado selectedDate para garantir a busca correta
 
     useEffect(() => {
         fetchDiary(selectedDate);

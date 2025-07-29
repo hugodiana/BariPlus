@@ -1365,7 +1365,7 @@ app.get('/api/food-diary/:date', autenticar, async (req, res) => {
     }
 });
 
-aapp.get('/api/foods/search', autenticar, async (req, res) => {
+app.get('/api/foods/search', autenticar, async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).json({ message: "É necessário um termo de busca." });
 
