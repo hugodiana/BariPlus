@@ -377,8 +377,6 @@ const isAffiliate = async (req, res, next) => {
     }
 };
 
-// --- TRANSPORTER DE E-MAIL ---
-const transporter = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: process.env.SMTP_PORT, auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS } });
 
 app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`, {
