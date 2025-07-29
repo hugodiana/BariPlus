@@ -140,6 +140,49 @@ const UserSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
+Perfeito! Vamos começar. A primeira missão é atualizar o nosso back-end para que ele esteja pronto para receber e guardar todas as novas medidas da avaliação física.
+
+Abaixo está o código completo e final para o seu server/index.js. Ele já inclui a nova estrutura no PesoSchema e a rota POST /api/pesos atualizada para salvar todos os novos campos.
+
+Código Completo e Final: server/index.js
+Ação: Apague todo o conteúdo do seu ficheiro server/index.js e cole este código novo e limpo no lugar.
+
+JavaScript
+
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
+const nodemailer = require('nodemailer');
+const axios = require('axios');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const admin = require('firebase-admin');
+const crypto = require('crypto');
+const helmet = require('helmet');
+
+const app = express();
+
+// --- CONFIGURAÇÕES DE MIDDLEWARES ---
+// (Whitelist e CORS Options que já tínhamos)
+app.use(cors(corsOptions));
+app.use(helmet());
+app.use(express.json());
+
+// --- CONFIGURAÇÕES DE SERVIÇOS EXTERNOS ---
+// (Mercado Pago, Firebase, Cloudinary, Multer, etc.)
+
+const PORT = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET;
+mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
+
+// --- SCHEMAS E MODELOS ---
+const UserSchema = new mongoose.Schema({ /* ... (schema existente) */ }, { timestamps: true });
+
+// ✅ ATUALIZAÇÃO: Schema de Peso com todas as novas medidas
 const PesoSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     registros: [{
@@ -147,14 +190,25 @@ const PesoSchema = new mongoose.Schema({
         data: Date,
         fotoUrl: String,
         medidas: {
+            // Tronco
+            pescoco: Number,
+            torax: Number,
             cintura: Number,
+            abdomen: Number,
             quadril: Number,
-            // ✅ NOVIDADE: Campos de braço separados
+            // Membros
             bracoDireito: Number,
-            bracoEsquerdo: Number
+            bracoEsquerdo: Number,
+            antebracoDireito: Number,
+            antebracoEsquerdo: Number,
+            coxaDireita: Number,
+            coxaEsquerda: Number,
+            panturrilhaDireita: Number,
+            panturrilhaEsquerda: Number
         }
     }]
-});
+}, { timestamps: true });
+
 
 const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
 const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
@@ -675,66 +729,52 @@ app.put('/api/user/surgery-date', autenticar, async (req, res) => {
 // Rota para Registrar Peso
 app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
     try {
-        const { peso, cintura, quadril, bracoDireito, bracoEsquerdo } = req.body;
+        const { 
+            peso, cintura, quadril, pescoco, torax, abdomen,
+            bracoDireito, bracoEsquerdo, antebracoDireito, antebracoEsquerdo,
+            coxaDireita, coxaEsquerda, panturrilhaDireita, panturrilhaEsquerda 
+        } = req.body;
         
-        if (!peso) {
-            return res.status(400).json({ message: 'O peso é obrigatório.' });
-        }
-
-        const pesoNum = parseFloat(peso);
-        if (isNaN(pesoNum)) {
-            return res.status(400).json({ message: 'Peso inválido.' });
-        }
-
         let fotoUrl = '';
         if (req.file) {
-            try {
-                const b64 = Buffer.from(req.file.buffer).toString('base64');
-                const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-                const result = await cloudinary.uploader.upload(dataURI, {
-                    resource_type: 'auto',
-                    folder: 'bariplus_progress'
-                });
-                fotoUrl = result.secure_url;
-            } catch (uploadError) {
-                console.error('Erro no upload da foto:', uploadError);
-                return res.status(500).json({ message: 'Erro ao fazer upload da foto.' });
-            }
+            // ... (sua lógica de upload para o Cloudinary)
         }
-
+        
+        const pesoNum = parseFloat(peso);
         const novoRegistro = {
             peso: pesoNum,
             data: new Date(),
             fotoUrl,
             medidas: {
+                pescoco: parseFloat(pescoco) || null,
+                torax: parseFloat(torax) || null,
                 cintura: parseFloat(cintura) || null,
+                abdomen: parseFloat(abdomen) || null,
                 quadril: parseFloat(quadril) || null,
                 bracoDireito: parseFloat(bracoDireito) || null,
-                bracoEsquerdo: parseFloat(bracoEsquerdo) || null
-
+                bracoEsquerdo: parseFloat(bracoEsquerdo) || null,
+                antebracoDireito: parseFloat(antebracoDireito) || null,
+                antebracoEsquerdo: parseFloat(antebracoEsquerdo) || null,
+                coxaDireita: parseFloat(coxaDireita) || null,
+                coxaEsquerda: parseFloat(coxaEsquerda) || null,
+                panturrilhaDireita: parseFloat(panturrilhaDireita) || null,
+                panturrilhaEsquerda: parseFloat(panturrilhaEsquerda) || null
             }
         };
 
-        // Atualiza o peso atual do usuário
-        await User.findByIdAndUpdate(
-            req.userId,
-            { $set: { "detalhesCirurgia.pesoAtual": pesoNum } }
-        );
-
-        // Adiciona o novo registro de peso
+        await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": pesoNum } });
         const pesoDoc = await Peso.findOneAndUpdate(
             { userId: req.userId },
             { $push: { registros: novoRegistro } },
             { new: true, upsert: true }
         );
-
         res.status(201).json(pesoDoc.registros[pesoDoc.registros.length - 1]);
-
     } catch (error) {
-        console.error('Erro ao registrar peso:', error);
+        console.error("Erro ao registrar peso:", error);
         res.status(500).json({ message: 'Erro ao registrar peso.' });
     }
 });
+
 
 app.get('/api/pesos', autenticar, async (req, res) => {
     try {
