@@ -1789,26 +1789,25 @@ app.get('/api/verify-email/:token', async (req, res) => {
         const { token } = req.params;
         const usuario = await User.findOne({
             emailVerificationToken: token,
-            emailVerificationExpires: { $gt: Date.now() }
+            emailVerificationExpires: { $gt: new Date() }
         });
-
         if (!usuario) {
-            // Redireciona para a página de erro no frontend
-            return res.redirect(`${process.env.FRONTEND_URL}/email-verification-error`);
+            // Redireciona para uma página de erro no front-end
+            return res.redirect(`${process.env.CLIENT_URL}/login?error=invalid_token`);
         }
-
+        
         usuario.isEmailVerified = true;
         usuario.emailVerificationToken = undefined;
         usuario.emailVerificationExpires = undefined;
         await usuario.save();
-
-        // Redireciona para a página de sucesso no frontend
-        res.redirect(`${process.env.FRONTEND_URL}/email-verified?success=true`);
         
-    } catch (error) {
-        res.redirect(`${process.env.FRONTEND_URL}/email-verification-error`);
+        // Redireciona para a página de login com uma mensagem de sucesso
+        res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
+    } catch (error) { 
+        res.redirect(`${process.env.CLIENT_URL}/login?error=server_error`);
     }
 });
+
 
 app.post('/api/resend-verification-email', async (req, res) => {
     try {
@@ -1824,23 +1823,20 @@ app.post('/api/resend-verification-email', async (req, res) => {
 
         // Gera um novo token e data de expiração
         const verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = new Date(Date.now() + 3600000); // Expira em 1 hora
-
         usuario.emailVerificationToken = verificationToken;
-        usuario.emailVerificationExpires = verificationExpires;
+        usuario.emailVerificationExpires = new Date(Date.now() + 3600000); // Expira em 1 hora
         await usuario.save();
         
         // Reenvia o e-mail
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         await resend.emails.send({
-            from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
             to: usuario.email,
             subject: "Seu Novo Link de Verificação BariPlus",
-            html: `<h1>Novo Link de Ativação</h1><p>Aqui está o seu novo link para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a><p>Este link expira em 1 hora.</p>`,
+            html: `<h1>Novo Link de Ativação</h1><p>Aqui está o seu novo link para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a>`,
         });
 
         res.json({ message: "Um novo link de verificação foi enviado para o seu e-mail." });
-
     } catch (error) {
         res.status(500).json({ message: "Erro no servidor." });
     }

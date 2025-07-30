@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import './LoginPage.css';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
@@ -7,6 +7,7 @@ import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [isRegistering, setIsRegistering] = useState(false);
     const [identifier, setIdentifier] = useState('');
     const [nome, setNome] = useState('');
@@ -26,10 +27,21 @@ const LoginPage = () => {
 
     const apiUrl = process.env.REACT_APP_API_URL;
 
+    useEffect(() => {
+        if (searchParams.get('verified') === 'true') {
+            toast.success("E-mail verificado com sucesso! Pode fazer o login.");
+        }
+        if (searchParams.get('error') === 'invalid_token') {
+            toast.error("Link de verificação inválido ou expirado.");
+        }
+    }, [searchParams]);
+
     const validatePassword = (pass) => {
         const validations = {
-            length: pass.length >= 8, uppercase: /[A-Z]/.test(pass),
-            number: /[0-9]/.test(pass), specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(pass),
+            length: pass.length >= 8,
+            uppercase: /[A-Z]/.test(pass),
+            number: /[0-9]/.test(pass),
+            specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(pass),
         };
         setPasswordValidations(validations);
         return Object.values(validations).every(Boolean);
@@ -53,6 +65,7 @@ const LoginPage = () => {
         }
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
         const body = isRegistering ? { nome, sobrenome, username, email, password } : { identifier, password };
+        
         try {
             const response = await fetch(url, {
                 method: 'POST',
@@ -60,7 +73,7 @@ const LoginPage = () => {
                 body: JSON.stringify(body),
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Algo deu errado.');
+            if (!response.ok) throw data;
             
             if (isRegistering) {
                 toast.success('Cadastro quase concluído! Verifique o seu e-mail.');
@@ -70,7 +83,12 @@ const LoginPage = () => {
                 window.location.href = '/'; 
             }
         } catch (error) {
-            toast.error(error.message);
+            if (error.message && error.message.includes('Sua conta ainda não foi ativada')) {
+                toast.warn(error.message);
+                navigate('/verify-email', { state: { email: identifier } });
+            } else {
+                toast.error(error.message || 'Algo deu errado.');
+            }
         }
     };
  
