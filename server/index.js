@@ -12,7 +12,7 @@ const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-import { Resend } from 'resend';
+const { Resend } from 'resend';
 
 const app = express();
 app.set('trust proxy', 1);
