@@ -280,7 +280,7 @@ app.post('/api/register', async (req, res) => {
         
         // Bloco de envio de e-mail com tratamento de erro detalhado
         const { data, error } = await resend.emails.send({
-            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+            from: `"BariPlus" <contato@bariplus.com.br>`,
             to: [novoUsuario.email],
             subject: 'Ative a sua Conta no BariPlus',
             html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
@@ -1426,7 +1426,7 @@ app.post('/api/admin/approve-affiliate/:userId', autenticar, isAdmin, async (req
         }, { new: true }).select('-password');
         if (usuario) {
             await resend.emails.send({
-                from: `"BariPlus" <${process.env.MAIL_FROM_ADDRESS}>`,
+                from: `"BariPlus" <'contato@bariplus.com.br'>`,
                 to: usuario.email,
                 subject: "🚀 Parabéns! Você agora é um Afiliado BariPlus!",
                 html: `
@@ -1912,7 +1912,7 @@ app.post('/api/resend-verification-email', async (req, res) => {
         // Reenvia o e-mail
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         await resend.emails.send({
-            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+            from: `"BariPlus" <contato@bariplus.com.br>`,
             to: usuario.email,
             subject: "Seu Novo Link de Verificação BariPlus",
             html: `<h1>Novo Link de Ativação</h1><p>Aqui está o seu novo link para ativar a sua conta:</p><a href="${verificationLink}">Ativar Minha Conta</a>`,
