@@ -564,74 +564,30 @@ app.put('/api/user/surgery-date', autenticar, async (req, res) => {
 // Rota para Registrar Peso
 app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
     try {
-        const { 
-            peso, cintura, quadril, pescoco, torax, abdomen,
-            bracoDireito, bracoEsquerdo, antebracoDireito, antebracoEsquerdo,
-            coxaDireita, coxaEsquerda, panturrilhaDireita, panturrilhaEsquerda 
-        } = req.body;
-        
-        if (!peso) {
-            return res.status(400).json({ message: 'O peso é obrigatório.' });
-        }
-
-        const pesoNum = parseFloat(peso);
-        if (isNaN(pesoNum)) {
-            return res.status(400).json({ message: 'Peso inválido.' });
-        }
-
+        const { peso, cintura, quadril, pescoco, torax, abdomen, bracoDireito, bracoEsquerdo, antebracoDireito, antebracoEsquerdo, coxaDireita, coxaEsquerda, panturrilhaDireita, panturrilhaEsquerda } = req.body;
         let fotoUrl = '';
         if (req.file) {
-            try {
-                const b64 = Buffer.from(req.file.buffer).toString('base64');
-                const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-                const result = await cloudinary.uploader.upload(dataURI, {
-                    resource_type: 'auto',
-                    folder: 'bariplus_progress'
-                });
-                fotoUrl = result.secure_url;
-            } catch (uploadError) {
-                console.error('Erro no upload da foto:', uploadError);
-                return res.status(500).json({ message: 'Erro ao fazer upload da foto.' });
-            }
+            const b64 = Buffer.from(req.file.buffer).toString("base64");
+            let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+            const result = await cloudinary.uploader.upload(dataURI, { folder: "bariplus_progress" });
+            fotoUrl = result.secure_url;
         }
+        const pesoNum = parseFloat(peso);
         const novoRegistro = {
-            peso: pesoNum,
-            data: new Date(),
-            fotoUrl,
+            peso: pesoNum, data: new Date(), fotoUrl,
             medidas: {
-                pescoco: parseFloat(pescoco) || null,
-                torax: parseFloat(torax) || null,
-                cintura: parseFloat(cintura) || null,
-                abdomen: parseFloat(abdomen) || null,
-                quadril: parseFloat(quadril) || null,
-                bracoDireito: parseFloat(bracoDireito) || null,
-                bracoEsquerdo: parseFloat(bracoEsquerdo) || null,
-                antebracoDireito: parseFloat(antebracoDireito) || null,
-                antebracoEsquerdo: parseFloat(antebracoEsquerdo) || null,
-                coxaDireita: parseFloat(coxaDireita) || null,
-                coxaEsquerda: parseFloat(coxaEsquerda) || null,
-                panturrilhaDireita: parseFloat(panturrilhaDireita) || null,
+                pescoco: parseFloat(pescoco) || null, torax: parseFloat(torax) || null, cintura: parseFloat(cintura) || null,
+                abdomen: parseFloat(abdomen) || null, quadril: parseFloat(quadril) || null, bracoDireito: parseFloat(bracoDireito) || null,
+                bracoEsquerdo: parseFloat(bracoEsquerdo) || null, antebracoDireito: parseFloat(antebracoDireito) || null,
+                antebracoEsquerdo: parseFloat(antebracoEsquerdo) || null, coxaDireita: parseFloat(coxaDireita) || null,
+                coxaEsquerda: parseFloat(coxaEsquerda) || null, panturrilhaDireita: parseFloat(panturrilhaDireita) || null,
                 panturrilhaEsquerda: parseFloat(panturrilhaEsquerda) || null
             }
         };
-
-        // Atualiza o peso atual do usuário
-        await User.findByIdAndUpdate(
-            req.userId,
-            { $set: { "detalhesCirurgia.pesoAtual": pesoNum } }
-        );
-
-        // Adiciona o novo registro de peso
-        const pesoDoc = await Peso.findOneAndUpdate(
-            { userId: req.userId },
-            { $push: { registros: novoRegistro } },
-            { new: true, upsert: true }
-        );
-
+        await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": pesoNum } });
+        const pesoDoc = await Peso.findOneAndUpdate({ userId: req.userId }, { $push: { registros: novoRegistro } }, { new: true, upsert: true });
         res.status(201).json(pesoDoc.registros[pesoDoc.registros.length - 1]);
-
     } catch (error) {
-        console.error('Erro ao registrar peso:', error);
         res.status(500).json({ message: 'Erro ao registrar peso.' });
     }
 });
@@ -639,33 +595,20 @@ app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
 app.put('/api/pesos/:registroId', autenticar, upload.single('foto'), async (req, res) => {
     try {
         const { registroId } = req.params;
-        const { 
-            peso, cintura, quadril, pescoco, torax, abdomen,
-            bracoDireito, bracoEsquerdo, antebracoDireito, antebracoEsquerdo,
-            coxaDireita, coxaEsquerda, panturrilhaDireita, panturrilhaEsquerda 
-        } = req.body;
-
+        const updates = req.body;
         const pesoDoc = await Peso.findOne({ userId: req.userId });
         if (!pesoDoc) return res.status(404).json({ message: "Histórico de peso não encontrado." });
-
         const registro = pesoDoc.registros.id(registroId);
         if (!registro) return res.status(404).json({ message: "Registro não encontrado." });
 
-        // Atualiza todos os campos fornecidos
-        if (peso) registro.peso = parseFloat(peso);
-        if (pescoco) registro.medidas.pescoco = parseFloat(pescoco);
-        if (torax) registro.medidas.torax = parseFloat(torax);
-        if (cintura) registro.medidas.cintura = parseFloat(cintura);
-        if (abdomen) registro.medidas.abdomen = parseFloat(abdomen);
-        if (quadril) registro.medidas.quadril = parseFloat(quadril);
-        if (bracoDireito) registro.medidas.bracoDireito = parseFloat(bracoDireito);
-        if (bracoEsquerdo) registro.medidas.bracoEsquerdo = parseFloat(bracoEsquerdo);
-        if (antebracoDireito) registro.medidas.antebracoDireito = parseFloat(antebracoDireito);
-        if (antebracoEsquerdo) registro.medidas.antebracoEsquerdo = parseFloat(antebracoEsquerdo);
-        if (coxaDireita) registro.medidas.coxaDireita = parseFloat(coxaDireita);
-        if (coxaEsquerda) registro.medidas.coxaEsquerda = parseFloat(coxaEsquerda);
-        if (panturrilhaDireita) registro.medidas.panturrilhaDireita = parseFloat(panturrilhaDireita);
-        if (panturrilhaEsquerda) registro.medidas.panturrilhaEsquerda = parseFloat(panturrilhaEsquerda);
+        // Atualiza os campos dinamicamente
+        Object.keys(updates).forEach(key => {
+            if (key === 'peso') {
+                registro[key] = parseFloat(updates[key]);
+            } else if (registro.medidas && key in registro.medidas) {
+                registro.medidas[key] = parseFloat(updates[key]) || null;
+            }
+        });
         
         if (req.file) {
             const b64 = Buffer.from(req.file.buffer).toString("base64");
@@ -673,7 +616,8 @@ app.put('/api/pesos/:registroId', autenticar, upload.single('foto'), async (req,
             const result = await cloudinary.uploader.upload(dataURI, { folder: "bariplus_progress" });
             registro.fotoUrl = result.secure_url;
         }
-
+        
+        pesoDoc.markModified('registros');
         await pesoDoc.save();
         
         const ultimoRegistro = pesoDoc.registros.sort((a, b) => new Date(b.data) - new Date(a.data))[0];
@@ -686,24 +630,27 @@ app.put('/api/pesos/:registroId', autenticar, upload.single('foto'), async (req,
     }
 });
 
+
 app.delete('/api/pesos/:registroId', autenticar, async (req, res) => {
     try {
         const { registroId } = req.params;
 
-        await Peso.findOneAndUpdate(
-            { userId: req.userId },
-            { $pull: { registros: { _id: registroId } } }
-        );
+        const pesoDoc = await Peso.findOne({ userId: req.userId });
+        if (!pesoDoc) return res.status(404).json({ message: "Nenhum registro encontrado." });
+        
+        // Remove o subdocumento do array
+        pesoDoc.registros.pull({ _id: registroId });
+        await pesoDoc.save();
         
         // Recalcula o peso atual do usuário
-        const pesoDoc = await Peso.findOne({ userId: req.userId });
-        if (pesoDoc && pesoDoc.registros.length > 0) {
+        if (pesoDoc.registros.length > 0) {
             const ultimoRegistro = pesoDoc.registros.sort((a, b) => new Date(b.data) - new Date(a.data))[0];
             await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": ultimoRegistro.peso } });
         } else {
-            // Se não houver mais registros, volta ao peso inicial
             const usuario = await User.findById(req.userId);
-            await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": usuario.detalhesCirurgia.pesoInicial } });
+            if (usuario) {
+                await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": usuario.detalhesCirurgia.pesoInicial } });
+            }
         }
 
         res.status(204).send();
@@ -718,7 +665,6 @@ app.get('/api/pesos', autenticar, async (req, res) => {
         const pesoDoc = await Peso.findOne({ userId: req.userId });
         res.json(pesoDoc ? pesoDoc.registros : []);
     } catch (error) {
-        console.error('Erro ao buscar histórico de peso:', error);
         res.status(500).json({ message: 'Erro no servidor' });
     }
 });
