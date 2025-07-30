@@ -17,7 +17,7 @@ const { Resend } = require('resend');
 const app = express();
 app.set('trust proxy', 1);
 
-// --- CONFIGURAÇÃO DE CORS ---
+// --- CONFIGURAÇÃO DE CORS E MIDDLEWARES ---
 const whitelist = [
     'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
     'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com',
@@ -40,46 +40,14 @@ app.use(cors(corsOptions));
 app.use(helmet());
 app.use(express.json());
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 100 // limite de 100 requisições por IP
-});
-
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api/login', limiter);
 app.use('/api/forgot-password', limiter);
 
-app.post('/api/mercadopago-webhook', async (req, res) => {
-    // O Mercado Pago envia a informação principal no 'query'
-    const { query } = req;
-    const topic = query.topic || query.type;
-    
-    console.log("Webhook Mercado Pago recebido:", { topic, query });
+// --- CONFIGURAÇÕES DE SERVIÇOS EXTERNOS ---
+const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-    if (topic === 'payment') {
-        const paymentId = query.id || query['data.id'];
-        if (paymentId) {
-            try {
-                // Usamos o ID para buscar os detalhes completos do pagamento de forma segura
-                const payment = await new Payment(client).get({ id: paymentId });
-                
-                // Verificamos o status e a referência externa (nosso userId)
-                if (payment && payment.status === 'approved' && payment.external_reference) {
-                    const userId = payment.external_reference;
-                    await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
-                    console.log(`Pagamento Mercado Pago APROVADO e verificado para o usuário: ${userId}`);
-                }
-            } catch (error) {
-                console.error('Erro ao processar webhook do Mercado Pago:', error);
-            }
-        }
-    }
-    // Respondemos sempre com 200 OK para o Mercado Pago saber que recebemos a notificação
-    res.sendStatus(200);
-});
-
-
-
-// --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
     if (!admin.apps.length) {
         try {
@@ -87,24 +55,19 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
             const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
             const serviceAccount = JSON.parse(decodedKey);
             admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-        } catch (error) {
-            console.error('Erro ao inicializar Firebase Admin:', error);
-        }
+        } catch (error) { console.error('Erro ao inicializar Firebase Admin:', error); }
     }
 }
 
-// --- OUTRAS CONFIGURAÇÕES ---
 cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
-const PORT = process.env.PORT || 3001;
+
+const PORT = process.env.PORT || 8080; // Railway usa a porta que ele define
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
-const payment = new Payment(client);
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
+
 
 // --- SCHEMAS E MODELOS ---
 const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, isEmailVerified: { type: Boolean, default: false }, emailVerificationToken: String, emailVerificationExpires: Date, resetPasswordToken: String, resetPasswordExpires: Date, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate', 'affiliate_pending'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, mercadoPagoUserId: String, affiliateProfile: { type: mongoose.Schema.Types.ObjectId, ref: 'AffiliateProfile' } }, { timestamps: true });
@@ -2220,6 +2183,24 @@ app.delete('/api/exams/result/:examEntryId/:resultId', autenticar, async (req, r
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Erro interno no servidor' });
+});
+
+// --- TRATAMENTO DE ERROS E INICIALIZAÇÃO DO SERVIDOR ---
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Erro interno no servidor' });
+});
+
+const server = app.listen(PORT, () => {
+    console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
+});
+
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down gracefully');
+    server.close(() => {
+        console.log('Server closed');
+        process.exit(0);
+    });
 });
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
