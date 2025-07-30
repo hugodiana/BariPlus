@@ -258,6 +258,10 @@ app.use((req, res, next) => {
     next();
 });
 
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' });
+});
+
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
     let novoUsuario;
