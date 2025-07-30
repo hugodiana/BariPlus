@@ -12,7 +12,7 @@ const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { Resend } = require('resend');
+import { Resend } from 'resend';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -102,7 +102,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
 const payment = new Payment(client);
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend('re_St7DZR7d_8CpgMbHvZ6UWqbkHae1Manpq');
 
 
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
@@ -373,7 +373,7 @@ app.post('/api/forgot-password', async (req, res) => {
         // ✅ NOVIDADE: Bloco try...catch específico para o envio de e-mail
         try {
             await resend.emails.send({
-                from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                from: `BariPlus <contato@bariplus.com.br>`,
                 to: [usuario.email],
                 subject: "Redefinição de Senha - BariPlus",
                 html: `<p>Para redefinir sua senha, clique no link:</p><a href="${resetLink}">Redefinir Senha</a>`,
@@ -383,9 +383,9 @@ app.post('/api/forgot-password', async (req, res) => {
             // Não retornamos um erro para o usuário por segurança, mas logamos o erro no servidor
         }
     }
-        }
+        
         res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
-    } catch (error) {
+    }   catch (error) {
         console.error('Erro na recuperação de senha:', error);
         res.status(500).json({ message: "Erro no servidor." });
     }
