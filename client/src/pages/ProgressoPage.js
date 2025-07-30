@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas';
@@ -172,26 +172,30 @@ const ProgressoPage = () => {
         const method = isEditing ? 'PUT' : 'POST';
 
         try {
-            await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+            const response = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+            if (!response.ok) throw new Error(`Falha ao ${isEditing ? 'atualizar' : 'salvar'}`);
+            
             toast.success(`Registro ${isEditing ? 'atualizado' : 'adicionado'} com sucesso!`);
             setIsModalOpen(false);
             fetchData();
         } catch (error) {
-            toast.error(`Erro ao ${isEditing ? 'atualizar' : 'salvar'} registro.`);
+            toast.error(error.message);
         }
     };
     
     const handleDeleteProgresso = async (registroId) => {
         if (!window.confirm("Tem certeza que deseja apagar este registro? A ação não pode ser desfeita.")) return;
         try {
-            await fetch(`${apiUrl}/api/pesos/${registroId}`, {
+            const response = await fetch(`${apiUrl}/api/pesos/${registroId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!response.ok) throw new Error("Falha ao apagar registro.");
+            
             toast.info("Registro apagado com sucesso.");
             fetchData();
         } catch (error) {
-            toast.error("Erro ao apagar registro.");
+            toast.error(error.message);
         }
     };
     
