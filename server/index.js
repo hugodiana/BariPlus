@@ -496,8 +496,7 @@ app.post('/api/forgot-password', async (req, res) => {
                 html: `<p>Para redefinir sua senha, clique no link:</p><a href="${resetLink}">Redefinir Senha</a>`,
             });
         }
-
-        res.json({ message: "Se um e-mail com esta conta existir, um link de redefinição foi enviado." });
+        res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
     } catch (error) {
         console.error('Erro na recuperação de senha:', error);
         res.status(500).json({ message: "Erro no servidor." });
@@ -511,6 +510,10 @@ app.post('/api/reset-password/:token', async (req, res) => {
         const { token } = req.params;
         const { password } = req.body;
 
+        if (!validatePassword(password)) {
+            return res.status(400).json({ message: "A nova senha não cumpre os requisitos de segurança." });
+        }
+
         const usuario = await User.findOne({
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: new Date() }
@@ -518,9 +521,6 @@ app.post('/api/reset-password/:token', async (req, res) => {
 
         if (!usuario) {
             return res.status(400).json({ message: "Token inválido ou expirado." });
-        }
-        if (!validatePassword(password)) {
-            return res.status(400).json({ message: "A nova senha não cumpre os requisitos de segurança." });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -563,7 +563,7 @@ app.get('/api/validate-reset-token/:token', async (req, res) => {
         console.error('[VALIDATE-TOKEN] Erro:', error);
         res.status(500).json({ valid: false, message: "Erro na validação" });
     }
-});
+})
 
 // Rota de Perfil do Usuário
 app.get('/api/me', autenticar, async (req, res) => {
@@ -1124,90 +1124,6 @@ app.delete('/api/medication/:medId', autenticar, async (req, res) => {
     } catch (error) {
         console.error('Erro ao remover medicamento:', error);
         res.status(500).json({ message: 'Erro ao remover medicamento.' });
-    }
-});
-
-
-
-/// Rota de Checkout do Stripe
-app.post('/api/create-checkout-session', autenticar, async (req, res) => {
-    try {
-        const usuario = await User.findById(req.userId);
-        if (!usuario) {
-            return res.status(404).json({ message: 'Usuário não encontrado.' });
-        }
-
-        let stripeCustomerId = usuario.stripeCustomerId;
-
-        // Cria o cliente no Stripe se não existir
-        if (!stripeCustomerId) {
-            const customer = await stripe.customers.create({
-                email: usuario.email,
-                name: `${usuario.nome} ${usuario.sobrenome}`,
-                metadata: { userId: usuario._id.toString() }
-            });
-            stripeCustomerId = customer.id;
-            
-            // Atualiza o usuário com o ID do cliente Stripe
-            await User.findByIdAndUpdate(
-                req.userId,
-                { stripeCustomerId }
-            );
-        }
-
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card', 'boleto'],
-            mode: 'payment',
-            customer: stripeCustomerId,
-            allow_promotion_codes: true,
-            line_items: [{
-                price: process.env.STRIPE_PRICE_ID,
-                quantity: 1,
-            }],
-            success_url: `${process.env.CLIENT_URL}/pagamento-sucesso?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${process.env.CLIENT_URL}/planos`,
-            metadata: {
-                userId: usuario._id.toString()
-            }
-        });
-
-        res.json({ id: session.id });
-
-    } catch (error) {
-        console.error("Erro ao criar sessão de checkout:", error);
-        res.status(500).json({ 
-            error: { 
-                message: error.message,
-                code: error.code || 'internal_error'
-            } 
-        });
-    }
-});
-
-app.post('/api/verify-payment-session', async (req, res) => {
-    try {
-        const { sessionId } = req.body;
-        if (!sessionId) {
-            return res.status(400).json({ message: "ID da sessão não fornecido." });
-        }
-
-        const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-        // Se a sessão foi paga, atualizamos nosso banco de dados
-        if (session.payment_status === 'paid' && session.customer) {
-            const stripeCustomerId = session.customer;
-            await User.findOneAndUpdate(
-                { stripeCustomerId: stripeCustomerId },
-                { pagamentoEfetuado: true }
-            );
-            console.log(`Pagamento verificado e confirmado para ${stripeCustomerId}`);
-            return res.json({ paymentVerified: true });
-        }
-        
-        return res.json({ paymentVerified: false });
-    } catch (error) {
-        console.error("Erro ao verificar sessão de pagamento:", error);
-        res.status(500).json({ message: "Erro ao verificar pagamento." });
     }
 });
 

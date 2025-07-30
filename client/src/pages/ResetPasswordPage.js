@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import '../pages/LoginPage.css'; // Reutilizando estilos
 
 const ResetPasswordPage = () => {
     const { token } = useParams();
@@ -12,10 +13,7 @@ const ResetPasswordPage = () => {
     const [loading, setLoading] = useState(false);
     
     const [passwordValidations, setPasswordValidations] = useState({
-        length: false,
-        uppercase: false,
-        number: false,
-        specialChar: false,
+        length: false, uppercase: false, number: false, specialChar: false,
     });
     
     const apiUrl = process.env.REACT_APP_API_URL;
