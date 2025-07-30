@@ -102,8 +102,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
 const payment = new Payment(client);
-const resend = new Resend('re_St7DZR7d_8CpgMbHvZ6UWqbkHae1Manpq');
-
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
@@ -275,7 +274,7 @@ app.post('/api/register', async (req, res) => {
         const novoUsuario = new User({
             nome, sobrenome, username, email, whatsapp, password: hashedPassword,
             emailVerificationToken: verificationToken,
-            emailVerificationExpires: verificationExpires,
+            emailVerificationExpires: new Date(Date.now() + 3600000),
         });
         await novoUsuario.save();
 
