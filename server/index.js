@@ -636,6 +636,83 @@ app.post('/api/pesos', autenticar, upload.single('foto'), async (req, res) => {
     }
 });
 
+app.put('/api/pesos/:registroId', autenticar, upload.single('foto'), async (req, res) => {
+    try {
+        const { registroId } = req.params;
+        const { 
+            peso, cintura, quadril, pescoco, torax, abdomen,
+            bracoDireito, bracoEsquerdo, antebracoDireito, antebracoEsquerdo,
+            coxaDireita, coxaEsquerda, panturrilhaDireita, panturrilhaEsquerda 
+        } = req.body;
+
+        const pesoDoc = await Peso.findOne({ userId: req.userId });
+        if (!pesoDoc) return res.status(404).json({ message: "Histórico de peso não encontrado." });
+
+        const registro = pesoDoc.registros.id(registroId);
+        if (!registro) return res.status(404).json({ message: "Registro não encontrado." });
+
+        // Atualiza todos os campos fornecidos
+        if (peso) registro.peso = parseFloat(peso);
+        if (pescoco) registro.medidas.pescoco = parseFloat(pescoco);
+        if (torax) registro.medidas.torax = parseFloat(torax);
+        if (cintura) registro.medidas.cintura = parseFloat(cintura);
+        if (abdomen) registro.medidas.abdomen = parseFloat(abdomen);
+        if (quadril) registro.medidas.quadril = parseFloat(quadril);
+        if (bracoDireito) registro.medidas.bracoDireito = parseFloat(bracoDireito);
+        if (bracoEsquerdo) registro.medidas.bracoEsquerdo = parseFloat(bracoEsquerdo);
+        if (antebracoDireito) registro.medidas.antebracoDireito = parseFloat(antebracoDireito);
+        if (antebracoEsquerdo) registro.medidas.antebracoEsquerdo = parseFloat(antebracoEsquerdo);
+        if (coxaDireita) registro.medidas.coxaDireita = parseFloat(coxaDireita);
+        if (coxaEsquerda) registro.medidas.coxaEsquerda = parseFloat(coxaEsquerda);
+        if (panturrilhaDireita) registro.medidas.panturrilhaDireita = parseFloat(panturrilhaDireita);
+        if (panturrilhaEsquerda) registro.medidas.panturrilhaEsquerda = parseFloat(panturrilhaEsquerda);
+        
+        if (req.file) {
+            const b64 = Buffer.from(req.file.buffer).toString("base64");
+            let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+            const result = await cloudinary.uploader.upload(dataURI, { folder: "bariplus_progress" });
+            registro.fotoUrl = result.secure_url;
+        }
+
+        await pesoDoc.save();
+        
+        const ultimoRegistro = pesoDoc.registros.sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+        await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": ultimoRegistro.peso } });
+
+        res.json(registro);
+    } catch (error) {
+        console.error("Erro ao atualizar registro:", error);
+        res.status(500).json({ message: 'Erro ao atualizar registro.' });
+    }
+});
+
+app.delete('/api/pesos/:registroId', autenticar, async (req, res) => {
+    try {
+        const { registroId } = req.params;
+
+        await Peso.findOneAndUpdate(
+            { userId: req.userId },
+            { $pull: { registros: { _id: registroId } } }
+        );
+        
+        // Recalcula o peso atual do usuário
+        const pesoDoc = await Peso.findOne({ userId: req.userId });
+        if (pesoDoc && pesoDoc.registros.length > 0) {
+            const ultimoRegistro = pesoDoc.registros.sort((a, b) => new Date(b.data) - new Date(a.data))[0];
+            await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": ultimoRegistro.peso } });
+        } else {
+            // Se não houver mais registros, volta ao peso inicial
+            const usuario = await User.findById(req.userId);
+            await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": usuario.detalhesCirurgia.pesoInicial } });
+        }
+
+        res.status(204).send();
+    } catch (error) {
+        console.error("Erro ao apagar registro:", error);
+        res.status(500).json({ message: 'Erro ao apagar registro.' });
+    }
+});
+
 app.get('/api/pesos', autenticar, async (req, res) => {
     try {
         const pesoDoc = await Peso.findOne({ userId: req.userId });
