@@ -38,6 +38,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(helmet());
+app.use(express.json());
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
@@ -77,7 +78,6 @@ app.post('/api/mercadopago-webhook', async (req, res) => {
 });
 
 
-app.use(express.json());
 
 // --- INICIALIZAÇÃO DO FIREBASE ADMIN ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
