@@ -1,57 +1,54 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import LoadingSpinner from '../components/LoadingSpinner';
+import React, { useState } from 'react';
+import { useLocation, Link } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import '../pages/LoginPage.css'; // Reutilizando estilos
 
-const VerifyPage = () => {
-    const { token } = useParams();
-    const navigate = useNavigate(); // Hook para o redirecionamento
-    const [message, setMessage] = useState('A verificar o seu e-mail...');
-    const [isSuccess, setIsSuccess] = useState(false);
+const VerifyEmailPage = () => {
+    const location = useLocation();
+    const email = location.state?.email;
+    const [loading, setLoading] = useState(false);
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    useEffect(() => {
-        const verifyToken = async () => {
-            if (!token) {
-                setMessage("Token de verificação não encontrado.");
-                return;
-            }
-            try {
-                const res = await fetch(`${apiUrl}/api/verify-email/${token}`);
-                if (!res.ok) {
-                    // Tenta ler a mensagem de erro do back-end, se houver
-                    const errorText = await res.text();
-                    throw new Error(errorText || "Link inválido ou expirado.");
-                }
-                
-                setIsSuccess(true);
-                setMessage("E-mail verificado com sucesso! A redirecionar para o login...");
+    const handleResend = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch(`${apiUrl}/api/resend-verification-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+            toast.success(data.message);
+        } catch (error) {
+            toast.error(error.message || "Ocorreu um erro.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-                // ✅ CORREÇÃO: Redireciona para a página de login após 3 segundos
-                setTimeout(() => {
-                    navigate('/login?verified=true');
-                }, 3000);
-
-            } catch (error) {
-                setIsSuccess(false);
-                setMessage(error.message || "Link de verificação inválido ou expirado.");
-            }
-        };
-        verifyToken();
-    }, [token, apiUrl, navigate]);
+    if (!email) {
+        return (
+            <div className="login-page-container">
+                <div className="login-form-wrapper">
+                    <h2>Erro</h2>
+                    <p>Nenhum e-mail fornecido. Por favor, volte e tente fazer o login novamente.</p>
+                    <Link to="/login">Voltar para o Login</Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
-        <div style={{ textAlign: 'center', padding: '50px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-            {message === 'A verificar o seu e-mail...' ? (
-                <LoadingSpinner />
-            ) : (
-                <>
-                    <h2 style={{ color: isSuccess ? '#28a745' : '#c0392b' }}>
-                        {isSuccess ? 'Sucesso!' : 'Erro na Verificação'}
-                    </h2>
-                    <p>{message}</p>
-                    {!isSuccess && <Link to="/login">Voltar para o Login</Link>}
-                </>
-            )}
+        <div className="login-page-container">
+            <div className="login-form-wrapper" style={{ textAlign: 'center' }}>
+                <h2>Verifique o seu E-mail</h2>
+                <p>Enviamos um link de ativação para <strong>{email}</strong>.</p>
+                <p>Por favor, verifique a sua caixa de entrada (e a de spam) e clique no link para ativar a sua conta.</p>
+                <button onClick={handleResend} disabled={loading} className="submit-button">
+                    {loading ? 'A reenviar...' : 'Reenviar E-mail de Verificação'}
+                </button>
+            </div>
         </div>
     );
 };
