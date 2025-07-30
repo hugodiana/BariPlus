@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas';
@@ -17,23 +17,12 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const createChartData = (label, data, color) => ({
     labels: data.map(item => format(new Date(item.date), 'dd/MM')),
-    datasets: [{
-        label: label,
-        data: data.map(item => item.value),
-        borderColor: color,
-        backgroundColor: `${color}20`,
-        fill: true,
-        tension: 0.3
-    }]
+    datasets: [{ label, data: data.map(item => item.value), borderColor: color, backgroundColor: `${color}20`, fill: true, tension: 0.3 }]
 });
 
 const chartOptions = (title) => ({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: { display: false },
-        title: { display: true, text: title, font: { size: 14 } }
-    },
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, title: { display: true, text: title, font: { size: 14 } } },
     animation: { duration: 0 }
 });
 
@@ -44,7 +33,7 @@ const DownloadPDFButton = ({ usuario, historico }) => {
     const generatePDF = async () => {
         setIsGenerating(true);
         toast.info("A preparar o seu relatório PDF...");
-
+        
         setTimeout(async () => {
             const chartIds = ['peso-chart', 'cintura-chart', 'quadril-chart', 'braco-d-chart'];
             const images = {};
@@ -60,7 +49,6 @@ const DownloadPDFButton = ({ usuario, historico }) => {
                     }
                 }
             }
-            
             setChartImages(images);
             setIsGenerating(false);
             toast.success("Gráficos prontos! Pode baixar o seu PDF.");
@@ -88,12 +76,12 @@ const DownloadPDFButton = ({ usuario, historico }) => {
     );
 };
 
-
 const ProgressoPage = () => {
     const [historico, setHistorico] = useState([]);
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [registroEmEdicao, setRegistroEmEdicao] = useState(null);
     
     const [formState, setFormState] = useState({
         peso: '', cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
@@ -136,25 +124,74 @@ const ProgressoPage = () => {
         setFormState(prev => ({ ...prev, foto: e.target.files[0] }));
     };
 
+    const resetForm = () => {
+        setFormState({
+            peso: '', cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+            bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
+            coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
+        });
+    };
+
+    const handleOpenAddModal = () => {
+        setRegistroEmEdicao(null);
+        resetForm();
+        setIsModalOpen(true);
+    };
+
+    const handleOpenEditModal = (registro) => {
+        setRegistroEmEdicao(registro);
+        setFormState({
+            peso: registro.peso || '',
+            cintura: registro.medidas?.cintura || '',
+            quadril: registro.medidas?.quadril || '',
+            pescoco: registro.medidas?.pescoco || '',
+            torax: registro.medidas?.torax || '',
+            abdomen: registro.medidas?.abdomen || '',
+            bracoDireito: registro.medidas?.bracoDireito || '',
+            bracoEsquerdo: registro.medidas?.bracoEsquerdo || '',
+            antebracoDireito: registro.medidas?.antebracoDireito || '',
+            antebracoEsquerdo: registro.medidas?.antebracoEsquerdo || '',
+            coxaDireita: registro.medidas?.coxaDireita || '',
+            coxaEsquerda: registro.medidas?.coxaEsquerda || '',
+            panturrilhaDireita: registro.medidas?.panturrilhaDireita || '',
+            panturrilhaEsquerda: registro.medidas?.panturrilhaEsquerda || '',
+            foto: null
+        });
+        setIsModalOpen(true);
+    };
+
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
         const formData = new FormData();
         Object.keys(formState).forEach(key => {
             if (formState[key]) formData.append(key, formState[key]);
         });
-        
+
+        const isEditing = !!registroEmEdicao;
+        const url = isEditing ? `${apiUrl}/api/pesos/${registroEmEdicao._id}` : `${apiUrl}/api/pesos`;
+        const method = isEditing ? 'PUT' : 'POST';
+
         try {
-            await fetch(`${apiUrl}/api/pesos`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: formData });
-            toast.success('Progresso registrado com sucesso!');
+            await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+            toast.success(`Registro ${isEditing ? 'atualizado' : 'adicionado'} com sucesso!`);
             setIsModalOpen(false);
-            setFormState({
-                peso: '', cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
-                bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
-                coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
-            });
             fetchData();
         } catch (error) {
-            toast.error('Erro ao salvar progresso.');
+            toast.error(`Erro ao ${isEditing ? 'atualizar' : 'salvar'} registro.`);
+        }
+    };
+    
+    const handleDeleteProgresso = async (registroId) => {
+        if (!window.confirm("Tem certeza que deseja apagar este registro? A ação não pode ser desfeita.")) return;
+        try {
+            await fetch(`${apiUrl}/api/pesos/${registroId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            toast.info("Registro apagado com sucesso.");
+            fetchData();
+        } catch (error) {
+            toast.error("Erro ao apagar registro.");
         }
     };
     
@@ -163,11 +200,9 @@ const ProgressoPage = () => {
         const pesoInicial = usuario.detalhesCirurgia?.pesoInicial || 0;
         const pesoAtual = usuario.detalhesCirurgia?.pesoAtual || 0;
         const alturaEmMetros = (usuario.detalhesCirurgia?.altura || 0) / 100;
-        
         const pesoPerdido = pesoInicial - pesoAtual;
-        const imc = alturaEmMetros > 0 ? (pesoAtual / (alturaEmMetros * alturaEmMetros)) : 0;
-        
-        return { pesoPerdido, imc };
+        const imcValue = alturaEmMetros > 0 ? (pesoAtual / (alturaEmMetros * alturaEmMetros)) : 0;
+        return { pesoPerdido, imc: imcValue };
     }, [usuario, historico]);
     
     const chartDataSets = useMemo(() => {
@@ -185,14 +220,10 @@ const ProgressoPage = () => {
     return (
         <div className="page-container">
             <div className="page-header-actions">
-                <div className="page-header">
-                    <h1>Meu Progresso</h1>
-                    <p>Acompanhe sua evolução de peso e medidas corporais.</p>
-                </div>
+                <div className="page-header"><h1>Meu Progresso</h1><p>Acompanhe sua evolução de peso e medidas corporais.</p></div>
                 <DownloadPDFButton usuario={usuario} historico={historico} />
             </div>
-
-            <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar Novo Registro</button>
+            <button className="add-btn" onClick={handleOpenAddModal}>+ Adicionar Novo Registro</button>
 
             {historico.length > 0 ? (
                 <div className="progresso-content">
@@ -219,7 +250,7 @@ const ProgressoPage = () => {
                         <h3>Histórico Completo</h3>
                         <div className="table-responsive">
                             <table>
-                                <thead><tr><th>Data</th><th>Peso</th><th>Pescoço</th><th>Tórax</th><th>Cintura</th><th>Abdômen</th><th>Quadril</th><th>Braço D.</th><th>Braço E.</th></tr></thead>
+                                <thead><tr><th>Data</th><th>Peso</th><th>Pescoço</th><th>Tórax</th><th>Cintura</th><th>Abdômen</th><th>Quadril</th><th>Braço D.</th><th>Braço E.</th><th>Ações</th></tr></thead>
                                 <tbody>
                                     {[...historico].reverse().map(item => (
                                         <tr key={item._id}>
@@ -232,6 +263,10 @@ const ProgressoPage = () => {
                                             <td>{item.medidas?.quadril || '-'}</td>
                                             <td>{item.medidas?.bracoDireito || '-'}</td>
                                             <td>{item.medidas?.bracoEsquerdo || '-'}</td>
+                                            <td className="actions-cell">
+                                                <button onClick={() => handleOpenEditModal(item)} className="action-btn edit-btn">✎</button>
+                                                <button onClick={() => handleDeleteProgresso(item._id)} className="action-btn delete-btn">×</button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -243,12 +278,12 @@ const ProgressoPage = () => {
                 <div className="empty-state-container">
                     <h3>Sem Registros de Progresso</h3>
                     <p>Clique no botão para adicionar o seu primeiro registro de avaliação física.</p>
-                    <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar Novo Registro</button>
+                    <button className="add-btn" onClick={handleOpenAddModal}>+ Adicionar Novo Registro</button>
                 </div>
             )}
             
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>Novo Registro de Avaliação Física</h2>
+                <h2>{registroEmEdicao ? 'Editar Registro' : 'Novo Registro de Avaliação Física'}</h2>
                 <form onSubmit={handleSubmitProgresso} className="progresso-form">
                     <label>Peso (kg) *</label>
                     <input name="peso" type="number" step="0.1" value={formState.peso} onChange={handleInputChange} required />
@@ -263,8 +298,8 @@ const ProgressoPage = () => {
                     <div className="form-row"><div className="form-group"><label>Panturrilha Direita</label><input name="panturrilhaDireita" type="number" step="0.1" value={formState.panturrilhaDireita} onChange={handleInputChange} /></div><div className="form-group"><label>Panturrilha Esquerda</label><input name="panturrilhaEsquerda" type="number" step="0.1" value={formState.panturrilhaEsquerda} onChange={handleInputChange} /></div></div>
                     <hr/>
                     <label>Foto de Progresso (opcional)</label>
-                    <input type="file" accept="image/*" onChange={handleFileChange} />
-                    <button type="submit">Salvar Registro</button>
+                    <input type="file" name="foto" accept="image/*" onChange={handleFileChange} />
+                    <button type="submit">{registroEmEdicao ? 'Salvar Alterações' : 'Adicionar Registro'}</button>
                 </form>
             </Modal>
         </div>

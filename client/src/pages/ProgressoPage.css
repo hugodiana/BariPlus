@@ -149,3 +149,27 @@
     height: 250px;
     width: 100%;
 }
+.actions-cell {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-md);
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+.action-btn:hover {
+    opacity: 1;
+}
+
+.edit-btn {
+    color: var(--action-blue);
+}
+.delete-btn {
+    color: var(--danger-red);
+}
