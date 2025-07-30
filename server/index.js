@@ -260,58 +260,57 @@ app.use((req, res, next) => {
 
 // --- ROTAS DA API ---
 app.post('/api/register', async (req, res) => {
+    let novoUsuario;
     try {
         const { nome, sobrenome, username, email, password, whatsapp } = req.body;
-        if (!validatePassword(password)) {
-            return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
-        }
+        if (!validatePassword(password)) return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
         if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = crypto.randomBytes(32).toString('hex');
-        const verificationExpires = new Date(Date.now() + 3600000); // 1 hora
-
-        const novoUsuario = new User({
+        
+        novoUsuario = new User({
             nome, sobrenome, username, email, whatsapp, password: hashedPassword,
             emailVerificationToken: verificationToken,
-            emailVerificationExpires: new Date(Date.now() + 3600000),
+            emailVerificationExpires: new Date(Date.now() + 3600000), // 1 hora
         });
         await novoUsuario.save();
 
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
         
-        // ✅ NOVIDADE: Bloco try...catch específico para o envio de e-mail
-        try {
-            await resend.emails.send({
-                from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
-                to: [novoUsuario.email],
-                subject: "Ative a sua Conta no BariPlus",
-                html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
-            });
-        } catch (emailError) {
-            console.error("Falha ao enviar e-mail de verificação:", emailError);
-            // Se o e-mail falhar, apaga o usuário que acabamos de criar para ele poder tentar de novo
+        // Bloco de envio de e-mail com tratamento de erro detalhado
+        const { data, error } = await resend.emails.send({
+            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+            to: [novoUsuario.email],
+            subject: 'Ative a sua Conta no BariPlus',
+            html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
+        });
+
+        if (error) {
+            console.error("Erro detalhado do Resend:", error);
             await User.findByIdAndDelete(novoUsuario._id);
-            return res.status(500).json({ message: 'Falha ao enviar e-mail de verificação. Por favor, tente se cadastrar novamente.' });
+            return res.status(500).json({ message: 'Falha ao enviar e-mail de verificação.' });
         }
         
         await Promise.all([
             new Checklist({ userId: novoUsuario._id }).save(),
             new Peso({ userId: novoUsuario._id }).save(),
             new Consulta({ userId: novoUsuario._id }).save(),
-            new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+            new DailyLog({ userId: novoUsuario._id }).save(),
             new Medication({ userId: novoUsuario._id }).save(),
-            new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+            new FoodLog({ userId: novoUsuario._id }).save(),
             new Gasto({ userId: novoUsuario._id }).save(),
             new Exams({ userId: novoUsuario._id }).save()
         ]);
         
-        res.status(201).json({ message: 'Usuário cadastrado! Verifique seu e-mail.' });
-    } catch (error) { 
+        res.status(201).json({ message: 'Usuário cadastrado com sucesso! Verifique seu e-mail.' });
+    } catch (error) {
         console.error("Erro no registro:", error);
+        if (novoUsuario?._id) await User.findByIdAndDelete(novoUsuario._id);
         res.status(500).json({ message: 'Erro no servidor.' });
     }
 });
+
 
 // Rota de Login
 app.post('/api/login', async (req, res) => {
