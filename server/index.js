@@ -7,15 +7,16 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const axios = require('axios');
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');const admin = require('firebase-admin');
+const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const translate = require('@iamtraction/google-translate');
 const { Resend } = require('resend');
 
 const app = express();
 app.set('trust proxy', 1);
+
 // --- CONFIGURAÇÃO DE CORS ---
 const whitelist = [
     'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
@@ -107,41 +108,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
 // --- SCHEMAS E MODELOS ---
-const UserSchema = new mongoose.Schema({
-    nome: String,
-    sobrenome: String,
-    username: { type: String, unique: true, required: true },
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    isEmailVerified: { type: Boolean, default: false },
-    emailVerificationToken: String,
-    emailVerificationExpires: Date,
-    resetPasswordToken: String,
-    resetPasswordExpires: Date,
-    onboardingCompleto: { type: Boolean, default: false },
-    detalhesCirurgia: {
-        fezCirurgia: String,
-        dataCirurgia: Date,
-        altura: Number,
-        pesoInicial: Number,
-        pesoAtual: Number
-    },
-    pagamentoEfetuado: { type: Boolean, default: false },
-    role: { type: String, enum: ['user', 'admin', 'affiliate', 'affiliate_pending'], default: 'user' },
-    affiliateCouponCode: String,
-    fcmToken: String,
-    notificationSettings: {
-        appointmentReminders: { type: Boolean, default: true },
-        medicationReminders: { type: Boolean, default: true },
-        weighInReminders: { type: Boolean, default: true }
-    },
-    mercadoPagoUserId: String,
-    // ✅ CORREÇÃO: Este campo foi movido para dentro do objeto principal
-    affiliateProfile: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'AffiliateProfile'
-    }
-}, { timestamps: true });
+const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, isEmailVerified: { type: Boolean, default: false }, emailVerificationToken: String, emailVerificationExpires: Date, resetPasswordToken: String, resetPasswordExpires: Date, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate', 'affiliate_pending'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, mercadoPagoUserId: String, affiliateProfile: { type: mongoose.Schema.Types.ObjectId, ref: 'AffiliateProfile' } }, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
 const PesoSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -197,102 +164,7 @@ const GastoSchema = new mongoose.Schema({
         categoria: { type: String, default: 'Outros' }
     }]
 });
-const AffiliateProfileSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-    whatsapp: String,
-    pixKeyType: {
-        type: String,
-        // CORREÇÃO: Adicionamos os valores corretos
-        enum: ['CPF', 'CNPJ', 'Email', 'Telefone', 'Chave Aleatória', 'Celular'], 
-        required: true
-    },
-    pixKey: { type: String, required: true },
-    couponCode: {
-        type: String, // Simplesmente um texto
-    },
-    // Estatísticas
-    totalRevenueInCents: {
-        type: Number,
-        default: 0,
-        min: 0
-    },
-    salesCount: {
-        type: Number,
-        default: 0,
-        min: 0
-    },
-    commissionRate: {
-        type: Number,
-        default: 30, // 30% como padrão
-        min: 0,
-        max: 100
-    },
-    
-    // Status e aprovação
-    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
-
-    statusReason: String, // Motivo de rejeição ou suspensão
-    approvedAt: Date,
-    approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    
-    // Histórico de pagamentos
-    payoutHistory: [{
-        date: { type: Date, default: Date.now },
-        amountInCents: { 
-            type: Number, 
-            required: true,
-            min: 0 
-        },
-        receiptUrl: String,
-        receiptPublicId: String, // ID do Cloudinary para gerenciamento
-        processedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-        paymentMethod: { 
-            type: String, 
-            enum: ['PIX', 'TED', 'DOC'], 
-            default: 'PIX' 
-        },
-        transactionId: String,
-        notes: String
-    }],
-    
-    // Configurações
-    notificationPreferences: {
-        email: { type: Boolean, default: true },
-        whatsapp: { type: Boolean, default: false }
-    },
-    
-    // Auditoria
-    lastActivityAt: Date
-    
-}, { 
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true }
-});
-
-// Virtual para calcular o saldo disponível
-AffiliateProfileSchema.virtual('availableBalanceInCents').get(function() {
-    const totalPaid = this.payoutHistory.reduce((sum, payout) => sum + payout.amountInCents, 0);
-    return this.totalRevenueInCents - totalPaid;
-});
-
-// Virtual para formatar o saldo disponível em reais
-AffiliateProfileSchema.virtual('availableBalance').get(function() {
-    return (this.availableBalanceInCents / 100).toFixed(2);
-});
-
-// Indexes para melhor performance
-AffiliateProfileSchema.index({ couponCode: 1 });
-AffiliateProfileSchema.index({ status: 1 });
-AffiliateProfileSchema.index({ userId: 1 }, { unique: true });
-
-// Middleware para validação antes de salvar
-AffiliateProfileSchema.pre('save', function(next) {
-    if (this.isModified('status') && this.status === 'approved') {
-        this.approvedAt = new Date();
-    }
-    next();
-});
+const AffiliateProfileSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true }, whatsapp: String, pixKeyType: { type: String, enum: ['CPF', 'CNPJ', 'Email', 'Telefone', 'Chave Aleatória', 'Celular'], required: true }, pixKey: { type: String, required: true }, couponCode: { type: String }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, payoutHistory: [{ date: { type: Date, default: Date.now }, amountInCents: { type: Number, required: true, min: 0 }, receiptUrl: String, }] }, { timestamps: true });
 
 const ExamsSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -408,12 +280,21 @@ app.post('/api/register', async (req, res) => {
         await novoUsuario.save();
 
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-        await resend.emails.send({
-            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
-            to: novoUsuario.email,
-            subject: 'Ative a sua Conta no BariPlus',
-            html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
-        });
+        
+        // ✅ NOVIDADE: Bloco try...catch específico para o envio de e-mail
+        try {
+            await resend.emails.send({
+                from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                to: [novoUsuario.email],
+                subject: "Ative a sua Conta no BariPlus",
+                html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
+            });
+        } catch (emailError) {
+            console.error("Falha ao enviar e-mail de verificação:", emailError);
+            // Se o e-mail falhar, apaga o usuário que acabamos de criar para ele poder tentar de novo
+            await User.findByIdAndDelete(novoUsuario._id);
+            return res.status(500).json({ message: 'Falha ao enviar e-mail de verificação. Por favor, tente se cadastrar novamente.' });
+        }
         
         await Promise.all([
             new Checklist({ userId: novoUsuario._id }).save(),
@@ -426,8 +307,8 @@ app.post('/api/register', async (req, res) => {
             new Exams({ userId: novoUsuario._id }).save()
         ]);
         
-        res.status(201).json({ message: 'Usuário cadastrado com sucesso! Verifique seu e-mail para ativar sua conta.' });
-    } catch (error) {
+        res.status(201).json({ message: 'Usuário cadastrado! Verifique seu e-mail.' });
+    } catch (error) { 
         console.error("Erro no registro:", error);
         res.status(500).json({ message: 'Erro no servidor.' });
     }
@@ -488,13 +369,20 @@ app.post('/api/forgot-password', async (req, res) => {
             await usuario.save();
             
             const resetLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-            
+        
+        // ✅ NOVIDADE: Bloco try...catch específico para o envio de e-mail
+        try {
             await resend.emails.send({
                 from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
-                to: usuario.email,
-                subject: 'Redefinição de Senha - BariPlus',
+                to: [usuario.email],
+                subject: "Redefinição de Senha - BariPlus",
                 html: `<p>Para redefinir sua senha, clique no link:</p><a href="${resetLink}">Redefinir Senha</a>`,
             });
+        } catch (emailError) {
+            console.error("Falha ao enviar e-mail de recuperação:", emailError);
+            // Não retornamos um erro para o usuário por segurança, mas logamos o erro no servidor
+        }
+    }
         }
         res.json({ message: "Se uma conta com este e-mail existir, um link de redefinição foi enviado." });
     } catch (error) {
@@ -503,8 +391,6 @@ app.post('/api/forgot-password', async (req, res) => {
     }
 });
 
-
-// Rota de Redefinição de Senha
 app.post('/api/reset-password/:token', async (req, res) => {
     try {
         const { token } = req.params;
