@@ -2191,21 +2191,29 @@ app.use((err, req, res, next) => {
     res.status(500).json({ message: 'Erro interno no servidor' });
 });
 
-const server = app.listen(PORT, () => {
-    console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
-});
+// Conecta ao MongoDB antes de iniciar o servidor
+mongoose.connect(process.env.DATABASE_URL)
+    .then(() => {
+        console.log('Conectado ao MongoDB!');
+        
+        const server = app.listen(PORT, () => {
+            console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
+            console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`Banco de dados: ${process.env.DATABASE_URL}`);
+        });
 
-process.on('SIGTERM', () => {
-    console.log('Received SIGTERM, shutting down gracefully');
-    server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
+        process.on('SIGTERM', () => {
+            console.log('Received SIGTERM, shutting down gracefully');
+            server.close(() => {
+                console.log('Server closed');
+                mongoose.connection.close(false, () => {
+                    console.log('MongoDB connection closed');
+                    process.exit(0);
+                });
+            });
+        });
+    })
+    .catch(err => {
+        console.error('Erro ao conectar ao MongoDB:', err);
+        process.exit(1);
     });
-});
-
-// --- INICIALIZAÇÃO DO SERVIDOR ---
-app.listen(PORT, () => {
-    console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
-    console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Banco de dados: ${process.env.DATABASE_URL}`);
-});
