@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { initMercadoPago, Payment } from '@mercadopago/sdk-react'; // ✅ MUDANÇA: Importamos o 'Payment' em vez do 'CardPayment'
+import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
 import './PricingPage.css';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -11,7 +11,6 @@ const PricingPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [afiliadoCode, setAfiliadoCode] = useState('');
     
-    // ✅ NOVIDADE: Estados para controlar o preço dinamicamente
     const [precoOriginal] = useState(109.99);
     const [precoFinal, setPrecoFinal] = useState(109.99);
     const [descontoAplicado, setDescontoAplicado] = useState(false);
@@ -21,52 +20,66 @@ const PricingPage = () => {
 
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
-    // Preenche o código do afiliado se ele vier do link
     useEffect(() => {
         const refCode = searchParams.get('afiliado');
         if (refCode) {
             setAfiliadoCode(refCode.toUpperCase());
+            // Valida o cupom que veio do link
+            handleApplyCoupon(refCode.toUpperCase());
         }
     }, [searchParams]);
 
-    // Função que lida com o envio do pagamento para o nosso back-end
+    const handleApplyCoupon = async (codeToValidate) => {
+        const code = codeToValidate || afiliadoCode;
+        if (!code) {
+            setPrecoFinal(precoOriginal);
+            setDescontoAplicado(false);
+            return toast.info("Cupom removido.");
+        }
+        
+        try {
+            const response = await fetch(`${apiUrl}/api/validate-coupon`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ afiliadoCode: code }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+
+            setPrecoFinal(precoOriginal * 0.70);
+            setDescontoAplicado(true);
+            toast.success("Cupom de afiliado aplicado!");
+
+        } catch (error) {
+            setPrecoFinal(precoOriginal);
+            setDescontoAplicado(false);
+            toast.error(error.message || "Cupom inválido.");
+        }
+    };
+
     const onSubmit = async (formData) => {
         setIsLoading(true);
         try {
-            // Enviamos os dados do cartão e também o código de afiliado
+            const codeToSubmit = descontoAplicado ? afiliadoCode : '';
             const response = await fetch(`${apiUrl}/api/process-payment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ ...formData, afiliadoCode }),
+                body: JSON.stringify({ ...formData, afiliadoCode: codeToSubmit }),
             });
             const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Ocorreu um erro no pagamento.');
+            if (!response.ok) throw new Error(data.message);
 
             if (data.status === 'approved') {
                 toast.success('Pagamento aprovado! Bem-vindo(a) ao BariPlus.');
                 window.location.href = '/bem-vindo';
             } else {
-                toast.warn(`O seu pagamento está ${data.status}. Avisaremos quando for aprovado.`);
+                toast.warn(`O seu pagamento está ${data.status}.`);
                 navigate('/');
             }
         } catch (error) {
             toast.error(error.message);
         } finally {
             setIsLoading(false);
-        }
-    };
-    
-    // ✅ NOVIDADE: Função para o usuário aplicar o cupom e ver o desconto
-    const handleApplyCoupon = () => {
-        // A validação real é feita no back-end, aqui apenas atualizamos a UI
-        if (afiliadoCode) {
-            setPrecoFinal(precoOriginal * 0.70);
-            setDescontoAplicado(true);
-            toast.success("Desconto de afiliado aplicado!");
-        } else {
-            setPrecoFinal(precoOriginal);
-            setDescontoAplicado(false);
-            toast.info("Cupom removido.");
         }
     };
 
@@ -80,7 +93,6 @@ const PricingPage = () => {
                     <span className="price-amount">R$ {precoFinal.toFixed(2)}</span>
                 </div>
 
-                {/* ✅ NOVIDADE: Campo de cupom visível com botão de aplicar */}
                 <div className="coupon-section">
                     <input
                         type="text"
@@ -89,23 +101,21 @@ const PricingPage = () => {
                         onChange={(e) => setAfiliadoCode(e.target.value.toUpperCase())}
                         className="coupon-input"
                     />
-                    <button onClick={handleApplyCoupon} className="apply-coupon-btn">Aplicar</button>
+                    <button onClick={() => handleApplyCoupon()} className="apply-coupon-btn">Aplicar</button>
                 </div>
                 
                 <div id="payment-container">
-                    {/* ✅ MUDANÇA: Usando o Brick 'Payment' que inclui todos os métodos */}
                     <Payment
-                        initialization={{ amount: Number(precoFinal.toFixed(2)) }}
+                        initialization={{
+                            amount: Number(precoFinal.toFixed(2)),
+                        }}
                         customization={{
-                            visual: {
-                                buttonBackground: 'primary',
-                                buttonLabel: 'Pagar Agora',
-                            },
+                            visual: { buttonBackground: 'primary', buttonLabel: 'Pagar Agora' },
                             paymentMethods: {
                                 mercadoPago: 'all',
                                 creditCard: 'all',
                                 debitCard: 'all',
-                                ticket: 'all', // Boleto
+                                ticket: 'all',
                                 pix: 'all',
                             },
                         }}

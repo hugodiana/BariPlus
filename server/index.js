@@ -1824,13 +1824,13 @@ app.post('/api/resend-verification-email', async (req, res) => {
 
 app.post('/api/process-payment', autenticar, async (req, res) => {
     try {
-        const { token, issuer_id, payment_method_id, installments, payer, afiliadoCode } = req.body;
+        const { token, payment_method_id, installments, payer, afiliadoCode } = req.body;
         const PRECO_BASE = 109.99;
         let precoFinal = PRECO_BASE;
         let afiliado = null;
 
         if (afiliadoCode) {
-            afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase() });
+            afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
             if (afiliado) {
                 precoFinal = PRECO_BASE * 0.70; // Aplica 30% de desconto
             }
@@ -1852,7 +1852,6 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
         if (paymentResponse.status === 'approved') {
             await User.findByIdAndUpdate(req.userId, { pagamentoEfetuado: true });
 
-            // Se a venda foi de um afiliado, regista a comissão IMEDIATAMENTE
             if (afiliado) {
                 const valorPagoEmCentavos = Math.round(precoFinal * 100);
                 const comissaoEmCentavos = Math.round(valorPagoEmCentavos * 0.30);
@@ -1863,19 +1862,32 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
                     valorPagoEmCentavos,
                     comissaoEmCentavos,
                 }).save();
-                console.log(`Venda e comissão para o afiliado ${afiliado._id} registradas.`);
             }
         }
 
-        res.status(201).json({
-            status: paymentResponse.status,
-            message: paymentResponse.status_detail
-        });
+        res.status(201).json({ status: paymentResponse.status, message: paymentResponse.status_detail });
 
     } catch (error) {
         console.error("Erro ao processar pagamento:", error);
-        const errorMessage = error.cause?.message || "Erro desconhecido ao processar pagamento.";
+        const errorMessage = error.cause?.message || "Erro desconhecido.";
         res.status(500).json({ message: errorMessage });
+    }
+});
+
+app.post('/api/validate-coupon', autenticar, async (req, res) => {
+    try {
+        const { afiliadoCode } = req.body;
+        if (!afiliadoCode) {
+            return res.status(400).json({ message: "Código de afiliado não fornecido." });
+        }
+        const afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
+        if (afiliado) {
+            res.json({ valid: true, message: "Cupom válido!" });
+        } else {
+            res.status(404).json({ valid: false, message: "Cupom de afiliado inválido ou não encontrado." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro no servidor ao validar o cupom." });
     }
 });
 
