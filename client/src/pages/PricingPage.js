@@ -51,8 +51,9 @@ const PricingPage = () => {
     useEffect(() => {
         const refCode = searchParams.get('afiliado');
         if (refCode) {
-            setAfiliadoCode(refCode.toUpperCase());
-            handleApplyCoupon(refCode.toUpperCase());
+            const code = refCode.toUpperCase();
+            setAfiliadoCode(code);
+            handleApplyCoupon(code);
         }
     }, [searchParams]);
     

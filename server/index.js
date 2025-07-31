@@ -1830,9 +1830,9 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
         let afiliado = null;
 
         if (afiliadoCode) {
-            afiliado = await Afiliado.findOne({ codigo: afiliadoCode.toUpperCase() });
+            afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
             if (afiliado) {
-                precoFinal = PRECO_BASE * (1 - (afiliado.descontoPercentual / 100));
+                precoFinal = PRECO_BASE * 0.70;
             }
         }
 
@@ -1844,17 +1844,18 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
                 description: 'BariPlus - Acesso Vitalício',
                 installments,
                 payment_method_id,
-                payer: { email: payer.email },
+                payer: {
+                    email: payer.email, // O e-mail do comprador é obrigatório
+                },
                 external_reference: req.userId,
             }
         });
 
         if (paymentResponse.status === 'approved') {
             await User.findByIdAndUpdate(req.userId, { pagamentoEfetuado: true });
-
             if (afiliado) {
                 const valorPagoEmCentavos = Math.round(precoFinal * 100);
-                const comissaoEmCentavos = Math.round(valorPagoEmCentavos * (afiliado.comissaoPercentual / 100));
+                const comissaoEmCentavos = Math.round(valorPagoEmCentavos * 0.30);
                 await new Venda({
                     afiliadoId: afiliado._id,
                     clienteId: req.userId,
@@ -1865,7 +1866,6 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
             }
         }
         res.status(201).json({ status: paymentResponse.status, message: paymentResponse.status_detail });
-
     } catch (error) {
         console.error("Erro ao processar pagamento:", error);
         res.status(500).json({ message: "Erro ao processar o pagamento." });
