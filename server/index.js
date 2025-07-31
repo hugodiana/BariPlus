@@ -61,6 +61,7 @@ app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), 
                                 afiliadoId, clienteId, paymentId: payment.id,
                                 valorPagoEmCentavos, comissaoEmCentavos,
                             }).save();
+                            console.log(`Venda e comissão para o afiliado ${afiliadoId} registradas com sucesso.`);
                         }
                     }
                 }
@@ -1056,8 +1057,8 @@ app.get('/api/admin/stats', autenticar, isAdmin, async (req, res) => {
 
 app.post('/api/admin/afiliados', autenticar, isAdmin, async (req, res) => {
     try {
-        const { userId, nome, email, codigo } = req.body;
-        const novoAfiliado = new Afiliado({ userId, nome, email, codigo });
+        const { nome, email, codigo } = req.body;
+        const novoAfiliado = new Afiliado({ nome, email, codigo });
         await novoAfiliado.save();
         res.status(201).json(novoAfiliado);
     } catch (error) {
