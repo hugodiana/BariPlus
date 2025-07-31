@@ -1824,28 +1824,47 @@ app.post('/api/resend-verification-email', async (req, res) => {
 
 app.post('/api/process-payment', autenticar, async (req, res) => {
     try {
-        const { token, issuer_id, payment_method_id, transaction_amount, installments, payer } = req.body;
+        const { token, issuer_id, payment_method_id, installments, payer, afiliadoCode } = req.body;
+        const PRECO_BASE = 109.99;
+        let precoFinal = PRECO_BASE;
+        let afiliado = null;
 
-        const paymentData = {
-            body: {
-                transaction_amount: transaction_amount,
-                token: token,
-                description: 'BariPlus - Acesso Vitalício',
-                installments: installments,
-                payment_method_id: payment_method_id,
-                payer: {
-                    email: payer.email,
-                },
-                external_reference: req.userId, // ID do nosso usuário
+        if (afiliadoCode) {
+            afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase() });
+            if (afiliado) {
+                precoFinal = PRECO_BASE * 0.70; // Aplica 30% de desconto
             }
-        };
+        }
 
-        const paymentResponse = await payment.create(paymentData);
-        
-        // Se o pagamento for aprovado, atualiza o nosso banco de dados na hora
+        const payment = new Payment(client);
+        const paymentResponse = await payment.create({
+            body: {
+                transaction_amount: Number(precoFinal.toFixed(2)),
+                token,
+                description: 'BariPlus - Acesso Vitalício',
+                installments,
+                payment_method_id,
+                payer: { email: payer.email },
+                external_reference: req.userId,
+            }
+        });
+
         if (paymentResponse.status === 'approved') {
             await User.findByIdAndUpdate(req.userId, { pagamentoEfetuado: true });
-            console.log(`Pagamento APROVADO via Checkout Bricks para o usuário: ${req.userId}`);
+
+            // Se a venda foi de um afiliado, regista a comissão IMEDIATAMENTE
+            if (afiliado) {
+                const valorPagoEmCentavos = Math.round(precoFinal * 100);
+                const comissaoEmCentavos = Math.round(valorPagoEmCentavos * 0.30);
+                await new Venda({
+                    afiliadoId: afiliado._id,
+                    clienteId: req.userId,
+                    paymentId: paymentResponse.id,
+                    valorPagoEmCentavos,
+                    comissaoEmCentavos,
+                }).save();
+                console.log(`Venda e comissão para o afiliado ${afiliado._id} registradas.`);
+            }
         }
 
         res.status(201).json({

@@ -1,14 +1,9 @@
 .pricing-page-container { max-width: 500px; margin: 40px auto; padding: 20px; }
-.pricing-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; text-align: center; background: var(--background-white); }
-.pricing-card.highlighted { border: 2px solid var(--primary-green); position: relative; }
-.highlight-badge { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: var(--primary-green); color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+.pricing-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; text-align: center; background: var(--background-white); position: relative; }
 .plan-title { font-size: 1.8rem; margin-bottom: 10px; }
 .pricing-description { margin-bottom: 25px; color: var(--text-light); }
-.price-tag { margin-bottom: 25px; display: flex; justify-content: center; align-items: baseline; }
+.price-tag { margin-bottom: 15px; display: flex; justify-content: center; align-items: baseline; }
 .original-price { text-decoration: line-through; color: var(--text-light); font-size: 1.2rem; margin-right: 10px; }
 .price-amount { font-size: 3rem; font-weight: bold; color: var(--primary-green); }
-.coupon-section { margin-bottom: 25px; }
-.coupon-input { padding: 12px; width: 100%; border: 1px solid var(--border-color); border-radius: 8px; text-align: center; font-size: 1.1rem; font-weight: bold; letter-spacing: 2px; }
-.checkout-button { width: 100%; padding: 15px; border: none; border-radius: 8px; background: var(--primary-green); color: white; font-size: 1.2rem; font-weight: 600; cursor: pointer; }
-.payment-modal-content { text-align: center; }
-.payment-modal-content h3 { color: var(--primary-green); }
+.coupon-display { font-weight: bold; margin-bottom: 20px; color: var(--action-blue); }
+#card-payment-container { margin-top: 20px; }
