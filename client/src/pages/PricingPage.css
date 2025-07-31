@@ -1,9 +1,64 @@
-.pricing-page-container { max-width: 500px; margin: 40px auto; padding: 20px; }
-.pricing-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; text-align: center; background: var(--background-white); position: relative; }
-.plan-title { font-size: 1.8rem; margin-bottom: 10px; }
-.pricing-description { margin-bottom: 25px; color: var(--text-light); }
-.price-tag { margin-bottom: 15px; display: flex; justify-content: center; align-items: baseline; }
-.original-price { text-decoration: line-through; color: var(--text-light); font-size: 1.2rem; margin-right: 10px; }
-.price-amount { font-size: 3rem; font-weight: bold; color: var(--primary-green); }
-.coupon-display { font-weight: bold; margin-bottom: 20px; color: var(--action-blue); }
-#card-payment-container { margin-top: 20px; }
+.pricing-page-container {
+    max-width: 500px;
+    margin: 40px auto;
+    padding: 20px;
+}
+.pricing-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 30px;
+    text-align: center;
+    background: var(--background-white);
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+.plan-title {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+}
+.pricing-description {
+    margin-bottom: 25px;
+    color: var(--text-light);
+}
+.price-tag {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 10px;
+}
+.original-price {
+    text-decoration: line-through;
+    color: var(--text-light);
+    font-size: 1.5rem;
+}
+.price-amount {
+    font-size: 3rem;
+    font-weight: bold;
+    color: var(--primary-green);
+}
+.coupon-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+}
+.coupon-input {
+    flex-grow: 1;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1rem;
+}
+.apply-coupon-btn {
+    padding: 0 20px;
+    border: none;
+    background-color: var(--primary-light);
+    color: var(--primary-green);
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+}
+#payment-container {
+    margin-top: 20px;
+}
