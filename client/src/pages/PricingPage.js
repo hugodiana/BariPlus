@@ -4,14 +4,19 @@ import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 import './PricingPage.css';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const PricingPage = () => {
     const [searchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
     const [afiliadoCode, setAfiliadoCode] = useState('');
     const [finalPrice, setFinalPrice] = useState(109.99);
+    const [originalPrice] = useState(109.99);
     const [discountApplied, setDiscountApplied] = useState(false);
     const [preferenceId, setPreferenceId] = useState(null);
+
+    const token = localStorage.getItem('bariplus_token');
+    const apiUrl = process.env.REACT_APP_API_URL;
 
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
@@ -24,26 +29,29 @@ const PricingPage = () => {
 
     const handleCreatePreference = async () => {
         setLoading(true);
-        const token = localStorage.getItem('bariplus_token');
-        const apiUrl = process.env.REACT_APP_API_URL;
+        setPreferenceId(null); // Reseta a preferência anterior
         
         try {
             const response = await fetch(`${apiUrl}/api/create-payment-preference`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ planType: 'lifetime', afiliadoCode }),
+                body: JSON.stringify({ afiliadoCode }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
 
             setFinalPrice(data.finalPrice);
-            if (data.finalPrice < 109.99) {
+            if (data.finalPrice < originalPrice) {
                 setDiscountApplied(true);
                 toast.success("Cupom de afiliado aplicado com sucesso!");
+            } else {
+                setDiscountApplied(false);
             }
-            setPreferenceId(data.preferenceId); // Abre o modal
+            setPreferenceId(data.preferenceId);
         } catch (err) {
             toast.error(err.message || 'Falha ao processar o cupom.');
+            setFinalPrice(originalPrice);
+            setDiscountApplied(false);
         } finally {
             setLoading(false);
         }
@@ -57,7 +65,7 @@ const PricingPage = () => {
                 <p className="pricing-description">Todas as funcionalidades presentes e futuras, para sempre.</p>
                 
                 <div className="price-tag">
-                    {discountApplied && <span className="original-price">R$ 109,99</span>}
+                    {discountApplied && <span className="original-price">R$ {originalPrice.toFixed(2)}</span>}
                     <span className="price-amount">R$ {finalPrice.toFixed(2)}</span>
                 </div>
                 
@@ -72,7 +80,7 @@ const PricingPage = () => {
                 </div>
 
                 <button className="checkout-button" onClick={handleCreatePreference} disabled={loading}>
-                    {loading ? 'Aguarde...' : 'Comprar Agora'}
+                    {loading ? 'Aguarde...' : 'Comprar Agora e Ver Desconto'}
                 </button>
             </div>
             
