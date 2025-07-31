@@ -4,7 +4,6 @@ import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
 import './PricingPage.css';
 import { toast } from 'react-toastify';
 import Modal from '../components/Modal';
-import LoadingSpinner from '../components/LoadingSpinner';
 
 const PricingPage = () => {
     const [searchParams] = useSearchParams();
@@ -20,16 +19,18 @@ const PricingPage = () => {
 
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
+    // ✅ LÓGICA CORRIGIDA: Este useEffect lê o código do link assim que a página carrega.
     useEffect(() => {
         const refCode = searchParams.get('afiliado');
         if (refCode) {
             setAfiliadoCode(refCode.toUpperCase());
+            toast.info(`Cupom de afiliado ${refCode.toUpperCase()} aplicado!`);
         }
     }, [searchParams]);
 
     const handleCreatePreference = async () => {
         setLoading(true);
-        setPreferenceId(null); // Reseta a preferência anterior
+        setPreferenceId(null);
         
         try {
             const response = await fetch(`${apiUrl}/api/create-payment-preference`, {
@@ -43,15 +44,16 @@ const PricingPage = () => {
             setFinalPrice(data.finalPrice);
             if (data.finalPrice < originalPrice) {
                 setDiscountApplied(true);
-                toast.success("Cupom de afiliado aplicado com sucesso!");
             } else {
                 setDiscountApplied(false);
+                 // Informa o usuário se o código inserido for inválido
+                if (afiliadoCode) {
+                    toast.warn("O cupom inserido não é válido.");
+                }
             }
             setPreferenceId(data.preferenceId);
         } catch (err) {
             toast.error(err.message || 'Falha ao processar o cupom.');
-            setFinalPrice(originalPrice);
-            setDiscountApplied(false);
         } finally {
             setLoading(false);
         }
@@ -80,7 +82,7 @@ const PricingPage = () => {
                 </div>
 
                 <button className="checkout-button" onClick={handleCreatePreference} disabled={loading}>
-                    {loading ? 'Aguarde...' : 'Comprar Agora e Ver Desconto'}
+                    {loading ? 'Aguarde...' : 'Comprar Agora'}
                 </button>
             </div>
             
