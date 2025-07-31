@@ -47,16 +47,26 @@ app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), 
             const paymentId = query.id || query['data.id'];
             if (paymentId) {
                 const payment = await new Payment(client).get({ id: paymentId });
-                if (payment && payment.status === 'approved' && payment.external_reference) {
-                    const userId = payment.external_reference;
-                    await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
-                    console.log(`Pagamento Mercado Pago APROVADO para o usuário: ${userId}`);
+                if (payment?.status === 'approved' && payment.external_reference) {
+                    const clienteId = payment.external_reference;
+                    await User.findByIdAndUpdate(clienteId, { pagamentoEfetuado: true });
+
+                    const afiliadoId = payment.metadata?.afiliado_id;
+                    if (afiliadoId) {
+                        const afiliado = await Afiliado.findById(afiliadoId);
+                        if (afiliado) {
+                            const valorPagoEmCentavos = Math.round(payment.transaction_amount * 100);
+                            const comissaoEmCentavos = Math.round(valorPagoEmCentavos * (afiliado.comissaoPercentual / 100));
+                            await new Venda({
+                                afiliadoId, clienteId, paymentId: payment.id,
+                                valorPagoEmCentavos, comissaoEmCentavos,
+                            }).save();
+                        }
+                    }
                 }
             }
         }
-    } catch (error) {
-        console.error('Erro ao processar webhook do Mercado Pago:', error);
-    }
+    } catch (error) { console.error('Erro no webhook:', error); }
     res.sendStatus(200);
 });
 
@@ -102,6 +112,22 @@ const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Typ
 const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
+const AfiliadoSchema = new mongoose.Schema({
+    nome: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    codigo: { type: String, required: true, unique: true, uppercase: true },
+    descontoPercentual: { type: Number, required: true, default: 30 },
+    comissaoPercentual: { type: Number, required: true, default: 30 },
+}, { timestamps: true });
+
+const VendaSchema = new mongoose.Schema({
+    afiliadoId: { type: mongoose.Schema.Types.ObjectId, ref: 'Afiliado', required: true },
+    clienteId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    paymentId: { type: String, required: true },
+    valorPagoEmCentavos: { type: Number, required: true },
+    comissaoEmCentavos: { type: Number, required: true },
+}, { timestamps: true });
+
 
 const User = mongoose.model('User', UserSchema);
 const AffiliateProfile = mongoose.model('AffiliateProfile', AffiliateProfileSchema);
@@ -113,6 +139,8 @@ const Consulta = mongoose.model('Consulta', ConsultaSchema);
 const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
+const Afiliado = mongoose.model('Afiliado', AfiliadoSchema);
+const Venda = mongoose.model('Venda', VendaSchema);
 
 // --- 4. FUNÇÕES AUXILIARES E MIDDLEWARES ---
 const validatePassword = (password) => {
@@ -1023,6 +1051,15 @@ app.get('/api/admin/stats', autenticar, isAdmin, async (req, res) => {
     } catch (error) {
         console.error("Erro ao buscar estatísticas:", error);
         res.status(500).json({ message: "Erro no servidor" });
+    }
+});
+
+app.get('/api/admin/afiliados', autenticar, isAdmin, async (req, res) => {
+    try {
+        const afiliados = await Afiliado.find();
+        res.json(afiliados);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar afiliados.' });
     }
 });
 
@@ -1965,51 +2002,41 @@ app.post('/api/validate-and-create-preference', autenticar, async (req, res) => 
     }
 });
 
-// ✅ ROTA DE PAGAMENTO FINAL: Lida com planos e cupons
 app.post('/api/create-payment-preference', autenticar, async (req, res) => {
     try {
-        const { planType, couponCode } = req.body; // 'lifetime' ou 'annual'
-        
-        let title = '';
-        let unit_price = 0;
+        const { afiliadoCode } = req.body;
+        const PRECO_BASE = 109.99;
+        let precoFinal = PRECO_BASE;
+        const metadata = {};
 
-        if (planType === 'lifetime') {
-            title = 'BariPlus - Acesso Vitalício';
-            unit_price = 79.99;
-        } else if (planType === 'annual') {
-            title = 'BariPlus - Assinatura Anual';
-            unit_price = 49.99; // Exemplo de preço anual
-        } else {
-            return res.status(400).json({ message: "Tipo de plano inválido." });
-        }
-
-        // Lógica de cupom de afiliado
-        if (couponCode) {
-            const affiliate = await User.findOne({ affiliateCouponCode: couponCode });
-            if (affiliate && planType === 'lifetime') { // Desconto só no plano vitalício
-                unit_price = 49.99;
-            } else if (affiliate && planType === 'annual') {
-                unit_price = 29.99; // Exemplo de desconto no anual
+        if (afiliadoCode) {
+            const afiliado = await Afiliado.findOne({ codigo: afiliadoCode.toUpperCase() });
+            if (afiliado) {
+                precoFinal = PRECO_BASE * (1 - (afiliado.descontoPercentual / 100));
+                metadata.afiliado_id = afiliado._id.toString();
+            } else {
+                return res.status(400).json({ message: "Cupom de afiliado inválido." });
             }
         }
-
+        
         const preference = new Preference(client);
         const response = await preference.create({
             body: {
-                items: [{ title, unit_price, quantity: 1, currency_id: 'BRL' }],
-                back_urls: {
-                    success: `${process.env.CLIENT_URL}/pagamento-status`,
-                    failure: `${process.env.CLIENT_URL}/pagamento-status`,
-                    pending: `${process.env.CLIENT_URL}/pagamento-status`,
-                },
-                auto_return: 'approved',
+                items: [{
+                    title: 'BariPlus - Acesso Vitalício',
+                    unit_price: Number(precoFinal.toFixed(2)),
+                    quantity: 1,
+                    currency_id: 'BRL',
+                }],
+                metadata: metadata,
                 external_reference: req.userId,
+                back_urls: { success: `${process.env.CLIENT_URL}/pagamento-status` },
+                auto_return: 'approved',
             }
         });
-
-        res.json({ preferenceId: response.id });
-
+        res.json({ preferenceId: response.id, finalPrice: precoFinal });
     } catch (error) {
+        console.error("Erro ao criar preferência:", error);
         res.status(500).json({ message: "Erro ao criar preferência de pagamento." });
     }
 });
