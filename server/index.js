@@ -242,10 +242,9 @@ app.get('/api/verify-email/:token', async (req, res) => {
             emailVerificationExpires: { $gt: new Date() }
         });
 
-        // Se o token for inválido ou expirado
+        // Se o token for inválido ou expirado, retorna um erro
         if (!usuario) {
-            // ✅ Redireciona o navegador para a página de login com uma mensagem de erro
-            return res.redirect(`${process.env.CLIENT_URL}/login?error=invalid_token`);
+            return res.status(400).json({ message: "Link de verificação inválido ou expirado." });
         }
         
         usuario.isEmailVerified = true;
@@ -253,12 +252,12 @@ app.get('/api/verify-email/:token', async (req, res) => {
         usuario.emailVerificationExpires = undefined;
         await usuario.save();
         
-        // ✅ Redireciona o navegador para a página de login com uma mensagem de sucesso
-        return res.redirect(`${process.env.CLIENT_URL}/login?verified=true`);
+        // Retorna uma mensagem de sucesso
+        res.status(200).json({ message: "E-mail verificado com sucesso!" });
 
     } catch (error) { 
-        // Em caso de erro de servidor, também redireciona com uma mensagem de erro
-        return res.redirect(`${process.env.CLIENT_URL}/login?error=server_error`);
+        console.error("Erro na verificação de e-mail:", error);
+        res.status(500).json({ message: "Erro no servidor ao verificar o e-mail." });
     }
 });
 
