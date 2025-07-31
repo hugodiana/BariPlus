@@ -1054,6 +1054,18 @@ app.get('/api/admin/stats', autenticar, isAdmin, async (req, res) => {
     }
 });
 
+app.post('/api/admin/afiliados', autenticar, isAdmin, async (req, res) => {
+    try {
+        const { userId, nome, email, codigo } = req.body;
+        const novoAfiliado = new Afiliado({ userId, nome, email, codigo });
+        await novoAfiliado.save();
+        res.status(201).json(novoAfiliado);
+    } catch (error) {
+        res.status(400).json({ message: 'Erro ao criar afiliado.', error });
+    }
+});
+
+
 app.get('/api/admin/afiliados', autenticar, isAdmin, async (req, res) => {
     try {
         const afiliados = await Afiliado.find();
