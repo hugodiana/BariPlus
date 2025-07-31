@@ -150,6 +150,19 @@ const isAdmin = async (req, res, next) => {
     }
 };
 
+const isAffiliate = async (req, res, next) => {
+    try {
+        const usuario = await User.findById(req.userId);
+        if (usuario && usuario.role === 'affiliate') {
+            next();
+        } else {
+            res.status(403).json({ message: "Acesso negado." });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao verificar permissões de afiliado." });
+    }
+};
+
 // --- 5. ROTAS DA API ---
 app.get('/', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' });
