@@ -1830,9 +1830,9 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
         let afiliado = null;
 
         if (afiliadoCode) {
-            afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
+            afiliado = await Afiliado.findOne({ codigo: afiliadoCode.toUpperCase() });
             if (afiliado) {
-                precoFinal = PRECO_BASE * 0.70; // Aplica 30% de desconto
+                precoFinal = PRECO_BASE * (1 - (afiliado.descontoPercentual / 100));
             }
         }
 
@@ -1854,7 +1854,7 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
 
             if (afiliado) {
                 const valorPagoEmCentavos = Math.round(precoFinal * 100);
-                const comissaoEmCentavos = Math.round(valorPagoEmCentavos * 0.30);
+                const comissaoEmCentavos = Math.round(valorPagoEmCentavos * (afiliado.comissaoPercentual / 100));
                 await new Venda({
                     afiliadoId: afiliado._id,
                     clienteId: req.userId,
@@ -1864,30 +1864,27 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
                 }).save();
             }
         }
-
         res.status(201).json({ status: paymentResponse.status, message: paymentResponse.status_detail });
 
     } catch (error) {
         console.error("Erro ao processar pagamento:", error);
-        const errorMessage = error.cause?.message || "Erro desconhecido.";
-        res.status(500).json({ message: errorMessage });
+        res.status(500).json({ message: "Erro ao processar o pagamento." });
     }
 });
 
 app.post('/api/validate-coupon', autenticar, async (req, res) => {
     try {
         const { afiliadoCode } = req.body;
-        if (!afiliadoCode) {
-            return res.status(400).json({ message: "Código de afiliado não fornecido." });
-        }
-        const afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
+        if (!afiliadoCode) return res.status(400).json({ valid: false });
+
+        const afiliado = await Afiliado.findOne({ codigo: afiliadoCode.toUpperCase() });
         if (afiliado) {
             res.json({ valid: true, message: "Cupom válido!" });
         } else {
-            res.status(404).json({ valid: false, message: "Cupom de afiliado inválido ou não encontrado." });
+            res.status(404).json({ valid: false, message: "Cupom de afiliado inválido." });
         }
     } catch (error) {
-        res.status(500).json({ message: "Erro no servidor ao validar o cupom." });
+        res.status(500).json({ message: "Erro ao validar o cupom." });
     }
 });
 

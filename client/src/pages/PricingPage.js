@@ -20,21 +20,12 @@ const PricingPage = () => {
 
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
-    useEffect(() => {
-        const refCode = searchParams.get('afiliado');
-        if (refCode) {
-            setAfiliadoCode(refCode.toUpperCase());
-            // Valida o cupom que veio do link
-            handleApplyCoupon(refCode.toUpperCase());
-        }
-    }, [searchParams]);
-
     const handleApplyCoupon = async (codeToValidate) => {
-        const code = codeToValidate || afiliadoCode;
+        const code = (typeof codeToValidate === 'string') ? codeToValidate : afiliadoCode;
         if (!code) {
             setPrecoFinal(precoOriginal);
             setDescontoAplicado(false);
-            return toast.info("Cupom removido.");
+            return;
         }
         
         try {
@@ -57,6 +48,14 @@ const PricingPage = () => {
         }
     };
 
+    useEffect(() => {
+        const refCode = searchParams.get('afiliado');
+        if (refCode) {
+            setAfiliadoCode(refCode.toUpperCase());
+            handleApplyCoupon(refCode.toUpperCase());
+        }
+    }, [searchParams]);
+    
     const onSubmit = async (formData) => {
         setIsLoading(true);
         try {
@@ -110,17 +109,15 @@ const PricingPage = () => {
                             amount: Number(precoFinal.toFixed(2)),
                         }}
                         customization={{
-                            visual: { buttonBackground: 'primary', buttonLabel: 'Pagar Agora' },
                             paymentMethods: {
-                                mercadoPago: 'all',
-                                creditCard: 'all',
-                                debitCard: 'all',
-                                ticket: 'all',
-                                pix: 'all',
+                                ticket: "all",
+                                bankTransfer: "all", // Inclui PIX
+                                creditCard: "all",
+                                debitCard: "all",
+                                mercadoPago: "all",
                             },
                         }}
                         onSubmit={onSubmit}
-                        onError={(error) => console.error(error)}
                     />
                 </div>
                 {isLoading && <LoadingSpinner message="A processar o seu pagamento..." />}
