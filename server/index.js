@@ -10,17 +10,20 @@ const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { Resend } = require('resend');
 
 const app = express();
+app.set('trust proxy', 1);
 
-// --- CONFIGURAÇÃO DE MIDDLEWARES ---
+// --- 1. CONFIGURAÇÃO DE MIDDLEWARES ---
 const whitelist = [
     'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
     'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com',
     'https://bariplus-admin.onrender.com', 'http://localhost:3000',
     'http://localhost:3001', 'http://localhost:3002',
     'https://www.bariplus.com.br', 'https://bariplus.com.br',
+    'https://bariplus-app.netlify.app'
 ];
 const corsOptions = {
     origin: function (origin, callback) {
@@ -34,30 +37,42 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(helmet());
+
+// Webhook precisa vir antes do express.json() se usar `express.raw`
 app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    const { query } = req;
-    const topic = query.topic || query.type;
-    if (topic === 'payment') {
-        const paymentId = query.id || query['data.id'];
-        if (paymentId) {
-            try {
+    try {
+        const { query } = req;
+        const topic = query.topic || query.type;
+        if (topic === 'payment') {
+            const paymentId = query.id || query['data.id'];
+            if (paymentId) {
                 const payment = await new Payment(client).get({ id: paymentId });
                 if (payment && payment.status === 'approved' && payment.external_reference) {
                     const userId = payment.external_reference;
                     await User.findByIdAndUpdate(userId, { pagamentoEfetuado: true });
+                    console.log(`Pagamento Mercado Pago APROVADO para o usuário: ${userId}`);
                 }
-            } catch (error) {
-                console.error('Erro ao processar webhook do Mercado Pago:', error);
             }
         }
+    } catch (error) {
+        console.error('Erro ao processar webhook do Mercado Pago:', error);
     }
     res.sendStatus(200);
 });
+
 app.use(express.json());
 
-// --- CONFIGURAÇÕES DE SERVIÇOS ---
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+app.use('/api/login', limiter);
+app.use('/api/forgot-password', limiter);
+
+// --- 2. CONFIGURAÇÕES DE SERVIÇOS ---
 const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
 const resend = new Resend(process.env.RESEND_API_KEY);
+
 if (process.env.FIREBASE_PRIVATE_KEY) {
     if (!admin.apps.length) {
         try {
@@ -71,11 +86,12 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
 cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
 const PORT = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
-// --- SCHEMAS E MODELOS ---
+// --- 3. SCHEMAS E MODELOS ---
 const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, whatsapp: String, username: { type: String, unique: true, required: true }, email: { type: String, unique: true, required: true }, password: { type: String, required: true }, isEmailVerified: { type: Boolean, default: false }, emailVerificationToken: String, emailVerificationExpires: Date, resetPasswordToken: String, resetPasswordExpires: Date, onboardingCompleto: { type: Boolean, default: false }, detalhesCirurgia: { fezCirurgia: String, dataCirurgia: Date, altura: Number, pesoInicial: Number, pesoAtual: Number }, pagamentoEfetuado: { type: Boolean, default: false }, role: { type: String, enum: ['user', 'admin', 'affiliate', 'affiliate_pending'], default: 'user' }, affiliateCouponCode: String, fcmToken: String, notificationSettings: { appointmentReminders: { type: Boolean, default: true }, medicationReminders: { type: Boolean, default: true }, weighInReminders: { type: Boolean, default: true } }, mercadoPagoUserId: String, affiliateProfile: { type: mongoose.Schema.Types.ObjectId, ref: 'AffiliateProfile' } }, { timestamps: true });
 const AffiliateProfileSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true }, whatsapp: String, pixKeyType: { type: String, enum: ['CPF', 'CNPJ', 'Email', 'Telefone', 'Chave Aleatória', 'Celular'], required: true }, pixKey: { type: String, required: true }, couponCode: { type: String }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, payoutHistory: [{ date: { type: Date, default: Date.now }, amountInCents: { type: Number, required: true, min: 0 }, receiptUrl: String, }] }, { timestamps: true });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { pescoco: Number, torax: Number, cintura: Number, abdomen: Number, quadril: Number, bracoDireito: Number, bracoEsquerdo: Number, antebracoDireito: Number, antebracoEsquerdo: Number, coxaDireita: Number, coxaEsquerda: Number, panturrilhaDireita: Number, panturrilhaEsquerda: Number } }] }, { timestamps: true });
@@ -97,18 +113,23 @@ const Consulta = mongoose.model('Consulta', ConsultaSchema);
 const DailyLog = mongoose.model('DailyLog', DailyLogSchema);
 const Medication = mongoose.model('Medication', MedicationSchema);
 const FoodLog = mongoose.model('FoodLog', FoodLogSchema);
-// --- MIDDLEWARES ---
+
+// --- 4. FUNÇÕES AUXILIARES E MIDDLEWARES ---
+const validatePassword = (password) => {
+    if (password.length < 8) return false;
+    if (!/[A-Z]/.test(password)) return false;
+    if (!/[a-z]/.test(password)) return false;
+    if (!/[0-9]/.test(password)) return false;
+    if (!/[!@#$%^&*(),.?":{}|<>*]/.test(password)) return false;
+    return true;
+};
+
 const autenticar = async (req, res, next) => {
     try {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
         if (!token) return res.sendStatus(401);
-
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userExists = await User.findById(decoded.userId);
-        
-        if (!userExists) return res.sendStatus(403);
-        
         req.userId = decoded.userId;
         next();
     } catch (err) {
@@ -122,80 +143,61 @@ const isAdmin = async (req, res, next) => {
         if (usuario && usuario.role === 'admin') {
             next();
         } else {
-            res.status(403).json({ message: "Acesso negado. Rota exclusiva para administradores." });
+            res.status(403).json({ message: "Acesso negado." });
         }
     } catch (error) {
-        res.status(500).json({ message: "Erro ao verificar permissões de admin." });
+        res.status(500).json({ message: "Erro ao verificar permissões." });
     }
 };
 
-const isAffiliate = async (req, res, next) => {
-    try {
-        const usuario = await User.findById(req.userId);
-        if (usuario && usuario.role === 'affiliate') {
-            next();
-        } else {
-            res.status(403).json({ message: "Acesso negado. Rota exclusiva para afiliados." });
-        }
-    } catch (error) {
-        res.status(500).json({ message: "Erro ao verificar permissões de afiliado." });
-    }
-};
-
-
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`, {
-        body: req.body,
-        params: req.params,
-        query: req.query
-    });
-    next();
-});
-
+// --- 5. ROTAS DA API ---
 app.get('/', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' });
 });
 
-// --- ROTAS DA API ---
-app.get('/', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' });
-});
 app.post('/api/register', async (req, res) => {
     let novoUsuario;
     try {
         const { nome, sobrenome, username, email, password, whatsapp } = req.body;
         if (!validatePassword(password)) return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
         if (await User.findOne({ email })) return res.status(400).json({ message: 'Este e-mail já está em uso.' });
+        
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = crypto.randomBytes(32).toString('hex');
+        
         novoUsuario = new User({
             nome, sobrenome, username, email, whatsapp, password: hashedPassword,
             emailVerificationToken: verificationToken,
             emailVerificationExpires: new Date(Date.now() + 3600000), // 1 hora
         });
         await novoUsuario.save();
+        
         const verificationLink = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+        
         const { data, error } = await resend.emails.send({
             from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
             to: [novoUsuario.email],
             subject: 'Ative a sua Conta no BariPlus',
             html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
         });
+        
         if (error) {
             console.error("Erro detalhado do Resend:", error);
             await User.findByIdAndDelete(novoUsuario._id);
             return res.status(500).json({ message: 'Falha ao enviar e-mail de verificação.' });
         }
+        
         await Promise.all([
             new Checklist({ userId: novoUsuario._id }).save(),
             new Peso({ userId: novoUsuario._id }).save(),
             new Consulta({ userId: novoUsuario._id }).save(),
-            new DailyLog({ userId: novoUsuario._id }).save(),
+            new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
             new Medication({ userId: novoUsuario._id }).save(),
-            new FoodLog({ userId: novoUsuario._id }).save(),
-            new Gasto({ userId: novoUsuario._id }).save(),
+            new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+            new Gasto({ userId: novoUsuario._id, registros: [] }).save(),
             new Exams({ userId: novoUsuario._id }).save()
         ]);
+        
         res.status(201).json({ message: 'Usuário cadastrado com sucesso! Verifique seu e-mail.' });
     } catch (error) {
         console.error("Erro no registro:", error);
@@ -2113,27 +2115,16 @@ app.use((err, req, res, next) => {
 });
 
 // Conecta ao MongoDB antes de iniciar o servidor
-mongoose.connect(process.env.DATABASE_URL)
-    .then(() => {
-        console.log('Conectado ao MongoDB!');
-        
-        const server = app.listen(PORT, () => {
-            console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
-            console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`Banco de dados: ${process.env.DATABASE_URL}`);
-        });
+const server = app.listen(PORT, () => {
+    console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
+});
 
-        process.on('SIGTERM', () => {
-            console.log('Received SIGTERM, shutting down gracefully');
-            server.close(async () => {
-                console.log('HTTP server closed.');
-                await mongoose.connection.close(false);
-                console.log('MongoDB connection closed.');
-                process.exit(0);
-            });
-        });
-    })
-    .catch(err => {
-        console.error('Erro ao conectar ao MongoDB:', err);
-        process.exit(1);
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down gracefully');
+    server.close(async () => {
+        console.log('HTTP server closed.');
+        await mongoose.connection.close(false);
+        console.log('MongoDB connection closed.');
+        process.exit(0);
     });
+});
