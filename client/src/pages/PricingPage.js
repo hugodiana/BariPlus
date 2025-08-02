@@ -34,7 +34,8 @@ const PricingPage = () => {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ afiliadoCode: code }),
             });
-            if (!response.ok) throw new Error("Cupom inválido.");
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
 
             setPrecoFinal(precoOriginal * 0.70);
             setDescontoAplicado(true);
@@ -43,7 +44,7 @@ const PricingPage = () => {
         } catch (error) {
             setPrecoFinal(precoOriginal);
             setDescontoAplicado(false);
-            toast.error(error.message);
+            toast.error(error.message || "Cupom inválido.");
         }
     };
 
