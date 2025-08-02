@@ -38,12 +38,7 @@ const Layout = ({ children, usuario }) => {
           <NavLink to="/gastos">Meus Gastos</NavLink>
           <NavLink to="/exames">Meus Exames</NavLink>
           <NavLink to="/perfil">Meu Perfil</NavLink>
-          {usuario && usuario.role === 'affiliate' && (
-            <NavLink to="/portal-afiliado" className="affiliate-link">Portal do Afiliado</NavLink>
-          )}
-          {usuario && usuario.role === 'user' && (
-            <NavLink to="/seja-afiliado">Seja um Afiliado</NavLink>
-          )}
+          <NavLink to="/ganhe-renda-extra">Ganhe Renda Extra</NavLink>
         </nav>
 
         <div className="sidebar-footer">
