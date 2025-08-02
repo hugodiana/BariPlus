@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { initMercadoPago, Wallet } from '@mercadopago/sdk-react'; // ✅ MUDANÇA: Voltamos ao Wallet Brick, que é o mais indicado para este fluxo
+import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
 import './PricingPage.css';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -14,48 +14,78 @@ const PricingPage = () => {
     const [precoOriginal] = useState(109.99);
     const [precoFinal, setPrecoFinal] = useState(109.99);
     const [descontoAplicado, setDescontoAplicado] = useState(false);
-    const [preferenceId, setPreferenceId] = useState(null);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
-    const handleCreatePreference = async () => {
-        setIsLoading(true);
-        setPreferenceId(null);
+    const handleApplyCoupon = async (codeToValidate) => {
+        // Usa o código passado como argumento ou o estado atual
+        const code = (typeof codeToValidate === 'string') ? codeToValidate : afiliadoCode;
+        if (!code) {
+            setPrecoFinal(precoOriginal);
+            setDescontoAplicado(false);
+            return; // Sai da função se não houver código
+        }
         
         try {
-            const response = await fetch(`${apiUrl}/api/create-preference`, {
+            const response = await fetch(`${apiUrl}/api/validate-coupon`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ afiliadoCode }),
+                body: JSON.stringify({ afiliadoCode: code }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
 
-            setFinalPrice(data.finalPrice);
-            if (data.finalPrice < precoOriginal) {
-                setDescontoAplicado(true);
-                toast.success("Cupom de afiliado aplicado!");
+            setPrecoFinal(precoOriginal * 0.70);
+            setDescontoAplicado(true);
+            toast.success("Cupom de afiliado aplicado!");
+
+        } catch (error) {
+            setPrecoFinal(precoOriginal);
+            setDescontoAplicado(false);
+            toast.error(error.message || "Cupom inválido.");
+        }
+    };
+    
+    useEffect(() => {
+        const refCode = searchParams.get('afiliado');
+        if (refCode) {
+            const code = refCode.toUpperCase();
+            setAfiliadoCode(code);
+            // Chama a função para validar o cupom que veio do link
+            handleApplyCoupon(code);
+        }
+    }, [searchParams]);
+    
+    const onSubmit = async (formData) => {
+        setIsLoading(true);
+        try {
+            // Envia o código de afiliado apenas se o desconto estiver aplicado
+            const codeToSubmit = descontoAplicado ? afiliadoCode : '';
+            
+            const response = await fetch(`${apiUrl}/api/process-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ ...formData, afiliadoCode: codeToSubmit }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message);
+
+            if (data.status === 'approved') {
+                toast.success('Pagamento aprovado! Bem-vindo(a) ao BariPlus.');
+                window.location.href = '/bem-vindo';
             } else {
-                setDescontoAplicado(false);
-                if (afiliadoCode) toast.warn("O cupom inserido não é válido.");
+                toast.warn(`O seu pagamento está ${data.status}.`);
+                navigate('/');
             }
-            setPreferenceId(data.preferenceId);
-        } catch (err) {
-            toast.error(err.message || 'Falha ao processar o cupom.');
+        } catch (error) {
+            toast.error(error.message);
         } finally {
             setIsLoading(false);
         }
     };
-
-    useEffect(() => {
-        const refCode = searchParams.get('afiliado');
-        if (refCode) {
-            setAfiliadoCode(refCode.toUpperCase());
-        }
-    }, [searchParams]);
 
     return (
         <div className="pricing-page-container">
@@ -75,18 +105,28 @@ const PricingPage = () => {
                         onChange={(e) => setAfiliadoCode(e.target.value.toUpperCase())}
                         className="coupon-input"
                     />
+                    <button onClick={() => handleApplyCoupon()} className="apply-coupon-btn">Aplicar</button>
                 </div>
                 
-                {preferenceId ? (
-                    <div className="wallet-container">
-                        <p>Clique abaixo para finalizar o pagamento de forma segura com o Mercado Pago.</p>
-                        <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
-                    </div>
-                ) : (
-                    <button className="checkout-button" onClick={handleCreatePreference} disabled={isLoading}>
-                        {isLoading ? 'A verificar...' : 'Comprar Agora e Ver Desconto'}
-                    </button>
-                )}
+                <div id="payment-container">
+                    <Payment
+                        initialization={{
+                            amount: Number(precoFinal.toFixed(2)),
+                        }}
+                        customization={{
+                            paymentMethods: {
+                                ticket: "all",
+                                bankTransfer: "all", // Inclui PIX
+                                creditCard: "all",
+                                debitCard: "all",
+                                mercadoPago: "all",
+                            },
+                        }}
+                        onSubmit={onSubmit}
+                        onError={(error) => console.error(error)}
+                    />
+                </div>
+                {isLoading && <LoadingSpinner message="A processar o seu pagamento..." />}
             </div>
         </div>
     );
