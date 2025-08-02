@@ -39,36 +39,66 @@ app.use(cors(corsOptions));
 app.use(helmet());
 
 // Webhook precisa vir antes do express.json() se usar `express.raw`
-app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+app.post('/api/kiwify-webhook', async (req, res) => {
     try {
-        const { query } = req;
-        const topic = query.topic || query.type;
-        if (topic === 'payment') {
-            const paymentId = query.id || query['data.id'];
-            if (paymentId) {
-                const payment = await new Payment(client).get({ id: paymentId });
-                if (payment?.status === 'approved' && payment.external_reference) {
-                    const clienteId = payment.external_reference;
-                    await User.findByIdAndUpdate(clienteId, { pagamentoEfetuado: true });
+        const kiwifyEvent = req.body;
 
-                    const afiliadoId = payment.metadata?.afiliado_id;
-                    if (afiliadoId) {
-                        const afiliado = await User.findById(afiliadoId);
-                        if (afiliado) {
-                            const valorPagoEmCentavos = Math.round(payment.transaction_amount * 100);
-                            const comissaoEmCentavos = Math.round(valorPagoEmCentavos * 0.30);
-                            await new Venda({
-                                afiliadoId, clienteId, paymentId: payment.id,
-                                valorPagoEmCentavos, comissaoEmCentavos,
-                            }).save();
-                        }
-                    }
-                }
+        // A Kiwify recomenda verificar o 'order_status' ou 'subscription_status'
+        if (kiwifyEvent.order_status === 'paid' || kiwifyEvent.subscription_status === 'active') {
+            const customer = kiwifyEvent.customer;
+            const userEmail = customer.email.toLowerCase();
+            const userName = customer.name;
+
+            // Procura se o usuário já existe
+            let usuario = await User.findOne({ email: userEmail });
+
+            if (usuario) {
+                // Se já existe, apenas atualiza o status de pagamento
+                usuario.pagamentoEfetuado = true;
+                usuario.kiwifySubscriptionId = kiwifyEvent.subscription_id;
+                await usuario.save();
+                console.log(`Acesso atualizado para o usuário existente: ${userEmail}`);
+            } else {
+                // Se não existe, cria um novo usuário
+                const tempPassword = crypto.randomBytes(16).toString('hex'); // Senha temporária
+                const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+                novoUsuario = new User({
+                    nome: userName,
+                    email: userEmail,
+                    password: hashedPassword, // Salva uma senha temporária
+                    pagamentoEfetuado: true,
+                    kiwifySubscriptionId: kiwifyEvent.subscription_id,
+                });
+                await novoUsuario.save();
+
+                // Cria os outros documentos associados (Checklist, Peso, etc.)
+                // await Promise.all([...])
+
+                // Envia um e-mail de boas-vindas para o usuário definir a senha
+                const resetToken = crypto.randomBytes(32).toString('hex');
+                novoUsuario.resetPasswordToken = resetToken;
+                novoUsuario.resetPasswordExpires = Date.now() + 24 * 3600000; // Expira em 24 horas
+                await novoUsuario.save();
+
+                const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+                
+                await resend.emails.send({
+                    from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                    to: [userEmail],
+                    subject: 'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
+                    html: `<h1>Compra Aprovada!</h1><p>Olá, ${userName}!</p><p>O seu acesso ao BariPlus foi liberado. Clique no link abaixo para criar a sua senha de acesso:</p><a href="${setupPasswordLink}">Criar Minha Senha</a>`,
+                });
+                console.log(`Novo usuário criado e e-mail de boas-vindas enviado para: ${userEmail}`);
             }
         }
-    } catch (error) { console.error('Erro no webhook:', error); }
-    res.sendStatus(200);
+        res.sendStatus(200); // Responde 200 OK para a Kiwify
+    } catch (error) {
+        console.error('Erro no webhook da Kiwify:', error);
+        res.sendStatus(500);
+    }
 });
+
 
 app.use(express.json());
 
