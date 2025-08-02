@@ -21,12 +21,11 @@ const PricingPage = () => {
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
     const handleApplyCoupon = async (codeToValidate) => {
-        // Usa o código passado como argumento ou o estado atual
         const code = (typeof codeToValidate === 'string') ? codeToValidate : afiliadoCode;
         if (!code) {
             setPrecoFinal(precoOriginal);
             setDescontoAplicado(false);
-            return; // Sai da função se não houver código
+            return;
         }
         
         try {
@@ -35,8 +34,7 @@ const PricingPage = () => {
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ afiliadoCode: code }),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message);
+            if (!response.ok) throw new Error("Cupom inválido.");
 
             setPrecoFinal(precoOriginal * 0.70);
             setDescontoAplicado(true);
@@ -45,16 +43,15 @@ const PricingPage = () => {
         } catch (error) {
             setPrecoFinal(precoOriginal);
             setDescontoAplicado(false);
-            toast.error(error.message || "Cupom inválido.");
+            toast.error(error.message);
         }
     };
-    
+
     useEffect(() => {
         const refCode = searchParams.get('afiliado');
         if (refCode) {
             const code = refCode.toUpperCase();
             setAfiliadoCode(code);
-            // Chama a função para validar o cupom que veio do link
             handleApplyCoupon(code);
         }
     }, [searchParams]);
@@ -62,9 +59,7 @@ const PricingPage = () => {
     const onSubmit = async (formData) => {
         setIsLoading(true);
         try {
-            // Envia o código de afiliado apenas se o desconto estiver aplicado
             const codeToSubmit = descontoAplicado ? afiliadoCode : '';
-            
             const response = await fetch(`${apiUrl}/api/process-payment`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -123,7 +118,6 @@ const PricingPage = () => {
                             },
                         }}
                         onSubmit={onSubmit}
-                        onError={(error) => console.error(error)}
                     />
                 </div>
                 {isLoading && <LoadingSpinner message="A processar o seu pagamento..." />}

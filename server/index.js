@@ -1823,10 +1823,15 @@ app.post('/api/resend-verification-email', async (req, res) => {
 
 app.post('/api/process-payment', autenticar, async (req, res) => {
     try {
-        const { token, payment_method_id, installments, payer, afiliadoCode } = req.body;
+        const { token, payment_method_id, installments, issuer_id, afiliadoCode } = req.body;
         const PRECO_BASE = 109.99;
         let precoFinal = PRECO_BASE;
         let afiliado = null;
+
+        const pagador = await User.findById(req.userId);
+        if (!pagador) {
+            return res.status(404).json({ message: "Usuário pagador não encontrado." });
+        }
 
         if (afiliadoCode) {
             afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
@@ -1843,8 +1848,9 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
                 description: 'BariPlus - Acesso Vitalício',
                 installments,
                 payment_method_id,
+                issuer_id, // Importante para o cartão
                 payer: {
-                    email: payer.email, // O e-mail do comprador é obrigatório
+                    email: pagador.email, // Usa o e-mail seguro do usuário logado
                 },
                 external_reference: req.userId,
             }
@@ -1865,8 +1871,9 @@ app.post('/api/process-payment', autenticar, async (req, res) => {
             }
         }
         res.status(201).json({ status: paymentResponse.status, message: paymentResponse.status_detail });
+
     } catch (error) {
-        console.error("Erro ao processar pagamento:", error);
+        console.error("Erro ao processar pagamento:", error.cause || error);
         res.status(500).json({ message: "Erro ao processar o pagamento." });
     }
 });
@@ -1875,8 +1882,8 @@ app.post('/api/validate-coupon', autenticar, async (req, res) => {
     try {
         const { afiliadoCode } = req.body;
         if (!afiliadoCode) return res.status(400).json({ valid: false });
-
-        const afiliado = await Afiliado.findOne({ codigo: afiliadoCode.toUpperCase() });
+        // Mude para Afiliado.findOne se tiver a coleção separada
+        const afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
         if (afiliado) {
             res.json({ valid: true, message: "Cupom válido!" });
         } else {
