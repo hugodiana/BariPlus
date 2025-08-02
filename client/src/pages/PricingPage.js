@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { initMercadoPago, Payment } from '@mercadopago/sdk-react';
+import { initMercadoPago, Wallet } from '@mercadopago/sdk-react'; // ✅ MUDANÇA: Voltamos ao Wallet Brick, que é o mais indicado para este fluxo
 import './PricingPage.css';
 import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -14,74 +14,48 @@ const PricingPage = () => {
     const [precoOriginal] = useState(109.99);
     const [precoFinal, setPrecoFinal] = useState(109.99);
     const [descontoAplicado, setDescontoAplicado] = useState(false);
+    const [preferenceId, setPreferenceId] = useState(null);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     initMercadoPago(process.env.REACT_APP_MERCADOPAGO_PUBLIC_KEY, { locale: 'pt-BR' });
 
-    const handleApplyCoupon = async (codeToValidate) => {
-        const code = (typeof codeToValidate === 'string') ? codeToValidate : afiliadoCode;
-        if (!code) {
-            setPrecoFinal(precoOriginal);
-            setDescontoAplicado(false);
-            return;
-        }
+    const handleCreatePreference = async () => {
+        setIsLoading(true);
+        setPreferenceId(null);
         
         try {
-            const response = await fetch(`${apiUrl}/api/validate-coupon`, {
+            const response = await fetch(`${apiUrl}/api/create-preference`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ afiliadoCode: code }),
+                body: JSON.stringify({ afiliadoCode }),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
 
-            setPrecoFinal(precoOriginal * 0.70);
-            setDescontoAplicado(true);
-            toast.success("Cupom de afiliado aplicado!");
-
-        } catch (error) {
-            setPrecoFinal(precoOriginal);
-            setDescontoAplicado(false);
-            toast.error(error.message || "Cupom inválido.");
+            setFinalPrice(data.finalPrice);
+            if (data.finalPrice < precoOriginal) {
+                setDescontoAplicado(true);
+                toast.success("Cupom de afiliado aplicado!");
+            } else {
+                setDescontoAplicado(false);
+                if (afiliadoCode) toast.warn("O cupom inserido não é válido.");
+            }
+            setPreferenceId(data.preferenceId);
+        } catch (err) {
+            toast.error(err.message || 'Falha ao processar o cupom.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     useEffect(() => {
         const refCode = searchParams.get('afiliado');
         if (refCode) {
-            const code = refCode.toUpperCase();
-            setAfiliadoCode(code);
-            handleApplyCoupon(code);
+            setAfiliadoCode(refCode.toUpperCase());
         }
     }, [searchParams]);
-    
-    const onSubmit = async (formData) => {
-        setIsLoading(true);
-        try {
-            const codeToSubmit = descontoAplicado ? afiliadoCode : '';
-            const response = await fetch(`${apiUrl}/api/process-payment`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ ...formData, afiliadoCode: codeToSubmit }),
-            });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message);
-
-            if (data.status === 'approved') {
-                toast.success('Pagamento aprovado! Bem-vindo(a) ao BariPlus.');
-                window.location.href = '/bem-vindo';
-            } else {
-                toast.warn(`O seu pagamento está ${data.status}.`);
-                navigate('/');
-            }
-        } catch (error) {
-            toast.error(error.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
 
     return (
         <div className="pricing-page-container">
@@ -101,27 +75,18 @@ const PricingPage = () => {
                         onChange={(e) => setAfiliadoCode(e.target.value.toUpperCase())}
                         className="coupon-input"
                     />
-                    <button onClick={() => handleApplyCoupon()} className="apply-coupon-btn">Aplicar</button>
                 </div>
                 
-                <div id="payment-container">
-                    <Payment
-                        initialization={{
-                            amount: Number(precoFinal.toFixed(2)),
-                        }}
-                        customization={{
-                            paymentMethods: {
-                                ticket: "all",
-                                bankTransfer: "all", // Inclui PIX
-                                creditCard: "all",
-                                debitCard: "all",
-                                mercadoPago: "all",
-                            },
-                        }}
-                        onSubmit={onSubmit}
-                    />
-                </div>
-                {isLoading && <LoadingSpinner message="A processar o seu pagamento..." />}
+                {preferenceId ? (
+                    <div className="wallet-container">
+                        <p>Clique abaixo para finalizar o pagamento de forma segura com o Mercado Pago.</p>
+                        <Wallet initialization={{ preferenceId: preferenceId }} customization={{ texts:{ valueProp: 'smart_option'}}} />
+                    </div>
+                ) : (
+                    <button className="checkout-button" onClick={handleCreatePreference} disabled={isLoading}>
+                        {isLoading ? 'A verificar...' : 'Comprar Agora e Ver Desconto'}
+                    </button>
+                )}
             </div>
         </div>
     );

@@ -53,15 +53,14 @@ app.post('/api/mercadopago-webhook', express.raw({ type: 'application/json' }), 
 
                     const afiliadoId = payment.metadata?.afiliado_id;
                     if (afiliadoId) {
-                        const afiliado = await Afiliado.findById(afiliadoId);
+                        const afiliado = await User.findById(afiliadoId);
                         if (afiliado) {
                             const valorPagoEmCentavos = Math.round(payment.transaction_amount * 100);
-                            const comissaoEmCentavos = Math.round(valorPagoEmCentavos * (afiliado.comissaoPercentual / 100));
+                            const comissaoEmCentavos = Math.round(valorPagoEmCentavos * 0.30);
                             await new Venda({
                                 afiliadoId, clienteId, paymentId: payment.id,
                                 valorPagoEmCentavos, comissaoEmCentavos,
                             }).save();
-                            console.log(`Venda e comissão para o afiliado ${afiliadoId} registradas com sucesso.`);
                         }
                     }
                 }
@@ -2010,6 +2009,42 @@ app.post('/api/affiliate/apply', autenticar, async (req, res) => {
     }
 });
 
+app.post('/api/create-preference', autenticar, async (req, res) => {
+    try {
+        const { afiliadoCode } = req.body;
+        const PRECO_BASE = 109.99;
+        let precoFinal = PRECO_BASE;
+        const metadata = {};
+
+        if (afiliadoCode) {
+            const afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
+            if (afiliado) {
+                precoFinal = PRECO_BASE * 0.70;
+                metadata.afiliado_id = afiliado._id.toString();
+            }
+        }
+        
+        const preference = new Preference(client);
+        const response = await preference.create({
+            body: {
+                items: [{
+                    title: 'BariPlus - Acesso Vitalício',
+                    unit_price: Number(precoFinal.toFixed(2)),
+                    quantity: 1,
+                    currency_id: 'BRL',
+                }],
+                metadata: metadata,
+                external_reference: req.userId,
+                back_urls: { success: `${process.env.CLIENT_URL}/pagamento-status` },
+                auto_return: 'approved',
+            }
+        });
+        res.json({ preferenceId: response.id, finalPrice: precoFinal });
+    } catch (error) {
+        console.error("Erro ao criar preferência:", error);
+        res.status(500).json({ message: "Erro ao criar preferência de pagamento." });
+    }
+});
 
 app.post('/api/validate-and-create-preference', autenticar, async (req, res) => {
     try {
