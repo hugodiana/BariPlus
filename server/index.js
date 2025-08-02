@@ -2020,6 +2020,7 @@ app.post('/api/create-preference', autenticar, async (req, res) => {
         const metadata = {};
 
         if (afiliadoCode) {
+            // A validação do cupom acontece aqui no back-end
             const afiliado = await User.findOne({ affiliateCode: afiliadoCode.toUpperCase(), role: 'affiliate' });
             if (afiliado) {
                 precoFinal = PRECO_BASE * 0.70;
