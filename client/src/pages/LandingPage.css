@@ -1,330 +1,161 @@
-/* Fonte padrão */
-.landing-page {
-    font-family: 'Inter', sans-serif;
-    color: #333;
+.landing-container {
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
-/* Cabeçalho fixo */
-.landing-header {
-    background: #fff;
-    padding: 15px 40px;
-    border-bottom: 1px solid #e0e0e0;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-}
-
-/* Contêiner de navegação */
-.landing-nav-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-/* Logo */
-.landing-logo {
-    height: 40px;
-    transition: opacity 0.3s ease;
-}
-
-.landing-logo:hover {
-    opacity: 0.9;
-}
-
-/* Navegação */
-.landing-nav {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-}
-
-.landing-nav a {
-    text-decoration: none;
-    color: #555;
-    font-weight: 600;
-    transition: color 0.3s ease;
-    padding: 5px 0;
-}
-
-.landing-nav a:hover,
-.landing-nav a:focus {
-    color: #37715b;
-    outline: none;
-}
-
-/* Botão de login */
-.nav-login-btn {
-    background-color: #37715b;
-    color: white !important;
-    padding: 8px 16px;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: bold;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.nav-login-btn:hover,
-.nav-login-btn:focus {
-    background-color: #2f5f4d;
-    outline: none;
-    transform: translateY(-2px);
-}
-
-/* Seção principal */
+/* --- Seção Herói --- */
 .hero-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     text-align: center;
-    padding: 100px 20px;
-    background-color: #f4f7f6;
+    padding: 80px 20px;
+    background-color: var(--background-light);
 }
-
-.hero-content {
-    max-width: 800px;
-    margin: 0 auto;
+.hero-logo {
+    width: 150px;
+    height: auto;
+    margin-bottom: 2rem;
 }
-
-.hero-content h1 {
-    font-size: 3rem;
-    line-height: 1.2;
-    margin-bottom: 20px;
-    color: #222;
+.hero-title {
+    font-size: 2.5rem;
+    max-width: 600px;
+    margin: 0 auto 1rem auto;
+    color: var(--text-strong);
 }
-
 .hero-subtitle {
     font-size: 1.2rem;
-    color: #666;
-    margin-bottom: 30px;
-    line-height: 1.6;
+    max-width: 550px;
+    margin: 0 auto 2rem auto;
+    color: var(--text-secondary);
 }
-
-/* Botão principal */
-.hero-cta-btn {
-    background-color: #007aff;
+.hero-cta-button {
+    display: inline-block;
+    padding: 1rem 2.5rem;
+    background-color: var(--primary-green);
     color: white;
-    padding: 15px 30px;
-    border-radius: 8px;
-    text-decoration: none;
     font-size: 1.1rem;
     font-weight: bold;
-    transition: all 0.3s ease;
-    display: inline-block;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: transform 0.2s;
+}
+.hero-cta-button:hover {
+    transform: scale(1.05);
 }
 
-.hero-cta-btn:hover,
-.hero-cta-btn:focus {
-    background-color: #0056b3;
-    outline: none;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
-}
-
-/* Seções comuns */
-.section-title {
-    font-size: 2.5rem;
-    margin-bottom: 50px;
-    color: #222;
-}
-
-.features-section,
-.pricing-section {
-    padding: 100px 20px;
-    max-width: 1200px;
-    margin: 0 auto;
+/* --- Seção de Funcionalidades --- */
+.features-section {
+    padding: 80px 20px;
     text-align: center;
 }
-
-/* Grid de funcionalidades */
+.features-section h2 {
+    font-size: 2rem;
+    margin-bottom: 3rem;
+}
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 30px;
-    text-align: left;
-}
-
-.feature-card {
-    background: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    transition: transform 0.3s ease;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-}
-
-.feature-card h3 {
-    margin-top: 0;
-    color: #37715b;
-    font-size: 1.3rem;
-}
-
-.feature-card p {
-    color: #666;
-    line-height: 1.6;
-}
-
-/* Preço */
-.pricing-card-public {
-    max-width: 500px;
+    gap: 2rem;
+    max-width: 1200px;
     margin: 0 auto;
-    background-color: #fff;
-    border: 2px solid #37715b;
+}
+.feature-card {
+    text-align: left;
+    padding: 1.5rem;
+}
+.feature-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+.feature-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 0.5rem;
+}
+
+/* --- Seção de Preço --- */
+.pricing-section-lp {
+    padding: 80px 20px;
+    background-color: var(--background-light);
+    text-align: center;
+}
+.pricing-section-lp h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+.pricing-card-lp {
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem;
+    border: 2px solid var(--primary-green);
     border-radius: 12px;
-    padding: 40px;
-    transition: transform 0.3s ease;
+    background: var(--background-white);
 }
-
-.pricing-card-public:hover {
-    transform: translateY(-5px);
-}
-
-.price-tag-public {
-    margin: 20px 0;
-}
-
-.price-amount-public {
+.price-lp {
     font-size: 3rem;
     font-weight: bold;
-    color: #222;
+    color: var(--primary-green);
+    margin: 1rem 0;
 }
-
-.price-term-public {
-    color: #666;
+.price-desc-lp {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+}
+.pricing-cta-button-lp {
+    display: inline-block;
+    padding: 0.8rem 2rem;
+    background-color: var(--action-blue);
+    color: white;
     font-size: 1rem;
-}
-
-/* Rodapé */
-.landing-footer {
-    text-align: center;
-    padding: 60px 20px;
-    background-color: #222;
-    color: #eee;
-}
-
-.footer-links {
-    margin-top: 20px;
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.footer-links a {
-    color: #ccc;
+    font-weight: bold;
     text-decoration: none;
-    transition: color 0.3s ease;
+    border-radius: 8px;
 }
 
-.footer-links a:hover,
-.footer-links a:focus {
-    color: #fff;
+/* --- Seção FAQ --- */
+.faq-section {
+    padding: 80px 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+.faq-section h2 {
+    font-size: 2rem;
+    margin-bottom: 3rem;
+}
+.faq-item {
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem 0;
+}
+.faq-item h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+}
+.faq-item p {
+    color: var(--text-secondary);
+}
+
+/* --- Rodapé --- */
+.landing-footer {
+    padding: 40px 20px;
+    text-align: center;
+    background-color: var(--background-light);
+    color: var(--text-secondary);
+}
+.footer-links {
+    margin-top: 10px;
+}
+.footer-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin: 0 10px;
+}
+.footer-links a:hover {
     text-decoration: underline;
-}
-
-.copyright {
-    margin-top: 30px;
-    color: #999;
-    font-size: 0.9rem;
-}
-
-/* Rolagem suave */
-html {
-    scroll-behavior: smooth;
-}
-
-/* Botão hamburger */
-.burger-menu {
-    display: none;
-    flex-direction: column;
-    cursor: pointer;
-    padding: 10px;
-}
-
-.burger-line {
-    width: 25px;
-    height: 3px;
-    background-color: #555;
-    margin: 4px 0;
-    transition: all 0.3s ease;
-}
-
-.burger-menu.active .burger-line:nth-child(1) {
-    transform: rotate(45deg) translate(5px, 5px);
-}
-
-.burger-menu.active .burger-line:nth-child(2) {
-    opacity: 0;
-}
-
-.burger-menu.active .burger-line:nth-child(3) {
-    transform: rotate(-45deg) translate(5px, -5px);
 }
 
 /* Responsividade */
 @media (max-width: 768px) {
-    .landing-header {
-        padding: 15px 20px;
-    }
-    
-    .landing-nav {
-        display: none;
-        position: absolute;
-        top: 70px;
-        left: 0;
-        right: 0;
-        background-color: white;
-        flex-direction: column;
-        padding: 20px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-
-    .landing-nav.active {
-        display: flex;
-    }
-
-    .landing-nav a {
-        margin: 10px 0;
-    }
-
-    .burger-menu {
-        display: flex;
-    }
-
-    .hero-content h1 {
-        font-size: 2.2rem;
-    }
-
-    .hero-section {
-        padding: 80px 20px;
-    }
-
-    .features-section,
-    .pricing-section {
-        padding: 60px 20px;
-    }
-
-    .section-title {
+    .hero-title {
         font-size: 2rem;
-        margin-bottom: 30px;
-    }
-}
-
-@media (max-width: 480px) {
-    .hero-content h1 {
-        font-size: 1.8rem;
-    }
-    
-    .section-title {
-        font-size: 1.7rem;
-    }
-    
-    .price-amount-public {
-        font-size: 2.5rem;
     }
 }

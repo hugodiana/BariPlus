@@ -1,93 +1,95 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import './LandingPage.css';
 
 const LandingPage = () => {
-    const [menuAtivo, setMenuAtivo] = useState(false);
+    const [searchParams] = useSearchParams();
+    const afiliadoCode = searchParams.get('afiliado');
 
-    const alternarMenu = () => {
-        setMenuAtivo(!menuAtivo);
+    // Monta o link para a página de login/cadastro, preservando o código do afiliado
+    const getLoginLink = () => {
+        const baseUrl = '/login';
+        return afiliadoCode ? `${baseUrl}?afiliado=${afiliadoCode}` : baseUrl;
     };
-
-    const fecharMenu = () => {
-        setMenuAtivo(false);
-    };
-
+    
     return (
-        <div className="landing-page">
-            <header className="landing-header">
-                <div className="landing-nav-container">
-                    <img src="/bariplus_logo.png" alt="BariPlus Logo" className="landing-logo" />
-
-                    {/* Botão hamburger */}
-                    <div className="burger-menu" onClick={alternarMenu} aria-label="Abrir menu">
-                        <div className="burger-line"></div>
-                        <div className="burger-line"></div>
-                        <div className="burger-line"></div>
-                    </div>
-
-                    {/* Menu de navegação */}
-                    <nav className={`landing-nav ${menuAtivo ? 'active' : ''}`}>
-                        <a href="#features" onClick={fecharMenu}>Funcionalidades</a>
-                        <a href="#pricing" onClick={fecharMenu}>Preço</a>
-                        <Link to="/login" className="nav-login-btn" onClick={fecharMenu}>Entrar</Link>
-                    </nav>
-                </div>
+        <div className="landing-container">
+            {/* --- SEÇÃO 1: HERÓI --- */}
+            <header className="hero-section">
+                <img src="/bariplus_logo.png" alt="BariPlus Logo" className="hero-logo" />
+                <h1 className="hero-title">A sua jornada bariátrica, organizada e no seu bolso.</h1>
+                <p className="hero-subtitle">Acompanhe seu progresso, exames, consultas e diário alimentar em um só lugar.</p>
+                <Link to={getLoginLink()} className="hero-cta-button">
+                    Começar Agora
+                </Link>
             </header>
 
             <main>
-                <section className="hero-section">
-                    <div className="hero-content">
-                        <h1>Organize sua Jornada Bariátrica com Confiança e Simplicidade.</h1>
-                        <p className="hero-subtitle">
-                            Do pré ao pós-operatório, o BariPlus é o seu assistente pessoal para controlar checklist, peso, consultas, medicação e muito mais.
-                        </p>
-                        <Link to="/login" className="hero-cta-btn">Comece a sua jornada agora</Link>
-                    </div>
-                </section>
-
-                <section id="features" className="features-section">
-                    <h2>Tudo o que você precisa em um só lugar</h2>
+                {/* --- SEÇÃO 2: FUNCIONALIDADES --- */}
+                <section className="features-section">
+                    <h2>Tudo o que você precisa para uma jornada de sucesso</h2>
                     <div className="features-grid">
                         <div className="feature-card">
-                            <h3>Checklists Completos</h3>
-                            <p>Controle todas as suas tarefas pré e pós-operatórias para não se esquecer de nada.</p>
-                        </div>
-                        <div className="feature-card">
+                            <span className="feature-icon">📊</span>
                             <h3>Acompanhe seu Progresso</h3>
-                            <p>Registre seu peso, medidas e veja sua evolução em gráficos e com fotos.</p>
+                            <p>Registe seu peso e mais de 10 medidas corporais. Veja sua evolução em gráficos detalhados.</p>
                         </div>
                         <div className="feature-card">
-                            <h3>Consultas e Exames</h3>
-                            <p>Organize todos os seus compromissos médicos em um calendário visual e intuitivo.</p>
+                            <span className="feature-icon">⚕️</span>
+                            <h3>Controle de Exames</h3>
+                            <p>Guarde os resultados dos seus exames laboratoriais e visualize o histórico para partilhar com a sua equipa médica.</p>
                         </div>
                         <div className="feature-card">
-                            <h3>Controle de Medicação</h3>
-                            <p>Crie sua lista de vitaminas e medicamentos e marque as tomas diárias para não falhar.</p>
+                            <span className="feature-icon">🗓️</span>
+                            <h3>Agenda de Consultas</h3>
+                            <p>Nunca mais se esqueça de uma consulta. Organize todos os seus compromissos médicos num calendário inteligente.</p>
+                        </div>
+                        <div className="feature-card">
+                            <span className="feature-icon">🥗</span>
+                            <h3>Diário Alimentar</h3>
+                            <p>Registe as suas refeições e monitore a sua ingestão de calorias e macronutrientes com a nossa base de dados de alimentos.</p>
                         </div>
                     </div>
                 </section>
 
-                <section id="pricing" className="pricing-section">
-                    <div className="pricing-card-public">
-                        <h2>Acesso Vitalício</h2>
-                        <p className="pricing-description">
-                            Um único pagamento para ter acesso a todas as funcionalidades atuais e futuras. Sem mensalidades, sem surpresas.
-                        </p>
-                        <div className="price-tag-public">
-                            <span className="price-amount-public">R$ 49,90</span>
-                            <span className="price-term-public">Pagamento Único</span>
-                        </div>
-                        <Link to="/login" className="hero-cta-btn">Quero acesso vitalício</Link>
+                {/* --- SEÇÃO 3: PREÇO --- */}
+                <section className="pricing-section-lp">
+                    <h2>Um investimento único na sua saúde</h2>
+                    <div className="pricing-card-lp">
+                        <h3>Acesso Vitalício</h3>
+                        <p className="price-lp">R$ 109,99</p>
+                        <p className="price-desc-lp">Pagamento único. Acesso para sempre a todas as funcionalidades atuais e futuras.</p>
+                        <Link to={getLoginLink()} className="pricing-cta-button-lp">
+                            Garantir o Meu Acesso
+                        </Link>
+                    </div>
+                </section>
+
+                {/* --- SEÇÃO 4: FAQ (Perguntas Frequentes) --- */}
+                <section className="faq-section">
+                    <h2>Perguntas Frequentes</h2>
+                    <div className="faq-item">
+                        <h4>O pagamento é seguro?</h4>
+                        <p>Sim! Todo o processamento é feito pela Kiwify, uma das maiores e mais seguras plataformas de pagamento do Brasil.</p>
+                    </div>
+                    <div className="faq-item">
+                        <h4>É uma assinatura ou pagamento único?</h4>
+                        <p>É um pagamento único de R$ 109,99 que lhe dá acesso vitalício a todas as funcionalidades do BariPlus, incluindo futuras atualizações.</p>
+                    </div>
+                    <div className="faq-item">
+                        <h4>Como funciona o programa de afiliados?</h4>
+                        <p>Após se tornar cliente, você pode se inscrever no nosso programa de afiliados através da página "Ganhe Renda Extra" dentro do app e receber um link para partilhar. Você ganha 30% de comissão por cada venda!</p>
                     </div>
                 </section>
             </main>
 
+            {/* --- SEÇÃO 5: RODAPÉ --- */}
             <footer className="landing-footer">
-                <p>&copy; {new Date().getFullYear()} BariPlus. Todos os direitos reservados.</p>
+                <p>© 2025 BariPlus - Todos os direitos reservados.</p>
                 <div className="footer-links">
-                    <Link to="/afiliados">Programa de Afiliados</Link>
                     <Link to="/termos">Termos de Serviço</Link>
+                    <span>|</span>
+                    <Link to="/privacidade">Política de Privacidade</Link>
                 </div>
             </footer>
         </div>
