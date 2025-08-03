@@ -28,6 +28,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyPage from './pages/VerifyPage';
 import BecomeAffiliatePage from './pages/BecomeAffiliatePage';
 import ExamsPage from './pages/ExamsPage';
+import GanheRendaExtraPage from './pages/GanheRendaExtraPage';
 
 // Componente para manipulação de código de referência
 function HandleReferral() {

@@ -39,46 +39,54 @@ app.use(cors(corsOptions));
 app.use(helmet());
 
 // Webhook precisa vir antes do express.json() se usar `express.raw`
-app.post('/api/kiwify-webhook', async (req, res) => {
+app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
     try {
         const kiwifyEvent = req.body;
 
-        // A Kiwify recomenda verificar o 'order_status' ou 'subscription_status'
         if (kiwifyEvent.order_status === 'paid' || kiwifyEvent.subscription_status === 'active') {
-            const customer = kiwifyEvent.customer;
-            const userEmail = customer.email.toLowerCase();
-            const userName = customer.name;
+            const customer = kiwifyEvent.Customer;
+            if (!customer) {
+                console.error("Webhook da Kiwify recebido sem dados do cliente.");
+                return res.sendStatus(400); // Bad Request
+            }
 
-            // Procura se o usuário já existe
+            const userEmail = customer.email.toLowerCase();
+            const userName = customer.full_name;
+
             let usuario = await User.findOne({ email: userEmail });
 
             if (usuario) {
-                // Se já existe, apenas atualiza o status de pagamento
                 usuario.pagamentoEfetuado = true;
-                usuario.kiwifySubscriptionId = kiwifyEvent.subscription_id;
+                usuario.kiwifySubscriptionId = kiwifyEvent.subscription_id || kiwifyEvent.order_id;
                 await usuario.save();
                 console.log(`Acesso atualizado para o usuário existente: ${userEmail}`);
             } else {
-                // Se não existe, cria um novo usuário
-                const tempPassword = crypto.randomBytes(16).toString('hex'); // Senha temporária
+                const tempPassword = crypto.randomBytes(16).toString('hex');
                 const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
-                novoUsuario = new User({
+                const novoUsuario = new User({
                     nome: userName,
                     email: userEmail,
-                    password: hashedPassword, // Salva uma senha temporária
+                    password: hashedPassword,
                     pagamentoEfetuado: true,
-                    kiwifySubscriptionId: kiwifyEvent.subscription_id,
+                    kiwifySubscriptionId: kiwifyEvent.subscription_id || kiwifyEvent.order_id,
                 });
                 await novoUsuario.save();
 
-                // Cria os outros documentos associados (Checklist, Peso, etc.)
-                // await Promise.all([...])
+                await Promise.all([
+                    new Checklist({ userId: novoUsuario._id }).save(),
+                    new Peso({ userId: novoUsuario._id }).save(),
+                    new Consulta({ userId: novoUsuario._id }).save(),
+                    new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+                    new Medication({ userId: novoUsuario._id }).save(),
+                    new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+                    new Gasto({ userId: novoUsuario._id, registros: [] }).save(),
+                    new Exams({ userId: novoUsuario._id }).save()
+                ]);
 
-                // Envia um e-mail de boas-vindas para o usuário definir a senha
                 const resetToken = crypto.randomBytes(32).toString('hex');
                 novoUsuario.resetPasswordToken = resetToken;
-                novoUsuario.resetPasswordExpires = Date.now() + 24 * 3600000; // Expira em 24 horas
+                novoUsuario.resetPasswordExpires = Date.now() + 24 * 3600000; // 24 horas
                 await novoUsuario.save();
 
                 const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
@@ -92,7 +100,7 @@ app.post('/api/kiwify-webhook', async (req, res) => {
                 console.log(`Novo usuário criado e e-mail de boas-vindas enviado para: ${userEmail}`);
             }
         }
-        res.sendStatus(200); // Responde 200 OK para a Kiwify
+        res.sendStatus(200);
     } catch (error) {
         console.error('Erro no webhook da Kiwify:', error);
         res.sendStatus(500);
