@@ -118,7 +118,6 @@ app.use('/api/login', limiter);
 app.use('/api/forgot-password', limiter);
 
 // --- 2. CONFIGURAÇÕES DE SERVIÇOS ---
-const client = new MercadoPagoConfig({ accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN });
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 if (process.env.FIREBASE_PRIVATE_KEY) {
@@ -232,6 +231,70 @@ const isAffiliate = async (req, res, next) => {
 // --- 5. ROTAS DA API ---
 app.get('/', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' });
+});
+
+app.post('/api/kiwify-webhook', async (req, res) => {
+    try {
+        const kiwifyEvent = req.body;
+
+        // Verifica o status do pedido
+        if (kiwifyEvent.order_status === 'paid' || kiwifyEvent.subscription_status === 'active') {
+            const customer = kiwifyEvent.Customer;
+            if (!customer) {
+                console.error("Webhook da Kiwify recebido sem dados do cliente.");
+                return res.sendStatus(400); // Bad Request
+            }
+
+            const userEmail = customer.email.toLowerCase();
+            const userName = customer.full_name;
+
+            let usuario = await User.findOne({ email: userEmail });
+
+            if (usuario) {
+                // Se já existe, apenas atualiza o status de pagamento
+                usuario.pagamentoEfetuado = true;
+                usuario.kiwifySubscriptionId = kiwifyEvent.subscription_id; // Se for assinatura
+                await usuario.save();
+                console.log(`Acesso atualizado para o usuário existente: ${userEmail}`);
+            } else {
+                // Se não existe, cria um novo usuário
+                const tempPassword = crypto.randomBytes(16).toString('hex'); // Senha temporária
+                const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+                const novoUsuario = new User({
+                    nome: userName,
+                    email: userEmail,
+                    password: hashedPassword,
+                    pagamentoEfetuado: true,
+                    kiwifySubscriptionId: kiwifyEvent.subscription_id,
+                });
+                await novoUsuario.save();
+
+                // Cria os outros documentos associados (Checklist, Peso, etc.)
+                // await Promise.all([...])
+
+                // Envia e-mail de boas-vindas para o usuário definir a senha
+                const resetToken = crypto.randomBytes(32).toString('hex');
+                novoUsuario.resetPasswordToken = resetToken;
+                novoUsuario.resetPasswordExpires = Date.now() + 24 * 3600000; // Expira em 24 horas
+                await novoUsuario.save();
+
+                const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+                
+                await resend.emails.send({
+                    from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                    to: [userEmail],
+                    subject: 'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
+                    html: `<h1>Compra Aprovada!</h1><p>Olá, ${userName}!</p><p>O seu acesso ao BariPlus foi liberado. Clique no link abaixo para criar a sua senha de acesso:</p><a href="${setupPasswordLink}">Criar Minha Senha</a>`,
+                });
+                console.log(`Novo usuário criado e e-mail de boas-vindas enviado para: ${userEmail}`);
+            }
+        }
+        res.sendStatus(200); // Responde 200 OK para a Kiwify
+    } catch (error) {
+        console.error('Erro no webhook da Kiwify:', error);
+        res.sendStatus(500);
+    }
 });
 
 app.post('/api/register', async (req, res) => {
