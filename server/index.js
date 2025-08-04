@@ -2260,6 +2260,21 @@ app.get('/api/exams', autenticar, async (req, res) => {
     }
 });
 
+app.get('/api/exames', autenticar, async (req, res) => {
+    try {
+        let exams = await Exams.findOne({ userId: req.userId });
+        if (!exams) {
+            // Cria um documento vazio se o usuário ainda não tiver um
+            exams = new Exams({ userId: req.userId, examEntries: [] });
+            await exams.save();
+        }
+        res.json(exams);
+    } catch (error) {
+        console.error("Erro ao buscar exames:", error);
+        res.status(500).json({ message: "Erro ao buscar exames." });
+    }
+});
+
 // Adiciona um novo TIPO de exame à lista do usuário
 app.post('/api/exams/type', autenticar, async (req, res) => {
     try {

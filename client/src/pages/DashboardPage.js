@@ -70,7 +70,10 @@ const DashboardPage = () => {
                 if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
             }
 
-            const [dadosUsuario, dadosFoodLog, dadosChecklist, dadosConsultas, dadosMedication, dadosPesos, dadosLog] = await Promise.all(responses.map(res => res.json()));
+            const [
+                dadosUsuario, dadosFoodLog, dadosChecklist, dadosConsultas,
+                dadosMedication, dadosPesos, dadosLog, dadosGastos, dadosExames
+            ] = await Promise.all(responses.map(res => res.json()));
 
             setUsuario(dadosUsuario);
             setFoodLog(dadosFoodLog);
