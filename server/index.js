@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { Resend } = require('resend');
-
+const tacoRoutes = require('./routes/tacoRoutes');
 const app = express();
 app.set('trust proxy', 1);
 
@@ -251,9 +251,12 @@ const isAffiliate = async (req, res, next) => {
 };
 
 // --- 5. ROTAS DA API ---
+
 app.get('/', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' });
 });
+
+app.use('/api/taco', autenticar, tacoRoutes); 
 
 app.post('/api/kiwify-webhook', async (req, res) => {
     try {
@@ -2350,6 +2353,7 @@ app.delete('/api/exams/result/:examEntryId/:resultId', autenticar, async (req, r
 });
 
 
+
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Erro interno no servidor' });
@@ -2360,6 +2364,8 @@ app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({ message: 'Erro interno no servidor' });
 });
+
+
 
 // Conecta ao MongoDB antes de iniciar o servidor
 const server = app.listen(PORT, () => {

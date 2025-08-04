@@ -1,36 +1,38 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays, subDays } from 'date-fns';
 import './FoodDiaryPage.css';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
+import BuscaAlimentos from '../components/BuscaAlimentos'; // Importamos o componente de busca
 
 const FoodDiaryPage = () => {
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [searchResults, setSearchResults] = useState([]);
-    const [loadingSearch, setLoadingSearch] = useState(false);
-    const [message, setMessage] = useState('Use a barra de pesquisa para encontrar alimentos.');
+    const [selectedDate, setSelectedDate] = useState(new Date());
     const [diary, setDiary] = useState(null);
-    const [loadingDiary, setLoadingDiary] = useState(true);
+    const [loading, setLoading] = useState(true);
+    
+    // Estados do Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedFood, setSelectedFood] = useState(null);
+    const [mealTypeToLog, setMealTypeToLog] = useState('');
+    const [foodToLog, setFoodToLog] = useState(null);
+    const [portion, setPortion] = useState(100);
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchDiary = useCallback(async (date) => {
-        setLoadingDiary(true);
+        setLoading(true);
         try {
-            const res = await fetch(`${apiUrl}/api/food-diary/${date}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const dateString = format(date, 'yyyy-MM-dd');
+            const res = await fetch(`${apiUrl}/api/food-diary/${dateString}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!res.ok) throw new Error("Falha ao carregar o diário.");
             const data = await res.json();
             setDiary(data);
         } catch (error) {
             toast.error(error.message);
         } finally {
-            setLoadingDiary(false);
+            setLoading(false);
         }
     }, [token, apiUrl]);
 
@@ -38,75 +40,89 @@ const FoodDiaryPage = () => {
         fetchDiary(selectedDate);
     }, [selectedDate, fetchDiary]);
 
-    const handleSearch = async (e) => {
-        e.preventDefault();
-        if (!searchTerm.trim()) return;
-        setLoadingSearch(true);
-        setSearchResults([]);
-        setMessage('');
-        try {
-            const response = await fetch(`${apiUrl}/api/foods/search?query=${encodeURIComponent(searchTerm)}`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!response.ok) throw new Error('Erro ao buscar alimentos.');
-            const data = await response.json();
-            if (data.length === 0) {
-                setMessage(`Nenhum resultado encontrado para "${searchTerm}".`);
-            } else {
-                setSearchResults(data);
-            }
-        } catch (error) {
-            setMessage("Ocorreu um erro na busca. Tente novamente.");
-        } finally {
-            setLoadingSearch(false);
-        }
-    };
-    
-    const handleSelectFood = (food) => {
-        setSelectedFood(food);
+    const handleOpenModal = (mealType) => {
+        setMealTypeToLog(mealType);
+        setFoodToLog(null);
+        setPortion(100);
         setIsModalOpen(true);
     };
+
+    const handleSelectFood = (food) => {
+        setFoodToLog(food);
+    };
     
-    const handleLogFood = async (mealType) => {
-        if (!selectedFood) return;
+    const handleLogFood = async () => {
+        if (!foodToLog || !mealTypeToLog) return;
+        
+        // Calcula os nutrientes com base na porção
+        const ratio = portion / 100;
+        const finalNutrients = {
+            calories: (foodToLog.kcal || 0) * ratio,
+            proteins: (foodToLog.protein || 0) * ratio,
+            carbs: (foodToLog.carbohydrates || 0) * ratio,
+            fats: (foodToLog.lipids || 0) * ratio,
+        };
+        
+        const foodDataToSave = {
+            name: foodToLog.description,
+            brand: foodToLog.base_unit,
+            portion: Number(portion),
+            nutrients: finalNutrients,
+        };
+        
         try {
+            const dateString = format(selectedDate, 'yyyy-MM-dd');
             const res = await fetch(`${apiUrl}/api/food-diary/log`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ food: selectedFood, mealType, date: selectedDate })
+                body: JSON.stringify({ food: foodDataToSave, mealType: mealTypeToLog, date: dateString })
             });
-            const data = await res.json();
-            setDiary(data);
+            if (!res.ok) throw new Error("Falha ao registrar alimento.");
+
+            const updatedDiary = await res.json();
+            setDiary(updatedDiary);
             setIsModalOpen(false);
-            setSelectedFood(null);
-            setSearchResults([]);
-            setSearchTerm('');
-            toast.success(`${selectedFood.name || 'Alimento'} adicionado com sucesso!`);
+            toast.success(`${foodDataToSave.name} adicionado com sucesso!`);
         } catch (error) {
-            toast.error("Erro ao registrar refeição.");
+            toast.error(error.message);
         }
     };
 
     const handleDeleteFood = async (mealType, itemId) => {
         if (!window.confirm("Tem certeza que quer apagar este item?")) return;
         try {
-             await fetch(`${apiUrl}/api/food-diary/log/${selectedDate}/${mealType}/${itemId}`, {
+            const dateString = format(selectedDate, 'yyyy-MM-dd');
+            await fetch(`${apiUrl}/api/food-diary/log/${dateString}/${mealType}/${itemId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            fetchDiary(selectedDate);
+            fetchDiary(selectedDate); // Recarrega o diário para o dia
             toast.info("Item removido do diário.");
         } catch (error) {
             toast.error("Erro ao apagar item.");
         }
     };
 
+    const changeDate = (amount) => {
+        setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
+    };
+
     const renderMealSection = (title, mealKey, mealArray) => (
-        <div className="meal-section">
-            <h4>{title}</h4>
+        <Card className="meal-card">
+            <div className="meal-header">
+                <h4>{title}</h4>
+                <button className="add-food-btn" onClick={() => handleOpenModal(mealKey)}>+</button>
+            </div>
             {mealArray && mealArray.length > 0 ? (
                 <ul className="logged-food-list">
                     {mealArray.map((item) => (
-                        <li key={item._id || item.id}>
-                            <span>{item.name} <small>({item.brand})</small></span>
+                        <li key={item._id}>
+                            <div className="item-info">
+                                <span>{item.name} <small>({item.portion}g)</small></span>
+                                <small className="item-nutrients">
+                                    Kcal: {item.nutrients.calories.toFixed(0)} | P: {item.nutrients.proteins.toFixed(1)}g
+                                </small>
+                            </div>
                             <button onClick={() => handleDeleteFood(mealKey, item._id)} className="delete-food-btn">×</button>
                         </li>
                     ))}
@@ -114,12 +130,10 @@ const FoodDiaryPage = () => {
             ) : (
                 <p className="empty-meal">Nenhum item registrado.</p>
             )}
-        </div>
+        </Card>
     );
 
-    if (loadingDiary) {
-        return <LoadingSpinner />;
-    }
+    if (loading) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
@@ -127,81 +141,54 @@ const FoodDiaryPage = () => {
                 <h1>Diário Alimentar</h1>
                 <p>Pesquise e registre suas refeições diárias.</p>
             </div>
-            <Card>
-                <div className="date-selector">
-                    <label htmlFor="diary-date">Selecione a data:</label>
-                    <input type="date" id="diary-date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-                </div>
-                <div className="search-container">
-                    <form onSubmit={handleSearch}>
-                        <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Ex: Frango grelhado, maçã, etc."
-                            className="search-input"
-                        />
-                        <button type="submit" className="search-button" disabled={loadingSearch}>
-                            {loadingSearch ? 'Buscando...' : 'Pesquisar'}
-                        </button>
-                    </form>
-                </div>
+            
+            <Card className="date-selector-card">
+                <button onClick={() => changeDate(-1)}>‹ Dia Anterior</button>
+                <input type="date" value={format(selectedDate, 'yyyy-MM-dd')} onChange={(e) => setSelectedDate(parseISO(e.target.value))} />
+                <button onClick={() => changeDate(1)}>Próximo Dia ›</button>
             </Card>
-
-            <div className="results-container">
-                {loadingSearch && <p className="info-message">Carregando...</p>}
-                {message && !loadingSearch && searchResults.length === 0 && <p className="info-message">{message}</p>}
-                {searchResults.length > 0 && (
-                    <ul className="results-list">
-                        {searchResults.map(food => (
-                            <li key={food.id} className="result-item" onClick={() => handleSelectFood(food)}>
-                                <img src={food.imageUrl || 'https://via.placeholder.com/60'} alt={food.name} className="food-image" />
-                                <div className="food-info">
-                                    <div className="food-name">{food.name}</div>
-                                    <div className="food-brand">{food.brand}</div>
-                                    <div className="food-nutrients">(por 100g) Cals: {food.nutrients.calories} | Prot: {food.nutrients.proteins}g</div>
-                                </div>
-                            </li>
-                        ))}
-                    </ul>
-                )}
-            </div>
-
-            <Card className="diary-view">
-                <h2>Refeições de {format(parseISO(`${selectedDate}T12:00:00`), 'dd/MM/yyyy')}</h2>
+            
+            <div className="meals-grid">
                 {diary && diary.refeicoes ? (
-                    <div className="meals-grid">
+                    <>
                         {renderMealSection("Café da Manhã", "cafeDaManha", diary.refeicoes.cafeDaManha)}
                         {renderMealSection("Almoço", "almoco", diary.refeicoes.almoco)}
                         {renderMealSection("Jantar", "jantar", diary.refeicoes.jantar)}
                         {renderMealSection("Lanches", "lanches", diary.refeicoes.lanches)}
-                    </div>
+                    </>
                 ) : (
                     <p>Não foi possível carregar o diário para este dia.</p>
                 )}
-            </Card>
+            </div>
             
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                {selectedFood ? (
-                    <div className="food-details-modal">
-                        <h2>{selectedFood.name}</h2>
-                        <div className="nutrient-details">
-                            <span><strong>Calorias:</strong> {selectedFood.nutrients.calories} kcal</span>
-                            <span><strong>Proteínas:</strong> {selectedFood.nutrients.proteins} g</span>
-                            <span><strong>Carboidratos:</strong> {selectedFood.nutrients.carbs} g</span>
-                            <span><strong>Gorduras:</strong> {selectedFood.nutrients.fats} g</span>
+                {!foodToLog ? (
+                    <BuscaAlimentos onSelectAlimento={handleSelectFood} />
+                ) : (
+                    <div className="portion-container">
+                        <h3>{foodToLog.description}</h3>
+                        <p className="nutrient-details">
+                            Valores por 100g: 
+                            Kcal: {foodToLog.kcal.toFixed(0)} | 
+                            P: {foodToLog.protein.toFixed(1)}g | 
+                            C: {foodToLog.carbohydrates.toFixed(1)}g | 
+                            G: {foodToLog.lipids.toFixed(1)}g
+                        </p>
+                        <div className="portion-input-group">
+                            <label htmlFor="portion">Qual a porção (em gramas)?</label>
+                            <input
+                                id="portion"
+                                type="number"
+                                value={portion}
+                                onChange={(e) => setPortion(e.target.value)}
+                                autoFocus
+                            />
                         </div>
-                        <p className="details-serving">Valores por 100g/100ml</p>
-                        <h4>Adicionar em qual refeição?</h4>
-                        <div className="meal-log-buttons">
-                            <button onClick={() => handleLogFood('cafeDaManha')}>Café da Manhã</button>
-                            <button onClick={() => handleLogFood('almoco')}>Almoço</button>
-                            <button onClick={() => handleLogFood('jantar')}>Jantar</button>
-                            <button onClick={() => handleLogFood('lanches')}>Lanches</button>
+                        <div className="portion-actions">
+                            <button className="back-btn" onClick={() => setFoodToLog(null)}>‹ Voltar à Busca</button>
+                            <button className="log-btn" onClick={handleLogFood}>Adicionar à Refeição</button>
                         </div>
                     </div>
-                ) : (
-                    <p>Carregando detalhes do alimento...</p>
                 )}
             </Modal>
         </div>
