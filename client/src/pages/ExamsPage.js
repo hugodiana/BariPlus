@@ -15,13 +15,13 @@ import ExamsReport from '../components/ExamsReport';
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
 const predefinedExams = [
-    { name: 'Vitamina B12', unit: 'pg/mL' },
-    { name: 'Vitamina D', unit: 'ng/mL' },
-    { name: 'Ferritina', unit: 'ng/mL' },
-    { name: 'Hemoglobina Glicada (A1c)', unit: '%' },
-    { name: 'Glicemia em Jejum', unit: 'mg/dL' },
-    { name: 'Colesterol Total', unit: 'mg/dL' },
-    { name: 'Triglicerídeos', unit: 'mg/dL' },
+    { name: 'Vitamina B12', unit: 'pg/mL', refMin: 200, refMax: 900 },
+    { name: 'Vitamina D', unit: 'ng/mL', refMin: 30, refMax: 100 },
+    { name: 'Ferritina', unit: 'ng/mL', refMin: 30, refMax: 300 },
+    { name: 'Hemoglobina Glicada (A1c)', unit: '%', refMin: 4.0, refMax: 5.6 },
+    { name: 'Glicemia em Jejum', unit: 'mg/dL', refMin: 70, refMax: 99 },
+    { name: 'Colesterol Total', unit: 'mg/dL', refMin: 0, refMax: 199 },
+    { name: 'Triglicerídeos', unit: 'mg/dL', refMin: 0, refMax: 150 },
 ];
 
 const DownloadExamsPDFButton = ({ usuario, examsData }) => {
@@ -29,14 +29,11 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [shouldRenderChartsForPDF, setShouldRenderChartsForPDF] = useState(false);
 
-    // Este useEffect é acionado DEPOIS de os gráficos serem renderizados no "estúdio"
     useEffect(() => {
         if (!shouldRenderChartsForPDF) return;
-
         const generateImages = async () => {
             const images = {};
             const examsWithCharts = examsData.examEntries.filter(exam => exam.history.length > 1);
-
             for (const exam of examsWithCharts) {
                 const chartElement = document.getElementById(`pdf-chart-${exam._id}`);
                 if (chartElement) {
@@ -48,25 +45,20 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
             }
             setChartImages(images);
             setIsGenerating(false);
-            setShouldRenderChartsForPDF(false); // Limpa o estúdio
+            setShouldRenderChartsForPDF(false);
             toast.success("Gráficos prontos! Pode baixar o seu PDF.");
         };
-        
-        // Pequeno delay para garantir que o React renderizou os gráficos no estúdio
         const timer = setTimeout(generateImages, 100); 
         return () => clearTimeout(timer);
-
     }, [shouldRenderChartsForPDF, examsData, usuario]);
-
 
     const handlePreparePDF = () => {
         setIsGenerating(true);
         toast.info("A preparar os gráficos para o relatório...");
-        // Ativa a renderização dos gráficos no "estúdio"
         setShouldRenderChartsForPDF(true);
     };
 
-    if (!usuario || examsData.examEntries.length === 0) return null;
+    if (!usuario || !examsData?.examEntries || examsData.examEntries.length === 0) return null;
 
     return (
         <>
@@ -83,8 +75,6 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
                     {isGenerating ? 'A gerar gráficos...' : 'Exportar Relatório'}
                 </button>
             )}
-
-            {/* O "Estúdio Fotográfico" Invisível */}
             <div className="pdf-chart-studio">
                 {shouldRenderChartsForPDF && examsData.examEntries.map(exam =>
                     exam.history.length > 1 && (
@@ -100,8 +90,6 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
         </>
     );
 };
-
-
 
 const ExamsPage = () => {
     const [examsData, setExamsData] = useState({ examEntries: [] });
@@ -123,10 +111,8 @@ const ExamsPage = () => {
                 fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
             if (!resExams.ok || !resMe.ok) throw new Error("Falha ao carregar dados.");
-            
             const dataExams = await resExams.json();
             const dataMe = await resMe.json();
-            
             setExamsData(dataExams);
             setUsuario(dataMe);
         } catch (error) { 
@@ -136,9 +122,7 @@ const ExamsPage = () => {
         }
     }, [token, apiUrl]);
 
-    useEffect(() => { 
-        fetchExamsData(); 
-    }, [fetchExamsData]);
+    useEffect(() => { fetchExamsData(); }, [fetchExamsData]);
 
     const toggleAccordion = (examId) => {
         setActiveExamId(prevId => (prevId === examId ? null : examId));
@@ -158,7 +142,7 @@ const ExamsPage = () => {
             
             <button className="add-btn-main" onClick={() => setModalType('add_type')}>+ Adicionar Tipo de Exame</button>
 
-            {examsData.examEntries.length > 0 ? (
+            {examsData.examEntries && examsData.examEntries.length > 0 ? (
                 <div className="exams-accordion">
                     {examsData.examEntries.map(exam => (
                         <ExamEntry
@@ -168,7 +152,7 @@ const ExamsPage = () => {
                             onToggle={() => toggleAccordion(exam._id)}
                             onAddResult={() => { setCurrentExamEntry(exam); setModalType('add_result'); }}
                             onEditResult={(result) => { setCurrentExamEntry(exam); setCurrentResult(result); setModalType('edit_result'); }}
-                            onDeleteResult={fetchExamsData}
+                            onDataUpdate={fetchExamsData}
                         />
                     ))}
                 </div>
@@ -176,14 +160,15 @@ const ExamsPage = () => {
                 <Card><p style={{textAlign: 'center'}}>Nenhum tipo de exame adicionado. Comece por adicionar o seu primeiro!</p></Card>
             )}
 
-            {modalType === 'add_type' && <AddExamTypeModal onClose={() => setModalType(null)} onSave={fetchExamsData} />}
+            {modalType === 'add_type' && <AddExamTypeModal onClose={() => setModalType(null)} onSave={fetchExamsData} existingExams={examsData.examEntries} />}
             {modalType === 'add_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExamsData} examEntry={currentExamEntry} />}
             {modalType === 'edit_result' && <AddEditResultModal onClose={() => setModalType(null)} onSave={fetchExamsData} examEntry={currentExamEntry} resultToEdit={currentResult} />}
         </div>
     );
 };
 
-const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDeleteResult }) => {
+const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDataUpdate }) => {
+    const [itemLoading, setItemLoading] = useState(null);
     const sortedHistory = useMemo(() => 
         [...exam.history].sort((a, b) => new Date(a.date) - new Date(b.date)), 
     [exam.history]);
@@ -204,16 +189,28 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDele
 
     const handleDelete = async (resultId) => {
         if (!window.confirm("Tem certeza que quer apagar este resultado?")) return;
+        setItemLoading(resultId);
         const token = localStorage.getItem('bariplus_token');
         const apiUrl = process.env.REACT_APP_API_URL;
         try {
-            await fetch(`${apiUrl}/api/exams/result/${exam._id}/${resultId}`, {
+            const res = await fetch(`${apiUrl}/api/exams/result/${exam._id}/${resultId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!res.ok) throw new Error("Falha ao apagar.");
             toast.info("Resultado apagado.");
-            onDeleteResult();
-        } catch (error) { toast.error("Erro ao apagar resultado."); }
+            onDataUpdate();
+        } catch (error) { toast.error(error.message); }
+        finally { setItemLoading(null); }
+    };
+    
+    const getResultStatusClass = (value) => {
+        if (exam.refMin != null && exam.refMax != null) {
+            if (value < exam.refMin) return 'status-low';
+            if (value > exam.refMax) return 'status-high';
+            return 'status-normal';
+        }
+        return '';
     };
 
     return (
@@ -242,13 +239,16 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDele
                             <thead><tr><th>Data</th><th>Valor ({exam.unit})</th><th>Notas</th><th>Ações</th></tr></thead>
                             <tbody>
                                 {sortedHistory.slice().reverse().map(result => (
-                                    <tr key={result._id}>
+                                    <tr key={result._id} className={itemLoading === result._id ? 'loading' : ''}>
                                         <td>{format(parseISO(result.date), 'dd/MM/yyyy')}</td>
-                                        <td>{result.value}</td>
+                                        <td className={getResultStatusClass(result.value)}>
+                                            <span className="status-indicator"></span>
+                                            {result.value}
+                                        </td>
                                         <td>{result.notes || '-'}</td>
                                         <td className="actions">
-                                            <button onClick={() => onEditResult(result)} className="action-btn">✎</button>
-                                            <button onClick={() => handleDelete(result._id)} className="action-btn">×</button>
+                                            <button onClick={() => onEditResult(result)} className="action-btn edit-btn">✎</button>
+                                            <button onClick={() => handleDelete(result._id)} className="action-btn delete-btn">×</button>
                                         </td>
                                     </tr>
                                 ))}
@@ -261,29 +261,45 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDele
     );
 };
 
-const AddExamTypeModal = ({ onClose, onSave }) => {
+const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
     const [selectedPredefined, setSelectedPredefined] = useState('');
     const [customName, setCustomName] = useState('');
     const [customUnit, setCustomUnit] = useState('');
+    const [refMin, setRefMin] = useState('');
+    const [refMax, setRefMax] = useState('');
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
+    const handlePredefinedChange = (e) => {
+        const selectedName = e.target.value;
+        setSelectedPredefined(selectedName);
+        if (selectedName && selectedName !== 'custom') {
+            const exam = predefinedExams.find(ex => ex.name === selectedName);
+            if (exam) {
+                setRefMin(exam.refMin || '');
+                setRefMax(exam.refMax || '');
+            }
+        } else {
+            setRefMin('');
+            setRefMax('');
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const examToAdd = selectedPredefined === 'custom' 
-            ? { name: customName, unit: customUnit }
+        const examData = selectedPredefined === 'custom' 
+            ? { name: customName, unit: customUnit, refMin: parseFloat(refMin) || null, refMax: parseFloat(refMax) || null }
             : predefinedExams.find(ex => ex.name === selectedPredefined);
         
-        if (!examToAdd || !examToAdd.name || !examToAdd.unit) {
-            return toast.error("Por favor, selecione ou preencha os dados do exame.");
-        }
+        if (!examData || !examData.name || !examData.unit) return toast.error("Por favor, preencha os dados do exame.");
+        if (existingExams.some(ex => ex.name.toLowerCase() === examData.name.toLowerCase())) return toast.warn("Este tipo de exame já foi adicionado.");
 
         try {
             await fetch(`${apiUrl}/api/exams/type`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(examToAdd),
+                body: JSON.stringify(examData),
             });
             toast.success("Tipo de exame adicionado!");
             onSave();
@@ -296,7 +312,7 @@ const AddExamTypeModal = ({ onClose, onSave }) => {
             <h2>Adicionar Novo Tipo de Exame</h2>
             <form onSubmit={handleSubmit}>
                 <label>Selecione um exame da lista ou crie um novo</label>
-                <select value={selectedPredefined} onChange={(e) => setSelectedPredefined(e.target.value)}>
+                <select value={selectedPredefined} onChange={handlePredefinedChange}>
                     <option value="">-- Exames Comuns --</option>
                     {predefinedExams.map(ex => <option key={ex.name} value={ex.name}>{ex.name} ({ex.unit})</option>)}
                     <option value="custom">Outro (Personalizado)</option>
@@ -309,6 +325,16 @@ const AddExamTypeModal = ({ onClose, onSave }) => {
                         <input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} required />
                     </>
                 )}
+                <div className="form-row">
+                    <div className="form-group">
+                        <label>Valor Mínimo de Referência</label>
+                        <input type="number" step="any" value={refMin} onChange={e => setRefMin(e.target.value)} placeholder="(Opcional)" />
+                    </div>
+                    <div className="form-group">
+                        <label>Valor Máximo de Referência</label>
+                        <input type="number" step="any" value={refMax} onChange={e => setRefMax(e.target.value)} placeholder="(Opcional)" />
+                    </div>
+                </div>
                 <button type="submit">Adicionar à Minha Lista</button>
             </form>
         </Modal>

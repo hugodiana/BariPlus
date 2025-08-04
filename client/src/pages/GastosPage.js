@@ -31,18 +31,17 @@ const GastosPage = () => {
         const month = currentDate.getMonth() + 1;
         try {
             const res = await fetch(`${apiUrl}/api/gastos?year=${year}&month=${month}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) throw new Error("Falha ao carregar gastos.");
             const data = await res.json();
-            setGastos(data);
+            setGastos(data); // Agora 'data' é garantidamente um array
         } catch (error) {
-            toast.error("Erro ao carregar gastos.");
+            toast.error(error.message);
         } finally {
             setLoading(false);
         }
     }, [currentDate, token, apiUrl]);
 
-    useEffect(() => {
-        fetchGastos();
-    }, [fetchGastos]);
+    useEffect(() => { fetchGastos(); }, [fetchGastos]);
 
     const handleAddGasto = async (e) => {
         e.preventDefault();
@@ -50,30 +49,32 @@ const GastosPage = () => {
             const res = await fetch(`${apiUrl}/api/gastos`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ descricao, valor, categoria, data })
+                body: JSON.stringify({ descricao, valor: parseFloat(valor), categoria, data })
             });
             if (!res.ok) throw new Error("Falha ao adicionar gasto.");
             
             setIsModalOpen(false);
             setDescricao(''); setValor(''); setCategoria('Consultas'); setData(new Date().toISOString().split('T')[0]);
             toast.success("Gasto adicionado com sucesso!");
-            fetchGastos(); // Recarrega a lista
+            fetchGastos();
         } catch (error) {
-            toast.error(error.message || "Erro ao adicionar gasto.");
+            toast.error(error.message);
         }
     };
     
     const handleDeleteGasto = async (gastoId) => {
         if (!window.confirm("Tem certeza que quer apagar este gasto?")) return;
         try {
-            await fetch(`${apiUrl}/api/gastos/${gastoId}`, {
+            const res = await fetch(`${apiUrl}/api/gastos/${gastoId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
+            if (!res.ok) throw new Error("Falha ao apagar o gasto.");
+            
             setGastos(prev => prev.filter(g => g._id !== gastoId));
             toast.info("Gasto apagado.");
         } catch (error) {
-            toast.error("Erro ao apagar gasto.");
+            toast.error(error.message);
         }
     };
 

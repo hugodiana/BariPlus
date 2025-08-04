@@ -166,3 +166,31 @@ form button {
 .pdf-link:hover {
     opacity: 0.9;
 }
+
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    background-color: var(--border-color); /* Cor padrão */
+}
+
+td.status-normal .status-indicator {
+    background-color: var(--primary-green);
+}
+td.status-low .status-indicator {
+    background-color: var(--action-blue);
+}
+td.status-high .status-indicator {
+    background-color: var(--danger-red);
+}
+
+/* ✅ NOVO: Estilo para o formulário com colunas */
+.form-row {
+    display: flex;
+    gap: var(--space-md);
+}
+.form-group {
+    flex: 1;
+}

@@ -46,7 +46,7 @@ const DashboardPage = () => {
     const [consultas, setConsultas] = useState([]);
     const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
     const [foodLog, setFoodLog] = useState(null);
-    const [gastos, setGastos] = useState([]);
+    const [gastos, setGastos] = useState({ registros: [] });
     const [exames, setExames] = useState({ examEntries: [] });
     const [loading, setLoading] = useState(true);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
@@ -78,10 +78,12 @@ const DashboardPage = () => {
             setUsuario(dadosUsuario);
             setFoodLog(dadosFoodLog);
             setChecklist(dadosChecklist);
-            setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
+            setConsultas(dadosConsultas);
             setMedicationData(dadosMedication);
-            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
+            setPesos(dadosPesos);
             setDailyLog(dadosLog);
+            setGastos(dadosGastos);
+            setExames(dadosExames);
 
         } catch (error) {
             toast.error(error.message);
@@ -212,10 +214,11 @@ const DashboardPage = () => {
     }, [foodLog]);
 
     const GASTO_MENSAL = useMemo(() => {
+        if (!gastos.registros || gastos.registros.length === 0) return 0;
         const hoje = new Date();
         const inicioDoMes = startOfMonth(hoje);
         const fimDoMes = endOfMonth(hoje);
-        return gastos
+        return gastos.registros
             .filter(gasto => {
                 const dataGasto = parseISO(gasto.data);
                 return dataGasto >= inicioDoMes && dataGasto <= fimDoMes;

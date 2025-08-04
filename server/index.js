@@ -6,7 +6,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const helmet = require('helmet');
@@ -143,9 +142,32 @@ const UserSchema = new mongoose.Schema({ nome: String, sobrenome: String, whatsa
 const AffiliateProfileSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true }, whatsapp: String, pixKeyType: { type: String, enum: ['CPF', 'CNPJ', 'Email', 'Telefone', 'Chave Aleatória', 'Celular'], required: true }, pixKey: { type: String, required: true }, couponCode: { type: String }, status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }, payoutHistory: [{ date: { type: Date, default: Date.now }, amountInCents: { type: Number, required: true, min: 0 }, receiptUrl: String, }] }, { timestamps: true });
 const PesoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, registros: [{ peso: Number, data: Date, fotoUrl: String, medidas: { pescoco: Number, torax: Number, cintura: Number, abdomen: Number, quadril: Number, bracoDireito: Number, bracoEsquerdo: Number, antebracoDireito: Number, antebracoEsquerdo: Number, coxaDireita: Number, coxaEsquerda: Number, panturrilhaDireita: Number, panturrilhaEsquerda: Number } }] }, { timestamps: true });
 const GastoSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true }, registros: [{ descricao: { type: String, required: true }, valor: { type: Number, required: true }, data: { type: Date, default: Date.now }, categoria: { type: String, default: 'Outros' } }] });
-const ExamsSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, examEntries: [{ name: { type: String, required: true }, unit: { type: String, required: true }, history: [{ date: { type: Date, required: true }, value: { type: Number, required: true }, notes: String }] }] }, { timestamps: true });
+const ExamsSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    examEntries: [{
+        name: { type: String, required: true },
+        unit: { type: String, required: true },
+        // NOVIDADE: Campos para os valores de referência
+        refMin: { type: Number },
+        refMax: { type: Number },
+        history: [{
+            date: { type: Date, required: true },
+            value: { type: Number, required: true },
+            notes: String
+        }]
+    }]
+}, { timestamps: true });
 const ChecklistSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, preOp: [{ descricao: String, concluido: Boolean }], posOp: [{ descricao: String, concluido: Boolean }] });
-const ConsultaSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, consultas: [{ especialidade: String, data: Date, local: String, notas: String, status: String }] });
+const ConsultaSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    consultas: [{
+        especialidade: String,
+        data: Date,
+        local: String,
+        notas: String,
+        status: { type: String, enum: ['Agendado', 'Realizado', 'Cancelado'], default: 'Agendado' }
+    }]
+});
 const DailyLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, date: String, waterConsumed: { type: Number, default: 0 }, proteinConsumed: { type: Number, default: 0 } });
 const MedicationSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, medicamentos: [{ nome: String, dosagem: String, quantidade: Number, unidade: String, vezesAoDia: Number }], historico: { type: Map, of: Map, default: {} } });
 const FoodLogSchema = new mongoose.Schema({ userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, date: String, refeicoes: { cafeDaManha: [mongoose.Schema.Types.Mixed], almoco: [mongoose.Schema.Types.Mixed], jantar: [mongoose.Schema.Types.Mixed], lanches: [mongoose.Schema.Types.Mixed] } });
@@ -840,31 +862,18 @@ app.get('/api/consultas', autenticar, async (req, res) => {
 
 app.post('/api/consultas', autenticar, async (req, res) => {
     try {
-        const { especialidade, data, local, notas } = req.body;
-        
-        if (!especialidade || !data) {
-            return res.status(400).json({ 
-                message: 'Especialidade e data são obrigatórios.' 
-            });
-        }
-
+        const { especialidade, data, local, notas, status } = req.body;
         const novaConsulta = { 
-            especialidade, 
-            data: new Date(data), 
-            local: local || '', 
-            notas: notas || '', 
-            status: 'Agendado' 
+            especialidade, data: new Date(data), local, notas, 
+            status: status || 'Agendado' 
         };
-
         const result = await Consulta.findOneAndUpdate(
             { userId: req.userId },
             { $push: { consultas: novaConsulta } },
             { new: true, upsert: true }
         );
-
         res.status(201).json(result.consultas[result.consultas.length - 1]);
     } catch (error) {
-        console.error('Erro ao agendar consulta:', error);
         res.status(500).json({ message: 'Erro ao agendar consulta.' });
     }
 });
@@ -872,36 +881,25 @@ app.post('/api/consultas', autenticar, async (req, res) => {
 app.put('/api/consultas/:consultaId', autenticar, async (req, res) => {
     try {
         const { consultaId } = req.params;
-        const { especialidade, data, local, notas, status } = req.body;
-
-        if (!consultaId) {
-            return res.status(400).json({ message: 'ID da consulta é obrigatório.' });
-        }
-
-        const consultaDoc = await Consulta.findOne({ 
-            "consultas._id": consultaId, 
-            userId: req.userId 
-        });
-
-        if (!consultaDoc) {
-            return res.status(404).json({ message: "Consulta não encontrada." });
-        }
+        const updates = req.body;
+        const consultaDoc = await Consulta.findOne({ userId: req.userId });
+        if (!consultaDoc) return res.status(404).json({ message: "Nenhum histórico encontrado." });
 
         const consulta = consultaDoc.consultas.id(consultaId);
-        if (!consulta) {
-            return res.status(404).json({ message: "Consulta não encontrada." });
-        }
+        if (!consulta) return res.status(404).json({ message: "Consulta não encontrada." });
 
-        if (especialidade) consulta.especialidade = especialidade;
-        if (data) consulta.data = new Date(data);
-        if (local !== undefined) consulta.local = local;
-        if (notas !== undefined) consulta.notas = notas;
-        if (status) consulta.status = status;
+        // Atualiza os campos dinamicamente
+        Object.keys(updates).forEach(key => {
+            if (key === 'data') {
+                consulta[key] = new Date(updates[key]);
+            } else {
+                consulta[key] = updates[key];
+            }
+        });
 
         await consultaDoc.save();
         res.json(consulta);
     } catch (error) {
-        console.error('Erro ao atualizar consulta:', error);
         res.status(500).json({ message: "Erro ao editar consulta." });
     }
 });
@@ -1811,22 +1809,25 @@ app.post('/api/cron/send-weigh-in-reminders', async (req, res) => {
 app.get('/api/gastos', autenticar, async (req, res) => {
     try {
         const { year, month } = req.query;
-        const startDate = new Date(year, month - 1, 1);
-        const endDate = new Date(year, month, 0, 23, 59, 59);
-
         const gastoDoc = await Gasto.findOne({ userId: req.userId });
 
         if (!gastoDoc) {
-            return res.json([]); // Retorna um array vazio se o usuário ainda não tiver nenhum gasto
+            return res.json([]); // Retorna um array vazio se o usuário não tiver nenhum gasto
         }
 
-        // Filtra os registros dentro do array para o mês selecionado
-        const gastosDoMes = gastoDoc.registros.filter(r => {
-            const dataRegistro = new Date(r.data);
-            return dataRegistro >= startDate && dataRegistro <= endDate;
-        });
-
-        res.json(gastosDoMes.sort((a, b) => new Date(b.data) - new Date(a.data)));
+        // Se o ano e o mês forem fornecidos, filtra. Senão, retorna tudo.
+        if (year && month) {
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0, 23, 59, 59);
+            const gastosDoMes = gastoDoc.registros.filter(r => {
+                const dataRegistro = new Date(r.data);
+                return dataRegistro >= startDate && dataRegistro <= endDate;
+            });
+            return res.json(gastosDoMes.sort((a, b) => new Date(b.data) - new Date(a.data)));
+        }
+        
+        // Se não houver filtro, retorna todos os registros
+        res.json(gastoDoc.registros.sort((a, b) => new Date(b.data) - new Date(a.data)));
 
     } catch (error) {
         console.error("Erro ao buscar gastos:", error);
@@ -2249,7 +2250,6 @@ app.get('/api/exams', autenticar, async (req, res) => {
     try {
         const exams = await Exams.findOne({ userId: req.userId });
         if (!exams) {
-            // Se por algum motivo não existir, cria um documento vazio
             const newExamsDoc = new Exams({ userId: req.userId, examEntries: [] });
             await newExamsDoc.save();
             return res.json(newExamsDoc);
@@ -2278,10 +2278,17 @@ app.get('/api/exames', autenticar, async (req, res) => {
 // Adiciona um novo TIPO de exame à lista do usuário
 app.post('/api/exams/type', autenticar, async (req, res) => {
     try {
-        const { name, unit } = req.body;
+        const { name, unit, refMin, refMax } = req.body;
+        const newExamEntry = {
+            name,
+            unit,
+            refMin: refMin || null,
+            refMax: refMax || null,
+            history: []
+        };
         const exams = await Exams.findOneAndUpdate(
             { userId: req.userId },
-            { $push: { examEntries: { name, unit, history: [] } } },
+            { $push: { examEntries: newExamEntry } },
             { new: true, upsert: true }
         );
         res.status(201).json(exams.examEntries[exams.examEntries.length - 1]);
