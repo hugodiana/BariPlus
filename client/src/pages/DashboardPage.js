@@ -60,7 +60,7 @@ const DashboardPage = () => {
         setLoading(true);
         try {
             const today = new Date().toISOString().split('T')[0];
-            const endpoints = ['me', `food-diary/${today}`, 'checklist', 'consultas', 'medication', 'pesos', 'dailylog/today'];
+            const endpoints = ['me', `food-diary/${today}`, 'checklist', 'consultas', 'medication', 'pesos', 'dailylog/today', 'gastos', 'exames'];
             const responses = await Promise.all(
                 endpoints.map(endpoint => fetch(`${apiUrl}/api/${endpoint}`, { headers: { 'Authorization': `Bearer ${token}` } }))
             );
@@ -219,7 +219,6 @@ const DashboardPage = () => {
             })
             .reduce((total, gasto) => total + gasto.valor, 0);
     }, [gastos]);
-
 
     const ULTIMOS_EXAMES = useMemo(() => {
         if (!exames.examEntries || exames.examEntries.length === 0) return [];

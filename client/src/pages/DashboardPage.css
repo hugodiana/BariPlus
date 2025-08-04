@@ -1,5 +1,5 @@
 /* --- Estilos Gerais do Painel --- */
-..dashboard-welcome { font-size: 1.8rem; margin-bottom: 1.5rem; font-weight: 700; color: var(--text-strong); }
+.dashboard-welcome { font-size: 1.8rem; margin-bottom: 1.5rem; font-weight: 700; color: var(--text-strong); }
 
 /* Grid para os cards de resumo (KPIs) */
 .summary-stats-grid {
