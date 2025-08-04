@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { format, differenceInDays, parseISO } from 'date-fns';
+import { format, differenceInDays, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { Doughnut } from 'react-chartjs-2';
@@ -46,6 +46,8 @@ const DashboardPage = () => {
     const [consultas, setConsultas] = useState([]);
     const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
     const [foodLog, setFoodLog] = useState(null);
+    const [gastos, setGastos] = useState([]);
+    const [exames, setExames] = useState({ examEntries: [] });
     const [loading, setLoading] = useState(true);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
@@ -206,6 +208,31 @@ const DashboardPage = () => {
         return totals;
     }, [foodLog]);
 
+    const GASTO_MENSAL = useMemo(() => {
+        const hoje = new Date();
+        const inicioDoMes = startOfMonth(hoje);
+        const fimDoMes = endOfMonth(hoje);
+        return gastos
+            .filter(gasto => {
+                const dataGasto = parseISO(gasto.data);
+                return dataGasto >= inicioDoMes && dataGasto <= fimDoMes;
+            })
+            .reduce((total, gasto) => total + gasto.valor, 0);
+    }, [gastos]);
+
+
+    const ULTIMOS_EXAMES = useMemo(() => {
+        if (!exames.examEntries || exames.examEntries.length === 0) return [];
+        const todosResultados = exames.examEntries.flatMap(entry => 
+            entry.history.map(h => ({
+                ...h,
+                nomeExame: entry.name,
+                unidade: entry.unit,
+            }))
+        );
+        return todosResultados.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+    }, [exames]);
+
     const DADOS_GRAFICO_NUTRI = {
         labels: ['Proteínas (g)', 'Carboidratos (g)', 'Gorduras (g)'],
         datasets: [{
@@ -231,6 +258,7 @@ const DashboardPage = () => {
                 <Card className="stat-item"><h3>Peso Perdido</h3><p>{pesoPerdido.toFixed(1)} kg</p></Card>
                 <Card className="stat-item"><h3>IMC Atual</h3><p>{imc.toFixed(1)}</p></Card>
                 <Card className="stat-item"><h3>Calorias Hoje</h3><p>{TOTAIS_NUTRICIONAIS.calories.toFixed(0)}</p></Card>
+                <Card className="stat-item"><h3>Gastos do Mês</h3><p>{GASTO_MENSAL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p></Card>
             </div>
 
             <div className="dashboard-grid">
@@ -280,6 +308,15 @@ const DashboardPage = () => {
                         <ul className="summary-list">{proximasConsultas.map(consulta => (<li key={consulta._id}><strong>{consulta.especialidade}</strong> - {format(parseISO(consulta.data), "dd/MM/yyyy 'às' p", { locale: ptBR })}</li>))}</ul>
                     ) : (
                         <div className="summary-empty"><p>Nenhuma consulta agendada.</p><Link to="/consultas" className="summary-action-btn">Agendar Consulta</Link></div>
+                    )}
+                </Card>
+
+                <Card className="dashboard-card summary-card">
+                    <h3>Últimos Exames</h3>
+                    {ULTIMOS_EXAMES.length > 0 ? (
+                        <ul className="summary-list">{ULTIMOS_EXAMES.map(exame => (<li key={exame._id}><strong>{exame.nomeExame}:</strong> {exame.value} {exame.unidade}</li>))}</ul>
+                    ) : (
+                        <div className="summary-empty"><p>Nenhum exame registrado.</p><Link to="/exames" className="summary-action-btn">Adicionar Exame</Link></div>
                     )}
                 </Card>
             </div>
