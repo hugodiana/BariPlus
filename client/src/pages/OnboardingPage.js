@@ -16,7 +16,6 @@ const OnboardingPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-        // Validação final antes de enviar
         if (!altura || !pesoInicial) {
             return toast.error("Por favor, preencha a sua altura e peso inicial.");
         }
@@ -33,7 +32,7 @@ const OnboardingPage = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message || "Erro ao guardar os dados.");
             
-            window.location.href = '/'; // Redireciona para o painel
+            window.location.href = '/';
         } catch (error) {
             toast.error(error.message);
         }
@@ -46,11 +45,13 @@ const OnboardingPage = () => {
                     <div className="form-group">
                         <label>Você já realizou a cirurgia bariátrica?</label>
                         <div className="radio-group">
+                            {/* ✅ EMOJI REMOVIDO */}
                             <button type="button" className={fezCirurgia === 'sim' ? 'active' : ''} onClick={() => { setFezCirurgia('sim'); setStep(3); }}>
-                                <span className="radio-icon">✅</span> Sim, já fiz
+                                Sim, já fiz
                             </button>
+                            {/* ✅ EMOJI REMOVIDO */}
                             <button type="button" className={fezCirurgia === 'nao' ? 'active' : ''} onClick={() => { setFezCirurgia('nao'); setStep(2); }}>
-                                <span className="radio-icon">❌</span> Ainda não
+                                Ainda não
                             </button>
                         </div>
                     </div>
@@ -60,11 +61,13 @@ const OnboardingPage = () => {
                     <div className="form-group">
                         <label>Já tem uma data marcada?</label>
                         <div className="radio-group">
+                            {/* ✅ EMOJI REMOVIDO */}
                             <button type="button" className={temDataMarcada === 'sim' ? 'active' : ''} onClick={() => { setTemDataMarcada('sim'); setStep(3); }}>
-                                <span className="radio-icon">🗓️</span> Sim, já tenho
+                                Sim, já tenho
                             </button>
+                            {/* ✅ EMOJI REMOVIDO */}
                             <button type="button" className={temDataMarcada === 'nao' ? 'active' : ''} onClick={() => { setTemDataMarcada('nao'); setStep(3); }}>
-                                <span className="radio-icon">🤔</span> Ainda não
+                                Ainda não
                             </button>
                         </div>
                     </div>
