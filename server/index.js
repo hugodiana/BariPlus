@@ -12,6 +12,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { Resend } = require('resend');
 const tacoRoutes = require('./routes/tacoRoutes');
+
 const app = express();
 app.set('trust proxy', 1);
 
@@ -256,7 +257,7 @@ app.get('/', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' });
 });
 
-app.use('/api/taco', autenticar, tacoRoutes); 
+app.use('/api/taco', autenticar, tacoRoutes);
 
 app.post('/api/kiwify-webhook', async (req, res) => {
     try {
