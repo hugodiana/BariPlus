@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { format, differenceInDays, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
-import { Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2'; // ✅ Doughnut importado aqui
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
 
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
@@ -78,9 +78,9 @@ const DashboardPage = () => {
             setUsuario(dadosUsuario);
             setFoodLog(dadosFoodLog);
             setChecklist(dadosChecklist);
-            setConsultas(dadosConsultas);
+            setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setMedicationData(dadosMedication);
-            setPesos(dadosPesos);
+            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setDailyLog(dadosLog);
             setGastos(dadosGastos);
             setExames(dadosExames);
@@ -188,6 +188,7 @@ const DashboardPage = () => {
         return `Bem-vindo(a) de volta, ${nome}!`;
     };
 
+    // ✅ CORREÇÃO: Todos os useMemo foram movidos para antes dos retornos condicionais.
     const { pesoPerdido, imc } = useMemo(() => {
         if (!usuario?.detalhesCirurgia || !pesos.length) {
             return { pesoPerdido: 0, imc: 0 };

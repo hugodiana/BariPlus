@@ -7,13 +7,12 @@ import LoadingSpinner from '../components/LoadingSpinner';
 const PaymentStatusPage = () => {
     const navigate = useNavigate();
 
-    // ✅ NOVIDADE: Redireciona o usuário para o login após 5 segundos
+    // Redireciona o usuário para o login após 5 segundos
     useEffect(() => {
         const timer = setTimeout(() => {
             navigate('/login');
         }, 5000); // 5 segundos
 
-        // Limpa o temporizador se o componente for desmontado
         return () => clearTimeout(timer);
     }, [navigate]);
 
@@ -25,17 +24,17 @@ const PaymentStatusPage = () => {
                 </div>
                 <h1 className="status-title">Pagamento Aprovado!</h1>
                 <p className="status-message">
-                    Obrigado por se juntar ao BariPlus! O seu acesso está a ser liberado.
+                    Obrigado por se juntar ao BariPlus! O seu acesso foi liberado.
                 </p>
                 <p className="status-next-step">
-                    Enviámos um e-mail para você com um link para **criar a sua senha** e aceder à sua nova conta. Por favor, verifique a sua caixa de entrada e spam.
+                    Enviámos um e-mail de boas-vindas para você. Agora, basta fazer o login com a sua conta.
                 </p>
                 <div className="redirect-notice">
                     <LoadingSpinner small />
                     <p>A redirecionar para a página de login em 5 segundos...</p>
                 </div>
                 <Link to="/login" className="status-button">
-                    Ir para o Login Agora
+                    Fazer Login Agora
                 </Link>
             </Card>
         </div>

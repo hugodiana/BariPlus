@@ -1,6 +1,8 @@
 const express = require('express');
 const { request, gql } = require('graphql-request');
 const router = express.Router();
+const autenticar = require('../middlewares/autenticar');
+
 
 const TACO_API_ENDPOINT = 'https://taco-api.netlify.app/graphql';
 
