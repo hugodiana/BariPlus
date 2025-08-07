@@ -156,7 +156,7 @@ app.use('/api', examsRoutes);
 app.use('/api', gastoRoutes);
 app.use('/api', conquistasRoutes);
 app.use('/api', adminRoutes); // As rotas de admin já estão protegidas internamente
-app.use('/api/taco', autenticar, tacoRoutes);
+app.use('/api/taco', tacoRoutes);
 
 // --- 4. INICIALIZAÇÃO DO SERVIDOR ---
 const PORT = process.env.PORT || 3001;

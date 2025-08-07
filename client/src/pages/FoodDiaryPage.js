@@ -5,7 +5,7 @@ import './FoodDiaryPage.css';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
-import BuscaAlimentos from '../components/BuscaAlimentos'; // Importamos o componente de busca
+import BuscaAlimentos from '../components/BuscaAlimentos';
 
 const FoodDiaryPage = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -36,9 +36,7 @@ const FoodDiaryPage = () => {
         }
     }, [token, apiUrl]);
 
-    useEffect(() => {
-        fetchDiary(selectedDate);
-    }, [selectedDate, fetchDiary]);
+    useEffect(() => { fetchDiary(selectedDate); }, [selectedDate, fetchDiary]);
 
     const handleOpenModal = (mealType) => {
         setMealTypeToLog(mealType);
