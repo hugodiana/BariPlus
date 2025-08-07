@@ -91,7 +91,7 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
     );
 };
 
-const ExamsPage = () => {
+const ExamsPage = ({ onDataUpdate: onDataUpdateProp }) => {
     const [examsData, setExamsData] = useState({ examEntries: [] });
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -290,7 +290,7 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
         e.preventDefault();
         const examData = selectedPredefined === 'custom' 
             ? { name: customName, unit: customUnit, refMin: parseFloat(refMin) || null, refMax: parseFloat(refMax) || null }
-            : predefinedExams.find(ex => ex.name === selectedPredefined);
+            : { ...predefinedExams.find(ex => ex.name === selectedPredefined), refMin: parseFloat(refMin) || null, refMax: parseFloat(refMax) || null };
         
         if (!examData || !examData.name || !examData.unit) return toast.error("Por favor, preencha os dados do exame.");
         if (existingExams.some(ex => ex.name.toLowerCase() === examData.name.toLowerCase())) return toast.warn("Este tipo de exame já foi adicionado.");
@@ -342,16 +342,15 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
 };
 
 const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
-    const [date, setDate] = useState(resultToEdit ? format(parseISO(resultToEdit.date), 'yyyy-MM-dd') : new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(resultToEdit ? format(parseISO(resultToEdit.date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
     const [value, setValue] = useState(resultToEdit ? resultToEdit.value : '');
     const [notes, setNotes] = useState(resultToEdit ? resultToEdit.notes : '');
-
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        const resultData = { date, value: parseFloat(value), notes };
+        const resultData = { date: new Date(date).toISOString(), value: parseFloat(value), notes };
         const isEditing = !!resultToEdit;
         const url = isEditing 
             ? `${apiUrl}/api/exams/result/${examEntry._id}/${resultToEdit._id}`

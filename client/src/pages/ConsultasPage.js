@@ -17,7 +17,6 @@ const ConsultasPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [consultaEmEdicao, setConsultaEmEdicao] = useState(null);
 
-    // Unificamos o estado do formulário
     const [formState, setFormState] = useState({
         especialidade: '', data: '', local: '', notas: '', status: 'Agendado'
     });
@@ -69,12 +68,14 @@ const ConsultasPage = () => {
         const isEditing = !!consultaEmEdicao;
         const url = isEditing ? `${apiUrl}/api/consultas/${consultaEmEdicao._id}` : `${apiUrl}/api/consultas`;
         const method = isEditing ? 'PUT' : 'POST';
+        // ✅ CORREÇÃO: Garante que a data local é convertida para o formato universal (ISO)
+        const dadosConsulta = { ...formState, data: new Date(formState.data).toISOString() };
 
         try {
             const res = await fetch(url, {
                 method: method,
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(formState)
+                body: JSON.stringify(dadosConsulta) // ✅ Envia os dados corrigidos
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Falha ao salvar consulta');
@@ -110,7 +111,7 @@ const ConsultasPage = () => {
     const hoje = new Date();
     const proximasConsultas = consultas.filter(c => parseISO(c.data) >= hoje).sort((a, b) => new Date(a.data) - new Date(b.data));
     const consultasAnteriores = consultas.filter(c => parseISO(c.data) < hoje).sort((a, b) => new Date(b.data) - new Date(a.data));
-    const diasComConsulta = consultas.map(c => new Date(c.data));
+    const diasComConsulta = consultas.map(c => parseISO(c.data));
 
     return (
         <div className="page-container">

@@ -20,6 +20,7 @@ exports.getConsultas = async (req, res) => {
 exports.addConsulta = async (req, res) => {
     try {
         const { especialidade, data, local, notas, status } = req.body;
+        
         if (!especialidade || !data) {
             return res.status(400).json({ message: 'Especialidade e data são obrigatórios.' });
         }

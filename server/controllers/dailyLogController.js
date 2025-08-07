@@ -1,4 +1,5 @@
 const DailyLog = require('../models/dailyLogModel');
+const conquistasService = require('../services/conquistasService');
 
 // --- Funções do Controller ---
 
@@ -30,7 +31,7 @@ exports.trackConsumption = async (req, res) => {
     try {
         const { type, amount } = req.body;
         
-        if (!type || !['water', 'protein'].includes(type) || !amount) {
+        if (!type || !['water', 'protein'].includes(type) || amount == null) {
             return res.status(400).json({ message: 'Tipo (water/protein) e quantidade são obrigatórios.' });
         }
 
@@ -48,9 +49,10 @@ exports.trackConsumption = async (req, res) => {
             { new: true, upsert: true }
         );
 
+        // Verifica se o usuário ganhou alguma conquista
         const novasConquistas = await conquistasService.verificarConquistas(req.userId);
 
-        res.json(updatedLog);
+        res.json({ updatedLog, novasConquistas });
     } catch (error) {
         console.error('Erro ao registrar consumo:', error);
         res.status(500).json({ message: "Erro ao registrar consumo." });
