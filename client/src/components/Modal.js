@@ -1,37 +1,89 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import './Modal.css';
 
-const Modal = ({ isOpen, onClose, children }) => {
+const Modal = ({ isOpen, onClose, children, ariaLabel = "Modal" }) => {
+    const modalRef = useRef(null); // Adicionando a referência
+
+    // Efeito para lidar com o teclado e foco
     useEffect(() => {
-        const handleEsc = (e) => {
-            if (e.key === 'Escape') onClose();
+        if (!isOpen) return;
+
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+            // Mantém o foco dentro do modal
+            if (e.key === 'Tab') {
+                const focusableElements = modalRef.current?.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                if (!focusableElements?.length) return;
+
+                const firstElement = focusableElements[0];
+                const lastElement = focusableElements[focusableElements.length - 1];
+
+                if (e.shiftKey && document.activeElement === firstElement) {
+                    lastElement.focus();
+                    e.preventDefault();
+                } else if (!e.shiftKey && document.activeElement === lastElement) {
+                    firstElement.focus();
+                    e.preventDefault();
+                }
+            }
         };
-        if (isOpen) {
-            document.addEventListener('keydown', handleEsc);
-        }
-        return () => document.removeEventListener('keydown', handleEsc);
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
-    if (!isOpen) return null;
+    // Efeito para desativar scroll da página quando modal está aberto
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.paddingRight = '15px'; // Compensa a barra de rolagem desaparecida
+            
+            // Focar no modal quando abre
+            if (modalRef.current) {
+                modalRef.current.focus();
+            }
+        } else {
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+    }, [isOpen]);
 
-    return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div
-                className="modal-content"
+    if (!isOpen) {
+        return null;
+    }
+
+    return ReactDOM.createPortal(
+        <div 
+            className="modal-backdrop" 
+            onClick={onClose}
+            role="dialog"
+            aria-modal="true"
+            aria-label={ariaLabel}
+        >
+            <div 
+                className="modal-content-container" 
                 onClick={(e) => e.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
+                ref={modalRef}
+                tabIndex={-1} // Permite que o modal receba foco
             >
-                <button
-                    className="modal-close-btn"
+                <button 
+                    className="modal-close-btn" 
                     onClick={onClose}
                     aria-label="Fechar modal"
                 >
-                    &times;
+                    <span aria-hidden="true">×</span>
                 </button>
-                {children}
+                <div className="modal-content">
+                    {children}
+                </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

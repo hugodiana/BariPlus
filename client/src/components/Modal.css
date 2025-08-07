@@ -1,47 +1,117 @@
-.modal-overlay {
+.modal-backdrop {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    padding: var(--space-md);
-    animation: fadeInModal 0.3s ease-out;
+    animation: fadeIn 0.3s ease-out;
+    backdrop-filter: blur(3px); /* Efeito de desfoque no fundo */
+}
+
+.modal-content-container {
+    background-color: var(--background-white);
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    position: relative;
+    animation: slideIn 0.3s ease-out;
+    border: 1px solid var(--border-color);
 }
 
 .modal-content {
-    background-color: var(--background-white, #fff);
-    border-radius: var(--border-radius, 12px);
-    box-shadow: var(--shadow-md, 0 4px 12px rgba(0, 0, 0, 0.15));
-    padding: var(--space-xl, 24px);
-    position: relative;
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: scaleIn 0.3s ease-out;
+    outline: none; /* Remove outline do foco, já que gerenciamos manualmente */
 }
 
 .modal-close-btn {
     position: absolute;
-    top: var(--space-md, 12px);
-    right: var(--space-md, 12px);
+    top: 15px;
+    right: 15px;
     background: none;
     border: none;
     font-size: 1.8rem;
     cursor: pointer;
-    color: var(--text-light, #888);
+    color: var(--text-secondary);
+    padding: 0.5rem;
     line-height: 1;
+    transition: color 0.2s ease;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-@keyframes scaleIn {
-    from {
-        opacity: 0;
-        transform: scale(0.95);
+.modal-close-btn:hover, 
+.modal-close-btn:focus {
+    color: var(--error-red);
+    background-color: var(--background-light);
+}
+
+/* Animações */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .modal-content-container {
+        padding: 1.5rem;
+        width: 95%;
+        max-height: 85vh;
     }
-    to {
-        opacity: 1;
-        transform: scale(1);
+    
+    .modal-close-btn {
+        top: 10px;
+        right: 10px;
+        width: 35px;
+        height: 35px;
+        font-size: 1.5rem;
     }
+}
+
+@media (max-width: 480px) {
+    .modal-content-container {
+        padding: 1.2rem;
+        border-radius: 8px;
+    }
+    
+    .modal-close-btn {
+        top: 8px;
+        right: 8px;
+    }
+}
+
+/* Scrollbar personalizada para o modal */
+.modal-content-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content-container::-webkit-scrollbar-track {
+    background: var(--background-light);
+    border-radius: 10px;
+}
+
+.modal-content-container::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border-radius: 10px;
+}
+
+.modal-content-container::-webkit-scrollbar-thumb:hover {
+    background: var(--text-primary);
 }

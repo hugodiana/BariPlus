@@ -1,302 +1,314 @@
-/* Estilos base */
-.page-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-    font-family: 'Inter', sans-serif;
-}
-
-.page-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-
-.page-header h1 {
-    color: #2c3e50;
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.page-header p {
-    color: #7f8c8d;
-    font-size: 1rem;
-}
-
-/* Conteúdo principal */
-.medication-content {
-    background-color: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    padding: 1.5rem;
-    margin-top: 1rem;
-}
-
+/* Estilos base que se aplicam a todos os dispositivos */
 .medication-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #eef0ef;
+    border-bottom: 1px solid var(--border-color);
     padding-bottom: 1rem;
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
 }
 
-.medication-header h3 {
-    margin: 0;
-    color: #37715b;
-    font-size: 1.25rem;
-}
-
-/* Botões */
-.add-btn {
-    background-color: #37715b;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 0.5rem 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s ease;
-}
-
-.add-btn:hover {
-    background-color: #2a5a48;
-    transform: translateY(-1px);
-}
-
-.add-btn span {
+.medication-header h3 { 
+    margin: 0; 
     font-size: 1.2rem;
 }
 
-.submit-btn {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: #37715b;
+.add-btn {
+    background-color: var(--action-blue);
     color: white;
     border: none;
-    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    border-radius: var(--border-radius);
     font-weight: 600;
     cursor: pointer;
-    margin-top: 1rem;
-    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    white-space: nowrap;
 }
 
-.submit-btn:hover {
-    background-color: #2a5a48;
-}
-
-/* Lista de medicamentos */
 .medication-list {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1rem;
 }
 
-.empty-state {
-    text-align: center;
-    padding: 2rem;
-    color: #7f8c8d;
-}
-
-.empty-state p {
-    margin-bottom: 1rem;
-}
-
-/* Item de medicamento */
 .med-item {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 1rem;
     padding: 1rem;
     border-radius: 8px;
-    background-color: #f8faf9;
-    border: 1px solid #eef0ef;
-    transition: all 0.2s ease;
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+    position: relative;
 }
 
-.med-item:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.med-item.status-inativo {
+    opacity: 0.6;
 }
 
-.med-info {
-    flex-grow: 1;
-    min-width: 0;
+.med-info { 
+    flex-grow: 1; 
+    width: 100%;
 }
 
-.med-info strong {
-    display: block;
-    color: #2c3e50;
-    font-size: 1rem;
-    margin-bottom: 0.25rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+.med-info strong { 
+    display: block; 
+    font-size: 1rem; 
+    margin-bottom: 0.3rem;
 }
 
-.med-info span {
-    display: block;
-    color: #7f8c8d;
-    font-size: 0.875rem;
+.med-info span { 
+    display: block; 
+    font-size: 0.85rem; 
+    color: var(--text-secondary); 
+    margin-bottom: 0.5rem;
 }
 
-/* Checkboxes diários */
+.med-horarios {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.horario-tag {
+    background-color: var(--primary-light);
+    color: var(--primary-green);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
 .daily-med-checks {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .med-checkbox-daily {
-    width: 32px;
-    height: 32px;
-    border: 2px solid #dfe6e9;
-    border-radius: 50%;
-    background-color: white;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: none;
     cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
-}
-
-.med-checkbox-daily:hover {
-    border-color: #37715b;
 }
 
 .med-checkbox-daily.taken {
-    background-color: #28a745;
-    border-color: #28a745;
+    background-color: var(--primary-green);
     color: white;
+    border-color: var(--primary-green);
 }
 
-/* Botão de deletar */
-.delete-med-btn {
-    background: none;
-    border: none;
-    color: #e74c3c;
-    font-size: 1.5rem;
-    cursor: pointer;
-    opacity: 0.7;
-    padding: 0.5rem;
-    line-height: 1;
-    transition: all 0.2s ease;
-}
-
-.delete-med-btn:hover {
-    opacity: 1;
-    transform: scale(1.1);
-}
-
-/* Formulário */
-.modal-content {
-    padding: 1rem;
-}
-
-.form-error {
-    color: #e74c3c;
-    background-color: #fdecea;
-    padding: 0.75rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-    font-size: 0.875rem;
-}
-
-.medication-form {
+.med-actions {
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.form-group {
-    margin-bottom: 0.5rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: #2c3e50;
-    font-size: 0.875rem;
-}
-
-.form-group input,
-.form-group select {
+    flex-direction: row;
+    gap: 0.5rem;
     width: 100%;
-    padding: 0.75rem;
-    border: 1px solid #dfe6e9;
+}
+
+.med-actions .action-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    padding: 0.4rem 0.8rem;
     border-radius: 6px;
-    font-size: 1rem;
-    transition: all 0.2s ease;
-}
-
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #37715b;
-    box-shadow: 0 0 0 2px rgba(55, 113, 91, 0.2);
-}
-
-.form-row {
-    display: flex;
-    gap: 1rem;
-}
-
-.form-row .form-group {
+    cursor: pointer;
+    font-size: 0.8rem;
     flex: 1;
+    text-align: center;
 }
 
-/* Loading */
-.loading-container {
-    display: flex;
+.archive-btn {
+    border-color: var(--action-blue);
+    color: var(--action-blue);
+}
+
+.delete-btn {
+    border-color: var(--error-red);
+    color: var(--error-red);
+}
+
+.inactive-toggle {
+    text-align: center;
+    margin: 1.5rem 0;
+    color: var(--action-blue);
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0.8rem;
+    background-color: var(--background-light);
+    border-radius: 8px;
+}
+
+.empty-state { 
+    text-align: center; 
+    padding: 2rem; 
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* Formulário no Modal */
+.medication-form { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1rem; 
+}
+
+.form-row { 
+    display: flex; 
     flex-direction: column;
+    gap: 1rem; 
+}
+
+.form-group { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.form-group label { 
+    margin-bottom: 0.5rem; 
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.form-group input, 
+.form-group select { 
+    padding: 0.8rem; 
+    border: 1px solid var(--border-color); 
+    border-radius: 4px; 
+    font-size: 0.9rem;
+}
+
+.horario-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.horario-input-group input { 
+    flex-grow: 1; 
+    padding: 0.6rem;
+}
+
+.remove-horario-btn, 
+.add-horario-btn {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 300px;
-    gap: 1rem;
 }
 
-.loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 4px solid rgba(55, 113, 91, 0.2);
-    border-top-color: #37715b;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+.remove-horario-btn { 
+    background-color: #f2f2f2; 
+    width: 2rem;
+    height: 2rem;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
+.add-horario-btn {
+    width: 100%;
+    background-color: var(--primary-light);
+    color: var(--primary-green);
+    margin-top: 0.5rem;
+    padding: 0.6rem;
 }
 
-/* Responsividade */
-@media (max-width: 600px) {
-    .page-container {
-        padding: 1rem;
+.submit-btn {
+    padding: 0.8rem;
+    border: none;
+    border-radius: var(--border-radius);
+    background-color: var(--primary-green);
+    color: white;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-top: 0.5rem;
+}
+
+/* Media Queries para dispositivos maiores */
+@media (min-width: 768px) {
+    .med-item {
+        flex-direction: row;
+        align-items: center;
     }
     
-    .medication-content {
-        padding: 1rem;
+    .med-actions {
+        flex-direction: column;
+        width: auto;
     }
     
     .form-row {
+        flex-direction: row;
+    }
+    
+    .medication-header h3 { 
+        font-size: 1.3rem;
+    }
+    
+    .add-btn {
+        padding: 0.8rem 1.5rem;
+        font-size: 1rem;
+    }
+    
+    .med-info strong { 
+        font-size: 1.1rem; 
+    }
+    
+    .med-info span { 
+        font-size: 0.9rem;
+    }
+    
+    .horario-tag {
+        font-size: 0.8rem;
+    }
+    
+    .med-actions .action-btn {
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .form-group input, 
+    .form-group select { 
+        padding: 0.9rem; 
+    }
+    
+    .submit-btn {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+}
+
+/* Melhorias para telas muito pequenas (menos de 350px) */
+@media (max-width: 349px) {
+    .med-horarios {
+        gap: 0.3rem;
+    }
+    
+    .horario-tag {
+        padding: 0.15rem 0.4rem;
+        font-size: 0.7rem;
+    }
+    
+    .med-actions {
         flex-direction: column;
-        gap: 0.5rem;
     }
     
-    .med-item {
-        flex-wrap: wrap;
+    .med-actions .action-btn {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.75rem;
     }
     
-    .daily-med-checks {
-        order: 1;
-        width: 100%;
-        justify-content: center;
-        margin-top: 0.5rem;
-    }
-    
-    .delete-med-btn {
-        margin-left: auto;
+    .form-group input, 
+    .form-group select { 
+        padding: 0.6rem; 
     }
 }
