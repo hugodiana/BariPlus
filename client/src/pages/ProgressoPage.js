@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas';
@@ -104,7 +104,7 @@ const ProgressoPage = () => {
             const dataPesos = await resPesos.json();
             const dataMe = await resMe.json();
             
-            setHistorico(dataPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
+            setHistorico(dataPesos.sort((a, b) => new Date(b.data) - new Date(a.data)));
             setUsuario(dataMe);
         } catch (error) {
             toast.error(error.message);
@@ -124,17 +124,13 @@ const ProgressoPage = () => {
         setFormState(prev => ({ ...prev, foto: e.target.files[0] }));
     };
 
-    const resetForm = () => {
+    const handleOpenAddModal = () => {
+        setRegistroEmEdicao(null);
         setFormState({
-            peso: '', cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+            peso: '', data: new Date().toISOString().split('T')[0], cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
             bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
             coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
         });
-    };
-
-    const handleOpenAddModal = () => {
-        setRegistroEmEdicao(null);
-        resetForm();
         setIsModalOpen(true);
     };
 
@@ -142,6 +138,7 @@ const ProgressoPage = () => {
         setRegistroEmEdicao(registro);
         setFormState({
             peso: registro.peso || '',
+            data: format(parseISO(registro.data), 'yyyy-MM-dd'),
             cintura: registro.medidas?.cintura || '',
             quadril: registro.medidas?.quadril || '',
             pescoco: registro.medidas?.pescoco || '',
@@ -163,9 +160,21 @@ const ProgressoPage = () => {
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
         const formData = new FormData();
+        
+        // ✅ CORREÇÃO: Adiciona todos os campos exceto a foto e a data original
         Object.keys(formState).forEach(key => {
-            if (formState[key]) formData.append(key, formState[key]);
+            if (key !== 'foto' && key !== 'data' && formState[key]) {
+                formData.append(key, formState[key]);
+            }
         });
+
+        // Adiciona a data no formato correto
+        formData.append('data', new Date(formState.data).toISOString());
+        
+        // Adiciona a foto separadamente se ela existir
+        if (formState.foto) {
+            formData.append('foto', formState.foto);
+        }
 
         const isEditing = !!registroEmEdicao;
         const url = isEditing ? `${apiUrl}/api/pesos/${registroEmEdicao._id}` : `${apiUrl}/api/pesos`;
@@ -289,12 +298,15 @@ const ProgressoPage = () => {
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>{registroEmEdicao ? 'Editar Registro' : 'Novo Registro de Avaliação Física'}</h2>
                 <form onSubmit={handleSubmitProgresso} className="progresso-form">
-                    <label>Peso (kg) *</label>
-                    <input name="peso" type="number" step="0.1" value={formState.peso} onChange={handleInputChange} required />
-                    <hr/>
-                    <div className="form-group">
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label htmlFor="peso">Peso (kg) *</label>
+                            <input id="peso" name="peso" type="number" step="0.1" value={formState.peso} onChange={handleInputChange} required />
+                        </div>
+                        <div className="form-group">
                             <label htmlFor="data">Data do Registro</label>
-                        
+                            <input id="data" name="data" type="date" value={formState.data} onChange={handleInputChange} required />
+                        </div>
                     </div>
                     <h4>Circunferências (cm)</h4>
                     <div className="form-row"><div className="form-group"><label>Pescoço</label><input name="pescoco" type="number" step="0.1" value={formState.pescoco} onChange={handleInputChange} /></div><div className="form-group"><label>Tórax</label><input name="torax" type="number" step="0.1" value={formState.torax} onChange={handleInputChange} /></div></div>
