@@ -1,0 +1,29 @@
+.conquistas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+.conquista-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    background-color: var(--background-light);
+    border: 1px solid var(--border-color);
+}
+.conquista-item.bloqueada {
+    opacity: 0.5;
+}
+.conquista-icone {
+    font-size: 2.5rem;
+}
+.conquista-info h4 {
+    margin: 0 0 0.25rem 0;
+}
+.conquista-info p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin: 0;
+}

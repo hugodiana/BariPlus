@@ -48,6 +48,8 @@ exports.trackConsumption = async (req, res) => {
             { new: true, upsert: true }
         );
 
+        const novasConquistas = await conquistasService.verificarConquistas(req.userId);
+
         res.json(updatedLog);
     } catch (error) {
         console.error('Erro ao registrar consumo:', error);

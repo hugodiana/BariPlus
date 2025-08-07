@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { format, differenceInDays, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
-import { Doughnut } from 'react-chartjs-2'; // ✅ Doughnut importado aqui
+import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
 
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
@@ -106,9 +106,23 @@ const DashboardPage = () => {
                 body: JSON.stringify({ type, amount })
             });
             if (!response.ok) throw new Error('Falha ao registrar');
-            const updatedLog = await response.json();
-            setDailyLog(updatedLog);
+            
+            const data = await response.json();
+            setDailyLog(data.updatedLog);
             toast.success('Registro atualizado!');
+
+            if (data.novasConquistas && data.novasConquistas.length > 0) {
+                data.novasConquistas.forEach(conquista => {
+                    setTimeout(() => {
+                        toast.info(
+                            <div>
+                                <strong>🏆 Nova Conquista!</strong><br />
+                                {conquista.nome}
+                            </div>
+                        );
+                    }, 500); // Pequeno delay para a notificação aparecer depois
+                });
+            }
         } catch (error) {
             toast.error(error.message);
         }
@@ -188,7 +202,6 @@ const DashboardPage = () => {
         return `Bem-vindo(a) de volta, ${nome}!`;
     };
 
-    // ✅ CORREÇÃO: Todos os useMemo foram movidos para antes dos retornos condicionais.
     const { pesoPerdido, imc } = useMemo(() => {
         if (!usuario?.detalhesCirurgia || !pesos.length) {
             return { pesoPerdido: 0, imc: 0 };

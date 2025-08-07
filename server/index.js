@@ -23,6 +23,7 @@ const medicationRoutes = require('./routes/medicationRoutes');
 const examsRoutes = require('./routes/examsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const gastoRoutes = require('./routes/gastoRoutes');
+const conquistasRoutes = require('./routes/conquistasRoutes');
 const tacoRoutes = require('./routes/tacoRoutes');
 
 // ✅ IMPORTAÇÃO DOS MIDDLEWARES E MODELOS NECESSÁRIOS
@@ -153,6 +154,7 @@ app.use('/api', dailyLogRoutes);
 app.use('/api', medicationRoutes);
 app.use('/api', examsRoutes);
 app.use('/api', gastoRoutes);
+app.use('/api', conquistasRoutes);
 app.use('/api', adminRoutes); // As rotas de admin já estão protegidas internamente
 app.use('/api/taco', autenticar, tacoRoutes);
 

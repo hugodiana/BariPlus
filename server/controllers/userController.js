@@ -2,6 +2,7 @@ const User = require('../models/userModel');
 const Peso = require('../models/pesoModel');
 const bcrypt = require('bcryptjs');
 const admin = require('firebase-admin');
+const conquistasService = require('../services/conquistasService');
 
 // --- Funções do Controller ---
 
@@ -51,6 +52,8 @@ exports.onboarding = async (req, res) => {
             { $push: { registros: { peso: pesoNum, data: new Date() } } },
             { upsert: true }
         );
+
+        await conquistasService.verificarConquistas(req.userId);
 
         res.status(200).json({ message: 'Dados salvos com sucesso!' });
     } catch (error) {

@@ -9,7 +9,7 @@ const ChecklistPage = () => {
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [activeTab, setActiveTab] = useState('preOp');
     const [loading, setLoading] = useState(true);
-    const [itemLoading, setItemLoading] = useState(null); // ✅ NOVO: Para o feedback visual
+    const [itemLoading, setItemLoading] = useState(null);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [tarefaEmEdicao, setTarefaEmEdicao] = useState(null);
@@ -19,12 +19,17 @@ const ChecklistPage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchChecklist = useCallback(async () => {
+        setLoading(true); // Garante que o loading aparece ao trocar de aba
         try {
             const response = await fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (!response.ok) throw new Error("Erro ao buscar checklist.");
             const data = await response.json();
             setChecklist(data);
-        } catch (error) { toast.error("Erro ao buscar checklist."); } 
-        finally { setLoading(false); }
+        } catch (error) { 
+            toast.error(error.message); 
+        } finally { 
+            setLoading(false); 
+        }
     }, [token, apiUrl]);
 
     useEffect(() => { fetchChecklist(); }, [fetchChecklist]);
@@ -56,14 +61,14 @@ const ChecklistPage = () => {
             
             toast.success(`Tarefa ${isEditing ? 'editada' : 'adicionada'} com sucesso!`);
             setIsModalOpen(false);
-            fetchChecklist(); // Recarrega a lista completa
+            fetchChecklist();
         } catch (error) {
             toast.error(error.message);
         }
     };
 
     const handleToggleConcluido = async (item) => {
-        setItemLoading(item._id); // ✅ Ativa o loading para este item
+        setItemLoading(item._id);
         try {
             const res = await fetch(`${apiUrl}/api/checklist/${item._id}`, {
                 method: 'PUT',
@@ -72,21 +77,34 @@ const ChecklistPage = () => {
             });
             if (!res.ok) throw new Error("Falha ao atualizar tarefa.");
             
-            const itemAtualizado = await res.json();
+            const data = await res.json();
             setChecklist(prev => ({
                 ...prev,
-                [activeTab]: prev[activeTab].map(i => i._id === item._id ? itemAtualizado : i)
+                [activeTab]: prev[activeTab].map(i => i._id === item._id ? data.item : i)
             }));
+
+            if (data.novasConquistas && data.novasConquistas.length > 0) {
+                data.novasConquistas.forEach(conquista => {
+                    setTimeout(() => {
+                        toast.info(
+                            <div>
+                                <strong>🏆 Nova Conquista!</strong><br />
+                                {conquista.nome}
+                            </div>
+                        );
+                    }, 500);
+                });
+            }
         } catch (error) {
             toast.error(error.message);
         } finally {
-            setItemLoading(null); // ✅ Desativa o loading
+            setItemLoading(null);
         }
     };
     
     const handleApagarItem = async (itemId) => {
         if (!window.confirm("Tem a certeza que quer apagar esta tarefa?")) return;
-        setItemLoading(itemId); // ✅ Ativa o loading para este item
+        setItemLoading(itemId);
         try {
             const res = await fetch(`${apiUrl}/api/checklist/${itemId}?type=${activeTab}`, {
                 method: 'DELETE',
@@ -102,7 +120,7 @@ const ChecklistPage = () => {
         } catch (error) {
             toast.error(error.message);
         } finally {
-            setItemLoading(null); // ✅ Desativa o loading
+            setItemLoading(null);
         }
     };
 
@@ -127,7 +145,6 @@ const ChecklistPage = () => {
                 </div>
 
                 <div className="tab-content">
-                    {/* ✅ Barra de Progresso */}
                     {totalItens > 0 && (
                         <div className="progress-container">
                             <div className="progress-bar-background">
@@ -174,6 +191,7 @@ const ChecklistPage = () => {
                         onChange={(e) => setTextoDaTarefa(e.target.value)}
                         placeholder="Descrição da tarefa..."
                         required
+                        autoFocus
                     />
                     <button type="submit">{tarefaEmEdicao ? 'Salvar Alterações' : 'Adicionar Tarefa'}</button>
                 </form>

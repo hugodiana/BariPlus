@@ -1,6 +1,7 @@
 const Peso = require('../models/pesoModel');
 const User = require('../models/userModel');
 const { v2: cloudinary } = require('cloudinary');
+const conquistasService = require('../services/conquistasService');
 
 // --- Funções do Controller ---
 
@@ -73,6 +74,8 @@ exports.addPeso = async (req, res) => {
         // Após adicionar, recalcula e atualiza o peso atual do usuário
         const ultimoRegistro = pesoDoc.registros.sort((a, b) => new Date(b.data) - new Date(a.data))[0];
         await User.findByIdAndUpdate(req.userId, { $set: { "detalhesCirurgia.pesoAtual": ultimoRegistro.peso } });
+        const novasConquistas = await conquistasService.verificarConquistas(req.userId);
+
 
         res.status(201).json(pesoDoc.registros[pesoDoc.registros.length - 1]);
     } catch (error) {

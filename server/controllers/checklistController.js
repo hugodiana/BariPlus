@@ -65,6 +65,7 @@ exports.updateItem = async (req, res) => {
         if (concluido !== undefined) item.concluido = concluido;
 
         await checklistDoc.save();
+        const novasConquistas = await conquistasService.verificarConquistas(req.userId);
         res.json(item);
     } catch (error) {
         console.error('Erro ao atualizar item do checklist:', error);
