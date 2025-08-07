@@ -168,3 +168,32 @@ exports.sendTestNotification = async (req, res) => {
         res.status(500).json({ message: "Erro geral no servidor." });
     }
 };
+
+// ✅ NOVA FUNÇÃO: Atualizar as metas diárias
+exports.updateGoals = async (req, res) => {
+    try {
+        const { metaAguaDiaria, metaProteinaDiaria } = req.body;
+
+        const updateData = {};
+        if (metaAguaDiaria) updateData["detalhesCirurgia.metaAguaDiaria"] = metaAguaDiaria;
+        if (metaProteinaDiaria) updateData["detalhesCirurgia.metaProteinaDiaria"] = metaProteinaDiaria;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: "Nenhuma meta fornecida para atualização." });
+        }
+
+        const usuarioAtualizado = await User.findByIdAndUpdate(
+            req.userId,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        if (!usuarioAtualizado) {
+            return res.status(404).json({ message: "Usuário não encontrado." });
+        }
+        res.json(usuarioAtualizado);
+    } catch (error) {
+        console.error("Erro ao atualizar metas:", error);
+        res.status(500).json({ message: 'Erro ao atualizar as metas.' });
+    }
+};

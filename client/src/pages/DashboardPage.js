@@ -60,13 +60,16 @@ const DashboardPage = () => {
         setLoading(true);
         try {
             const today = new Date().toISOString().split('T')[0];
-            const endpoints = ['me', `food-diary/${today}`, 'checklist', 'consultas', 'medication', 'pesos', 'dailylog/today', 'gastos', 'exames'];
+            // ✅ CORREÇÃO: A rota foi alterada de 'exames' para 'exams' para corresponder ao back-end.
+            const endpoints = ['me', `food-diary/${today}`, 'checklist', 'consultas', 'medication', 'pesos', 'dailylog/today', 'gastos', 'exams'];
             const responses = await Promise.all(
                 endpoints.map(endpoint => fetch(`${apiUrl}/api/${endpoint}`, { headers: { 'Authorization': `Bearer ${token}` } }))
             );
 
             for (const res of responses) {
                 if (res.status === 401) throw new Error('Sessão inválida. Por favor, faça o login novamente.');
+                // Adicionamos um log para o erro 403 para ajudar a depurar
+                if (res.status === 403) throw new Error(`Acesso negado para o recurso: ${res.url}`);
                 if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
             }
 
@@ -120,7 +123,7 @@ const DashboardPage = () => {
                                 {conquista.nome}
                             </div>
                         );
-                    }, 500); // Pequeno delay para a notificação aparecer depois
+                    }, 500);
                 });
             }
         } catch (error) {
@@ -299,7 +302,14 @@ const DashboardPage = () => {
                 
                 <WeightProgressCard pesoInicial={usuario.detalhesCirurgia.pesoInicial} pesoAtual={usuario.detalhesCirurgia.pesoAtual} historico={pesos} />
                 
-                {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} />}
+                {dailyLog && (
+                    <DailyGoalsCard 
+                        log={dailyLog} 
+                        onTrack={handleTrack} 
+                        usuario={usuario}
+                        onUserUpdate={setUsuario} 
+                    />
+                )}
                 
                 {medicationData?.medicamentos?.length > 0 && (
                     <DailyMedicationCard medicamentos={medicationData.medicamentos} historico={medicationData.historico || {}} onToggleToma={handleToggleMedToma} />

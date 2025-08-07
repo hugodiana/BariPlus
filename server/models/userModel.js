@@ -22,6 +22,8 @@ const UserSchema = new mongoose.Schema({
     pagamentoEfetuado: { type: Boolean, default: false },
     kiwifySubscriptionId: String, // Para guardar a referência da compra na Kiwify
     conquistas: [{ type: String }],
+    metaAguaDiaria: { type: Number, default: 2000 }, // Valor padrão de 2000ml
+    metaProteinaDiaria: { type: Number, default: 60 }, // Valor padrão de 60g
     role: { type: String, enum: ['user', 'admin'], default: 'user' }, // Simplificado, sem afiliados por agora
     fcmToken: String, // Para notificações push
     notificationSettings: {

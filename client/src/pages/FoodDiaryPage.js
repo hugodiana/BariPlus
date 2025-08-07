@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { format, parseISO, addDays, subDays } from 'date-fns';
 import './FoodDiaryPage.css';
@@ -12,7 +12,6 @@ const FoodDiaryPage = () => {
     const [diary, setDiary] = useState(null);
     const [loading, setLoading] = useState(true);
     
-    // Estados do Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [mealTypeToLog, setMealTypeToLog] = useState('');
     const [foodToLog, setFoodToLog] = useState(null);
@@ -52,7 +51,6 @@ const FoodDiaryPage = () => {
     const handleLogFood = async () => {
         if (!foodToLog || !mealTypeToLog) return;
         
-        // Calcula os nutrientes com base na porção
         const ratio = portion / 100;
         const finalNutrients = {
             calories: (foodToLog.kcal || 0) * ratio,
@@ -76,7 +74,6 @@ const FoodDiaryPage = () => {
                 body: JSON.stringify({ food: foodDataToSave, mealType: mealTypeToLog, date: dateString })
             });
             if (!res.ok) throw new Error("Falha ao registrar alimento.");
-
             const updatedDiary = await res.json();
             setDiary(updatedDiary);
             setIsModalOpen(false);
@@ -94,7 +91,7 @@ const FoodDiaryPage = () => {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            fetchDiary(selectedDate); // Recarrega o diário para o dia
+            fetchDiary(selectedDate);
             toast.info("Item removido do diário.");
         } catch (error) {
             toast.error("Erro ao apagar item.");
@@ -104,6 +101,21 @@ const FoodDiaryPage = () => {
     const changeDate = (amount) => {
         setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
     };
+    
+    // ✅ NOVO: Calcula os totais de macronutrientes do dia
+    const totaisDoDia = useMemo(() => {
+        if (!diary?.refeicoes) return { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+        let totals = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
+        Object.values(diary.refeicoes).forEach(meal => {
+            meal.forEach(item => {
+                totals.calories += item.nutrients.calories || 0;
+                totals.proteins += item.nutrients.proteins || 0;
+                totals.carbs += item.nutrients.carbs || 0;
+                totals.fats += item.nutrients.fats || 0;
+            });
+        });
+        return totals;
+    }, [diary]);
 
     const renderMealSection = (title, mealKey, mealArray) => (
         <Card className="meal-card">
@@ -144,6 +156,17 @@ const FoodDiaryPage = () => {
                 <button onClick={() => changeDate(-1)}>‹ Dia Anterior</button>
                 <input type="date" value={format(selectedDate, 'yyyy-MM-dd')} onChange={(e) => setSelectedDate(parseISO(e.target.value))} />
                 <button onClick={() => changeDate(1)}>Próximo Dia ›</button>
+            </Card>
+
+            {/* ✅ NOVO: Card de Resumo de Macros */}
+            <Card className="macro-summary-card">
+                <h3>Resumo do Dia</h3>
+                <div className="macro-grid">
+                    <div className="macro-item"><span>{totaisDoDia.calories.toFixed(0)}</span><label>Calorias</label></div>
+                    <div className="macro-item"><span>{totaisDoDia.proteins.toFixed(1)} g</span><label>Proteínas</label></div>
+                    <div className="macro-item"><span>{totaisDoDia.carbs.toFixed(1)} g</span><label>Carboidratos</label></div>
+                    <div className="macro-item"><span>{totaisDoDia.fats.toFixed(1)} g</span><label>Gorduras</label></div>
+                </div>
             </Card>
             
             <div className="meals-grid">

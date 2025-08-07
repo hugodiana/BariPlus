@@ -11,5 +11,6 @@ router.put('/user/change-password', autenticar, userController.changePassword);
 router.put('/user/surgery-date', autenticar, userController.updateSurgeryDate);
 router.post('/user/save-fcm-token', autenticar, userController.saveFcmToken);
 router.post('/user/send-test-notification', autenticar, userController.sendTestNotification);
+router.put('/user/goals', autenticar, userController.updateGoals);
 
 module.exports = router;

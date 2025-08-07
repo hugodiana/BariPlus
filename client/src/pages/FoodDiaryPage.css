@@ -147,3 +147,28 @@
     background-color: var(--primary-green);
     color: white;
 }
+
+.macro-summary-card {
+    margin-bottom: var(--space-xl);
+}
+.macro-summary-card h3 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+.macro-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    text-align: center;
+}
+.macro-item span {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-green);
+    display: block;
+}
+.macro-item label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}

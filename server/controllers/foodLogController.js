@@ -1,4 +1,33 @@
 const FoodLog = require('../models/foodLogModel');
+const DailyLog = require('../models/dailyLogModel');
+
+// --- Função Auxiliar Interna ---
+// Esta função calcula o total de proteínas de um diário e atualiza o DailyLog
+const syncProteinWithDailyLog = async (userId, date) => {
+    try {
+        const foodDiary = await FoodLog.findOne({ userId, date });
+        let totalProtein = 0;
+
+        if (foodDiary && foodDiary.refeicoes) {
+            Object.values(foodDiary.refeicoes).forEach(meal => {
+                meal.forEach(item => {
+                    totalProtein += item.nutrients.proteins || 0;
+                });
+            });
+        }
+
+        // Atualiza ou cria o DailyLog com o novo total de proteínas
+        await DailyLog.findOneAndUpdate(
+            { userId, date },
+            { $set: { proteinConsumed: totalProtein } },
+            { upsert: true }
+        );
+        console.log(`Sincronização de proteínas para o usuário ${userId} no dia ${date}: ${totalProtein.toFixed(1)}g`);
+    } catch (error) {
+        console.error("Erro ao sincronizar proteínas:", error);
+    }
+};
+
 
 // --- Funções do Controller ---
 
@@ -47,8 +76,13 @@ exports.logFood = async (req, res) => {
             { $push: { [fieldToUpdate]: food } },
             { new: true, upsert: true }
         );
+
+        // ✅ NOVIDADE: Após adicionar, sincroniza o total de proteínas
+        await syncProteinWithDailyLog(req.userId, date);
+
         res.status(201).json(result);
     } catch (error) {
+        console.error("Erro ao adicionar alimento:", error);
         res.status(500).json({ message: "Erro ao adicionar alimento." });
     }
 };
@@ -71,6 +105,9 @@ exports.deleteFoodLog = async (req, res) => {
             { userId: req.userId, date: date },
             { $pull: { [fieldToUpdate]: { _id: itemId } } }
         );
+
+        // ✅ NOVIDADE: Após apagar, sincroniza novamente o total de proteínas
+        await syncProteinWithDailyLog(req.userId, date);
 
         res.status(204).send();
     } catch (error) {

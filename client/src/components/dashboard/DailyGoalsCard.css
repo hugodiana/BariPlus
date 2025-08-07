@@ -1,68 +1,64 @@
-/* DailyGoalsCard.css */
-.daily-goals-card {
+.daily-goals-card .card-header {
     display: flex;
-    flex-direction: column;
-    gap: 1.5rem; /* Usar unidades relativas */
-    padding: 1.2rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
 }
-
-.daily-goals-card h3 {
-    margin: 0 0 1rem 0;
-    text-align: center;
-    color: #37715b;
-    font-size: 1.2rem;
+.daily-goals-card .card-header h3 {
+    margin: 0;
 }
-
+.customize-btn {
+    background: var(--primary-light);
+    color: var(--primary-green);
+    border: 1px solid var(--primary-green);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
 .goal-item {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    margin-bottom: 1.5rem;
 }
-
+.goal-item:last-child {
+    margin-bottom: 0;
+}
 .goal-info {
     display: flex;
     justify-content: space-between;
-    font-weight: 600;
-    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
 }
-
-.progress-bar-container {
-    width: 100%;
-    height: 8px;
-    background-color: #eef0ef;
-    border-radius: 4px;
-    overflow: hidden;
+.progress-bar-background {
+    background-color: #e9ecef;
+    border-radius: 8px;
+    height: 10px;
 }
-
-.progress-bar {
+.progress-bar-foreground {
+    background-color: var(--primary-green);
     height: 100%;
-    border-radius: 4px;
-    transition: width 0.3s ease, background-color 0.3s ease;
+    border-radius: 8px;
+    transition: width 0.3s ease-in-out;
 }
-
 .goal-actions {
     display: flex;
-    gap: 0.6rem;
-    margin-top: 0.5rem;
+    gap: 10px;
+    margin-top: 0.75rem;
 }
-
 .goal-actions button {
     flex: 1;
-    padding: 0.5rem;
-    border: 1px solid #007aff;
-    background-color: rgba(0, 122, 255, 0.1);
-    color: #007aff;
+    background: none;
+    border: 1px solid var(--border-color);
+    padding: 8px;
     border-radius: 6px;
     cursor: pointer;
-    font-weight: 600;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
 }
-
-.goal-actions button:hover {
-    background-color: rgba(0, 122, 255, 0.2);
+.goals-form .suggestion-box {
+    background-color: var(--background-light);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    text-align: center;
 }
-
+.goals-form .suggestion-box p { margin: 0 0 10px 0; }
+.goals-form .suggestion-box ul { list-style: none; padding: 0; margin: 0; }
