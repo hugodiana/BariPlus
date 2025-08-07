@@ -84,7 +84,7 @@ const ProgressoPage = () => {
     const [registroEmEdicao, setRegistroEmEdicao] = useState(null);
     
     const [formState, setFormState] = useState({
-        peso: '', cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+        peso: '', data: new Date().toISOString().split('T')[0], cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
         bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
         coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
     });
@@ -292,6 +292,10 @@ const ProgressoPage = () => {
                     <label>Peso (kg) *</label>
                     <input name="peso" type="number" step="0.1" value={formState.peso} onChange={handleInputChange} required />
                     <hr/>
+                    <div className="form-group">
+                            <label htmlFor="data">Data do Registro</label>
+                        
+                    </div>
                     <h4>Circunferências (cm)</h4>
                     <div className="form-row"><div className="form-group"><label>Pescoço</label><input name="pescoco" type="number" step="0.1" value={formState.pescoco} onChange={handleInputChange} /></div><div className="form-group"><label>Tórax</label><input name="torax" type="number" step="0.1" value={formState.torax} onChange={handleInputChange} /></div></div>
                     <div className="form-row"><div className="form-group"><label>Cintura</label><input name="cintura" type="number" step="0.1" value={formState.cintura} onChange={handleInputChange} /></div><div className="form-group"><label>Abdômen</label><input name="abdomen" type="number" step="0.1" value={formState.abdomen} onChange={handleInputChange} /></div></div>
