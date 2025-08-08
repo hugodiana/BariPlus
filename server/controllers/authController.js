@@ -4,8 +4,10 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Resend } = require('resend');
 
+// Inicializa o Resend. Lembre-se que a RESEND_API_KEY deve estar nas suas variáveis de ambiente.
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Função auxiliar para validar a senha (pode ser movida para /utils mais tarde)
 const validatePassword = (password) => {
     if (password.length < 8) return false;
     if (!/[A-Z]/.test(password)) return false;
@@ -48,7 +50,8 @@ exports.register = async (req, res) => {
             html: `<h1>Bem-vindo(a)!</h1><p>Clique no link para ativar sua conta:</p><a href="${verificationLink}">Ativar Conta</a>`,
         });
         
-        // criarDocumentosPadrao(novoUsuario._id); // Lembre-se de implementar esta função
+        // Aqui podemos chamar a função para criar os documentos padrão
+        // criarDocumentosPadrao(novoUsuario._id);
 
         res.status(201).json({ message: 'Usuário cadastrado com sucesso! Verifique seu e-mail.' });
     } catch (error) {
@@ -67,79 +70,15 @@ exports.login = async (req, res) => {
             return res.status(401).json({ message: 'Credenciais inválidas.' });
         }
         if (!usuario.isEmailVerified) {
-            return res.status(403).json({ message: 'Sua conta ainda não foi ativada.' });
+            return res.status(403).json({ message: 'Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.' });
         }
         
-        // ✅ GERA OS DOIS TOKENS
-        const accessToken = jwt.sign(
-            { userId: usuario._id, role: usuario.role },
-            process.env.ACCESS_TOKEN_SECRET,
-            { expiresIn: '15m' } // Vida curta
-        );
-        const refreshToken = jwt.sign(
-            { userId: usuario._id },
-            process.env.REFRESH_TOKEN_SECRET,
-            { expiresIn: '7d' } // Vida longa
-        );
-
-        // Guarda o refresh token no usuário
-        usuario.refreshToken = refreshToken;
-        await usuario.save();
-
-        // Envia o refresh token num cookie httpOnly (mais seguro)
-        res.cookie('jwt', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 dias
-        });
-
-        // Envia o access token no corpo da resposta
-        res.json({ accessToken });
+        const token = jwt.sign({ userId: usuario._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
+        res.json({ token });
     } catch (error) {
         console.error("Erro no login:", error);
         res.status(500).json({ message: 'Erro no servidor.' });
     }
-};
-
-// ✅ NOVA FUNÇÃO PARA ATUALIZAR O TOKEN
-exports.refreshToken = async (req, res) => {
-    const refreshToken = req.cookies?.jwt;
-    if (!refreshToken) return res.sendStatus(401);
-
-    try {
-        const usuario = await User.findOne({ refreshToken });
-        if (!usuario) return res.sendStatus(403);
-
-        jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => {
-            if (err || usuario._id.toString() !== decoded.userId) {
-                return res.sendStatus(403);
-            }
-            const accessToken = jwt.sign(
-                { userId: usuario._id, role: usuario.role },
-                process.env.ACCESS_TOKEN_SECRET,
-                { expiresIn: '15m' }
-            );
-            res.json({ accessToken });
-        });
-    } catch (error) {
-        res.status(500).json({ message: "Erro no servidor." });
-    }
-};
-
-// ✅ NOVA FUNÇÃO PARA LOGOUT SEGURO
-exports.logout = async (req, res) => {
-    const refreshToken = req.cookies?.jwt;
-    if (!refreshToken) return res.sendStatus(204);
-
-    try {
-        await User.findOneAndUpdate({ refreshToken }, { refreshToken: null });
-    } catch (error) {
-        // Ignora o erro, o importante é limpar o cookie
-    }
-    
-    res.clearCookie('jwt', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
-    res.sendStatus(204);
 };
 
 exports.verifyEmail = async (req, res) => {
