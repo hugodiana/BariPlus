@@ -5,7 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
-
+import { fetchWithAuth } from '../utils/api';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
 import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
@@ -56,48 +56,45 @@ const DashboardPage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchDashboardData = useCallback(async () => {
-        if (!token) { setLoading(false); return; }
-        setLoading(true);
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            // ✅ CORREÇÃO: A rota foi alterada de 'exames' para 'exams' para corresponder ao back-end.
-            const endpoints = ['me', `food-diary/${today}`, 'checklist', 'consultas', 'medication', 'pesos', 'dailylog/today', 'gastos', 'exams'];
-            const responses = await Promise.all(
-                endpoints.map(endpoint => fetch(`${apiUrl}/api/${endpoint}`, { headers: { 'Authorization': `Bearer ${token}` } }))
-            );
+    setLoading(true);
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const endpoints = ['/api/me', `/api/food-diary/${today}`, '/api/checklist', '/api/consultas', '/api/medication', '/api/pesos', '/api/dailylog/today', '/api/gastos', '/api/exams'];
+        
+        // ✅ CORREÇÃO: Usamos Promise.all com a nossa nova função fetchWithAuth
+        const responses = await Promise.all(
+            endpoints.map(endpoint => fetchWithAuth(endpoint))
+        );
 
-            for (const res of responses) {
-                if (res.status === 401) throw new Error('Sessão inválida. Por favor, faça o login novamente.');
-                // Adicionamos um log para o erro 403 para ajudar a depurar
-                if (res.status === 403) throw new Error(`Acesso negado para o recurso: ${res.url}`);
-                if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
-            }
-
-            const [
-                dadosUsuario, dadosFoodLog, dadosChecklist, dadosConsultas,
-                dadosMedication, dadosPesos, dadosLog, dadosGastos, dadosExames
-            ] = await Promise.all(responses.map(res => res.json()));
-
-            setUsuario(dadosUsuario);
-            setFoodLog(dadosFoodLog);
-            setChecklist(dadosChecklist);
-            setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
-            setMedicationData(dadosMedication);
-            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
-            setDailyLog(dadosLog);
-            setGastos(dadosGastos);
-            setExames(dadosExames);
-
-        } catch (error) {
-            toast.error(error.message);
-            if (error.message.includes('Sessão inválida')) {
-                localStorage.removeItem('bariplus_token');
-                window.location.href = '/login';
-            }
-        } finally {
-            setLoading(false);
+        for (const res of responses) {
+            // A lógica de erro 401 agora é tratada automaticamente pelo fetchWithAuth
+            if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
         }
-    }, [token, apiUrl]);
+
+        const [
+            dadosUsuario, dadosFoodLog, dadosChecklist, dadosConsultas,
+            dadosMedication, dadosPesos, dadosLog, dadosGastos, dadosExames
+        ] = await Promise.all(responses.map(res => res.json()));
+
+        setUsuario(dadosUsuario);
+        setFoodLog(dadosFoodLog);
+        setChecklist(dadosChecklist);
+        setConsultas(dadosConsultas);
+        setMedicationData(dadosMedication);
+        setPesos(dadosPesos);
+        setDailyLog(dadosLog);
+        setGastos(dadosGastos);
+        setExames(dadosExames);
+
+    } catch (error) {
+        // O erro de sessão expirada já é tratado pelo fetchWithAuth
+        if (!error.message.includes('Sessão expirada')) {
+            toast.error(error.message);
+        }
+    } finally {
+        setLoading(false);
+    }
+}, []);
 
     useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
 

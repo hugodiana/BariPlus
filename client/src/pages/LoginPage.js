@@ -4,6 +4,7 @@ import './LoginPage.css';
 import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import { setAuthToken } from '../utils/api'; // Importação correta
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -79,7 +80,9 @@ const LoginPage = () => {
                 toast.success('Cadastro quase concluído! Verifique o seu e-mail.');
                 navigate('/verify-email', { state: { email: email } });
             } else {
-                localStorage.setItem('bariplus_token', data.token);
+                // ✅ CORREÇÃO AQUI: Usamos o nosso novo sistema para guardar o token
+                setAuthToken(data.accessToken);
+                toast.success("Login bem-sucedido!");
                 window.location.href = '/'; 
             }
         } catch (error) {
