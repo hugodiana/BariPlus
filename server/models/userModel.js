@@ -25,6 +25,7 @@ const UserSchema = new mongoose.Schema({
     metaAguaDiaria: { type: Number, default: 2000 }, // Valor padrão de 2000ml
     metaProteinaDiaria: { type: Number, default: 60 }, // Valor padrão de 60g
     role: { type: String, enum: ['user', 'admin'], default: 'user' }, // Simplificado, sem afiliados por agora
+    refreshToken: { type: String },
     fcmToken: String, // Para notificações push
     notificationSettings: {
         appointmentReminders: { type: Boolean, default: true },
