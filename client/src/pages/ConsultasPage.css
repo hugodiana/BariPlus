@@ -1,11 +1,11 @@
 .consultas-layout {
     display: grid;
     /* Em telas grandes, o calendário tem tamanho automático e a lista ocupa o resto */
-    grid-template-columns: auto 1fr; 
+    grid-template-columns: auto 1fr;
     gap: var(--space-xl);
 }
 
-/* Estilo para o dia marcado no calendário */
+/* Dia marcado no calendário */
 .dia-com-consulta {
     font-weight: bold;
     color: var(--action-blue) !important;
@@ -13,7 +13,7 @@
     border-radius: 50%;
 }
 
-/* Cabeçalho da lista de consultas */
+/* Cabeçalho da lista */
 .lista-header {
     display: flex;
     justify-content: space-between;
@@ -27,6 +27,7 @@
     color: var(--primary-green);
 }
 
+/* Botão adicionar */
 .add-btn {
     background-color: var(--action-blue);
     color: white;
@@ -35,8 +36,15 @@
     border-radius: var(--border-radius);
     font-weight: 600;
     cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+.add-btn:hover { transform: translateY(-2px); }
+.add-btn:focus {
+    outline: 2px solid var(--action-blue);
+    outline-offset: 2px;
 }
 
+/* Lista de consultas */
 .lista-consultas-card ul { 
     list-style: none; 
     padding: 0; 
@@ -53,6 +61,7 @@
     border-bottom: none;
 }
 
+/* Data da consulta */
 .consulta-data {
     background-color: var(--primary-light);
     color: var(--primary-green);
@@ -65,48 +74,94 @@
 .consulta-data span { display: block; }
 .consulta-data span:first-child { font-size: 1.2rem; }
 
+/* Informações da consulta */
 .consulta-info { flex-grow: 1; }
-.consulta-info span, .consulta-info strong { display: block; }
+.consulta-info span, 
+.consulta-info strong { display: block; }
 .consulta-info small { color: var(--text-light); }
 
-.consulta-actions { display: flex; align-items: center; }
-.action-btn { background: transparent; border: none; font-size: 20px; cursor: pointer; opacity: 0.6; }
-.action-btn:hover { opacity: 1; }
+/* Ações */
+.consulta-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.action-btn {
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.action-btn:hover { 
+    opacity: 1; 
+    transform: scale(1.1);
+}
+.action-btn:focus {
+    outline: 2px solid var(--action-blue);
+    outline-offset: 2px;
+}
 .edit-btn { color: var(--action-blue); }
 .delete-btn { color: var(--danger-red); }
 
-.empty-list-message { text-align: center; padding: var(--space-lg); color: var(--text-light); }
+/* Mensagem lista vazia */
+.empty-list-message {
+    text-align: center;
+    padding: var(--space-lg);
+    color: var(--text-light);
+}
 
-/* Estilos do formulário no modal */
-.consulta-form label { display: block; margin-bottom: var(--space-sm); font-weight: 600; }
-.consulta-form input, .consulta-form textarea {
+/* Formulário modal */
+.consulta-form label { 
+    display: block; 
+    margin-bottom: var(--space-sm); 
+    font-weight: 600; 
+}
+.consulta-form input, 
+.consulta-form textarea {
     width: 100%;
     padding: 12px;
     margin-bottom: var(--space-md);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
 }
 .consulta-form button {
     width: 100%;
     padding: 12px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--border-radius);
     background-color: var(--primary-green);
     color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+.consulta-form button:hover { transform: translateY(-2px); }
+.consulta-form button:focus {
+    outline: 2px solid var(--primary-green);
+    outline-offset: 2px;
 }
 
-/* 📱 CORREÇÃO DE RESPONSIVIDADE */
+/* Responsividade */
 @media (max-width: 900px) {
     .consultas-layout {
-        /* Em telas menores, o layout vira uma única coluna */
         grid-template-columns: 1fr;
     }
-
     .calendario-card {
         display: flex;
         justify-content: center;
     }
 }
+@media (max-width: 600px) {
+    .lista-header h3 { font-size: 1rem; }
+    .consulta-data span:first-child { font-size: 1rem; }
+    .add-btn { 
+        padding: var(--space-xs) var(--space-sm); 
+        font-size: 0.9rem;
+    }
+}
+
+/* Status */
 .status-badge {
     display: inline-block;
     padding: 3px 8px;

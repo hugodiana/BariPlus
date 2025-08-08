@@ -1,3 +1,6 @@
+/* ExamsPage.css */
+
+/* Main Button Styles */
 .add-btn-main {
     background-color: var(--action-blue);
     color: white;
@@ -10,16 +13,19 @@
     margin-bottom: var(--space-lg);
 }
 
+/* Accordion Container */
 .exams-accordion {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
 }
 
+/* Exam Entry Card */
 .exam-entry {
     transition: all 0.3s ease-in-out;
 }
 
+/* Exam Header (clickable area) */
 .exam-header {
     display: flex;
     justify-content: space-between;
@@ -49,6 +55,7 @@
     color: var(--primary-green);
 }
 
+/* Expanded Content Area */
 .exam-content {
     margin-top: var(--space-lg);
     padding-top: var(--space-lg);
@@ -61,14 +68,15 @@
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* Chart Container */
 .exam-chart-container {
     position: relative; 
-    height: 250px; /* Altura fixa para o gráfico */
+    height: 250px;
     width: 100%;
     margin-bottom: var(--space-lg);
 }
 
-
+/* Add Result Button */
 .add-result-btn {
     display: inline-block;
     margin-bottom: var(--space-lg);
@@ -81,22 +89,55 @@
     cursor: pointer;
 }
 
-.table-responsive { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: var(--space-md); text-align: left; border-bottom: 1px solid var(--border-color); }
-td.actions { display: flex; gap: var(--space-sm); }
-.action-btn { background:transparent; border:none; cursor:pointer; font-size: 1.2rem; }
+/* Results Table */
+.table-responsive { 
+    overflow-x: auto; 
+}
 
-/* Estilos dos formulários nos modais */
-form { display: flex; flex-direction: column; gap: var(--space-md); }
-form label { font-weight: 600; }
-form input, form select, form textarea {
+table { 
+    width: 100%; 
+    border-collapse: collapse; 
+}
+
+th, td { 
+    padding: var(--space-md); 
+    text-align: left; 
+    border-bottom: 1px solid var(--border-color); 
+}
+
+td.actions { 
+    display: flex; 
+    gap: var(--space-sm); 
+}
+
+.action-btn { 
+    background: transparent; 
+    border: none; 
+    cursor: pointer; 
+    font-size: 1.2rem; 
+}
+
+/* Modal Form Styles */
+form { 
+    display: flex; 
+    flex-direction: column; 
+    gap: var(--space-md); 
+}
+
+form label { 
+    font-weight: 600; 
+}
+
+form input, 
+form select, 
+form textarea {
     width: 100%;
     padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 4px;
     font-size: 1rem;
 }
+
 form button {
     padding: 12px;
     border: none;
@@ -108,32 +149,13 @@ form button {
     margin-top: var(--space-sm);
 }
 
-/* ✅ NOVIDADE: Responsividade para Celulares */
-@media (max-width: 768px) {
-    .page-header { text-align: center; }
-    .add-btn-main { width: 100%; }
-
-    .exam-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    .accordion-icon {
-        align-self: flex-end; /* Manda o ícone para a direita */
-        margin-top: -30px; /* Sobe o ícone para alinhar */
-    }
-    
-    th, td {
-        padding: var(--space-sm); /* Diminui o espaçamento interno da tabela */
-        font-size: 14px; /* Diminui o tamanho da fonte */
-    }
-}
+/* PDF Generation Styles */
 .pdf-chart-studio {
     position: absolute;
-    left: -9999px; /* Joga o estúdio para muito longe da tela */
+    left: -9999px;
     top: -9999px;
-    opacity: 0; /* Garante que é invisível */
-    z-index: -10; /* Garante que não fica por cima de nada */
+    opacity: 0;
+    z-index: -10;
 }
 
 .pdf-link-container {
@@ -167,30 +189,100 @@ form button {
     opacity: 0.9;
 }
 
+/* Status Indicators */
 .status-indicator {
     display: inline-block;
     width: 10px;
     height: 10px;
     border-radius: 50%;
     margin-right: 8px;
-    background-color: var(--border-color); /* Cor padrão */
+    background-color: var(--border-color);
 }
 
 td.status-normal .status-indicator {
     background-color: var(--primary-green);
 }
+
 td.status-low .status-indicator {
     background-color: var(--action-blue);
 }
+
 td.status-high .status-indicator {
     background-color: var(--danger-red);
 }
 
-/* ✅ NOVO: Estilo para o formulário com colunas */
+/* Form Layout */
 .form-row {
     display: flex;
     gap: var(--space-md);
 }
+
 .form-group {
     flex: 1;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .page-header { 
+        text-align: center; 
+    }
+    
+    .add-btn-main { 
+        width: 100%; 
+    }
+
+    .exam-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .accordion-icon {
+        align-self: flex-end;
+        margin-top: -30px;
+    }
+    
+    th, td {
+        padding: var(--space-sm);
+        font-size: 14px;
+    }
+    
+    /* Adjust form layout for mobile */
+    .form-row {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+}
+
+/* Additional Utility Classes */
+.loading {
+    opacity: 0.6;
+    position: relative;
+}
+
+.loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Edit and Delete button colors */
+.edit-btn {
+    color: var(--action-blue);
+}
+
+.delete-btn {
+    color: var(--danger-red);
 }
