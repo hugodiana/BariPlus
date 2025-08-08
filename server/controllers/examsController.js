@@ -19,14 +19,15 @@ exports.getExams = async (req, res) => {
 
 // POST /api/exams/type - Adicionar um novo tipo de exame
 exports.addExamType = async (req, res) => {
-    try {
-        const { name, unit, refMin, refMax } = req.body;
-        // ✅ CORREÇÃO: A variável foi renomeada para corresponder ao que é usado abaixo.
-        const novoTipoExame = { name, unit, refMin: refMin || null, refMax: refMax || null, history: [] };
+     try {
+        const { examEntryId } = req.params;
+        const { date, value, notes } = req.body;
+        // ✅ CORREÇÃO: O new Date() resolve o bug de voltar 1 dia
+        const resultData = { date: new Date(date), value: parseFloat(value), notes };
         
         const exams = await Exams.findOneAndUpdate(
             { userId: req.userId },
-            { $push: { examEntries: novoTipoExame } }, // ✅ Usa a variável correta
+            { $push: { examEntries: newExamEntry } },
             { new: true, upsert: true }
         );
         res.status(201).json(exams.examEntries[exams.examEntries.length - 1]);
