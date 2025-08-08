@@ -4,25 +4,31 @@ const User = require('../models/userModel');
 const autenticar = async (req, res, next) => {
     try {
         const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-        if (!token) {
-            return res.sendStatus(401); // Não autorizado
+
+        // Garante que o header existe e está no formato correto
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Token não fornecido ou inválido.' });
         }
 
+        const token = authHeader.split(' ')[1];
+
+        // Verifica e decodifica o token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        // ✅ CORREÇÃO: Usamos 'decoded.userId' para coincidir com a criação do token.
-        const userExists = await User.findById(decoded.userId);
-        
-        if (!userExists) {
-            return res.sendStatus(403); // Proibido
+        // Busca o usuário pelo ID do token
+        const user = await User.findById(decoded.userId).select('-password');
+
+        if (!user) {
+            return res.status(403).json({ error: 'Usuário não encontrado.' });
         }
-        
-        req.userId = decoded.userId;
+
+        // Anexa o usuário à requisição para uso posterior
+        req.userId = user._id;
+        req.user = user;
+
         next();
     } catch (err) {
-        // Token inválido ou expirado
-        return res.sendStatus(403); 
+        return res.status(403).json({ error: 'Token inválido ou expirado.' });
     }
 };
 
