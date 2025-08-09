@@ -6,6 +6,8 @@ const helmet = require('helmet');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { Resend } = require('resend');
+const multer = require('multer');
+const { v2: cloudinary } = require('cloudinary');
 const admin = require('firebase-admin');
 
 // ✅ IMPORTAÇÃO DE TODAS AS ROTAS MODULARIZADAS
@@ -44,7 +46,7 @@ const whitelist = [
     'https://bariplus-admin.onrender.com', 'http://localhost:3000',
     'http://localhost:3001', 'http://localhost:3002',
     'https://www.bariplus.com.br', 'https://bariplus.com.br',
-    'https://bariplus-app.netlify.app', 'admin.bariplus.com.br'
+    'https://bariplus-app.netlify.app', 'https://admin.bariplus.com.br', 'http://localhost:3002/'
 ];
 const corsOptions = {
     origin: function (origin, callback) {
@@ -120,7 +122,32 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
 });
 
 
-// --- 3. ROTAS DA API ---
+// --- 3. CONFIGURAÇÕES DE SERVIÇOS ---
+if (process.env.FIREBASE_PRIVATE_KEY) {
+    if (!admin.apps.length) {
+        try {
+            const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
+            const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
+            const serviceAccount = JSON.parse(decodedKey);
+            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+            console.log('Firebase Admin inicializado com sucesso.');
+        } catch (error) { 
+            console.error('Erro ao inicializar Firebase Admin:', error); 
+        }
+    }
+}
+
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET 
+});
+
+const PORT = process.env.PORT || 3001;
+mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
+
+
+// --- 4. ROTAS DA API ---
 app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' }));
 app.use('/api', authRoutes);
 app.use('/api', userRoutes);
@@ -135,24 +162,18 @@ app.use('/api', adminRoutes);
 app.use('/api', gastoRoutes);
 app.use('/api/taco', autenticar, tacoRoutes);
 
-// ❌ NENHUMA ROTA SOLTA DEVE FICAR AQUI, O FICHEIRO AGORA ESTÁ 100% LIMPO!
 
-// --- 4. INICIALIZAÇÃO DO SERVIDOR ---
-const PORT = process.env.PORT || 3001;
-mongoose.connect(process.env.DATABASE_URL).then(() => {
-    const server = app.listen(PORT, () => {
-        console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
-    });
+// --- 5. INICIALIZAÇÃO DO SERVIDOR ---
+const server = app.listen(PORT, () => {
+    console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
+});
 
-    process.on('SIGTERM', () => {
-        console.log('Received SIGTERM, shutting down gracefully');
-        server.close(async () => {
-            await mongoose.connection.close(false);
-            console.log('MongoDB connection closed.');
-            process.exit(0);
-        });
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down gracefully');
+    server.close(async () => {
+        console.log('HTTP server closed.');
+        await mongoose.connection.close(false);
+        console.log('MongoDB connection closed.');
+        process.exit(0);
     });
-}).catch(err => {
-    console.error('Erro ao conectar ao MongoDB:', err);
-    process.exit(1);
 });

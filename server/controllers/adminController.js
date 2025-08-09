@@ -2,6 +2,30 @@ const User = require('../models/userModel');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// ✅ NOVA FUNÇÃO: Login exclusivo para administradores
+exports.loginAdmin = async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+        const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
+
+        // Valida se o usuário existe e se a senha está correta
+        if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
+            return res.status(401).json({ message: 'Credenciais inválidas.' });
+        }
+
+        // ✅ VERIFICAÇÃO CRUCIAL: Garante que o usuário tem a permissão de 'admin'
+        if (usuario.role !== 'admin') {
+            return res.status(403).json({ message: 'Acesso negado. Esta área é exclusiva para administradores.' });
+        }
+
+        const token = jwt.sign({ userId: usuario._id, role: usuario.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+        res.json({ token });
+    } catch (error) {
+        console.error("Erro no login de admin:", error);
+        res.status(500).json({ message: 'Erro no servidor.' });
+    }
+};
+
 // GET /api/admin/users - Listar todos os usuários com paginação
 exports.listUsers = async (req, res) => {
     try {
