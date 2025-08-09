@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
+const adminController = require('../controllers/adminController');
+const autenticar = require('../middlewares/autenticar');
+const isAdmin = require('../middlewares/isAdmin');
 
-// Define as rotas e associa cada uma à sua função no controller
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-router.get('/verify-email/:token', authController.verifyEmail);
-router.post('/resend-verification', authController.resendVerification);
-router.post('/forgot-password', authController.forgotPassword);
-router.post('/reset-password/:token', authController.resetPassword);
+// ✅ CORREÇÃO: As rotas estão agora agrupadas sob /admin e usam os middlewares corretamente
+
+// Aplica os middlewares a todas as rotas deste ficheiro
+router.use('/admin', autenticar, isAdmin);
+
+router.get('/admin/users', adminController.listUsers);
+router.post('/admin/grant-access/:userId', adminController.grantAccess);
+router.post('/admin/users/:userId/revoke-access', adminController.revokeAccess);
+router.post('/admin/users/:userId/verify-email', adminController.verifyUserEmail);
+router.get('/admin/stats', adminController.getStats);
 
 module.exports = router;

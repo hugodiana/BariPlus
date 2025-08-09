@@ -32,9 +32,10 @@ function App() {
                     >
                         <Route index element={<AdminDashboardPage />} />
                         <Route path="users" element={<UsersListPage />} />
-                        <Route path="content" element={<ContentListPage />} />
+                        {/* ✅ CORREÇÃO: A rota mais específica vem primeiro */}
                         <Route path="content/new" element={<ContentEditPage />} />
                         <Route path="content/edit/:id" element={<ContentEditPage />} />
+                        <Route path="content" element={<ContentListPage />} />
                     </Route>
                 </Routes>
             </Router>

@@ -35,16 +35,30 @@ const UsersListPage = () => {
         const timer = setTimeout(() => { fetchUsers(1, search); }, 500);
         return () => clearTimeout(timer);
     }, [search, fetchUsers]);
-    useEffect(() => { fetchUsers(page, search); }, [page]);
+
+    useEffect(() => {
+        // A busca já chama a primeira página, este só deve ser chamado para paginação
+        if (page > 1) {
+            fetchUsers(page, search);
+        }
+    }, [page]);
     
     const handleAction = async (action, userId, confirmMessage) => {
         if (!window.confirm(confirmMessage)) return;
+        
+        let url = '';
+        if (action === 'grant-access') {
+            url = `${apiUrl}/api/admin/grant-access/${userId}`;
+        } else {
+            url = `${apiUrl}/api/admin/users/${userId}/${action}`;
+        }
+
         try {
-            const res = await fetch(`${apiUrl}/api/admin/users/${userId}/${action}`, {
+            const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (!res.ok) throw new Error(`Falha ao ${action}.`);
+            if (!res.ok) throw new Error(`Falha ao executar a ação.`);
             toast.success("Ação executada com sucesso!");
             fetchUsers(page, search);
         } catch (error) {
