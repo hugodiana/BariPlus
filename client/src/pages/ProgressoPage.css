@@ -1,4 +1,5 @@
-/* --- Layout Principal --- */
+/* ProgressoPage.css refatorado com o novo sistema de design */
+
 .progresso-content {
     display: flex;
     flex-direction: column;
@@ -9,7 +10,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap; /* Permite que os itens quebrem para a linha de baixo */
+    flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: var(--space-lg);
 }
@@ -18,21 +19,20 @@
     background-color: var(--action-blue);
     color: white;
     border: none;
-    padding: 12px 18px; /* Aumenta um pouco o padding */
+    padding: 12px 18px;
     border-radius: var(--border-radius);
     font-weight: 600;
     cursor: pointer;
-    font-size: 1rem; /* Tamanho de fonte maior */
+    font-size: 1rem;
     margin-bottom: var(--space-lg);
 }
 
 .progresso-content h3 {
     margin-top: 0;
     color: var(--primary-green);
-    margin-bottom: 1rem; /* Adiciona espaço abaixo dos títulos */
+    margin-bottom: 1rem;
 }
 
-/* --- Cards de Resumo (KPIs) --- */
 .summary-stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -43,14 +43,12 @@
     padding: var(--space-md);
     text-align: center;
 }
-
 .stat-item-small h3 {
     margin: 0 0 5px 0;
     font-size: 0.9rem;
     font-weight: 500;
-    color: var(--text-light);
+    color: var(--text-secondary);
 }
-
 .stat-item-small p {
     margin: 0;
     font-size: 2rem;
@@ -58,26 +56,22 @@
     color: var(--primary-green);
 }
 
-/* --- Grid de Gráficos --- */
 .charts-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--space-xl);
 }
-
 .chart-container {
     position: relative;
-    height: 280px; /* Altura um pouco maior para os gráficos */
+    height: 280px;
     width: 100%;
 }
 
-/* --- Galeria de Fotos --- */
 .photo-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--space-md);
 }
-
 .photo-item img {
     width: 100%;
     height: 120px;
@@ -85,34 +79,29 @@
     border-radius: var(--border-radius);
     border: 2px solid var(--border-color);
 }
-
 .photo-item time {
     font-size: 12px;
-    color: var(--text-light);
+    color: var(--text-faint);
     margin-top: var(--space-sm);
     display: block;
     text-align: center;
 }
 
-/* --- Tabela de Histórico Responsiva --- */
 .table-responsive {
     width: 100%;
-    overflow-x: auto; /* Permite a rolagem horizontal em telas pequenas */
-    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
 }
-
 .progresso-content table {
     width: 100%;
-    min-width: 900px; /* Força uma largura mínima para a tabela não "espremer" */
+    min-width: 900px;
     border-collapse: collapse;
     margin-top: var(--space-md);
 }
-
 .progresso-content th, .progresso-content td {
     padding: 12px;
     text-align: center;
     border-bottom: 1px solid var(--border-color);
-    white-space: nowrap; /* Impede que o texto quebre em várias linhas */
+    white-space: nowrap;
 }
 
 .actions-cell {
@@ -120,55 +109,46 @@
     justify-content: center;
     gap: var(--space-md);
 }
-
 .action-btn {
     background: none;
     border: none;
     font-size: 1.2rem;
     cursor: pointer;
     opacity: 0.6;
-    transition: opacity 0.2s;
 }
-.action-btn:hover { opacity: 1; }
 .edit-btn { color: var(--action-blue); }
 .delete-btn { color: var(--danger-red); }
 
-/* --- Formulário do Modal --- */
+/* Formulário do Modal */
 .progresso-form .form-row {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Duas colunas por padrão */
+    grid-template-columns: 1fr 1fr;
     gap: var(--space-md);
 }
-
 .progresso-form .form-group {
     display: flex;
     flex-direction: column;
 }
-
 .progresso-form .medidas-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-md);
 }
 
-/* --- ESTILOS DE RESPONSIVIDADE PARA TELAS MENORES --- */
 @media (max-width: 768px) {
     .page-header-actions {
-        flex-direction: column; /* Coloca o título e o botão PDF um em cima do outro */
-        align-items: stretch; /* Faz o botão ocupar a largura total */
+        flex-direction: column;
+        align-items: stretch;
     }
-
     .add-btn {
-        width: 100%; /* Botão principal ocupa a largura toda */
+        width: 100%;
         text-align: center;
     }
-
     .charts-grid {
-        grid-template-columns: 1fr; /* Uma coluna para os gráficos */
+        grid-template-columns: 1fr;
     }
-    
     .progresso-form .form-row,
     .progresso-form .medidas-grid {
-        grid-template-columns: 1fr; /* Uma coluna para os campos do formulário */
+        grid-template-columns: 1fr;
     }
 }

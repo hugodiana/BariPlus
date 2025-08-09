@@ -38,6 +38,7 @@ const Layout = ({ children, usuario }) => {
           <NavLink to="/gastos">Meus Gastos</NavLink>
           <NavLink to="/conquistas">Minhas Conquistas</NavLink>
           <NavLink to="/exames">Meus Exames</NavLink>
+          <NavLink to="/artigos">Artigos e Dicas</NavLink>
           <NavLink to="/perfil">Meu Perfil</NavLink>
           <NavLink to="/ganhe-renda-extra">Ganhe Renda Extra</NavLink>
         </nav>

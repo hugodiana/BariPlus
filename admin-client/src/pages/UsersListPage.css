@@ -1,0 +1,80 @@
+.users-table-controls {
+    margin-bottom: 1.5rem;
+}
+.search-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px 15px;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    background-color: var(--sidebar-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+th {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: white;
+}
+.status-pago {
+    background-color: var(--primary-color);
+}
+.status-pendente {
+    background-color: #fd7e14; /* Laranja */
+}
+
+.actions-cell .action-btn.grant-btn {
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 0.8rem;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+.pagination-controls button {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    background-color: var(--sidebar-bg);
+    border-radius: 4px;
+    cursor: pointer;
+}
+.pagination-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -10,190 +10,313 @@ const ChecklistPage = () => {
     const [activeTab, setActiveTab] = useState('preOp');
     const [loading, setLoading] = useState(true);
     const [itemLoading, setItemLoading] = useState(null);
-    
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [tarefaEmEdicao, setTarefaEmEdicao] = useState(null);
-    const [textoDaTarefa, setTextoDaTarefa] = useState('');
+    const [editingTask, setEditingTask] = useState(null);
+    const [taskText, setTaskText] = useState('');
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchChecklist = useCallback(async () => {
-        setLoading(true); // Garante que o loading aparece ao trocar de aba
+        setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/checklist`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (!response.ok) throw new Error("Erro ao buscar checklist.");
+            const response = await fetch(`${apiUrl}/api/checklist`, {
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error("Falha ao carregar checklist. Por favor, tente novamente.");
+            }
+            
             const data = await response.json();
             setChecklist(data);
-        } catch (error) { 
-            toast.error(error.message); 
-        } finally { 
-            setLoading(false); 
+        } catch (error) {
+            console.error('Erro ao buscar checklist:', error);
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
         }
     }, [token, apiUrl]);
 
-    useEffect(() => { fetchChecklist(); }, [fetchChecklist]);
+    useEffect(() => {
+        fetchChecklist();
+    }, [fetchChecklist]);
 
-    const handleOpenModalParaAdicionar = () => {
-        setTarefaEmEdicao(null);
-        setTextoDaTarefa('');
+    const handleOpenAddModal = () => {
+        setEditingTask(null);
+        setTaskText('');
         setIsModalOpen(true);
     };
 
-    const handleOpenModalParaEditar = (tarefa) => {
-        setTarefaEmEdicao(tarefa);
-        setTextoDaTarefa(tarefa.descricao);
+    const handleOpenEditModal = (task) => {
+        setEditingTask(task);
+        setTaskText(task.descricao);
         setIsModalOpen(true);
     };
 
-    const handleSubmitTarefa = async (e) => {
+    const handleSubmitTask = async (e) => {
         e.preventDefault();
-        if (!textoDaTarefa.trim()) return;
+        if (!taskText.trim()) {
+            toast.warning('Por favor, insira uma descrição para a tarefa.');
+            return;
+        }
 
-        const isEditing = !!tarefaEmEdicao;
-        const url = isEditing ? `${apiUrl}/api/checklist/${tarefaEmEdicao._id}` : `${apiUrl}/api/checklist`;
-        const method = isEditing ? 'PUT' : 'POST';
-        const body = JSON.stringify({ descricao: textoDaTarefa, type: activeTab });
-
-        try {
-            const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body });
-            if (!res.ok) throw new Error(isEditing ? "Falha ao editar tarefa." : "Falha ao adicionar tarefa.");
+        const isEditing = !!editingTask;
+        const endpoint = isEditing 
+            ? `${apiUrl}/api/checklist/${editingTask._id}`
+            : `${apiUrl}/api/checklist`;
             
-            toast.success(`Tarefa ${isEditing ? 'editada' : 'adicionada'} com sucesso!`);
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        try {
+            const response = await fetch(endpoint, {
+                method,
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    descricao: taskText, 
+                    type: activeTab 
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(isEditing 
+                    ? "Falha ao atualizar a tarefa." 
+                    : "Falha ao criar nova tarefa.");
+            }
+
+            toast.success(`Tarefa ${isEditing ? 'atualizada' : 'criada'} com sucesso!`);
             setIsModalOpen(false);
-            fetchChecklist();
+            await fetchChecklist();
         } catch (error) {
+            console.error('Erro ao salvar tarefa:', error);
             toast.error(error.message);
         }
     };
 
-    const handleToggleConcluido = async (item) => {
-        setItemLoading(item._id);
+    const handleToggleCompleted = async (task) => {
+        if (itemLoading) return; // Previne múltiplos cliques
+        
+        setItemLoading(task._id);
         try {
-            const res = await fetch(`${apiUrl}/api/checklist/${item._id}`, {
+            const response = await fetch(`${apiUrl}/api/checklist/${task._id}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ concluido: !item.concluido, type: activeTab })
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    concluido: !task.concluido, 
+                    type: activeTab 
+                })
             });
-            if (!res.ok) throw new Error("Falha ao atualizar tarefa.");
             
-            const data = await res.json();
+            if (!response.ok) {
+                throw new Error("Falha ao atualizar status da tarefa.");
+            }
+            
+            const data = await response.json();
+            
             setChecklist(prev => ({
                 ...prev,
-                [activeTab]: prev[activeTab].map(i => i._id === item._id ? data.item : i)
+                [activeTab]: prev[activeTab].map(item => 
+                    item._id === task._id ? data.item : item
+                )
             }));
 
-            if (data.novasConquistas && data.novasConquistas.length > 0) {
-                data.novasConquistas.forEach(conquista => {
+            // Mostra conquistas desbloqueadas
+            if (data.novasConquistas?.length > 0) {
+                data.novasConquistas.forEach((conquista, index) => {
                     setTimeout(() => {
                         toast.info(
                             <div>
                                 <strong>🏆 Nova Conquista!</strong><br />
                                 {conquista.nome}
-                            </div>
+                            </div>,
+                            { autoClose: 5000 }
                         );
-                    }, 500);
+                    }, index * 1000); // Espaça as notificações
                 });
             }
         } catch (error) {
+            console.error('Erro ao alternar status da tarefa:', error);
             toast.error(error.message);
         } finally {
             setItemLoading(null);
         }
     };
     
-    const handleApagarItem = async (itemId) => {
-        if (!window.confirm("Tem a certeza que quer apagar esta tarefa?")) return;
-        setItemLoading(itemId);
+    const handleDeleteTask = async (taskId) => {
+        if (!window.confirm("Tem certeza que deseja excluir esta tarefa?")) return;
+        
+        setItemLoading(taskId);
         try {
-            const res = await fetch(`${apiUrl}/api/checklist/${itemId}?type=${activeTab}`, {
+            const response = await fetch(`${apiUrl}/api/checklist/${taskId}?type=${activeTab}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+                    'Authorization': `Bearer ${token}` 
+                }
             });
-            if (!res.ok) throw new Error("Falha ao apagar tarefa.");
             
-            toast.info("Tarefa apagada.");
+            if (!response.ok) {
+                throw new Error("Falha ao excluir tarefa.");
+            }
+            
+            toast.success("Tarefa excluída com sucesso.");
             setChecklist(prev => ({
                 ...prev,
-                [activeTab]: prev[activeTab].filter(item => item._id !== itemId)
+                [activeTab]: prev[activeTab].filter(item => item._id !== taskId)
             }));
         } catch (error) {
+            console.error('Erro ao excluir tarefa:', error);
             toast.error(error.message);
         } finally {
             setItemLoading(null);
         }
     };
 
-    if (loading) return <LoadingSpinner />;
+    if (loading) {
+        return (
+            <div className="page-container">
+                <LoadingSpinner fullPage />
+            </div>
+        );
+    }
 
-    const itensDaAbaAtiva = checklist[activeTab] || [];
-    const totalItens = itensDaAbaAtiva.length;
-    const itensConcluidos = itensDaAbaAtiva.filter(item => item.concluido).length;
-    const progresso = totalItens > 0 ? (itensConcluidos / totalItens) * 100 : 0;
+    const activeTabItems = checklist[activeTab] || [];
+    const completedCount = activeTabItems.filter(item => item.concluido).length;
+    const totalCount = activeTabItems.length;
+    const progress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
     return (
         <div className="page-container">
-            <div className="page-header">
-                <h1>O Meu Checklist</h1>
-                <p>Acompanhe aqui todas as suas tarefas importantes.</p>
-            </div>
+            <header className="page-header">
+                <h1>Meu Checklist</h1>
+                <p>Acompanhe suas tarefas importantes</p>
+            </header>
             
             <Card>
                 <div className="tab-buttons">
-                    <button className={`tab-btn ${activeTab === 'preOp' ? 'active' : ''}`} onClick={() => setActiveTab('preOp')}>Pré-Operatório</button>
-                    <button className={`tab-btn ${activeTab === 'posOp' ? 'active' : ''}`} onClick={() => setActiveTab('posOp')}>Pós-Operatório</button>
+                    <button
+                        className={`tab-btn ${activeTab === 'preOp' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('preOp')}
+                    >
+                        Pré-Operatório
+                    </button>
+                    <button
+                        className={`tab-btn ${activeTab === 'posOp' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('posOp')}
+                    >
+                        Pós-Operatório
+                    </button>
                 </div>
 
                 <div className="tab-content">
-                    {totalItens > 0 && (
+                    {totalCount > 0 && (
                         <div className="progress-container">
-                            <div className="progress-bar-background">
-                                <div className="progress-bar-foreground" style={{ width: `${progresso}%` }}></div>
+                            <div className="progress-bar">
+                                <div 
+                                    className="progress-fill" 
+                                    style={{ width: `${progress}%` }}
+                                    aria-valuenow={progress}
+                                    aria-valuemin="0"
+                                    aria-valuemax="100"
+                                ></div>
                             </div>
-                            <p className="progress-text">{itensConcluidos} de {totalItens} tarefas concluídas</p>
+                            <p className="progress-text">
+                                {completedCount} de {totalCount} ({progress}%) concluídas
+                            </p>
                         </div>
                     )}
 
-                    <div className="add-task-container">
-                        <button className="add-btn" onClick={handleOpenModalParaAdicionar}>+ Adicionar Nova Tarefa</button>
-                    </div>
+                    <button 
+                        className="add-task-btn"
+                        onClick={handleOpenAddModal}
+                    >
+                        + Adicionar Tarefa
+                    </button>
                     
-                    {itensDaAbaAtiva.length > 0 ? (
-                        <ul className="checklist-ul">
-                            {itensDaAbaAtiva.map(item => (
-                                <li key={item._id} className={`${item.concluido ? 'concluido' : ''} ${itemLoading === item._id ? 'loading' : ''}`}>
-                                    <div className="checkbox-container" onClick={() => handleToggleConcluido(item)}>
-                                        {item.concluido && <span className="checkmark">✓</span>}
+                    {activeTabItems.length > 0 ? (
+                        <ul className="task-list">
+                            {activeTabItems.map(item => (
+                                <li 
+                                    key={item._id}
+                                    className={`
+                                        task-item 
+                                        ${item.concluido ? 'completed' : ''}
+                                        ${itemLoading === item._id ? 'loading' : ''}
+                                    `}
+                                >
+                                    <div 
+                                        className="checkbox"
+                                        onClick={() => handleToggleCompleted(item)}
+                                        aria-label={item.concluido ? 'Marcar como pendente' : 'Marcar como concluído'}
+                                    >
+                                        {item.concluido && <span className="check-icon">✓</span>}
                                     </div>
-                                    <span className="item-text">{item.descricao}</span>
-                                    <div className="item-actions">
-                                        <button onClick={() => handleOpenModalParaEditar(item)} className="action-btn edit-btn">✎</button>
-                                        <button onClick={() => handleApagarItem(item._id)} className="action-btn delete-btn">×</button>
+                                    <span className="task-text">{item.descricao}</span>
+                                    <div className="task-actions">
+                                        <button 
+                                            onClick={() => handleOpenEditModal(item)}
+                                            className="edit-btn"
+                                            aria-label="Editar tarefa"
+                                            disabled={itemLoading === item._id}
+                                        >
+                                            ✎
+                                        </button>
+                                        <button 
+                                            onClick={() => handleDeleteTask(item._id)}
+                                            className="delete-btn"
+                                            aria-label="Excluir tarefa"
+                                            disabled={itemLoading === item._id}
+                                        >
+                                            ×
+                                        </button>
                                     </div>
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        <div className="empty-state-container">
-                            <h3>Lista Vazia</h3>
-                            <p>Ainda não há tarefas nesta lista. Comece por adicionar a sua primeira tarefa!</p>
+                        <div className="empty-state">
+                            <h3>Nenhuma tarefa encontrada</h3>
+                            <p>Adicione sua primeira tarefa clicando no botão acima.</p>
                         </div>
                     )}
                 </div>
             </Card>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>{tarefaEmEdicao ? 'Editar Tarefa' : 'Adicionar Nova Tarefa'}</h2>
-                <form onSubmit={handleSubmitTarefa} className="checklist-form">
+            <Modal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)}
+            >
+                <h2>{editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}</h2>
+                <form onSubmit={handleSubmitTask}>
                     <input
                         type="text"
-                        value={textoDaTarefa}
-                        onChange={(e) => setTextoDaTarefa(e.target.value)}
-                        placeholder="Descrição da tarefa..."
+                        value={taskText}
+                        onChange={(e) => setTaskText(e.target.value)}
+                        placeholder="Descreva a tarefa..."
                         required
                         autoFocus
+                        maxLength={200}
                     />
-                    <button type="submit">{tarefaEmEdicao ? 'Salvar Alterações' : 'Adicionar Tarefa'}</button>
+                    <div className="form-actions">
+                        <button 
+                            type="button" 
+                            className="secondary-btn"
+                            onClick={() => setIsModalOpen(false)}
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" className="primary-btn">
+                            {editingTask ? 'Salvar' : 'Adicionar'}
+                        </button>
+                    </div>
                 </form>
             </Modal>
         </div>

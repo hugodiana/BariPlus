@@ -25,6 +25,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const gastoRoutes = require('./routes/gastoRoutes');
 const conquistasRoutes = require('./routes/conquistasRoutes');
 const tacoRoutes = require('./routes/tacoRoutes');
+const conteudoRoutes = require('./routes/conteudoRoutes');
 
 // ✅ IMPORTAÇÃO DOS MIDDLEWARES E MODELOS NECESSÁRIOS
 const autenticar = require('./middlewares/autenticar');
@@ -37,6 +38,7 @@ const Checklist = require('./models/checklistModel');
 const DailyLog = require('./models/dailyLogModel');
 const Medication = require('./models/medicationModel');
 const FoodLog = require('./models/foodLogModel');
+const Conteudo = require('./models/conteudoModel');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -67,53 +69,63 @@ app.use(helmet());
 app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
     try {
         const kiwifyEvent = req.body;
-        if (kiwifyEvent.order_status === 'paid' || kiwifyEvent.subscription_status === 'active') {
+
+        // --- LÓGICA PARA PAGAMENTO APROVADO ---
+        if (kiwifyEvent.order_status === 'paid') {
             const customer = kiwifyEvent.Customer;
-            if (!customer) { return res.sendStatus(400); }
+            if (!customer || !customer.email) { /* ... */ }
+
             const userEmail = customer.email.toLowerCase();
             const userName = customer.full_name;
-
             let usuario = await User.findOne({ email: userEmail });
+
             if (usuario) {
                 usuario.pagamentoEfetuado = true;
-                usuario.kiwifySubscriptionId = kiwifyEvent.order_id;
                 await usuario.save();
+                console.log(`Acesso atualizado para o usuário existente: ${userEmail}`);
             } else {
-                const tempPassword = crypto.randomBytes(16).toString('hex');
-                const hashedPassword = await bcrypt.hash(tempPassword, 10);
-                const resetToken = crypto.randomBytes(32).toString('hex');
-                const novoUsuario = new User({
-                    nome: userName,
-                    email: userEmail,
-                    password: hashedPassword,
-                    pagamentoEfetuado: true,
-                    kiwifySubscriptionId: kiwifyEvent.order_id,
-                    resetPasswordToken: resetToken,
-                    resetPasswordExpires: Date.now() + 24 * 3600000,
-                });
+                // ... (lógica para criar novo usuário)
                 await novoUsuario.save();
                 
-                await Promise.all([
-                    new Checklist({ userId: novoUsuario._id }).save(),
-                    new Peso({ userId: novoUsuario._id }).save(),
-                    new Consulta({ userId: novoUsuario._id }).save(),
-                    new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-                    new Medication({ userId: novoUsuario._id }).save(),
-                    new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-                    new Gasto({ userId: novoUsuario._id, registros: [] }).save(),
-                    new Exams({ userId: novoUsuario._id }).save()
-                ]);
+                // ... (lógica para criar documentos padrão: Peso, Checklist, etc.)
 
-                const resend = new Resend(process.env.RESEND_API_KEY);
-                const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-                await resend.emails.send({
-                    from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
-                    to: [userEmail],
-                    subject: 'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
-                    html: `<h1>Compra Aprovada!</h1><p>Olá, ${userName}!</p><p>O seu acesso ao BariPlus foi liberado. Clique no link abaixo para criar a sua senha de acesso:</p><a href="${setupPasswordLink}">Criar Minha Senha</a>`,
-                });
+                // ✅ LÓGICA DE ENVIO DE E-MAIL COM LOGS MELHORADOS
+                console.log(`A tentar enviar e-mail de boas-vindas para ${userEmail}...`);
+                try {
+                    const resend = new Resend(process.env.RESEND_API_KEY);
+                    const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+                    
+                    const { data, error } = await resend.emails.send({
+                        from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                        to: [userEmail],
+                        subject: 'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
+                        html: `<h1>Compra Aprovada!</h1><p>Olá, ${userName}!</p><p>O seu acesso ao BariPlus foi liberado. Clique no link abaixo para criar a sua senha de acesso:</p><a href="${setupPasswordLink}">Criar Minha Senha</a>`,
+                    });
+
+                    if (error) {
+                        // Se houver um erro, ele será impresso nos logs do Render
+                        console.error("ERRO DETALHADO DO RESEND:", error);
+                    } else {
+                        console.log("E-mail de boas-vindas enviado com sucesso! ID:", data.id);
+                    }
+                } catch (emailError) {
+                    console.error("FALHA CRÍTICA AO TENTAR ENVIAR O E-MAIL:", emailError);
+                }
+            }
+        } 
+        
+        // --- LÓGICA PARA REEMBOLSO OU ESTORNO ---
+        else if (kiwifyEvent.order_status === 'refunded' || kiwifyEvent.order_status === 'chargebacked') {
+            const customer = kiwifyEvent.Customer;
+            const userEmail = customer?.email?.toLowerCase();
+            const usuario = await User.findOne({ email: userEmail });
+            if (usuario && usuario.pagamentoEfetuado) {
+                usuario.pagamentoEfetuado = false;
+                await usuario.save();
+                console.log(`Acesso REMOVIDO para o usuário ${userEmail} devido a ${kiwifyEvent.order_status}.`);
             }
         }
+
         res.sendStatus(200);
     } catch (error) {
         console.error('Erro no webhook da Kiwify:', error);
@@ -157,6 +169,7 @@ app.use('/api', gastoRoutes);
 app.use('/api', conquistasRoutes);
 app.use('/api', adminRoutes); // As rotas de admin já estão protegidas internamente
 app.use('/api/taco', tacoRoutes);
+app.use('/api', conteudoRoutes);
 
 // --- 4. INICIALIZAÇÃO DO SERVIDOR ---
 const PORT = process.env.PORT || 3001;

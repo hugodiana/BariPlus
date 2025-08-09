@@ -1,19 +1,29 @@
+/* ConsultasPage.css refatorado com o novo sistema de design */
 .consultas-layout {
     display: grid;
-    /* Em telas grandes, o calendário tem tamanho automático e a lista ocupa o resto */
     grid-template-columns: auto 1fr; 
     gap: var(--space-xl);
 }
 
-/* Estilo para o dia marcado no calendário */
-.dia-com-consulta {
-    font-weight: bold;
-    color: var(--action-blue) !important;
-    background-color: var(--primary-light) !important;
-    border-radius: 50%;
+.calendario-card {
+    display: flex;
+    justify-content: center;
 }
 
-/* Cabeçalho da lista de consultas */
+/* Estilo para o dia marcado no calendário */
+.dia-com-consulta {
+    font-weight: bold !important;
+    color: var(--action-blue) !important;
+    background-color: var(--primary-light) !important;
+    border-radius: 50% !important;
+}
+
+.consultas-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
 .lista-header {
     display: flex;
     justify-content: space-between;
@@ -25,16 +35,6 @@
 .lista-header h3 { 
     margin: 0;
     color: var(--primary-green);
-}
-
-.add-btn {
-    background-color: var(--action-blue);
-    color: white;
-    border: none;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--border-radius);
-    font-weight: 600;
-    cursor: pointer;
 }
 
 .lista-consultas-card ul { 
@@ -67,46 +67,8 @@
 
 .consulta-info { flex-grow: 1; }
 .consulta-info span, .consulta-info strong { display: block; }
-.consulta-info small { color: var(--text-light); }
+.consulta-info small { color: var(--text-faint); }
 
-.consulta-actions { display: flex; align-items: center; }
-.action-btn { background: transparent; border: none; font-size: 20px; cursor: pointer; opacity: 0.6; }
-.action-btn:hover { opacity: 1; }
-.edit-btn { color: var(--action-blue); }
-.delete-btn { color: var(--danger-red); }
-
-.empty-list-message { text-align: center; padding: var(--space-lg); color: var(--text-light); }
-
-/* Estilos do formulário no modal */
-.consulta-form label { display: block; margin-bottom: var(--space-sm); font-weight: 600; }
-.consulta-form input, .consulta-form textarea {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: var(--space-md);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-.consulta-form button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    background-color: var(--primary-green);
-    color: white;
-}
-
-/* 📱 CORREÇÃO DE RESPONSIVIDADE */
-@media (max-width: 900px) {
-    .consultas-layout {
-        /* Em telas menores, o layout vira uma única coluna */
-        grid-template-columns: 1fr;
-    }
-
-    .calendario-card {
-        display: flex;
-        justify-content: center;
-    }
-}
 .status-badge {
     display: inline-block;
     padding: 3px 8px;
@@ -117,5 +79,14 @@
     margin-bottom: 5px;
 }
 .status-agendado { background-color: var(--action-blue); }
-.status-realizado { background-color: var(--primary-green); }
+.status-realizado { background-color: var(--secondary-green); }
 .status-cancelado { background-color: var(--danger-red); }
+
+.consulta-actions { display: flex; align-items: center; }
+
+/* Responsividade */
+@media (max-width: 900px) {
+    .consultas-layout {
+        grid-template-columns: 1fr;
+    }
+}
