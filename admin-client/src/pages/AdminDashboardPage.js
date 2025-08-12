@@ -1,168 +1,98 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { Helmet } from 'react-helmet-async';
-import { 
-  FiUsers, 
-  FiDollarSign, 
-  FiUserPlus, 
-  FiActivity,
-  FiTrendingUp,
-  FiClock
-} from 'react-icons/fi';
-import './AdminDashboardPage.css';
+import './AdminLoginPage.css';
 
-const AdminDashboardPage = () => {
-    const [stats, setStats] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [lastUpdated, setLastUpdated] = useState(null);
+const AdminLoginPage = () => {
+    const [formData, setFormData] = useState({ identifier: '', password: '' });
+    const [showPassword, setShowPassword] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
 
-    const token = localStorage.getItem('bariplus_admin_token');
     const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
-    const fetchStats = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+        setError(''); // Limpa o erro ao digitar
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setError('');
         
         try {
-            if (!token) {
-                throw new Error('Token de autenticação não encontrado');
-            }
-
-            const response = await fetch(`${apiUrl}/api/admin/stats`, {
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache'
-                },
-                credentials: 'include' // Para suporte a cookies seguros
+            // ✅ CORREÇÃO: Aponta para a nova rota de login de admin
+            const response = await fetch(`${apiUrl}/api/admin/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData),
             });
 
-            if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Sessão expirada. Por favor, faça login novamente.');
-                }
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Erro ao carregar estatísticas');
-            }
-
             const data = await response.json();
-            
-            if (!data || typeof data !== 'object') {
-                throw new Error('Dados recebidos são inválidos');
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Falha no login.');
             }
 
-            setStats(data);
-            setLastUpdated(new Date());
-        } catch (error) {
-            console.error('Erro ao buscar estatísticas:', error);
-            setError(error.message);
-            toast.error(`Falha ao carregar dashboard: ${error.message}`);
+            toast.success('Login realizado com sucesso!');
+            localStorage.setItem('bariplus_admin_token', data.token);
+            window.location.href = '/'; // Redireciona para o dashboard do admin
+            
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.message || 'Ocorreu um erro durante o login.');
+            toast.error(err.message || 'Ocorreu um erro durante o login.');
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
         }
-    }, [token, apiUrl]);
-
-    // Atualização automática a cada 5 minutos
-    useEffect(() => {
-        fetchStats();
-        
-        const interval = setInterval(() => {
-            fetchStats();
-        }, 5 * 60 * 1000); // 5 minutos
-
-        return () => clearInterval(interval);
-    }, [fetchStats]);
-
-    const handleRetry = () => {
-        fetchStats();
     };
-
-    const formatNumber = (num) => {
-        return num ? num.toLocaleString('pt-BR') : 0;
-    };
-
-    if (loading && !stats) {
-        return (
-            <div className="dashboard-loading">
-                <div className="loading-spinner"></div>
-                <p>Carregando dashboard...</p>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="dashboard-error">
-                <p className="error-message">{error}</p>
-                <button onClick={handleRetry} className="retry-button">
-                    Tentar novamente
-                </button>
-            </div>
-        );
-    }
 
     return (
-        <div className="admin-dashboard">
-            <Helmet>
-                <title>Dashboard Administrativo - BariPlus</title>
-                <meta name="description" content="Painel de controle administrativo do BariPlus" />
-            </Helmet>
+        <div className="admin-login-container">
+            <div className="login-box">
+                <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo-admin" />
+                <h2>Painel de Administração</h2>
+                
+                {error && (
+                    <div className="error-message">{error}</div>
+                )}
 
-            <header className="dashboard-header">
-                <h1>Dashboard Administrativo</h1>
-                <p>Visão geral do sistema {lastUpdated && (
-                    <span className="last-updated">
-                        <FiClock /> Atualizado em: {lastUpdated.toLocaleTimeString()}
-                    </span>
-                )}</p>
-            </header>
+                <form onSubmit={handleSubmit} noValidate>
+                    <div className="input-group">
+                        <label htmlFor="identifier">Email ou Username</label>
+                        <input
+                            id="identifier" type="text" name="identifier"
+                            value={formData.identifier} onChange={handleChange}
+                            required disabled={isSubmitting}
+                        />
+                    </div>
 
-            <div className="stats-grid">
-                <div className="stat-card">
-                    <div className="stat-icon"><FiUsers /></div>
-                    <div className="stat-value">{formatNumber(stats?.totalUsers)}</div>
-                    <div className="stat-label">Usuários Totais</div>
-                    {stats?.userGrowthRate && (
-                        <div className={`stat-trend ${stats.userGrowthRate >= 0 ? 'positive' : 'negative'}`}>
-                            <FiTrendingUp /> {Math.abs(stats.userGrowthRate)}%
+                    <div className="input-group">
+                        <label htmlFor="password">Senha</label>
+                        <div className="password-input">
+                            <input
+                                id="password" type={showPassword ? 'text' : 'password'} name="password"
+                                value={formData.password} onChange={handleChange}
+                                required disabled={isSubmitting}
+                            />
+                            <button
+                                type="button" className="toggle-password"
+                                onClick={() => setShowPassword(!showPassword)}
+                                disabled={isSubmitting}
+                            >
+                                {showPassword ? '🙈' : '👁️'}
+                            </button>
                         </div>
-                    )}
-                </div>
-                
-                <div className="stat-card">
-                    <div className="stat-icon"><FiDollarSign /></div>
-                    <div className="stat-value">{formatNumber(stats?.paidUsers)}</div>
-                    <div className="stat-label">Contas Ativas</div>
-                    <div className="stat-subtext">
-                        {stats?.conversionRate ? `${stats.conversionRate}% conversão` : ''}
                     </div>
-                </div>
-                
-                <div className="stat-card">
-                    <div className="stat-icon"><FiUserPlus /></div>
-                    <div className="stat-value">{formatNumber(stats?.newUsersLast7Days)}</div>
-                    <div className="stat-label">Novos (7 dias)</div>
-                </div>
 
-                <div className="stat-card">
-                    <div className="stat-icon"><FiActivity /></div>
-                    <div className="stat-value">{formatNumber(stats?.activeUsersLast30Days)}</div>
-                    <div className="stat-label">Ativos (30 dias)</div>
-                </div>
+                    <button type="submit" className="submit-btn-admin" disabled={isSubmitting}>
+                        {isSubmitting ? 'Entrando...' : 'Entrar'}
+                    </button>
+                </form>
             </div>
-
-            {/* Seção adicional para gráficos/resumo */}
-            {stats && (
-                <div className="dashboard-summary">
-                    <h2>Resumo de Atividades</h2>
-                    <div className="summary-grid">
-                        {/* Adicionar gráficos ou mais estatísticas aqui */}
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
 
-export default AdminDashboardPage;
+export default AdminLoginPage;

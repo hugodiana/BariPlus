@@ -3,7 +3,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { Resend } = require('resend');
@@ -23,10 +22,9 @@ const medicationRoutes = require('./routes/medicationRoutes');
 const examsRoutes = require('./routes/examsRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const gastoRoutes = require('./routes/gastoRoutes');
-const conquistasRoutes = require('./routes/conquistasRoutes');
 const tacoRoutes = require('./routes/tacoRoutes');
 
-// ✅ IMPORTAÇÃO DOS MIDDLEWARES E MODELOS NECESSÁRIOS
+// ✅ IMPORTAÇÃO DOS MIDDLEWARES E MODELOS
 const autenticar = require('./middlewares/autenticar');
 const User = require('./models/userModel');
 const Peso = require('./models/pesoModel');
@@ -48,7 +46,7 @@ const whitelist = [
     'https://bariplus-admin.onrender.com', 'http://localhost:3000',
     'http://localhost:3001', 'http://localhost:3002',
     'https://www.bariplus.com.br', 'https://bariplus.com.br',
-    'https://bariplus-app.netlify.app'
+    'https://bariplus-app.netlify.app', 'https://admin.bariplus.com.br', 'http://localhost:3002/'
 ];
 const corsOptions = {
     origin: function (origin, callback) {
@@ -62,6 +60,8 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(helmet());
+app.use(express.json());
+
 
 // --- 2. WEBHOOK DA KIWIFY ---
 app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
@@ -121,13 +121,8 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
     }
 });
 
-app.use(express.json());
 
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use('/api/login', limiter);
-app.use('/api/forgot-password', limiter);
-
-// --- 2. CONFIGURAÇÕES DE SERVIÇOS ---
+// --- 3. CONFIGURAÇÕES DE SERVIÇOS ---
 if (process.env.FIREBASE_PRIVATE_KEY) {
     if (!admin.apps.length) {
         try {
@@ -135,14 +130,24 @@ if (process.env.FIREBASE_PRIVATE_KEY) {
             const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
             const serviceAccount = JSON.parse(decodedKey);
             admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-        } catch (error) { console.error('Erro ao inicializar Firebase Admin:', error); }
+            console.log('Firebase Admin inicializado com sucesso.');
+        } catch (error) { 
+            console.error('Erro ao inicializar Firebase Admin:', error); 
+        }
     }
 }
-cloudinary.config({ cloud_name: process.env.CLOUDINARY_CLOUD_NAME, api_key: process.env.CLOUDINARY_API_KEY, api_secret: process.env.CLOUDINARY_API_SECRET });
 
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET 
+});
+
+const PORT = process.env.PORT || 3001;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
-// --- 3. ROTAS DA API ---
+
+// --- 4. ROTAS DA API ---
 app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' }));
 app.use('/api', authRoutes);
 app.use('/api', userRoutes);
@@ -153,27 +158,22 @@ app.use('/api', foodLogRoutes);
 app.use('/api', dailyLogRoutes);
 app.use('/api', medicationRoutes);
 app.use('/api', examsRoutes);
+app.use('/api', adminRoutes);
 app.use('/api', gastoRoutes);
-app.use('/api', conquistasRoutes);
-app.use('/api', adminRoutes); // As rotas de admin já estão protegidas internamente
-app.use('/api/taco', tacoRoutes);
+app.use('/api/taco', autenticar, tacoRoutes);
 
-// --- 4. INICIALIZAÇÃO DO SERVIDOR ---
-const PORT = process.env.PORT || 3001;
-mongoose.connect(process.env.DATABASE_URL).then(() => {
-    const server = app.listen(PORT, () => {
-        console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
-    });
 
-    process.on('SIGTERM', () => {
-        console.log('Received SIGTERM, shutting down gracefully');
-        server.close(async () => {
-            await mongoose.connection.close(false);
-            console.log('MongoDB connection closed.');
-            process.exit(0);
-        });
+// --- 5. INICIALIZAÇÃO DO SERVIDOR ---
+const server = app.listen(PORT, () => {
+    console.log(`Servidor do BariPlus rodando na porta ${PORT}`);
+});
+
+process.on('SIGTERM', () => {
+    console.log('Received SIGTERM, shutting down gracefully');
+    server.close(async () => {
+        console.log('HTTP server closed.');
+        await mongoose.connection.close(false);
+        console.log('MongoDB connection closed.');
+        process.exit(0);
     });
-}).catch(err => {
-    console.error('Erro ao conectar ao MongoDB:', err);
-    process.exit(1);
 });

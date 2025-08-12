@@ -42,7 +42,7 @@ const LoginPage = () => {
             length: pass.length >= 8,
             uppercase: /[A-Z]/.test(pass),
             number: /[0-9]/.test(pass),
-            specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(pass),
+            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(pass), // removi * extra
         };
         setPasswordValidations(validations);
         return Object.values(validations).every(Boolean);
@@ -58,43 +58,65 @@ const LoginPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (isRegistering) {
-            if (email.toLowerCase() !== confirmEmail.toLowerCase()) return toast.error("Os e-mails não coincidem.");
-            if (password !== confirmPassword) return toast.error("As senhas não coincidem.");
-            if (!validatePassword(password)) return toast.error("A sua senha não cumpre todos os requisitos de segurança.");
-            if (!acceptedTerms) return toast.error("Você precisa de aceitar os Termos de Serviço.");
+            if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
+                return toast.error("Os e-mails não coincidem.");
+            }
+            if (password !== confirmPassword) {
+                return toast.error("As senhas não coincidem.");
+            }
+            if (!validatePassword(password)) {
+                return toast.error("A sua senha não cumpre todos os requisitos de segurança.");
+            }
+            if (!acceptedTerms) {
+                return toast.error("Você precisa aceitar os Termos de Serviço.");
+            }
         }
+
         const url = isRegistering ? `${apiUrl}/api/register` : `${apiUrl}/api/login`;
-        const body = isRegistering ? { nome, sobrenome, username, email, password } : { identifier, password };
-        
+        const body = isRegistering
+            ? { nome, sobrenome, username, email, password }
+            : { identifier, password };
+
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
             });
+
             const data = await response.json();
-            if (!response.ok) throw data;
-            
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Erro desconhecido.');
+            }
+
             if (isRegistering) {
                 toast.success('Cadastro quase concluído! Verifique o seu e-mail.');
-                navigate('/verify-email', { state: { email: email } });
+                navigate('/verify-email', { state: { email } });
             } else {
+<<<<<<< HEAD
                 // ✅ CORREÇÃO AQUI: Usamos o nosso novo sistema para guardar o token
                 setAuthToken(data.accessToken);
                 toast.success("Login bem-sucedido!");
                 window.location.href = '/'; 
+=======
+                localStorage.setItem('bariplus_token', data.token);
+                window.location.href = '/';
+>>>>>>> 75ba0ea2f41ae731c28cb11c7eb89cfedf764ef5
             }
         } catch (error) {
-            if (error.message && error.message.includes('Sua conta ainda não foi ativada')) {
-                toast.warn(error.message);
+            const errorMessage = error.message || 'Algo deu errado.';
+            if (errorMessage.includes('Sua conta ainda não foi ativada')) {
+                toast.warn(errorMessage);
                 navigate('/verify-email', { state: { email: identifier } });
             } else {
-                toast.error(error.message || 'Algo deu errado.');
+                toast.error(errorMessage);
             }
         }
     };
- 
+
     const handleForgotPassword = async (e) => {
         e.preventDefault();
         try {
@@ -104,10 +126,10 @@ const LoginPage = () => {
                 body: JSON.stringify({ email: forgotEmail }),
             });
             const data = await response.json();
-            toast.info(data.message);
+            toast.info(data.message || 'Se este e-mail estiver cadastrado, enviaremos as instruções.');
             setIsForgotModalOpen(false);
             setForgotEmail('');
-        } catch (error) {
+        } catch {
             toast.error("Erro ao conectar com o servidor.");
         }
     };
@@ -132,27 +154,51 @@ const LoginPage = () => {
                         <input type="text" placeholder="E-mail ou Username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
                     )}
                     <div className="password-wrapper">
-                        <input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={password} onChange={handlePasswordChange} required />
+                        <input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Senha"
+                            value={password}
+                            onChange={handlePasswordChange}
+                            required
+                        />
                         <span className="password-toggle-icon" onClick={() => setShowPassword(!showPassword)}>👁️</span>
                     </div>
                     {isRegistering && (
                         <>
                             <div className="password-wrapper">
-                                <input type={showPassword ? 'text' : 'password'} placeholder="Confirme sua Senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="Confirme sua Senha"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
                             </div>
                             <PasswordStrengthIndicator validations={passwordValidations} />
                             <div className="terms-container">
-                               <label>
-                                    <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
+                                <label>
+                                    <input
+                                        type="checkbox"
+                                        checked={acceptedTerms}
+                                        onChange={(e) => setAcceptedTerms(e.target.checked)}
+                                    />
                                     Eu li e concordo com os <Link to="/termos" target="_blank" rel="noopener noreferrer">Termos de Serviço</Link> e a <Link to="/privacidade" target="_blank" rel="noopener noreferrer">Política de Privacidade</Link>.
-                               </label>
+                                </label>
                             </div>
                         </>
                     )}
-                    <button type="submit" className="submit-button" disabled={isRegistering && !acceptedTerms}>{isRegistering ? 'Cadastrar' : 'Entrar'}</button>
+                    <button type="submit" className="submit-button" disabled={isRegistering && !acceptedTerms}>
+                        {isRegistering ? 'Cadastrar' : 'Entrar'}
+                    </button>
                     <div className="form-footer">
-                        {!isRegistering && (<button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>Esqueci a minha senha</button>)}
-                        <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>{isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}</button>
+                        {!isRegistering && (
+                            <button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>
+                                Esqueci a minha senha
+                            </button>
+                        )}
+                        <button type="button" className="link-button" onClick={() => setIsRegistering(!isRegistering)}>
+                            {isRegistering ? 'Já tem uma conta? Faça login' : 'Não tem uma conta? Cadastre-se'}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -161,7 +207,13 @@ const LoginPage = () => {
                 <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>
                 <form onSubmit={handleForgotPassword} className="modal-form">
                     <label>E-mail</label>
-                    <input type="email" value={forgotEmail} onChange={(e) => setForgotEmail(e.target.value)} placeholder="seu-email@exemplo.com" required />
+                    <input
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="seu-email@exemplo.com"
+                        required
+                    />
                     <button type="submit" className="submit-button">Enviar Link de Redefinição</button>
                 </form>
             </Modal>

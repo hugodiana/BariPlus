@@ -1,8 +1,10 @@
+/* ExamsPage.css refatorado com o novo sistema de design */
+
 .add-btn-main {
     background-color: var(--action-blue);
     color: white;
     border: none;
-    padding: 10px 15px;
+    padding: 12px 18px;
     border-radius: var(--border-radius);
     font-weight: 600;
     cursor: pointer;
@@ -16,33 +18,25 @@
     gap: var(--space-md);
 }
 
-.exam-entry {
-    transition: all 0.3s ease-in-out;
-}
-
 .exam-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
 }
-
 .exam-info {
     display: flex;
     flex-direction: column;
 }
-
 .exam-name {
     font-weight: 600;
     font-size: 1.1rem;
 }
-
 .exam-latest-result {
     font-size: 0.9rem;
-    color: var(--text-light);
+    color: var(--text-secondary);
     margin-top: var(--space-xs);
 }
-
 .accordion-icon {
     font-size: 1.5rem;
     font-weight: bold;
@@ -53,21 +47,7 @@
     margin-top: var(--space-lg);
     padding-top: var(--space-lg);
     border-top: 1px solid var(--border-color);
-    animation: fadeInContent 0.5s ease-in-out;
 }
-
-@keyframes fadeInContent {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.exam-chart-container {
-    position: relative; 
-    height: 250px; /* Altura fixa para o gráfico */
-    width: 100%;
-    margin-bottom: var(--space-lg);
-}
-
 
 .add-result-btn {
     display: inline-block;
@@ -81,116 +61,27 @@
     cursor: pointer;
 }
 
-.table-responsive { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: var(--space-md); text-align: left; border-bottom: 1px solid var(--border-color); }
-td.actions { display: flex; gap: var(--space-sm); }
-.action-btn { background:transparent; border:none; cursor:pointer; font-size: 1.2rem; }
-
-/* Estilos dos formulários nos modais */
-form { display: flex; flex-direction: column; gap: var(--space-md); }
-form label { font-weight: 600; }
-form input, form select, form textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 1rem;
-}
-form button {
-    padding: 12px;
-    border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--primary-green);
-    color: white;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-top: var(--space-sm);
-}
-
-/* ✅ NOVIDADE: Responsividade para Celulares */
-@media (max-width: 768px) {
-    .page-header { text-align: center; }
-    .add-btn-main { width: 100%; }
-
-    .exam-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    .accordion-icon {
-        align-self: flex-end; /* Manda o ícone para a direita */
-        margin-top: -30px; /* Sobe o ícone para alinhar */
-    }
-    
-    th, td {
-        padding: var(--space-sm); /* Diminui o espaçamento interno da tabela */
-        font-size: 14px; /* Diminui o tamanho da fonte */
-    }
-}
-.pdf-chart-studio {
-    position: absolute;
-    left: -9999px; /* Joga o estúdio para muito longe da tela */
-    top: -9999px;
-    opacity: 0; /* Garante que é invisível */
-    z-index: -10; /* Garante que não fica por cima de nada */
-}
-
-.pdf-link-container {
-    display: flex;
-    align-items: center;
-}
-
-.pdf-link {
-    background-color: var(--primary-green);
-    color: white;
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 0.9rem;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.pdf-link:disabled {
-    background-color: var(--text-light);
-    cursor: not-allowed;
-}
-
-.pdf-link.ready {
-    background-color: var(--action-blue);
-}
-
-.pdf-link:hover {
-    opacity: 0.9;
-}
-
 .status-indicator {
     display: inline-block;
     width: 10px;
     height: 10px;
     border-radius: 50%;
     margin-right: 8px;
-    background-color: var(--border-color); /* Cor padrão */
+    background-color: var(--border-color);
 }
+td.status-normal .status-indicator { background-color: var(--secondary-green); }
+td.status-low .status-indicator { background-color: var(--action-blue); }
+td.status-high .status-indicator { background-color: var(--danger-red); }
 
-td.status-normal .status-indicator {
-    background-color: var(--primary-green);
-}
-td.status-low .status-indicator {
-    background-color: var(--action-blue);
-}
-td.status-high .status-indicator {
-    background-color: var(--danger-red);
-}
-
-/* ✅ NOVO: Estilo para o formulário com colunas */
-.form-row {
-    display: flex;
-    gap: var(--space-md);
-}
-.form-group {
-    flex: 1;
+/* Responsividade para a tabela */
+@media (max-width: 768px) {
+    .exam-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .accordion-icon {
+        align-self: flex-end;
+        margin-top: -30px;
+    }
 }

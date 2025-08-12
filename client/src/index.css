@@ -1,9 +1,19 @@
-/* Deixamos este arquivo mínimo para não interferir com o nosso App.css */
+/* Importa o nosso novo sistema de design */
+@import url('./theme.css');
+
+/* Importa a fonte 'Inter' do Google Fonts para uma aparência mais moderna */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* Reset Básico e Estilos Globais */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: var(--font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-light);
+  color: var(--text-primary);
+}
+
+* {
+  box-sizing: border-box;
 }

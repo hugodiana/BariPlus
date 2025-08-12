@@ -1,165 +1,246 @@
-/* Layout.css - Versão Final Padronizada */
+:root {
+  /* Cores */
+  --primary-green: #2e7d32;
+  --primary-light: #e8f5e9;
+  --background-white: #ffffff;
+  --border-color: #e0e0e0;
+  --text-secondary: #424242;
+  --text-light: #757575;
+  --error-light: #ffebee;
+  --danger-red: #c62828;
+  --affiliate-color: #1565c0;
+  --affiliate-light: #e3f2fd;
+  
+  /* Espaçamentos */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  
+  /* Bordas */
+  --border-radius: 8px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  background-color: #f5f5f5;
+}
 
 .layout-container {
-    display: flex;
+  display: flex;
+  min-height: 100vh;
+  position: relative;
 }
 
 /* --- Sidebar (Menu Lateral) --- */
 .sidebar {
-    height: 100vh;
-    width: 250px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    background-color: var(--background-white);
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-    border-right: 1px solid var(--border-color);
-    z-index: 1001;
-    display: flex;
-    flex-direction: column;
-    transition: transform 0.3s ease-in-out;
+  width: 250px;
+  background-color: var(--background-white);
+  border-right: 1px solid var(--border-color);
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 1001;
+  transition: transform 0.3s ease-in-out;
+  overflow-y: auto;
 }
 
-/* --- Conteúdo Principal --- */
-.main-content {
-    flex-grow: 1;
-    padding: 2.5rem;
-    margin-left: 250px; /* Margem padrão para desktop */
-    transition: margin-left 0.3s ease-in-out;
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex-grow: 1;
+}
+
+.sidebar-nav a {
+  text-decoration: none;
+  color: var(--text-secondary);
+  padding: 12px var(--space-md);
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-nav a:hover {
+  background-color: var(--primary-light);
+  color: var(--primary-green);
+}
+
+.sidebar-nav a.active {
+  background-color: var(--primary-green);
+  color: white;
+  font-weight: 600;
+}
+
+.affiliate-link {
+  background-color: var(--affiliate-light);
+  color: var(--affiliate-color) !important;
+}
+
+.affiliate-link:hover {
+  background-color: #bbdefb !important;
 }
 
 /* --- Cabeçalho da Sidebar --- */
 .sidebar-header {
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-xl);
 }
 
 .sidebar-logo {
-    height: 40px;
+  height: 40px;
 }
 
-/* --- Navegação Principal --- */
-.sidebar-nav {
-    padding: 20px;
-    flex-grow: 1; /* Faz esta área crescer e empurrar o rodapé para baixo */
-    overflow-y: auto; /* Adiciona scroll se houver muitos links */
-}
-
-.sidebar-nav a {
-    display: flex;
-    align-items: center;
-    padding: 12px 15px;
-    margin-bottom: 5px;
-    border-radius: var(--border-radius);
-    text-decoration: none;
-    color: var(--text-medium);
-    font-weight: 500;
-}
-
-.sidebar-nav a.active, .sidebar-nav a:hover {
-    background-color: var(--primary-light);
-    color: var(--primary-green);
-    font-weight: 600;
-}
-
-.affiliate-link {
-    background-color: var(--affiliate-light);
-    color: var(--affiliate-color) !important;
+.sidebar-close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: var(--space-xs);
 }
 
 /* --- Rodapé da Sidebar --- */
 .sidebar-footer {
-    padding: 20px;
-    border-top: 1px solid var(--border-color);
-    flex-shrink: 0;
+  padding: var(--space-md) 0;
+  border-top: 1px solid var(--border-color);
+  margin-top: var(--space-md);
 }
 
 .user-info {
-    text-align: center;
-    margin-bottom: 15px;
+  margin-bottom: var(--space-md);
+  padding: 0 var(--space-md);
 }
 
 .user-name {
-    display: block;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  display: block;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-email {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--text-light);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .logout-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    background-color: var(--error-light);
-    color: var(--danger-red);
-    border-radius: var(--border-radius);
-    text-align: center;
-    font-weight: 600;
-    font-size: 15px;
-    cursor: pointer;
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background-color: var(--error-light);
+  color: var(--danger-red);
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* --- Lógica para o Menu Mobile --- */
-.hamburger-btn, .sidebar-close-btn, .overlay {
-    display: none; /* Escondidos por padrão em telas grandes */
+.logout-btn:hover {
+  background-color: #ffcdd2;
+}
+
+/* --- Conteúdo Principal --- */
+.main-content {
+  flex-grow: 1;
+  padding: var(--space-xl);
+  margin-left: 250px; /* Largura do sidebar */
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+/* --- Menu Mobile --- */
+.hamburger-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background: var(--background-white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 10px 12px;
+  font-size: 24px;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
 /* ---- Media Queries para Responsividade (Telas Pequenas) ---- */
 @media (max-width: 768px) {
-    .sidebar {
-        transform: translateX(-100%); /* Menu escondido por padrão */
-    }
-    .sidebar.open {
-        transform: translateX(0); /* Mostra o menu */
-    }
-    .main-content {
-        margin-left: 0; /* Remove a margem lateral */
-        padding: 1.5rem;
-        padding-top: 80px; /* Espaço para o botão hamburger */
-    }
-    .hamburger-btn, .sidebar-close-btn, .overlay {
-        display: block; /* Mostra os controlos mobile */
-    }
-    .hamburger-btn {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        background: var(--background-white);
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius);
-        padding: 10px;
-        font-size: 24px;
-        cursor: pointer;
-        z-index: 1002;
-    }
-    .sidebar-close-btn {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        padding: 0;
-    }
-    .overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
-        z-index: 1000;
-    }
+  .sidebar {
+    transform: translateX(-100%);
+    width: 280px;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  }
+  
+  .main-content {
+    margin-left: 0;
+    padding: var(--space-md);
+    padding-top: 70px;
+  }
+  
+  .hamburger-btn {
+    display: block;
+  }
+  
+  .sidebar-close-btn {
+    display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: var(--space-md);
+    padding-top: 60px;
+  }
+  
+  .sidebar {
+    width: 85%;
+  }
+  
+  .sidebar-nav a {
+    padding: 10px var(--space-md);
+    font-size: 0.9rem;
+  }
+  
+  .logout-btn {
+    padding: 10px;
+  }
 }

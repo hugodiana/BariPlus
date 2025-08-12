@@ -13,6 +13,8 @@ import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './DashboardPage.css';
 import Card from '../components/ui/Card';
+import ConteudoRecenteCard from '../components/dashboard/ConteudoRecenteCard';
+
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler);
 
@@ -46,8 +48,9 @@ const DashboardPage = () => {
     const [consultas, setConsultas] = useState([]);
     const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
     const [foodLog, setFoodLog] = useState(null);
-    const [gastos, setGastos] = useState({ registros: [] });
+    const [gastos, setGastos] = useState([]);
     const [exames, setExames] = useState({ examEntries: [] });
+    const [conteudos, setConteudos] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
@@ -56,6 +59,7 @@ const DashboardPage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchDashboardData = useCallback(async () => {
+<<<<<<< HEAD
     setLoading(true);
     try {
         const today = new Date().toISOString().split('T')[0];
@@ -69,6 +73,87 @@ const DashboardPage = () => {
         for (const res of responses) {
             // A lógica de erro 401 agora é tratada automaticamente pelo fetchWithAuth
             if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
+=======
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth() + 1;
+            const dateString = today.toISOString().split('T')[0];
+
+            const endpoints = [
+                'me',
+                `food-diary/${dateString}`,
+                'checklist',
+                'consultas',
+                'medication',
+                'pesos',
+                'dailylog/today',
+                `gastos?year=${year}&month=${month}`,
+                'exams'
+            ];
+
+            const responses = await Promise.all(
+                endpoints.map(endpoint => 
+                    fetch(`${apiUrl}/api/${endpoint}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }).then(res => {
+                        if (!res.ok) {
+                            throw new Error(`Erro ${res.status} em ${endpoint}`);
+                        }
+                        return res.json();
+                    })
+                )
+            );
+
+            const [
+                dadosUsuario,
+                dadosFoodLog,
+                dadosChecklist,
+                dadosConsultas,
+                dadosMedication,
+                dadosPesos,
+                dadosLog,
+                dadosGastos,
+                dadosExames,
+                dadosConteudos
+            ] = responses;
+
+            // Processamento dos dados
+            setUsuario(dadosUsuario);
+            setFoodLog(dadosFoodLog);
+            setChecklist(dadosChecklist);
+            setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
+            setMedicationData(dadosMedication);
+            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
+            setDailyLog(dadosLog);
+            setExames(dadosExames);
+            setConteudos(dadosConteudos);
+
+            // Tratamento especial para gastos (pode vir como array ou objeto com registros)
+            const gastosFormatados = Array.isArray(dadosGastos) 
+                ? dadosGastos 
+                : dadosGastos?.registros || [];
+            setGastos(gastosFormatados);
+
+        } catch (error) {
+            console.error('Erro ao carregar dashboard:', error);
+            
+            if (error.message.includes('401')) {
+                toast.error('Sessão expirada. Faça login novamente.');
+                localStorage.removeItem('bariplus_token');
+                setTimeout(() => window.location.href = '/login', 2000);
+            } else {
+                toast.error('Erro ao carregar dados. Tente novamente mais tarde.');
+            }
+        } finally {
+            setLoading(false);
+>>>>>>> 75ba0ea2f41ae731c28cb11c7eb89cfedf764ef5
         }
 
         const [
@@ -96,54 +181,79 @@ const DashboardPage = () => {
     }
 }, []);
 
-    useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+    useEffect(() => {
+        fetchDashboardData();
+    }, [fetchDashboardData]);
 
     const handleTrack = async (type, amount) => {
         try {
             const response = await fetch(`${apiUrl}/api/dailylog/track`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({ type, amount })
             });
-            if (!response.ok) throw new Error('Falha ao registrar');
-            
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Falha ao registrar');
+            }
+
             const data = await response.json();
             setDailyLog(data.updatedLog);
             toast.success('Registro atualizado!');
 
-            if (data.novasConquistas && data.novasConquistas.length > 0) {
-                data.novasConquistas.forEach(conquista => {
+            if (data.novasConquistas?.length > 0) {
+                data.novasConquistas.forEach((conquista, index) => {
                     setTimeout(() => {
                         toast.info(
                             <div>
                                 <strong>🏆 Nova Conquista!</strong><br />
                                 {conquista.nome}
-                            </div>
+                            </div>,
+                            { autoClose: 5000 }
                         );
-                    }, 500);
+                    }, index * 500);
                 });
             }
         } catch (error) {
+            console.error('Erro ao registrar:', error);
             toast.error(error.message);
         }
     };
 
     const handleSetSurgeryDate = async (e) => {
         e.preventDefault();
-        if (!novaDataCirurgia) return;
+        if (!novaDataCirurgia) {
+            toast.warning('Por favor, selecione uma data válida');
+            return;
+        }
+
         try {
             const response = await fetch(`${apiUrl}/api/user/surgery-date`, {
                 method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                headers: { 
+                    'Authorization': `Bearer ${token}`, 
+                    'Content-Type': 'application/json' 
+                },
                 body: JSON.stringify({ dataCirurgia: novaDataCirurgia })
             });
-            if (!response.ok) throw new Error('Falha ao atualizar data');
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Falha ao atualizar data');
+            }
+
             const updatedUser = await response.json();
             setUsuario(updatedUser);
             setIsDateModalOpen(false);
             setNovaDataCirurgia('');
-            toast.success('Data da cirurgia atualizada!');
+            toast.success('Data da cirurgia atualizada com sucesso!');
+            fetchDashboardData(); // Recarrega os dados para atualizar a interface
         } catch (error) {
+            console.error('Erro ao atualizar data:', error);
             toast.error(error.message);
         }
     };
@@ -151,34 +261,50 @@ const DashboardPage = () => {
     const handleToggleMedToma = async (medId, totalDoses) => {
         try {
             const hoje = new Date().toISOString().split('T')[0];
-            const historicoDeHoje = (medicationData.historico && medicationData.historico[hoje]) || {};
+            const historicoDeHoje = medicationData.historico?.[hoje] || {};
             const tomasAtuais = historicoDeHoje[medId] || 0;
             const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
 
-            const newHistoryState = { ...medicationData.historico };
-            if (!newHistoryState[hoje]) { newHistoryState[hoje] = {}; }
-            newHistoryState[hoje][medId] = novasTomas;
-            setMedicationData({ ...medicationData, historico: newHistoryState });
-            
+            // Atualização otimista do estado
+            setMedicationData(prev => {
+                const newHistory = { ...prev.historico };
+                newHistory[hoje] = { ...newHistory[hoje], [medId]: novasTomas };
+                return { ...prev, historico: newHistory };
+            });
+
+            // Chamada API
             await fetch(`${apiUrl}/api/medication/log`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
+                headers: { 
+                    'Content-Type': 'application/json', 
+                    'Authorization': `Bearer ${token}` 
+                },
+                body: JSON.stringify({ 
+                    date: hoje, 
+                    medId: medId, 
+                    count: novasTomas 
+                })
             });
+
         } catch (error) {
-            toast.error("Erro ao atualizar medicação.");
+            console.error('Erro ao atualizar medicação:', error);
+            toast.error('Erro ao atualizar medicação. Tente novamente.');
+            // Reverte a atualização otimista em caso de erro
+            fetchDashboardData();
         }
     };
 
     const getWelcomeMessage = () => {
         if (!usuario?.nome) return 'Bem-vindo(a)!';
+        
         const nome = usuario.nome.split(' ')[0];
+        const hora = new Date().getHours();
+        let saudacao = 'Bom dia';
+        
+        if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
+        if (hora >= 18 || hora < 5) saudacao = 'Boa noite';
 
         if (!usuario.detalhesCirurgia?.dataCirurgia) {
-            const hora = new Date().getHours();
-            let saudacao = 'Bom dia';
-            if (hora >= 12 && hora < 18) saudacao = 'Boa tarde';
-            if (hora >= 18 || hora < 5) saudacao = 'Boa noite';
             return `${saudacao}, ${nome}!`;
         }
 
@@ -189,67 +315,74 @@ const DashboardPage = () => {
 
         if (fezCirurgia === 'sim') {
             const tempoDePosOp = calcularPeriodo(dataCirurgiaObj, hoje);
-            return `Olá, ${nome}! Você está no seu pós-operatório há ${tempoDePosOp}.`;
+            return `Olá, ${nome}! Você está no pós-operatório há ${tempoDePosOp}.`;
         } else {
             const diasParaCirurgia = differenceInDays(dataCirurgiaObj, hoje);
             if (diasParaCirurgia > 0) {
                 const tempoParaCirurgia = calcularPeriodo(hoje, dataCirurgiaObj);
-                return `Olá, ${nome}! Faltam ${tempoParaCirurgia} para a sua cirurgia.`;
+                return `Olá, ${nome}! Faltam ${tempoParaCirurgia} para sua cirurgia.`;
             }
-            if (diasParaCirurgia === 0) return `Olá, ${nome}! A sua cirurgia é hoje! Boa sorte!`;
+            if (diasParaCirurgia === 0) return `Olá, ${nome}! Sua cirurgia é hoje! Boa sorte!`;
         }
         
-        return `Bem-vindo(a) de volta, ${nome}!`;
+        return `${saudacao}, ${nome}!`;
     };
 
+    // Memoized calculations
     const { pesoPerdido, imc } = useMemo(() => {
-        if (!usuario?.detalhesCirurgia || !pesos.length) {
-            return { pesoPerdido: 0, imc: 0 };
-        }
+        if (!usuario?.detalhesCirurgia) return { pesoPerdido: 0, imc: 0 };
+        
         const { pesoInicial, altura, pesoAtual } = usuario.detalhesCirurgia;
         const pesoPerdidoCalc = (pesoInicial || 0) - (pesoAtual || 0);
         const alturaMetros = (altura || 0) / 100;
         const imcCalc = alturaMetros > 0 ? (pesoAtual / (alturaMetros * alturaMetros)) : 0;
-        return { pesoPerdido: pesoPerdidoCalc, imc: imcCalc };
-    }, [usuario, pesos]);
-    
+        
+        return { 
+            pesoPerdido: pesoPerdidoCalc, 
+            imc: imcCalc 
+        };
+    }, [usuario]);
+
     const TOTAIS_NUTRICIONAIS = useMemo(() => {
         if (!foodLog?.refeicoes) return { calories: 0, proteins: 0, carbs: 0, fats: 0 };
-        let totals = { calories: 0, proteins: 0, carbs: 0, fats: 0 };
-        Object.values(foodLog.refeicoes).forEach(meal => {
+        
+        return Object.values(foodLog.refeicoes).reduce((totals, meal) => {
             meal.forEach(item => {
-                totals.calories += item.nutrients.calories || 0;
-                totals.proteins += item.nutrients.proteins || 0;
-                totals.carbs += item.nutrients.carbs || 0;
-                totals.fats += item.nutrients.fats || 0;
+                totals.calories += item.nutrients?.calories || 0;
+                totals.proteins += item.nutrients?.proteins || 0;
+                totals.carbs += item.nutrients?.carbs || 0;
+                totals.fats += item.nutrients?.fats || 0;
             });
-        });
-        return totals;
+            return totals;
+        }, { calories: 0, proteins: 0, carbs: 0, fats: 0 });
     }, [foodLog]);
 
     const GASTO_MENSAL = useMemo(() => {
-        if (!gastos.registros || gastos.registros.length === 0) return 0;
         const hoje = new Date();
         const inicioDoMes = startOfMonth(hoje);
         const fimDoMes = endOfMonth(hoje);
-        return gastos.registros
+        
+        return gastos
             .filter(gasto => {
                 const dataGasto = parseISO(gasto.data);
                 return dataGasto >= inicioDoMes && dataGasto <= fimDoMes;
             })
-            .reduce((total, gasto) => total + gasto.valor, 0);
+            .reduce((total, gasto) => total + (gasto.valor || 0), 0);
     }, [gastos]);
 
     const ULTIMOS_EXAMES = useMemo(() => {
         if (!exames.examEntries || exames.examEntries.length === 0) return [];
-        const todosResultados = exames.examEntries.flatMap(entry => 
-            entry.history.map(h => ({
-                ...h,
-                nomeExame: entry.name,
-                unidade: entry.unit,
-            }))
-        );
-        return todosResultados.sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 3);
+        
+        return exames.examEntries
+            .flatMap(entry => 
+                entry.history?.map(h => ({
+                    ...h,
+                    nomeExame: entry.name,
+                    unidade: entry.unit,
+                })) || []
+            )
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 3);
     }, [exames]);
 
     const DADOS_GRAFICO_NUTRI = {
@@ -257,102 +390,230 @@ const DashboardPage = () => {
         datasets: [{
             data: [TOTAIS_NUTRICIONAIS.proteins, TOTAIS_NUTRICIONAIS.carbs, TOTAIS_NUTRICIONAIS.fats],
             backgroundColor: ['#37715b', '#007aff', '#ff9f40'],
-            borderColor: 'var(--background-white)',
+            borderColor: '#ffffff',
             borderWidth: 2,
         }]
     };
     
-    if (loading) return <LoadingSpinner />;
-    if (!usuario) return <div className="loading-container">Não foi possível carregar os seus dados. <a href="/login">Tente fazer o login novamente</a>.</div>;
+    if (loading) return <LoadingSpinner fullPage />;
+    if (!usuario) return (
+        <div className="loading-container">
+            <p>Não foi possível carregar seus dados.</p>
+            <Link to="/login" className="retry-link">Tente fazer login novamente</Link>
+        </div>
+    );
     
-    const proximasTarefas = ((usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || []).filter(t => !t.concluido).slice(0, 3);
-    const proximasConsultas = consultas.filter(c => new Date(c.data) >= new Date()).slice(0, 2);
-    const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && !usuario.detalhesCirurgia.dataCirurgia;
+    const proximasTarefas = ((usuario.detalhesCirurgia?.fezCirurgia === 'sim' ? checklist.posOp : checklist.preOp) || [])
+        .filter(t => !t.concluido)
+        .slice(0, 3);
+        
+    const proximasConsultas = consultas
+        .filter(c => new Date(c.data) >= new Date())
+        .slice(0, 2);
+        
+    const mostrarCardAdicionarData = usuario.detalhesCirurgia?.fezCirurgia === 'nao' && 
+                                   !usuario.detalhesCirurgia.dataCirurgia;
 
     return (
         <div className="page-container">
-            <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
+            <header className="page-header">
+                <h1 className="dashboard-welcome">{getWelcomeMessage()}</h1>
+            </header>
 
             <div className="summary-stats-grid">
-                <Card className="stat-item"><h3>Peso Perdido</h3><p>{pesoPerdido.toFixed(1)} kg</p></Card>
-                <Card className="stat-item"><h3>IMC Atual</h3><p>{imc.toFixed(1)}</p></Card>
-                <Card className="stat-item"><h3>Calorias Hoje</h3><p>{TOTAIS_NUTRICIONAIS.calories.toFixed(0)}</p></Card>
-                <Card className="stat-item"><h3>Gastos do Mês</h3><p>{GASTO_MENSAL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p></Card>
+                <Card className="stat-item">
+                    <h3>Peso Perdido</h3>
+                    <p>{pesoPerdido.toFixed(1)} kg</p>
+                </Card>
+                <Card className="stat-item">
+                    <h3>IMC Atual</h3>
+                    <p>{imc.toFixed(1)}</p>
+                </Card>
+                <Card className="stat-item">
+                    <h3>Calorias Hoje</h3>
+                    <p>{TOTAIS_NUTRICIONAIS.calories.toFixed(0)}</p>
+                </Card>
+                <Card className="stat-item">
+                    <h3>Gastos do Mês</h3>
+                    <p>{GASTO_MENSAL.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </Card>
+                {conteudos && conteudos.length > 0 && (
+                    <ConteudoRecenteCard conteudos={conteudos} />
+                )}
             </div>
 
             <div className="dashboard-grid">
+                
                 {mostrarCardAdicionarData && (
                     <Card className="special-action-card">
                         <h3>Jornada a Começar!</h3>
                         <p>Já tem a data da sua cirurgia? Registre-a para começar a contagem regressiva!</p>
-                        <button className="quick-action-btn" onClick={() => setIsDateModalOpen(true)}>Adicionar Data</button>
+                        <button 
+                            className="quick-action-btn" 
+                            onClick={() => setIsDateModalOpen(true)}
+                            aria-label="Adicionar data da cirurgia"
+                        >
+                            Adicionar Data
+                        </button>
                     </Card>
                 )}
                 
                 <Card className="dashboard-card nutrition-summary-card">
                     <h3>Resumo Nutricional de Hoje</h3>
                     <div className="nutrition-chart-container">
-                        <Doughnut data={DADOS_GRAFICO_NUTRI} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} />
+                        <Doughnut 
+                            data={DADOS_GRAFICO_NUTRI} 
+                            options={{ 
+                                responsive: true, 
+                                maintainAspectRatio: false, 
+                                plugins: { 
+                                    legend: { position: 'bottom' } 
+                                } 
+                            }} 
+                        />
                     </div>
-                    <Link to="/diario-alimentar" className="summary-action-btn">Ver Diário Completo</Link>
+                    <Link to="/diario-alimentar" className="summary-action-btn">
+                        Ver Diário Completo
+                    </Link>
                 </Card>
                 
-                <WeightProgressCard pesoInicial={usuario.detalhesCirurgia.pesoInicial} pesoAtual={usuario.detalhesCirurgia.pesoAtual} historico={pesos} />
+                <WeightProgressCard 
+                    pesoInicial={usuario.detalhesCirurgia?.pesoInicial} 
+                    pesoAtual={usuario.detalhesCirurgia?.pesoAtual} 
+                    historico={pesos} 
+                />
                 
                 {dailyLog && (
                     <DailyGoalsCard 
                         log={dailyLog} 
                         onTrack={handleTrack} 
                         usuario={usuario}
-                        onUserUpdate={setUsuario} 
                     />
                 )}
                 
                 {medicationData?.medicamentos?.length > 0 && (
-                    <DailyMedicationCard medicamentos={medicationData.medicamentos} historico={medicationData.historico || {}} onToggleToma={handleToggleMedToma} />
+                    <DailyMedicationCard 
+                        medicamentos={medicationData.medicamentos} 
+                        historico={medicationData.historico || {}} 
+                        onToggleToma={handleToggleMedToma} 
+                    />
+                )}
+
+                {conteudos && conteudos.length > 0 && (
+                    <ConteudoRecenteCard conteudos={conteudos} />
                 )}
                 
                 <Card className="dashboard-card quick-actions-card">
                     <h3>Ações Rápidas</h3>
-                    <Link to="/progresso" className="quick-action-btn">Ver Progresso Completo</Link>
-                    <Link to="/consultas" className="quick-action-btn">Agendar Consulta</Link>
-                    <Link to="/checklist" className="quick-action-btn">Ver Checklist Completo</Link>
+                    <div className="quick-actions-grid">
+                        <Link to="/progresso" className="quick-action-btn">
+                            Ver Progresso
+                        </Link>
+                        <Link to="/consultas" className="quick-action-btn">
+                            Agendar Consulta
+                        </Link>
+                        <Link to="/checklist" className="quick-action-btn">
+                            Ver Checklist
+                        </Link>
+                        <Link to="/gastos" className="quick-action-btn">
+                            Registrar Gastos
+                        </Link>
+                    </div>
                 </Card>
 
                 <Card className="dashboard-card summary-card">
                     <h3>Próximas Tarefas</h3>
                     {proximasTarefas.length > 0 ? (
-                        <ul className="summary-list">{proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}</ul>
+                        <ul className="summary-list">
+                            {proximasTarefas.map(task => (
+                                <li key={task._id}>{task.descricao}</li>
+                            ))}
+                        </ul>
                     ) : (
-                        <div className="summary-empty"><p>Nenhuma tarefa pendente! ✨</p><Link to="/checklist" className="summary-action-btn">Adicionar Tarefa</Link></div>
+                        <div className="summary-empty">
+                            <p>Nenhuma tarefa pendente! ✨</p>
+                            <Link to="/checklist" className="summary-action-btn">
+                                Adicionar Tarefa
+                            </Link>
+                        </div>
                     )}
                 </Card>
                 
                 <Card className="dashboard-card summary-card">
                     <h3>Próximas Consultas</h3>
                     {proximasConsultas.length > 0 ? (
-                        <ul className="summary-list">{proximasConsultas.map(consulta => (<li key={consulta._id}><strong>{consulta.especialidade}</strong> - {format(parseISO(consulta.data), "dd/MM/yyyy 'às' p", { locale: ptBR })}</li>))}</ul>
+                        <ul className="summary-list">
+                            {proximasConsultas.map(consulta => (
+                                <li key={consulta._id}>
+                                    <strong>{consulta.especialidade}</strong> - {format(
+                                        parseISO(consulta.data), 
+                                        "dd/MM/yyyy 'às' HH:mm", 
+                                        { locale: ptBR }
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
                     ) : (
-                        <div className="summary-empty"><p>Nenhuma consulta agendada.</p><Link to="/consultas" className="summary-action-btn">Agendar Consulta</Link></div>
+                        <div className="summary-empty">
+                            <p>Nenhuma consulta agendada.</p>
+                            <Link to="/consultas" className="summary-action-btn">
+                                Agendar Consulta
+                            </Link>
+                        </div>
                     )}
                 </Card>
 
                 <Card className="dashboard-card summary-card">
                     <h3>Últimos Exames</h3>
                     {ULTIMOS_EXAMES.length > 0 ? (
-                        <ul className="summary-list">{ULTIMOS_EXAMES.map(exame => (<li key={exame._id}><strong>{exame.nomeExame}:</strong> {exame.value} {exame.unidade}</li>))}</ul>
+                        <ul className="summary-list">
+                            {ULTIMOS_EXAMES.map((exame, index) => (
+                                <li key={`${exame._id}-${index}`}>
+                                    <strong>{exame.nomeExame}:</strong> {exame.value} {exame.unidade}
+                                </li>
+                            ))}
+                        </ul>
                     ) : (
-                        <div className="summary-empty"><p>Nenhum exame registrado.</p><Link to="/exames" className="summary-action-btn">Adicionar Exame</Link></div>
+                        <div className="summary-empty">
+                            <p>Nenhum exame registrado.</p>
+                            <Link to="/exames" className="summary-action-btn">
+                                Adicionar Exame
+                            </Link>
+                        </div>
                     )}
                 </Card>
             </div>
             
-            <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
-                <h2>Registrar Data da Cirurgia</h2>
-                <form onSubmit={handleSetSurgeryDate}>
-                    <label>Qual é a data agendada para a sua cirurgia?</label>
-                    <input type="date" className="date-input" value={novaDataCirurgia} onChange={e => setNovaDataCirurgia(e.target.value)} required />
-                    <button type="submit" className="submit-btn">Salvar Data</button>
+            <Modal 
+                isOpen={isDateModalOpen} 
+                onClose={() => setIsDateModalOpen(false)}
+                aria-labelledby="surgery-date-modal-title"
+            >
+                <h2 id="surgery-date-modal-title">Registrar Data da Cirurgia</h2>
+                <form onSubmit={handleSetSurgeryDate} className="date-form">
+                    <div className="form-group">
+                        <label htmlFor="surgery-date">Data Agendada:</label>
+                        <input 
+                            id="surgery-date"
+                            type="date" 
+                            value={novaDataCirurgia}
+                            onChange={e => setNovaDataCirurgia(e.target.value)}
+                            required
+                            min={format(new Date(), 'yyyy-MM-dd')}
+                        />
+                    </div>
+                    <div className="form-actions">
+                        <button 
+                            type="button" 
+                            className="secondary-btn"
+                            onClick={() => setIsDateModalOpen(false)}
+                        >
+                            Cancelar
+                        </button>
+                        <button type="submit" className="primary-btn">
+                            Salvar Data
+                        </button>
+                    </div>
                 </form>
             </Modal>
         </div>

@@ -1,16 +1,34 @@
 /* --- Estilos Gerais do Painel --- */
-.dashboard-welcome { font-size: 1.8rem; margin-bottom: 1.5rem; font-weight: 700; color: var(--text-strong); }
+.dashboard-welcome {
+    font-size: 1.8rem;
+    margin-bottom: var(--space-lg);
+    font-weight: 700;
+    color: var(--text-strong);
+}
 
 /* Grid para os cards de resumo (KPIs) */
 .summary-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--space-lg);
     margin-bottom: var(--space-xl);
 }
-.stat-item { padding: 1.5rem; text-align: center; border-radius: var(--border-radius); }
-.stat-item h3 { margin: 0 0 0.5rem 0; font-size: 1rem; color: var(--text-secondary); font-weight: 500; }
-.stat-item p { margin: 0; font-size: 2.2rem; font-weight: bold; color: var(--primary-green); }
+.stat-item {
+    padding: var(--space-lg);
+    text-align: center;
+}
+.stat-item h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+.stat-item p {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: var(--primary-green);
+}
 
 /* Grid principal para os cards de conteúdo */
 .dashboard-grid {
@@ -19,7 +37,6 @@
     gap: var(--space-xl);
 }
 
-/* Card especial para a data da cirurgia */
 .special-action-card {
     grid-column: 1 / -1;
     display: flex;
@@ -31,24 +48,61 @@
     padding: 2rem !important;
 }
 
-/* Card de ações rápidas */
-.quick-actions-card { display: flex; flex-direction: column; justify-content: center; gap: var(--space-md); }
-.quick-action-btn { display: block; background-color: var(--primary-green); color: white; padding: 0.8rem; border-radius: var(--border-radius); text-align: center; text-decoration: none; font-weight: 600; transition: background-color 0.2s ease; }
-.quick-action-btn:hover { background-color: var(--primary-green-dark); }
+.quick-actions-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-md);
+}
+.quick-action-btn {
+    display: block;
+    background-color: var(--primary-green);
+    color: white;
+    padding: 0.8rem;
+    border-radius: var(--border-radius);
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+.quick-action-btn:hover {
+    background-color: var(--secondary-green);
+}
 
-/* Cards de resumo (Tarefas, Consultas e Exames) */
-.summary-card { display: flex; flex-direction: column; height: 100%; }
-.summary-card h3 { margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; }
-.summary-list { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
-.summary-list li { padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+.summary-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+.summary-card h3 {
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+.summary-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-grow: 1;
+}
+.summary-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
 .summary-list li:last-child { border-bottom: none; }
-.summary-empty { text-align: center; padding: 1rem 0; color: var(--text-light); margin-top: auto; }
-.summary-action-btn { display: inline-block; background-color: var(--primary-light); color: var(--primary-green); padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; margin-top: 0.75rem; font-weight: 600; }
-
-/* Card de Nutrição */
-.nutrition-summary-card { display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.nutrition-chart-container { position: relative; height: 200px; width: 200px; margin-bottom: 1.5rem; }
-
-/* Estilos para o Modal */
-.date-input { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; margin: 1rem 0; font-size: 1rem; }
-.submit-btn { background-color: var(--primary-green); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; font-size: 1rem; cursor: pointer; width: 100%; }
+.empty-state, .summary-empty {
+    text-align: center;
+    padding: 1rem 0;
+    color: var(--text-faint);
+    margin-top: auto;
+}
+.summary-action-btn {
+    display: inline-block;
+    background-color: var(--primary-light);
+    color: var(--primary-green);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    margin-top: 0.75rem;
+    font-weight: 600;
+}

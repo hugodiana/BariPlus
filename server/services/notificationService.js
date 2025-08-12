@@ -11,9 +11,12 @@ const checkAndSendNotifications = async () => {
 
     try {
         // Encontra todos os documentos de medicação que contêm o horário atual
-        const medicationDocs = await Medication.find({ 
-            'medicamentos.horarios': horarioAtual,
-            'medicamentos.status': 'Ativo' 
+        const medicationDocs = await Medication.find({
+            'medicamentos.status': 'Ativo',
+            $or: [
+                { 'medicamentos.frequencia.tipo': 'Diária', 'medicamentos.frequencia.horarios': horarioAtual },
+                { 'medicamentos.frequencia.tipo': 'Semanal', 'medicamentos.frequencia.diaDaSemana': diaDaSemanaAtual, 'medicamentos.frequencia.horarios': horarioAtual }
+            ]
         });
 
         for (const doc of medicationDocs) {

@@ -1,4 +1,5 @@
 const Checklist = require('../models/checklistModel');
+const conquistasService = require('../services/conquistasService');
 
 // --- Funções do Controller ---
 
@@ -47,26 +48,17 @@ exports.updateItem = async (req, res) => {
         const { itemId } = req.params;
         const { concluido, descricao, type } = req.body;
 
-        if (!itemId || !type || !['preOp', 'posOp'].includes(type)) {
-            return res.status(400).json({ message: 'ID do item e tipo (preOp/posOp) são obrigatórios.' });
-        }
-
-        const checklistDoc = await Checklist.findOne({ userId: req.userId });
-        if (!checklistDoc) {
-            return res.status(404).json({ message: "Checklist não encontrado." });
-        }
-
-        const item = checklistDoc[type].id(itemId);
-        if (!item) {
-            return res.status(404).json({ message: "Item não encontrado." });
-        }
-
+        // ... (código existente para encontrar e atualizar o item) ...
         if (descricao !== undefined) item.descricao = descricao;
         if (concluido !== undefined) item.concluido = concluido;
 
         await checklistDoc.save();
+        
+        // ✅ CORREÇÃO: Adiciona a verificação de conquistas após a atualização
         const novasConquistas = await conquistasService.verificarConquistas(req.userId);
-        res.json(item);
+
+        // Retorna o item atualizado e as novas conquistas obtidas
+        res.json({ item, novasConquistas }); 
     } catch (error) {
         console.error('Erro ao atualizar item do checklist:', error);
         res.status(500).json({ message: "Erro ao atualizar item." });

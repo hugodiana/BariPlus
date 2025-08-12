@@ -48,21 +48,15 @@ exports.verificarConquistas = async (userId) => {
     // ✅ NOVA LÓGICA: Conquistas de Metas Diárias
     if (dailyLogs && dailyLogs.length > 0) {
         const logDeHoje = dailyLogs[0];
-        // Assumindo metas fixas por agora (2000ml de água, 60g de proteína)
-        if (logDeHoje.waterConsumed >= 2000 && !conquistasAtuais.includes('PRIMEIRA_META_AGUA')) novasConquistasDesbloqueadas.push('PRIMEIRA_META_AGUA');
-        if (logDeHoje.proteinConsumed >= 60 && !conquistasAtuais.includes('PRIMEIRA_META_PROTEINA')) novasConquistasDesbloqueadas.push('PRIMEIRA_META_PROTEINA');
+        // ✅ CORREÇÃO: Usa as metas do perfil do usuário em vez de valores fixos
+        const metaAgua = usuario.metaAguaDiaria || 2000;
+        const metaProteina = usuario.metaProteinaDiaria || 60;
 
-        // Lógica para consistência de 7 dias
-        if (dailyLogs.length === 7 && !conquistasAtuais.includes('CONSISTENCIA_7_DIAS')) {
-            let consistencia = true;
-            for (let i = 0; i < 7; i++) {
-                const diaEsperado = format(subDays(new Date(), i), 'yyyy-MM-dd');
-                if (!dailyLogs.find(log => log.date === diaEsperado)) {
-                    consistencia = false;
-                    break;
-                }
-            }
-            if (consistencia) novasConquistasDesbloqueadas.push('CONSISTENCIA_7_DIAS');
+        if (logDeHoje.waterConsumed >= metaAgua && !conquistasAtuais.includes('PRIMEIRA_META_AGUA')) {
+            novasConquistasDesbloqueadas.push('PRIMEIRA_META_AGUA');
+        }
+        if (logDeHoje.proteinConsumed >= metaProteina && !conquistasAtuais.includes('PRIMEIRA_META_PROTEINA')) {
+            novasConquistasDesbloqueadas.push('PRIMEIRA_META_PROTEINA');
         }
     }
 

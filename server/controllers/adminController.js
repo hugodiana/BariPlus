@@ -2,10 +2,33 @@ const User = require('../models/userModel');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+exports.loginAdmin = async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+        const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
+
+        // ✅ CORREÇÃO: Usa bcrypt.compare para comparar a senha enviada com a hash no DB
+        if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
+            return res.status(401).json({ message: 'Credenciais inválidas.' });
+        }
+
+        // ✅ VERIFICAÇÃO CRUCIAL: Garante que o usuário tem a permissão de 'admin'
+        if (usuario.role !== 'admin') {
+            return res.status(403).json({ message: 'Acesso negado. Esta área é exclusiva para administradores.' });
+        }
+
+        const token = jwt.sign({ userId: usuario._id, role: usuario.role }, process.env.JWT_SECRET, { expiresIn: '8h' });
+        res.json({ token });
+    } catch (error) {
+        console.error("Erro no login de admin:", error);
+        res.status(500).json({ message: 'Erro no servidor.' });
+    }
+};
+
 // GET /api/admin/users - Listar todos os usuários com paginação
 exports.listUsers = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search = '' } = req.query;
+        const { page = 1, limit = 15, search = '' } = req.query;
         const skip = (page - 1) * limit;
         const query = search 
             ? { $or: [
@@ -16,11 +39,7 @@ exports.listUsers = async (req, res) => {
             : {};
 
         const [users, total] = await Promise.all([
-            User.find(query)
-                .select('-password -fcmToken')
-                .skip(skip)
-                .limit(parseInt(limit))
-                .sort({ createdAt: -1 }),
+            User.find(query).select('-password -fcmToken').skip(skip).limit(parseInt(limit)).sort({ createdAt: -1 }),
             User.countDocuments(query)
         ]);
 
@@ -31,7 +50,6 @@ exports.listUsers = async (req, res) => {
             currentPage: parseInt(page)
         });
     } catch (error) {
-        console.error('Erro ao listar usuários:', error);
         res.status(500).json({ message: 'Erro ao buscar usuários.' });
     }
 };
@@ -41,13 +59,34 @@ exports.grantAccess = async (req, res) => {
     try {
         const { userId } = req.params;
         const usuario = await User.findByIdAndUpdate(userId, { $set: { pagamentoEfetuado: true } }, { new: true }).select('-password');
-        if (!usuario) {
-            return res.status(404).json({ message: "Usuário não encontrado." });
-        }
+        if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
         res.json({ message: "Acesso concedido com sucesso.", usuario });
     } catch (error) {
-        console.error('Erro ao conceder acesso:', error);
         res.status(500).json({ message: "Erro ao conceder acesso." });
+    }
+};
+
+// ✅ NOVA FUNÇÃO: Revogar o acesso de um usuário
+exports.revokeAccess = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const usuario = await User.findByIdAndUpdate(userId, { $set: { pagamentoEfetuado: false } }, { new: true }).select('-password');
+        if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
+        res.json({ message: "Acesso revogado com sucesso.", usuario });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao revogar acesso." });
+    }
+};
+
+// ✅ NOVA FUNÇÃO: Confirmar manualmente o e-mail de um usuário
+exports.verifyUserEmail = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const usuario = await User.findByIdAndUpdate(userId, { $set: { isEmailVerified: true } }, { new: true }).select('-password');
+        if (!usuario) return res.status(404).json({ message: "Usuário não encontrado." });
+        res.json({ message: "E-mail do usuário verificado com sucesso.", usuario });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao verificar e-mail." });
     }
 };
 
@@ -59,10 +98,8 @@ exports.getStats = async (req, res) => {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const newUsersLast7Days = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
-
         res.json({ totalUsers, paidUsers, newUsersLast7Days });
     } catch (error) {
-        console.error("Erro ao buscar estatísticas:", error);
         res.status(500).json({ message: "Erro no servidor" });
     }
 };

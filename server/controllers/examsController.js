@@ -20,16 +20,20 @@ exports.getExams = async (req, res) => {
 // POST /api/exams/type - Adicionar um novo tipo de exame
 exports.addExamType = async (req, res) => {
      try {
-        const { examEntryId } = req.params;
-        const { date, value, notes } = req.body;
-        // ✅ CORREÇÃO: O new Date() resolve o bug de voltar 1 dia
-        const resultData = { date: new Date(date), value: parseFloat(value), notes };
+        // ✅ CORREÇÃO: A variável newExamEntry é criada a partir do corpo do pedido (req.body)
+        const newExamEntry = req.body;
+
+        // Validação básica para garantir que os dados necessários foram enviados
+        if (!newExamEntry.name || !newExamEntry.unit) {
+            return res.status(400).json({ message: 'Nome e unidade do exame são obrigatórios.' });
+        }
         
         const exams = await Exams.findOneAndUpdate(
             { userId: req.userId },
             { $push: { examEntries: newExamEntry } },
-            { new: true, upsert: true }
+            { new: true, upsert: true } // upsert: true cria o documento se ele não existir
         );
+        // Retorna o último exame adicionado
         res.status(201).json(exams.examEntries[exams.examEntries.length - 1]);
     } catch (error) {
         console.error("Erro ao adicionar tipo de exame:", error);
