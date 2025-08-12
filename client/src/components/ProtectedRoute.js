@@ -1,30 +1,26 @@
+// src/components/ProtectedRoute.js
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ usuario, children }) => {
-    const location = useLocation();
-
+    // Se, após o carregamento, não houver usuário, vai para a landing.
     if (!usuario) {
-        // Se não houver usuário, redireciona para a landing page
         return <Navigate to="/landing" replace />;
     }
 
+    // Se houver usuário, mas ele ainda não passou por uma das etapas,
+    // o App.js irá redirecioná-lo. Se ele passou por tudo, renderiza o app.
     if (!usuario.isEmailVerified) {
-        // Se o e-mail não for verificado, redireciona para a página de verificação
         return <Navigate to="/verify-email" state={{ email: usuario.email }} replace />;
     }
-
     if (!usuario.pagamentoEfetuado) {
-        // Se não houver pagamento, redireciona para os planos
         return <Navigate to="/planos" replace />;
     }
-
     if (!usuario.onboardingCompleto) {
-        // Se o onboarding não estiver completo, redireciona para a página de boas-vindas
         return <Navigate to="/bem-vindo" replace />;
     }
 
-    // Se todas as verificações passarem, mostra a página solicitada
+    // Se chegou até aqui, o usuário está totalmente autenticado e configurado.
     return children;
 };
 

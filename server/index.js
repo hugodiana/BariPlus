@@ -40,35 +40,42 @@ const app = express();
 app.set('trust proxy', 1);
 
 // --- 1. CONFIGURAÇÃO DE MIDDLEWARES ---
+
+// ✅ CORREÇÃO INICIA AQUI
 const whitelist = [
-    'https://bariplus.vercel.app', 'https://bari-plus.vercel.app',
-    'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com',
-    'https://bariplus-admin.onrender.com', 'http://localhost:3000',
-    'http://localhost:3001', 'http://localhost:3002',
-    'https://www.bariplus.com.br', 
-    'https://bariplus.com.br',
-    'https://bariplus-app.netlify.app', 
-    'https://admin.bariplus.com.br', 
-    'https://admin.bariplus.com.br',
-    'http://localhost:3002/',
-    'https://www.bariplus.com.br/' // ✅ Adicionado para garantir
+    'https://bariplus.vercel.app', 
+    'https://bari-plus.vercel.app',
+    'https://bariplus-admin.vercel.app', 
+    'https://bariplus-app.onrender.com',
+    'https://bariplus-admin.onrender.com', 
+    'http://localhost:3000',
+    'http://localhost:3001', 
+    'http://localhost:3002',
+    'https://www.bariplus.com.br', // Domínio principal do app
+    'https://bariplus.com.br',     // Variação sem 'www'
+    'https://admin.bariplus.com.br', // Domínio do painel de administração
+    'https://bariplus-app.netlify.app'
 ];
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // ✅ Adicionado um log para depuração no servidor
-        console.log('CORS check for origin:', origin); 
+        // Este log ajuda a ver no servidor qual origem está a fazer o pedido
+        console.log('Requisição recebida da origem:', origin); 
         
-        if (whitelist.indexOf(origin) !== -1 || !origin) {
+        // A lógica agora permite pedidos da whitelist E pedidos sem uma origem definida (como Postman ou outros serviços de servidor)
+        if (!origin || whitelist.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            console.error('Origin not allowed by CORS:', origin); // Log de erro
-            callback(new Error('Not allowed by CORS'));
+            console.error('Origem bloqueada por CORS:', origin); 
+            callback(new Error('Não permitido por CORS'));
         }
     },
     credentials: true,
 };
-app.use(cors(corsOptions));
+
+app.use(cors(corsOptions)); // A configuração corrigida é aplicada aqui
+// ✅ CORREÇÃO TERMINA AQUI
+
 app.use(helmet());
 app.use(express.json());
 

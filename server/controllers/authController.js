@@ -74,8 +74,19 @@ exports.login = async (req, res) => {
             return res.status(403).json({ message: 'Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.' });
         }
         
+        
         const token = jwt.sign({ userId: usuario._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
-        res.json({ token });
+        res.json({ 
+            token, 
+            user: {
+                _id: usuario._id,
+                nome: usuario.nome,
+                email: usuario.email,
+                isEmailVerified: usuario.isEmailVerified,
+                pagamentoEfetuado: usuario.pagamentoEfetuado,
+                onboardingCompleto: usuario.onboardingCompleto
+            } 
+        });
     } catch (error) {
         console.error("Erro no login:", error);
         res.status(500).json({ message: 'Erro no servidor.' });

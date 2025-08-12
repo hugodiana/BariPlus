@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './AdminLoginPage.css';
+import logo from '../logo.svg';
 
 const AdminLoginPage = () => {
     const [formData, setFormData] = useState({ identifier: '', password: '' });
@@ -51,7 +52,7 @@ const AdminLoginPage = () => {
     return (
         <div className="admin-login-container">
             <div className="login-box">
-                <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo-admin" />
+                <img src={logo} alt="BariPlus Logo" className="login-logo-admin" />
                 <h2>Painel de Administração</h2>
                 
                 {error && (

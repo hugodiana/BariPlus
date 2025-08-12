@@ -6,7 +6,7 @@ import { toast } from 'react-toastify';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import { setAuthToken } from '../utils/api'; // Importação correta
 
-const LoginPage = () => {
+const LoginPage = ({ onLoginSuccess }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [isRegistering, setIsRegistering] = useState(false);
@@ -95,12 +95,24 @@ const LoginPage = () => {
             if (isRegistering) {
                 toast.success('Cadastro quase concluído! Verifique o seu e-mail.');
                 navigate('/verify-email', { state: { email } });
-            } else {
-                // ✅ CORREÇÃO AQUI: Usamos o nosso novo sistema para guardar o token
-                setAuthToken(data.accessToken);
+             } else {
                 toast.success("Login bem-sucedido!");
-                window.location.href = '/'; 
+                // ✅ PASSO 2: Em vez de navegar, chame a função do App.js
+                // Isto irá atualizar o estado 'usuario' no App.js e causar o redirecionamento automático
+                onLoginSuccess(data); 
+            } 
+            // ✅ CORREÇÃO: Usa o 'navigate' do React Router em vez de recarregar a página.
+            // E já verifica para onde o usuário deve ir.
+            if (!data.user.isEmailVerified) {
+                navigate('/verify-email', { state: { email: data.user.email } });
+            } else if (!data.user.pagamentoEfetuado) {
+                navigate('/planos');
+            } else if (!data.user.onboardingCompleto) {
+                navigate('/bem-vindo');
+            } else {
+                navigate('/'); // Vai para a Dashboard
             }
+        
         } catch (error) {
             const errorMessage = error.message || 'Algo deu errado.';
             if (errorMessage.includes('Sua conta ainda não foi ativada')) {
