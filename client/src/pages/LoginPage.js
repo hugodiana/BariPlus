@@ -96,15 +96,10 @@ const LoginPage = () => {
                 toast.success('Cadastro quase concluído! Verifique o seu e-mail.');
                 navigate('/verify-email', { state: { email } });
             } else {
-<<<<<<< HEAD
                 // ✅ CORREÇÃO AQUI: Usamos o nosso novo sistema para guardar o token
                 setAuthToken(data.accessToken);
                 toast.success("Login bem-sucedido!");
                 window.location.href = '/'; 
-=======
-                localStorage.setItem('bariplus_token', data.token);
-                window.location.href = '/';
->>>>>>> 75ba0ea2f41ae731c28cb11c7eb89cfedf764ef5
             }
         } catch (error) {
             const errorMessage = error.message || 'Algo deu errado.';

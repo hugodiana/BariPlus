@@ -59,112 +59,76 @@ const DashboardPage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchDashboardData = useCallback(async () => {
-        if (!token) {
-            setLoading(false);
-            return;
-        }
+    setLoading(true);
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const year = new Date().getFullYear();
+        const month = new Date().getMonth() + 1;
+        
+        // Lista de todas as rotas necessárias para o dashboard
+        const endpoints = [
+            '/api/me',
+            `/api/food-diary/${today}`,
+            '/api/checklist',
+            '/api/consultas',
+            '/api/medication',
+            '/api/pesos',
+            '/api/dailylog/today',
+            `/api/gastos?year=${year}&month=${month}`,
+            '/api/exams',
+            '/api/conteudos'
+        ];
 
-        setLoading(true);
-        try {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = today.getMonth() + 1;
-            const dateString = today.toISOString().split('T')[0];
+        // Usamos a função fetchApi centralizada que criámos
+        const responses = await Promise.all(
+            endpoints.map(endpoint => fetchApi(endpoint))
+        );
 
-            const endpoints = [
-                '/api/me', 
-                `/api/food-diary/${today}`, 
-                '/api/checklist', 
-                '/api/consultas', 
-                '/api/medication', 
-                '/api/pesos', 
-                '/api/dailylog/today', 
-                '/api/gastos', 
-                '/api/exams',
-                '/api/conteudos' // Rota em falta
-            ];
-
-            const responses = await Promise.all(
-                endpoints.map(endpoint => 
-                    fetch(`${apiUrl}/api/${endpoint}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }).then(res => {
-                        if (!res.ok) {
-                            throw new Error(`Erro ${res.status} em ${endpoint}`);
-                        }
-                        return res.json();
-                    })
-                )
-            );
-
-            const [
-                dadosUsuario,
-                dadosFoodLog,
-                dadosChecklist,
-                dadosConsultas,
-                dadosMedication,
-                dadosPesos,
-                dadosLog,
-                dadosGastos,
-                dadosExames,
-                dadosConteudos
-            ] = responses;
-
-            // Processamento dos dados
-            setUsuario(dadosUsuario);
-            setFoodLog(dadosFoodLog);
-            setChecklist(dadosChecklist);
-            setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
-            setMedicationData(dadosMedication);
-            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
-            setDailyLog(dadosLog);
-            setExames(dadosExames);
-            setConteudos(dadosConteudos);
-
-            // Tratamento especial para gastos (pode vir como array ou objeto com registros)
-            const gastosFormatados = Array.isArray(dadosGastos) 
-                ? dadosGastos 
-                : dadosGastos?.registros || [];
-            setGastos(gastosFormatados);
-
-        } catch (error) {
-            console.error('Erro ao carregar dashboard:', error);
-            
-            if (error.message.includes('401')) {
-                toast.error('Sessão expirada. Faça login novamente.');
-                localStorage.removeItem('bariplus_token');
-                setTimeout(() => window.location.href = '/login', 2000);
-            } else {
-                toast.error('Erro ao carregar dados. Tente novamente mais tarde.');
+        for (const res of responses) {
+            if (!res.ok) {
+                // O fetchApi já trata o erro 401, mas isto serve para outros erros
+                throw new Error('Falha ao carregar os dados do painel.');
             }
-        } finally {
-            setLoading(false);
         }
 
         const [
-            dadosUsuario, dadosFoodLog, dadosChecklist, dadosConsultas,
-            dadosMedication, dadosPesos, dadosLog, dadosGastos, dadosExames
+            dadosUsuario,
+            dadosFoodLog,
+            dadosChecklist,
+            dadosConsultas,
+            dadosMedication,
+            dadosPesos,
+            dadosLog,
+            dadosGastos,
+            dadosExames,
+            dadosConteudos
         ] = await Promise.all(responses.map(res => res.json()));
 
+        // Atualiza todos os estados com os dados recebidos
         setUsuario(dadosUsuario);
         setFoodLog(dadosFoodLog);
         setChecklist(dadosChecklist);
-        setConsultas(dadosConsultas);
+        setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
         setMedicationData(dadosMedication);
-        setPesos(dadosPesos);
+        setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
         setDailyLog(dadosLog);
-        setGastos(dadosGastos);
         setExames(dadosExames);
+        setConteudos(dadosConteudos);
+        
+        const gastosFormatados = Array.isArray(dadosGastos) 
+            ? dadosGastos 
+            : dadosGastos?.registros || [];
+        setGastos(gastosFormatados);
 
     } catch (error) {
-        // O erro de sessão expirada já é tratado pelo fetchWithAuth
+        // O erro de sessão expirada já é tratado pelo fetchApi
         if (!error.message.includes('Sessão expirada')) {
-            toast.error(error.message);
+            toast.error(error.message || 'Erro ao carregar dados.');
         }
     } finally {
         setLoading(false);
     }
-}, []);
+}, []); // A dependência do useCallback está vazia porque fetchApi é estável
 
     useEffect(() => {
         fetchDashboardData();
