@@ -1,98 +1,61 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import './AdminLoginPage.css';
+import './AdminDashboardPage.css';
 
-const AdminLoginPage = () => {
-    const [formData, setFormData] = useState({ identifier: '', password: '' });
-    const [showPassword, setShowPassword] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState('');
+const AdminDashboardPage = () => {
+    const [stats, setStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const token = localStorage.getItem('bariplus_admin_token');
+    const apiUrl = process.env.REACT_APP_API_URL;
 
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        setError(''); // Limpa o erro ao digitar
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        setError('');
-        
+    const fetchStats = useCallback(async () => {
+        setLoading(true);
         try {
-            // ✅ CORREÇÃO: Aponta para a nova rota de login de admin
-            const response = await fetch(`${apiUrl}/api/admin/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+            const res = await fetch(`${apiUrl}/api/admin/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Falha no login.');
-            }
-
-            toast.success('Login realizado com sucesso!');
-            localStorage.setItem('bariplus_admin_token', data.token);
-            window.location.href = '/'; // Redireciona para o dashboard do admin
-            
-        } catch (err) {
-            console.error('Login error:', err);
-            setError(err.message || 'Ocorreu um erro durante o login.');
-            toast.error(err.message || 'Ocorreu um erro durante o login.');
+            if (!res.ok) throw new Error("Falha ao carregar estatísticas.");
+            const data = await res.json();
+            setStats(data);
+        } catch (error) {
+            toast.error(error.message);
         } finally {
-            setIsSubmitting(false);
+            setLoading(false);
         }
-    };
+    }, [token, apiUrl]);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+
+    if (loading) {
+        return <p>A carregar estatísticas...</p>;
+    }
 
     return (
-        <div className="admin-login-container">
-            <div className="login-box">
-                <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo-admin" />
-                <h2>Painel de Administração</h2>
-                
-                {error && (
-                    <div className="error-message">{error}</div>
-                )}
-
-                <form onSubmit={handleSubmit} noValidate>
-                    <div className="input-group">
-                        <label htmlFor="identifier">Email ou Username</label>
-                        <input
-                            id="identifier" type="text" name="identifier"
-                            value={formData.identifier} onChange={handleChange}
-                            required disabled={isSubmitting}
-                        />
+        <div className="admin-dashboard-page">
+            <header className="page-header">
+                <h1>Dashboard</h1>
+                <p>Visão geral e estatísticas do BariPlus.</p>
+            </header>
+            {stats && (
+                <div className="stats-grid">
+                    <div className="stat-card">
+                        <h3>Total de Usuários</h3>
+                        <p>{stats.totalUsers}</p>
                     </div>
-
-                    <div className="input-group">
-                        <label htmlFor="password">Senha</label>
-                        <div className="password-input">
-                            <input
-                                id="password" type={showPassword ? 'text' : 'password'} name="password"
-                                value={formData.password} onChange={handleChange}
-                                required disabled={isSubmitting}
-                            />
-                            <button
-                                type="button" className="toggle-password"
-                                onClick={() => setShowPassword(!showPassword)}
-                                disabled={isSubmitting}
-                            >
-                                {showPassword ? '🙈' : '👁️'}
-                            </button>
-                        </div>
+                    <div className="stat-card">
+                        <h3>Usuários Pagantes</h3>
+                        <p>{stats.paidUsers}</p>
                     </div>
-
-                    <button type="submit" className="submit-btn-admin" disabled={isSubmitting}>
-                        {isSubmitting ? 'Entrando...' : 'Entrar'}
-                    </button>
-                </form>
-            </div>
+                    <div className="stat-card">
+                        <h3>Novos na Última Semana</h3>
+                        <p>{stats.newUsersLast7Days}</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-export default AdminLoginPage;
+export default AdminDashboardPage;
