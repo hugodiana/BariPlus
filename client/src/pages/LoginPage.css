@@ -98,3 +98,69 @@
 .terms-container a {
     color: var(--action-blue);
 }
+
+.modal-header {
+    text-align: center;
+    margin-bottom: var(--space-lg);
+}
+
+.modal-header h2 {
+    color: var(--color-text-strong);
+    margin: 0 0 var(--space-sm) 0;
+}
+
+.modal-header p {
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.modal-form .form-group {
+    margin-bottom: var(--space-md);
+    text-align: left;
+}
+
+.modal-form label {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-weight: var(--font-weight-medium);
+}
+
+.modal-form input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: var(--transition);
+}
+
+.modal-form input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.modal-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.modal-form .form-actions button {
+    padding: 12px 24px;
+    font-weight: var(--font-weight-bold);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+
+.modal-form .secondary-btn {
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
+}
+
+.modal-form .submit-button {
+    background-color: var(--color-primary);
+    color: white;
+}

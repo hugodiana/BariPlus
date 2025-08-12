@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
-import '../pages/LoginPage.css'; // Reutilizando estilos
+import './LoginPage.css'; // Reutilizando os estilos
 
 const ResetPasswordPage = () => {
     const { token } = useParams();
     const navigate = useNavigate();
-
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    
     const [passwordValidations, setPasswordValidations] = useState({
         length: false, uppercase: false, number: false, specialChar: false,
     });
-    
     const apiUrl = process.env.REACT_APP_API_URL;
-
+    
     const validatePassword = (pass) => {
         const validations = {
             length: pass.length >= 8,
@@ -66,32 +63,24 @@ const ResetPasswordPage = () => {
     };
 
     return (
-        <div className="login-page-container">
-            <div className="login-form-wrapper">
-                <div className="login-form-header">
-                    <img src="/bariplus_logo.png" alt="BariPlus Logo" className="login-logo" />
+        <div className="auth-page-container">
+            <div className="auth-form-wrapper">
+                <div className="auth-form-header">
+                    <Link to="/landing">
+                        <img src="/bariplus_logo.png" alt="BariPlus Logo" className="auth-logo" />
+                    </Link>
                     <h2>Crie a sua Nova Senha</h2>
                 </div>
-                <form className="login-form" onSubmit={handleSubmit}>
-                    <label>Nova Senha</label>
-                    <input 
-                        type="password" 
-                        value={password} 
-                        onChange={handlePasswordChange} 
-                        placeholder="Digite sua nova senha" 
-                        required 
-                    />
-                    <PasswordStrengthIndicator validations={passwordValidations} />
-                    
-                    <label>Confirme a Nova Senha</label>
-                    <input 
-                        type="password" 
-                        value={confirmPassword} 
-                        onChange={e => setConfirmPassword(e.target.value)} 
-                        placeholder="Confirme sua nova senha" 
-                        required 
-                    />
-                    
+                <form className="auth-form" onSubmit={handleSubmit}>
+                    <div className="form-group">
+                        <label>Nova Senha</label>
+                        <input type="password" value={password} onChange={handlePasswordChange} required />
+                        <PasswordStrengthIndicator validations={passwordValidations} />
+                    </div>
+                    <div className="form-group">
+                        <label>Confirme a Nova Senha</label>
+                        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                    </div>
                     <button type="submit" className="submit-button" disabled={loading}>
                         {loading ? 'A redefinir...' : 'Redefinir Senha'}
                     </button>

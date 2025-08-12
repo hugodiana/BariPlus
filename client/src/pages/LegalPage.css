@@ -1,106 +1,114 @@
-/* Página Legal - Termos, Política de Privacidade etc. */
-.legal-page {
-    font-family: 'Inter', sans-serif;
-    color: #333;
-    background-color: #f9f9f9;
+/* src/pages/LoginPage.css */
+.auth-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     min-height: 100vh;
-    padding: 20px 0;
+    padding: var(--space-lg);
+    background-color: var(--color-background);
 }
 
-.legal-container {
-    max-width: 800px;
-    margin: 60px auto;
-    padding: 40px;
-    background-color: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    line-height: 1.7;
+.auth-form-wrapper {
+    width: 100%;
+    max-width: 420px;
+    background-color: var(--color-surface);
+    padding: var(--space-xl);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
 }
 
-.legal-container h1 {
-    color: #37715b;
-    border-bottom: 2px solid #e9f5f2;
-    padding-bottom: 15px;
-    margin-bottom: 30px;
-    font-size: 2.2rem;
+.auth-form-header {
+    text-align: center;
+    margin-bottom: var(--space-lg);
 }
 
-.legal-container h2 {
-    color: #37715b;
-    margin: 40px 0 15px 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+.auth-logo {
+    height: 60px;
+    margin-bottom: var(--space-md);
 }
 
-.legal-container h3 {
-    color: #444;
-    margin: 30px 0 10px 0;
-    font-size: 1.2rem;
-    font-weight: 500;
+.auth-form-header h2 {
+    color: var(--color-text-strong);
+    margin: 0;
 }
 
-.legal-container p {
-    margin-bottom: 20px;
-    color: #555;
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
 }
 
-.legal-container ul, 
-.legal-container ol {
-    margin: 20px 0;
-    padding-left: 25px;
+.form-group { /* Adicione esta classe se precisar agrupar label e input */
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
 }
 
-.legal-container li {
-    margin-bottom: 10px;
-    color: #555;
+.auth-form input {
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    transition: var(--transition);
+}
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.legal-container a {
-    color: #37715b;
-    text-decoration: underline;
-    transition: color 0.3s ease;
+.password-wrapper {
+    position: relative;
+    display: flex;
+}
+.password-wrapper input {
+    width: 100%;
+    padding-right: 45px;
+}
+.password-toggle-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: var(--color-text-faint);
 }
 
-.legal-container a:hover {
-    color: #2a5a48;
+.submit-button {
+    padding: 14px;
+    border: none;
+    border-radius: var(--border-radius);
+    background-color: var(--color-primary);
+    color: white;
+    font-size: 1rem;
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.submit-button:disabled {
+    background-color: var(--color-text-faint);
+    cursor: not-allowed;
 }
 
-.legal-container strong {
-    color: #444;
-    font-weight: 600;
+.form-footer {
+    text-align: center;
+    margin-top: var(--space-md);
 }
-
-.legal-container .last-updated {
+.link-button {
+    background: none;
+    border: none;
+    color: var(--color-accent);
+    cursor: pointer;
     font-size: 0.9rem;
-    color: #777;
-    font-style: italic;
-    margin-top: 40px;
-    text-align: right;
+    padding: var(--space-sm);
 }
 
-/* Responsividade */
-@media (max-width: 900px) {
-    .legal-container {
-        margin: 40px 20px;
-        padding: 30px;
-    }
+.terms-container {
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: start;
+    gap: var(--space-sm);
 }
-
-@media (max-width: 600px) {
-    .legal-container {
-        margin: 30px 15px;
-        padding: 25px;
-    }
-    
-    .legal-container h1 {
-        font-size: 1.8rem;
-    }
-    
-    .legal-container h2 {
-        font-size: 1.3rem;
-    }
-    
-    .legal-container h3 {
-        font-size: 1.1rem;
-    }
-}
+.terms-container input { width: auto; margin-top: 4px; }
+.terms-container a { color: var(--color-accent); }

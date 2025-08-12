@@ -13,8 +13,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import OnboardingPage from './pages/OnboardingPage';
 import PricingPage from './pages/PricingPage';
-import VerifyEmailPage from './pages/VerifyEmailPage';
-import VerifyPage from './pages/VerifyPage';
+import VerifyPage from './pages/VerifyPage'; // A página correta de verificação
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import PaymentStatusPage from './pages/PaymentStatusPage';
 import TermsPage from './pages/TermsPage';
@@ -49,7 +48,7 @@ function App() {
                     const data = await res.json();
                     setUsuario(data);
                 } catch (error) {
-                    setAuthToken(null); // Limpa o token inválido
+                    setAuthToken(null);
                     setUsuario(null);
                 }
             }
@@ -58,10 +57,9 @@ function App() {
         fetchUser();
     }, [apiUrl]);
 
-    // ✅ PASSO 1: Função que será passada para a LoginPage
     const handleLoginSuccess = (loginData) => {
-        setAuthToken(loginData.token); // Guarda o token
-        setUsuario(loginData.user);    // ATUALIZA O ESTADO DO USUÁRIO NO APP.JS
+        setAuthToken(loginData.token);
+        setUsuario(loginData.user);
     };
 
     if (loading) {
@@ -73,14 +71,15 @@ function App() {
             <ToastContainer position="top-right" autoClose={4000} />
             <Router>
                 <Routes>
+                    {/* --- Rotas Públicas --- */}
                     <Route path="/landing" element={<LandingPage />} />
-                    {/* ✅ PASSO 2: Passa a função handleLoginSuccess como prop */}
                     <Route path="/login" element={!usuario ? <LoginPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
                     <Route path="/verify-email/:token" element={<VerifyPage />} />
                     <Route path="/termos" element={<TermsPage />} />
                     <Route path="/privacidade" element={<PrivacyPage />} />
 
+                    {/* --- Rota Principal Protegida --- */}
                     <Route path="/*" element={
                         <ProtectedRoute usuario={usuario}>
                             <Layout usuario={usuario}>
@@ -98,10 +97,12 @@ function App() {
                                     <Route path="/artigos/:id" element={<ArtigoPage />} />
                                     <Route path="/ganhe-renda-extra" element={<GanheRendaExtraPage />} />
                                     <Route path="/perfil" element={<ProfilePage />} />
-                                    <Route path="/verify-email" element={<VerifyEmailPage />} />
+                                    
+                                    {/* Rotas Intermediárias que o ProtectedRoute irá gerir */}
                                     <Route path="/planos" element={<PricingPage />} />
                                     <Route path="/pagamento-status" element={<PaymentStatusPage />} />
                                     <Route path="/bem-vindo" element={<OnboardingPage />} />
+                                    
                                     <Route path="*" element={<Navigate to="/" />} />
                                 </Routes>
                             </Layout>
