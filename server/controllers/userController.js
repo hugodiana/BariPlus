@@ -6,7 +6,6 @@ const conquistasService = require('../services/conquistasService');
 
 // --- Funções do Controller ---
 
-// GET /api/me - Buscar dados do usuário logado
 exports.getMe = async (req, res) => {
     try {
         const usuario = await User.findById(req.userId).select('-password -fcmToken');
@@ -15,25 +14,25 @@ exports.getMe = async (req, res) => {
         }
         res.json(usuario);
     } catch (error) {
-        console.error('Erro ao buscar perfil:', error);
         res.status(500).json({ message: 'Erro no servidor.' });
     }
 };
 
-// POST /api/onboarding - Processar dados do onboarding
 exports.onboarding = async (req, res) => {
     try {
-        const { fezCirurgia, dataCirurgia, altura, pesoInicial } = req.body;
+        // ✅ 1. Adicionamos metaPeso aqui
+        const { fezCirurgia, dataCirurgia, altura, pesoInicial, metaPeso } = req.body;
 
-        if (!fezCirurgia || !altura || !pesoInicial) {
+        if (!fezCirurgia || !altura || !pesoInicial || !metaPeso) {
             return res.status(400).json({ message: 'Todos os campos são obrigatórios.' });
         }
         const pesoNum = parseFloat(pesoInicial);
         const alturaNum = parseFloat(altura);
+        const metaPesoNum = parseFloat(metaPeso);
 
         const detalhes = {
             fezCirurgia,
-            dataCirurgia: fezCirurgia === 'sim' ? new Date(dataCirurgia) : null,
+            dataCirurgia: (fezCirurgia === 'sim' || (fezCirurgia === 'nao' && dataCirurgia)) ? new Date(dataCirurgia) : null,
             altura: alturaNum,
             pesoInicial: pesoNum,
             pesoAtual: pesoNum
@@ -42,11 +41,11 @@ exports.onboarding = async (req, res) => {
         await User.findByIdAndUpdate(req.userId, {
             $set: {
                 detalhesCirurgia: detalhes,
-                onboardingCompleto: true
+                onboardingCompleto: true,
+                metaPeso: metaPesoNum // ✅ 2. Salvamos a meta de peso
             }
         });
 
-        // Adiciona o primeiro registro de peso
         await Peso.findOneAndUpdate(
             { userId: req.userId },
             { $push: { registros: { peso: pesoNum, data: new Date() } } },
@@ -62,16 +61,17 @@ exports.onboarding = async (req, res) => {
     }
 };
 
-// PUT /api/user/profile - Atualizar perfil do usuário
 exports.updateProfile = async (req, res) => {
     try {
-        const { nome, sobrenome, whatsapp, detalhesCirurgia } = req.body;
+        // ✅ 3. Adicionamos metaPeso aqui
+        const { nome, sobrenome, whatsapp, detalhesCirurgia, metaPeso } = req.body;
         const updateData = {
             nome, sobrenome, whatsapp,
             'detalhesCirurgia.fezCirurgia': detalhesCirurgia.fezCirurgia,
             'detalhesCirurgia.dataCirurgia': detalhesCirurgia.dataCirurgia,
             'detalhesCirurgia.altura': detalhesCirurgia.altura,
             'detalhesCirurgia.pesoInicial': detalhesCirurgia.pesoInicial,
+            metaPeso: metaPeso // ✅ 4. Adicionamos ao objeto de atualização
         };
 
         const usuarioAtualizado = await User.findByIdAndUpdate(
@@ -90,7 +90,8 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
-// PUT /api/user/change-password - Mudar a senha
+// ... (as outras funções como changePassword, saveFcmToken, etc. continuam iguais)
+
 exports.changePassword = async (req, res) => {
     try {
         const { currentPassword, newPassword } = req.body;
@@ -98,18 +99,15 @@ exports.changePassword = async (req, res) => {
         if (!usuario) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
-
         const isMatch = await bcrypt.compare(currentPassword, usuario.password);
         if (!isMatch) {
             return res.status(400).json({ message: "A senha atual está incorreta." });
         }
-
         const hashedNewPassword = await bcrypt.hash(newPassword, 10);
         usuario.password = hashedNewPassword;
         await usuario.save();
         res.json({ message: "Senha alterada com sucesso!" });
     } catch (error) {
-        console.error("Erro ao alterar senha:", error);
         res.status(500).json({ message: "Erro interno no servidor." });
     }
 };
@@ -130,12 +128,10 @@ exports.updateSurgeryDate = async (req, res) => {
         }
         res.json(usuarioAtualizado);
     } catch (error) {
-        console.error('Erro ao atualizar data de cirurgia:', error);
         res.status(500).json({ message: 'Erro no servidor.' });
     }
 };
 
-// ✅ NOVO: Salvar o token de notificação (FCM)
 exports.saveFcmToken = async (req, res) => {
     try {
         const { fcmToken } = req.body;
@@ -146,7 +142,6 @@ exports.saveFcmToken = async (req, res) => {
     }
 };
 
-// ✅ NOVO: Enviar notificação de teste
 exports.sendTestNotification = async (req, res) => {
     try {
         const usuario = await User.findById(req.userId);
@@ -164,36 +159,30 @@ exports.sendTestNotification = async (req, res) => {
             res.status(404).json({ message: "Token de notificação não encontrado para este usuário." });
         }
     } catch (error) {
-        console.error("Erro ao enviar notificação de teste:", error);
         res.status(500).json({ message: "Erro geral no servidor." });
     }
 };
 
-// ✅ NOVA FUNÇÃO: Atualizar as metas diárias
 exports.updateGoals = async (req, res) => {
     try {
         const { metaAguaDiaria, metaProteinaDiaria } = req.body;
-
         const updateData = {};
-        if (metaAguaDiaria) updateData["detalhesCirurgia.metaAguaDiaria"] = metaAguaDiaria;
-        if (metaProteinaDiaria) updateData["detalhesCirurgia.metaProteinaDiaria"] = metaProteinaDiaria;
+        if (metaAguaDiaria) updateData.metaAguaDiaria = metaAguaDiaria;
+        if (metaProteinaDiaria) updateData.metaProteinaDiaria = metaProteinaDiaria;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ message: "Nenhuma meta fornecida para atualização." });
         }
-
         const usuarioAtualizado = await User.findByIdAndUpdate(
             req.userId,
             { $set: updateData },
             { new: true, runValidators: true }
         ).select('-password');
-
         if (!usuarioAtualizado) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
         res.json(usuarioAtualizado);
     } catch (error) {
-        console.error("Erro ao atualizar metas:", error);
         res.status(500).json({ message: 'Erro ao atualizar as metas.' });
     }
 };

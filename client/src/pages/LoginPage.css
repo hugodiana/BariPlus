@@ -1,166 +1,149 @@
-.login-page-container {
+/* src/pages/LoginPage.css */
+
+.auth-page-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
-    background-color: var(--background-light);
+    padding: var(--space-lg);
+    background-color: var(--color-background);
 }
 
-.login-form-wrapper {
+.auth-form-wrapper {
     width: 100%;
-    max-width: 400px;
-    background-color: var(--background-white);
-    padding: var(--space-xxl) var(--space-xl);
+    max-width: 420px;
+    background-color: var(--color-surface);
+    padding: var(--space-xl);
     border-radius: var(--border-radius);
-    box-shadow: var(--card-shadow);
+    box-shadow: var(--shadow-md);
 }
 
-.login-form-header {
+.auth-form-header {
     text-align: center;
     margin-bottom: var(--space-lg);
 }
 
-.login-logo {
-    width: 150px;
-    margin-bottom: 1rem;
+.auth-logo {
+    height: 60px;
+    margin-bottom: var(--space-md);
 }
 
-.login-form-header h2 {
-    color: var(--text-strong);
+.auth-form-header h2 {
+    color: var(--color-text-strong);
     margin: 0;
+    font-size: var(--font-size-xl);
 }
 
-.login-form {
+.auth-form {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
 }
 
-.login-form input {
-    padding: 12px;
-    border: 1px solid var(--border-color);
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.auth-form label {
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+}
+
+.auth-form input {
+    padding: 14px;
+    border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
     font-size: 1rem;
+    transition: var(--transition);
+    background-color: var(--color-background);
+}
+
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .password-wrapper {
     position: relative;
     display: flex;
 }
+
 .password-wrapper input {
     width: 100%;
+    padding-right: 45px;
 }
+
 .password-toggle-icon {
     position: absolute;
     right: 15px;
     top: 50%;
     transform: translateY(-50%);
     cursor: pointer;
-    color: var(--text-faint);
+    color: var(--color-text-faint);
 }
 
 .submit-button {
-    padding: 12px;
+    padding: 14px;
     border: none;
     border-radius: var(--border-radius);
-    background-color: var(--primary-green);
+    background-color: var(--color-primary);
     color: white;
     font-size: 1rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
+    transition: var(--transition);
+    margin-top: var(--space-sm);
 }
+
+.submit-button:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+}
+
 .submit-button:disabled {
-    background-color: var(--text-faint);
+    background-color: var(--color-text-faint);
+    cursor: not-allowed;
 }
 
 .form-footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-sm);
+    text-align: center;
     margin-top: var(--space-md);
 }
 
 .link-button {
     background: none;
     border: none;
-    color: var(--action-blue);
+    color: var(--color-accent);
     cursor: pointer;
     font-size: 0.9rem;
+    padding: var(--space-sm);
 }
 
 .terms-container {
     font-size: 0.8rem;
-    color: var(--text-secondary);
-    text-align: center;
-}
-.terms-container a {
-    color: var(--action-blue);
-}
-
-.modal-header {
-    text-align: center;
-    margin-bottom: var(--space-lg);
-}
-
-.modal-header h2 {
-    color: var(--color-text-strong);
-    margin: 0 0 var(--space-sm) 0;
-}
-
-.modal-header p {
     color: var(--color-text-secondary);
-    margin: 0;
-}
-
-.modal-form .form-group {
-    margin-bottom: var(--space-md);
-    text-align: left;
-}
-
-.modal-form label {
-    display: block;
-    margin-bottom: var(--space-sm);
-    font-weight: var(--font-weight-medium);
-}
-
-.modal-form input {
-    width: 100%;
-    padding: 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    transition: var(--transition);
-}
-
-.modal-form input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.modal-form .form-actions {
     display: flex;
-    justify-content: flex-end;
-    gap: var(--space-md);
-    margin-top: var(--space-lg);
+    align-items: start;
+    gap: var(--space-sm);
 }
 
-.modal-form .form-actions button {
-    padding: 12px 24px;
-    font-weight: var(--font-weight-bold);
-    border: none;
-    border-radius: var(--border-radius);
-    cursor: pointer;
+.terms-container input {
+    width: auto;
+    margin-top: 4px;
 }
 
-.modal-form .secondary-btn {
-    background-color: var(--color-background);
-    color: var(--color-text-secondary);
+.terms-container a {
+    color: var(--color-accent);
+    text-decoration: none;
 }
 
-.modal-form .submit-button {
-    background-color: var(--color-primary);
-    color: white;
+.terms-container a:hover {
+    text-decoration: underline;
+}
+
+/* Modal Form */
+.modal-form {
+    margin-top: var(--space-md);
 }

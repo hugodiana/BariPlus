@@ -12,6 +12,7 @@ import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import ProgressReport from '../components/PDFReport';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { fetchApi } from '../utils/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -26,53 +27,94 @@ const chartOptions = (title) => ({
     animation: { duration: 0 }
 });
 
-const DownloadPDFButton = ({ usuario, historico }) => {
+const allMeasures = {
+    peso: { label: 'Peso (kg)', color: '#37715b' },
+    pescoco: { label: 'Pescoço (cm)', color: '#e84393' },
+    torax: { label: 'Tórax (cm)', color: '#0984e3' },
+    cintura: { label: 'Cintura (cm)', color: '#00cec9' },
+    abdomen: { label: 'Abdômen (cm)', color: '#6c5ce7' },
+    quadril: { label: 'Quadril (cm)', color: '#ff7675' },
+    bracoDireito: { label: 'Braço D. (cm)', color: '#fdcb6e' },
+    bracoEsquerdo: { label: 'Braço E. (cm)', color: '#fd79a8' },
+    antebracoDireito: { label: 'Antebraço D. (cm)', color: '#636e72' },
+    antebracoEsquerdo: { label: 'Antebraço E. (cm)', color: '#2d3436' },
+    coxaDireita: { label: 'Coxa D. (cm)', color: '#e17055' },
+    coxaEsquerda: { label: 'Coxa E. (cm)', color: '#d63031' },
+    panturrilhaDireita: { label: 'Panturrilha D. (cm)', color: '#00b894' },
+    panturrilhaEsquerda: { label: 'Panturrilha E. (cm)', color: '#55efc4' },
+};
+
+const HighlightItem = ({ label, value, isMain = false }) => (
+    <div className={`highlight-item ${isMain ? 'main' : ''}`}>
+        <span className="highlight-label">{label}</span>
+        <span className="highlight-value">{value}</span>
+    </div>
+);
+
+const DownloadPDFButton = ({ usuario, historico, chartDataSets }) => {
     const [chartImages, setChartImages] = useState(null);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [shouldRenderChartsForPDF, setShouldRenderChartsForPDF] = useState(false);
 
-    const generatePDF = async () => {
-        setIsGenerating(true);
-        toast.info("A preparar o seu relatório PDF...");
-        
-        setTimeout(async () => {
-            const chartIds = ['peso-chart', 'cintura-chart', 'quadril-chart', 'braco-d-chart'];
+    useEffect(() => {
+        if (!shouldRenderChartsForPDF) return;
+
+        const generateImages = async () => {
             const images = {};
+            const chartIds = Object.keys(chartDataSets);
             
             for (const id of chartIds) {
-                const chartElement = document.getElementById(id);
+                // ✅ CORREÇÃO: Procura pelo ID correto no "estúdio" invisível
+                const chartElement = document.getElementById(`pdf-chart-${id}`);
                 if (chartElement) {
                     try {
                         const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
                         images[id] = canvas.toDataURL('image/png', 0.9);
-                    } catch (error) {
-                        console.error(`Erro ao gerar imagem para o gráfico ${id}:`, error);
-                    }
+                    } catch (error) { console.error(`Erro ao gerar imagem para ${id}:`, error); }
                 }
             }
             setChartImages(images);
             setIsGenerating(false);
+            setShouldRenderChartsForPDF(false);
             toast.success("Gráficos prontos! Pode baixar o seu PDF.");
-        }, 100);
+        };
+
+        const timer = setTimeout(generateImages, 500);
+        return () => clearTimeout(timer);
+    }, [shouldRenderChartsForPDF, chartDataSets]);
+
+    const handlePreparePDF = () => {
+        setIsGenerating(true);
+        toast.info("A preparar os gráficos para o relatório...");
+        setShouldRenderChartsForPDF(true);
     };
 
     if (!usuario || historico.length === 0) return null;
 
-    if (chartImages) {
-        return (
-            <PDFDownloadLink
-                document={<ProgressReport usuario={usuario} historico={historico} chartImages={chartImages} />}
-                fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
-                className="pdf-link ready"
-            >
-                {({ loading }) => (loading ? 'A preparar...' : 'Baixar PDF Agora')}
-            </PDFDownloadLink>
-        );
-    }
-
     return (
-        <button onClick={generatePDF} className="pdf-link generate" disabled={isGenerating}>
-            {isGenerating ? 'A gerar gráficos...' : 'Exportar para PDF'}
-        </button>
+        <>
+            {chartImages ? (
+                <PDFDownloadLink
+                    document={<ProgressReport usuario={usuario} historico={historico} chartImages={chartImages} />}
+                    fileName={`Relatorio_Progresso_${usuario.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                    className="pdf-link ready"
+                >
+                    {({ loading }) => (loading ? 'A preparar PDF...' : 'Baixar PDF Agora')}
+                </PDFDownloadLink>
+            ) : (
+                <button onClick={handlePreparePDF} className="pdf-link generate" disabled={isGenerating}>
+                    {isGenerating ? 'A gerar gráficos...' : 'Exportar Relatório'}
+                </button>
+            )}
+            
+            <div className="pdf-chart-studio">
+                {shouldRenderChartsForPDF && Object.keys(chartDataSets).map(key =>
+                    <div key={key} style={{ width: '500px', height: '300px' }} id={`pdf-chart-${key}`}>
+                        <Line data={createChartData(chartDataSets[key].label, chartDataSets[key].data, chartDataSets[key].color)} options={chartOptions(chartDataSets[key].label)} />
+                    </div>
+                )}
+            </div>
+        </>
     );
 };
 
@@ -82,38 +124,45 @@ const ProgressoPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [registroEmEdicao, setRegistroEmEdicao] = useState(null);
-    
-    const [formState, setFormState] = useState({
-        peso: '', data: new Date().toISOString().split('T')[0], cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
-        bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
-        coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
-    });
+    const [activeChart, setActiveChart] = useState('peso');
+    const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+    const [comparePhotos, setComparePhotos] = useState({ foto1: null, foto2: null });
 
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const [formState, setFormState] = useState({
+        peso: '', data: new Date().toISOString().split('T')[0], foto: null, cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+        bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
+        coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: ''
+    });
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [resPesos, resMe] = await Promise.all([
-                fetch(`${apiUrl}/api/pesos`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
-            ]);
+            const [resPesos, resMe] = await Promise.all([ fetchApi('/api/pesos'), fetchApi('/api/me') ]);
             if (!resPesos.ok || !resMe.ok) throw new Error("Falha ao carregar os dados.");
-            
             const dataPesos = await resPesos.json();
             const dataMe = await resMe.json();
-            
-            setHistorico(dataPesos.sort((a, b) => new Date(b.data) - new Date(a.data)));
+            setHistorico(dataPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setUsuario(dataMe);
-        } catch (error) {
-            toast.error(error.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [token, apiUrl]);
+        } catch (error) { toast.error(error.message); }
+        finally { setLoading(false); }
+    }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    const handleOpenCompareModal = (foto) => {
+        if (!comparePhotos.foto1) {
+            setComparePhotos({ foto1: foto, foto2: null });
+            toast.info("Selecione a segunda foto para comparar.");
+        } else {
+            setComparePhotos(prev => ({ ...prev, foto2: foto }));
+            setIsCompareModalOpen(true);
+        }
+    };
+
+    const handleCloseCompareModal = () => {
+        setIsCompareModalOpen(false);
+        setComparePhotos({ foto1: null, foto2: null });
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -127,9 +176,9 @@ const ProgressoPage = () => {
     const handleOpenAddModal = () => {
         setRegistroEmEdicao(null);
         setFormState({
-            peso: '', data: new Date().toISOString().split('T')[0], cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+            peso: '', data: new Date().toISOString().split('T')[0], foto: null, cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
             bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
-            coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: '', foto: null
+            coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: ''
         });
         setIsModalOpen(true);
     };
@@ -139,6 +188,7 @@ const ProgressoPage = () => {
         setFormState({
             peso: registro.peso || '',
             data: format(parseISO(registro.data), 'yyyy-MM-dd'),
+            foto: null,
             cintura: registro.medidas?.cintura || '',
             quadril: registro.medidas?.quadril || '',
             pescoco: registro.medidas?.pescoco || '',
@@ -151,40 +201,36 @@ const ProgressoPage = () => {
             coxaDireita: registro.medidas?.coxaDireita || '',
             coxaEsquerda: registro.medidas?.coxaEsquerda || '',
             panturrilhaDireita: registro.medidas?.panturrilhaDireita || '',
-            panturrilhaEsquerda: registro.medidas?.panturrilhaEsquerda || '',
-            foto: null
+            panturrilhaEsquerda: registro.medidas?.panturrilhaEsquerda || ''
         });
         setIsModalOpen(true);
     };
 
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
-        const formData = new FormData();
-        
-        // ✅ CORREÇÃO: Adiciona todos os campos exceto a foto e a data original
+        const formDataToSend = new FormData();
         Object.keys(formState).forEach(key => {
-            if (key !== 'foto' && key !== 'data' && formState[key]) {
-                formData.append(key, formState[key]);
+            if (key !== 'foto' && formState[key]) {
+                formDataToSend.append(key, formState[key]);
             }
         });
-
-        // Adiciona a data no formato correto
-        formData.append('data', new Date(formState.data).toISOString());
-        
-        // Adiciona a foto separadamente se ela existir
         if (formState.foto) {
-            formData.append('foto', formState.foto);
+            formDataToSend.append('foto', formState.foto);
         }
 
         const isEditing = !!registroEmEdicao;
-        const url = isEditing ? `${apiUrl}/api/pesos/${registroEmEdicao._id}` : `${apiUrl}/api/pesos`;
+        const url = isEditing ? `/api/pesos/${registroEmEdicao._id}` : `/api/pesos`;
         const method = isEditing ? 'PUT' : 'POST';
 
         try {
-            const response = await fetch(url, { method, headers: { 'Authorization': `Bearer ${token}` }, body: formData });
+            const response = await fetch(`${process.env.REACT_APP_API_URL}${url}`, { 
+                method, 
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('bariplus_token')}` }, 
+                body: formDataToSend 
+            });
             if (!response.ok) throw new Error(`Falha ao ${isEditing ? 'atualizar' : 'salvar'}`);
             
-            toast.success(`Registro ${isEditing ? 'atualizado' : 'adicionado'} com sucesso!`);
+            toast.success(`Registro ${isEditing ? 'atualizado' : 'adicionado'}!`);
             setIsModalOpen(false);
             fetchData();
         } catch (error) {
@@ -193,134 +239,165 @@ const ProgressoPage = () => {
     };
     
     const handleDeleteProgresso = async (registroId) => {
-        if (!window.confirm("Tem certeza que deseja apagar este registro? A ação não pode ser desfeita.")) return;
+        if (!window.confirm("Tem certeza?")) return;
         try {
-            const response = await fetch(`${apiUrl}/api/pesos/${registroId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!response.ok) throw new Error("Falha ao apagar registro.");
-            
-            toast.info("Registro apagado com sucesso.");
+            await fetchApi(`/api/pesos/${registroId}`, { method: 'DELETE' });
+            toast.info("Registro apagado.");
             fetchData();
         } catch (error) {
-            toast.error(error.message);
+            toast.error("Erro ao apagar.");
         }
     };
     
-    const { pesoPerdido, imc } = useMemo(() => {
-        if (!usuario || !historico.length) return { pesoPerdido: 0, imc: 0 };
-        const pesoInicial = usuario.detalhesCirurgia?.pesoInicial || 0;
-        const pesoAtual = usuario.detalhesCirurgia?.pesoAtual || 0;
-        const alturaEmMetros = (usuario.detalhesCirurgia?.altura || 0) / 100;
-        const pesoPerdido = pesoInicial - pesoAtual;
-        const imcValue = alturaEmMetros > 0 ? (pesoAtual / (alturaEmMetros * alturaEmMetros)) : 0;
-        return { pesoPerdido, imc: imcValue };
-    }, [usuario, historico]);
-    
     const chartDataSets = useMemo(() => {
-        if (historico.length === 0) return {};
-        return {
-            peso: createChartData('Peso', historico.map(h => ({ date: h.data, value: h.peso })), '#37715b'),
-            cintura: createChartData('Cintura', historico.filter(h => h.medidas?.cintura).map(h => ({ date: h.data, value: h.medidas.cintura })), '#007aff'),
-            quadril: createChartData('Quadril', historico.filter(h => h.medidas?.quadril).map(h => ({ date: h.data, value: h.medidas.quadril })), '#ff9f40'),
-            bracoDireito: createChartData('Braço D.', historico.filter(h => h.medidas?.bracoDireito).map(h => ({ date: h.data, value: h.medidas.bracoDireito })), '#ff6384'),
-        };
+        if (historico.length < 1) return {};
+        const historicoAsc = [...historico].sort((a, b) => new Date(a.data) - new Date(b.data));
+        
+        const datasets = {};
+        for (const key in allMeasures) {
+            const measure = allMeasures[key];
+            const data = (key === 'peso')
+                ? historicoAsc.map(h => ({ date: h.data, value: h.peso })).filter(item => item.value != null)
+                : historicoAsc.map(h => ({ date: h.data, value: h.medidas?.[key] })).filter(item => item.value != null);
+            
+            if (data.length > 0) {
+                datasets[key] = { label: measure.label, data: data, color: measure.color };
+            }
+        }
+        return datasets;
     }, [historico]);
 
-    if (loading) return <LoadingSpinner />;
+    if (loading || !usuario) return <LoadingSpinner />;
+    
+    const fotosDoHistorico = historico.filter(item => item.fotoUrl).sort((a, b) => new Date(b.data) - new Date(a.data));
+    const chartToShow = chartDataSets[activeChart];
 
     return (
         <div className="page-container">
             <div className="page-header-actions">
-                <div className="page-header"><h1>Meu Progresso</h1><p>Acompanhe sua evolução de peso e medidas corporais.</p></div>
-                <DownloadPDFButton usuario={usuario} historico={historico} />
+                <div className="page-header"><h1>Meu Progresso</h1><p>Acompanhe a sua evolução de peso e medidas.</p></div>
+                <div className="header-buttons">
+                    <DownloadPDFButton usuario={usuario} historico={historico} chartDataSets={chartDataSets} />
+                    <button className="add-btn" onClick={handleOpenAddModal}>+ Novo Registro</button>
+                </div>
             </div>
-            <button className="add-btn" onClick={handleOpenAddModal}>+ Adicionar Novo Registro</button>
 
-            {historico.length > 0 ? (
-                <div className="progresso-content">
-                    <div className="summary-stats-grid">
-                        <Card className="stat-item-small"><h3>Peso Perdido</h3><p>{pesoPerdido.toFixed(1)} kg</p></Card>
-                        <Card className="stat-item-small"><h3>IMC Atual</h3><p>{imc.toFixed(1)}</p></Card>
-                    </div>
+            <Card className="summary-highlights-card">
+                <HighlightItem label="Peso Inicial" value={`${(usuario.detalhesCirurgia?.pesoInicial || 0).toFixed(1)} kg`} />
+                <HighlightItem label="Peso Atual" value={`${(usuario.detalhesCirurgia?.pesoAtual || 0).toFixed(1)} kg`} isMain={true} />
+                <HighlightItem label="Meta de Peso" value={`${(usuario.metaPeso || 0).toFixed(1)} kg`} />
+                <HighlightItem label="Total Perdido" value={`${(usuario.detalhesCirurgia?.pesoInicial - usuario.detalhesCirurgia?.pesoAtual).toFixed(1)} kg`} />
+            </Card>
 
-                    <div className="charts-grid">
-                        {chartDataSets.peso?.datasets[0].data.length > 1 && <Card><div id="peso-chart" className="chart-container"><Line options={chartOptions('Evolução de Peso (kg)')} data={chartDataSets.peso} /></div></Card>}
-                        {chartDataSets.cintura?.datasets[0].data.length > 1 && <Card><div id="cintura-chart" className="chart-container"><Line options={chartOptions('Evolução da Cintura (cm)')} data={chartDataSets.cintura} /></div></Card>}
-                        {chartDataSets.quadril?.datasets[0].data.length > 1 && <Card><div id="quadril-chart" className="chart-container"><Line options={chartOptions('Evolução do Quadril (cm)')} data={chartDataSets.quadril} /></div></Card>}
-                        {chartDataSets.bracoDireito?.datasets[0].data.length > 1 && <Card><div id="braco-d-chart" className="chart-container"><Line options={chartOptions('Evolução Braço Direito (cm)')} data={chartDataSets.bracoDireito} /></div></Card>}
-                    </div>
-
-                    {historico.filter(item => item.fotoUrl).length > 0 && (
-                        <Card>
-                            <h3>Galeria de Fotos</h3>
-                            <div className="photo-gallery">{historico.filter(item => item.fotoUrl).map(item => (<div key={item._id} className="photo-item"><a href={item.fotoUrl} target="_blank" rel="noopener noreferrer"><img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} /></a><time>{format(new Date(item.data), 'dd MMM yyyy', { locale: ptBR })}</time></div>))}</div>
-                        </Card>
-                    )}
-                    
-                    <Card>
-                        <h3>Histórico Completo</h3>
-                        <div className="table-responsive">
-                            <table>
-                                <thead><tr><th>Data</th><th>Peso</th><th>Pescoço</th><th>Tórax</th><th>Cintura</th><th>Abdômen</th><th>Quadril</th><th>Braço D.</th><th>Braço E.</th><th>Ações</th></tr></thead>
-                                <tbody>
-                                    {[...historico].reverse().map(item => (
-                                        <tr key={item._id}>
-                                            <td>{format(new Date(item.data), 'dd/MM/yy')}</td>
-                                            <td>{item.peso?.toFixed(1) || '-'}</td>
-                                            <td>{item.medidas?.pescoco || '-'}</td>
-                                            <td>{item.medidas?.torax || '-'}</td>
-                                            <td>{item.medidas?.cintura || '-'}</td>
-                                            <td>{item.medidas?.abdomen || '-'}</td>
-                                            <td>{item.medidas?.quadril || '-'}</td>
-                                            <td>{item.medidas?.bracoDireito || '-'}</td>
-                                            <td>{item.medidas?.bracoEsquerdo || '-'}</td>
-                                            <td className="actions-cell">
-                                                <button onClick={() => handleOpenEditModal(item)} className="action-btn edit-btn">✎</button>
-                                                <button onClick={() => handleDeleteProgresso(item._id)} className="action-btn delete-btn">×</button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </Card>
+            <Card>
+                <div className="chart-selector">
+                    {Object.keys(chartDataSets).map(key => (
+                        <button key={key} className={`chart-selector-btn ${activeChart === key ? 'active' : ''}`} onClick={() => setActiveChart(key)}>
+                            {chartDataSets[key].label}
+                        </button>
+                    ))}
                 </div>
-            ) : (
-                <div className="empty-state-container">
-                    <h3>Sem Registros de Progresso</h3>
-                    <p>Clique no botão para adicionar o seu primeiro registro de avaliação física.</p>
-                    <button className="add-btn" onClick={handleOpenAddModal}>+ Adicionar Novo Registro</button>
-                </div>
+                {chartToShow?.data.length > 1 ? (
+                    <div id={`${activeChart}-chart`} className="chart-container">
+                        <Line options={chartOptions(chartToShow.label)} data={createChartData(chartToShow.label, chartToShow.data, chartToShow.color)} />
+                    </div>
+                ) : (
+                    <div className="empty-state">
+                        <p>Adicione pelo menos dois registos com a medida selecionada para ver o gráfico de evolução.</p>
+                    </div>
+                )}
+            </Card>
+
+            {fotosDoHistorico.length > 0 && (
+                <Card>
+                    <h3>Galeria de Fotos</h3>
+                    <p className="gallery-instructions">Clique numa foto para iniciar a comparação. Depois, clique noutra para ver o "antes e depois".</p>
+                    <div className="photo-gallery">
+                        {fotosDoHistorico.map(item => (
+                            <div key={item._id} className={`photo-item ${comparePhotos.foto1?._id === item._id ? 'selected' : ''}`} onClick={() => handleOpenCompareModal(item)}>
+                                <img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} />
+                                <time>{format(new Date(item.data), 'dd MMM yyyy', { locale: ptBR })}</time>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
             )}
             
+            <Card>
+                <h3>Histórico Completo</h3>
+                <div className="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                {Object.keys(allMeasures).map(key => <th key={key}>{allMeasures[key].label}</th>)}
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {historico.slice().reverse().map(item => (
+                                <tr key={item._id}>
+                                    <td>{format(new Date(item.data), 'dd/MM/yyyy')}</td>
+                                    {Object.keys(allMeasures).map(key => (
+                                        <td key={key}>
+                                            {key === 'peso' ? (item.peso?.toFixed(1) || '-') : (item.medidas?.[key] || '-')}
+                                        </td>
+                                    ))}
+                                    <td className="actions-cell">
+                                        <button onClick={() => handleOpenEditModal(item)} className="action-btn edit-btn">✎</button>
+                                        <button onClick={() => handleDeleteProgresso(item._id)} className="action-btn delete-btn">×</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </Card>
+
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>{registroEmEdicao ? 'Editar Registro' : 'Novo Registro de Avaliação Física'}</h2>
+                <h2>{registroEmEdicao ? 'Editar Registro' : 'Novo Registro'}</h2>
                 <form onSubmit={handleSubmitProgresso} className="progresso-form">
                     <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="peso">Peso (kg) *</label>
-                            <input id="peso" name="peso" type="number" step="0.1" value={formState.peso} onChange={handleInputChange} required />
+                        <div className="form-group"><label>Peso (kg) *</label><input name="peso" type="number" step="0.1" value={formState.peso} onChange={handleInputChange} required /></div>
+                        <div className="form-group"><label>Data</label><input name="data" type="date" value={formState.data} onChange={handleInputChange} required /></div>
+                    </div>
+                    <h4>Medidas (Opcional)</h4>
+                    <div className="medidas-grid">
+                        {Object.keys(allMeasures).filter(k => k !== 'peso').map(key => (
+                             <div className="form-group" key={key}>
+                                <label>{allMeasures[key].label}</label>
+                                <input name={key} type="number" step="0.1" value={formState[key]} onChange={handleInputChange} />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="form-group">
+                        <label>Foto de Progresso</label>
+                        <input type="file" name="foto" accept="image/*" onChange={handleFileChange} />
+                    </div>
+                    <div className="form-actions">
+                        <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                        <button type="submit" className="primary-btn">{registroEmEdicao ? 'Salvar' : 'Adicionar'}</button>
+                    </div>
+                </form>
+            </Modal>
+            
+            <Modal isOpen={isCompareModalOpen} onClose={handleCloseCompareModal}>
+                <div className="compare-photos-modal">
+                    <h2>Antes e Depois</h2>
+                    <div className="compare-grid">
+                        <div className="compare-item">
+                            <img src={comparePhotos.foto1?.fotoUrl} alt="Foto 1" />
+                            <strong>{format(new Date(comparePhotos.foto1?.data || Date.now()), 'dd/MM/yyyy')}</strong>
+                            <span>{comparePhotos.foto1?.peso.toFixed(1)} kg</span>
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="data">Data do Registro</label>
-                            <input id="data" name="data" type="date" value={formState.data} onChange={handleInputChange} required />
+                        <div className="compare-item">
+                            <img src={comparePhotos.foto2?.fotoUrl} alt="Foto 2" />
+                            <strong>{format(new Date(comparePhotos.foto2?.data || Date.now()), 'dd/MM/yyyy')}</strong>
+                            <span>{comparePhotos.foto2?.peso.toFixed(1)} kg</span>
                         </div>
                     </div>
-                    <h4>Circunferências (cm)</h4>
-                    <div className="form-row"><div className="form-group"><label>Pescoço</label><input name="pescoco" type="number" step="0.1" value={formState.pescoco} onChange={handleInputChange} /></div><div className="form-group"><label>Tórax</label><input name="torax" type="number" step="0.1" value={formState.torax} onChange={handleInputChange} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Cintura</label><input name="cintura" type="number" step="0.1" value={formState.cintura} onChange={handleInputChange} /></div><div className="form-group"><label>Abdômen</label><input name="abdomen" type="number" step="0.1" value={formState.abdomen} onChange={handleInputChange} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Quadril</label><input name="quadril" type="number" step="0.1" value={formState.quadril} onChange={handleInputChange} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Braço Direito</label><input name="bracoDireito" type="number" step="0.1" value={formState.bracoDireito} onChange={handleInputChange} /></div><div className="form-group"><label>Braço Esquerdo</label><input name="bracoEsquerdo" type="number" step="0.1" value={formState.bracoEsquerdo} onChange={handleInputChange} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Antebraço Direito</label><input name="antebracoDireito" type="number" step="0.1" value={formState.antebracoDireito} onChange={handleInputChange} /></div><div className="form-group"><label>Antebraço Esquerdo</label><input name="antebracoEsquerdo" type="number" step="0.1" value={formState.antebracoEsquerdo} onChange={handleInputChange} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Coxa Direita</label><input name="coxaDireita" type="number" step="0.1" value={formState.coxaDireita} onChange={handleInputChange} /></div><div className="form-group"><label>Coxa Esquerda</label><input name="coxaEsquerda" type="number" step="0.1" value={formState.coxaEsquerda} onChange={handleInputChange} /></div></div>
-                    <div className="form-row"><div className="form-group"><label>Panturrilha Direita</label><input name="panturrilhaDireita" type="number" step="0.1" value={formState.panturrilhaDireita} onChange={handleInputChange} /></div><div className="form-group"><label>Panturrilha Esquerda</label><input name="panturrilhaEsquerda" type="number" step="0.1" value={formState.panturrilhaEsquerda} onChange={handleInputChange} /></div></div>
-                    <hr/>
-                    <label>Foto de Progresso (opcional)</label>
-                    <input type="file" name="foto" accept="image/*" onChange={handleFileChange} />
-                    <button type="submit">{registroEmEdicao ? 'Salvar Alterações' : 'Adicionar Registro'}</button>
-                </form>
+                    <button className="secondary-btn" onClick={handleCloseCompareModal}>Fechar</button>
+                </div>
             </Modal>
         </div>
     );

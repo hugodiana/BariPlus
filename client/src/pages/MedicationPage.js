@@ -1,523 +1,301 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import './MedicationPage.css';
-import Modal from '../components/Modal';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
+import { format } from 'date-fns';
+import { fetchApi } from '../utils/api'; // Usar a nossa API centralizada
+import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import './MedicationPage.css';
 
 const MedicationPage = () => {
     const [medicamentos, setMedicamentos] = useState([]);
-    const [historico, setHistorico] = useState(new Map());
+    const [historico, setHistorico] = useState({});
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showInactive, setShowInactive] = useState(false);
+    const hoje = new Date().toISOString().split('T')[0];
 
     const [formData, setFormData] = useState({
-        nome: '',
-        dosagem: '',
-        quantidade: 1,
-        unidade: 'comprimido(s)',
-        frequencia: {
-            tipo: 'Diária',
-            horarios: ['08:00'],
-            diaDaSemana: 1, // Segunda-feira como padrão
-        }
+        nome: '', dosagem: '', quantidade: 1, unidade: 'comprimido(s)',
+        frequencia: { tipo: 'Diária', horarios: ['08:00'], diaDaSemana: 1 }
     });
-
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
-    const hoje = new Date().toISOString().split('T')[0];
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${apiUrl}/api/medication`, {
-                headers: { 
-                    'Authorization': `Bearer ${token}` 
-                } 
-            });
-            
-            if (!response.ok) {
-                throw new Error('Erro ao carregar medicamentos');
-            }
-            
+            const response = await fetchApi('/api/medication');
+            if (!response.ok) throw new Error('Erro ao carregar medicamentos');
             const data = await response.json();
             setMedicamentos(data.medicamentos || []);
-            
-            const historicoMap = new Map();
-            if (data.historico) {
-                Object.entries(data.historico).forEach(([date, medications]) => {
-                    historicoMap.set(date, new Map(Object.entries(medications)));
-                });
-            }
-            setHistorico(historicoMap);
+            setHistorico(data.historico || {});
         } catch (error) {
             toast.error(error.message);
         } finally {
             setLoading(false);
         }
-    }, [token, apiUrl]);
+    }, []);
 
-    useEffect(() => { 
-        fetchData(); 
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
-    const handleInputChange = (event) => {
-        const { name, value } = event.target;
-        setFormData(previousState => ({ 
-            ...previousState, 
-            [name]: value 
-        }));
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleFrequenciaChange = (event) => {
-        const { name, value } = event.target;
-        setFormData(previousState => ({
-            ...previousState,
-            frequencia: { 
-                ...previousState.frequencia, 
-                [name]: value 
-            }
-        }));
+    const handleFrequenciaChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, frequencia: { ...prev.frequencia, [name]: value } }));
     };
 
     const handleHorarioChange = (index, value) => {
         const novosHorarios = [...formData.frequencia.horarios];
         novosHorarios[index] = value;
-        setFormData(previousState => ({ 
-            ...previousState, 
-            frequencia: { 
-                ...previousState.frequencia, 
-                horarios: novosHorarios 
-            } 
-        }));
+        setFormData(prev => ({ ...prev, frequencia: { ...prev.frequencia, horarios: novosHorarios } }));
     };
 
-    const addHorario = () => {
-        setFormData(previousState => ({ 
-            ...previousState, 
-            frequencia: { 
-                ...previousState.frequencia, 
-                horarios: [...previousState.frequencia.horarios, '08:00'] 
-            } 
-        }));
-    };
-
+    const addHorario = () => setFormData(prev => ({ ...prev, frequencia: { ...prev.frequencia, horarios: [...prev.frequencia.horarios, ''] } }));
     const removeHorario = (index) => {
         if (formData.frequencia.horarios.length > 1) {
             const novosHorarios = formData.frequencia.horarios.filter((_, i) => i !== index);
-            setFormData(previousState => ({ 
-                ...previousState, 
-                frequencia: { 
-                    ...previousState.frequencia, 
-                    horarios: novosHorarios 
-                } 
-            }));
+            setFormData(prev => ({ ...prev, frequencia: { ...prev.frequencia, horarios: novosHorarios } }));
         }
     };
 
-    const validateTimeFormat = (time) => {
-        return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
-    };
-
-    const handleAddMedicamento = async (event) => {
-        event.preventDefault();
-        
-        // Validar formatos de horário
-        if (formData.frequencia.tipo === 'Diária') {
-            for (const horario of formData.frequencia.horarios) {
-                if (!validateTimeFormat(horario)) {
-                    toast.error('Por favor, insira horários no formato HH:MM (ex: 08:00)');
-                    return;
-                }
-            }
-        }
-
+    const handleSubmit = async (e) => {
+        e.preventDefault();
         try {
-            const response = await fetch(`${apiUrl}/api/medication`, {
+            const response = await fetchApi('/api/medication', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${token}` 
-                },
                 body: JSON.stringify(formData)
             });
-            
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || 'Erro ao adicionar medicamento');
             }
-            
-            toast.success('Medicamento adicionado com sucesso!');
+            toast.success('Medicamento adicionado!');
             setIsModalOpen(false);
-            
-            // Resetar formulário após sucesso
-            setFormData({
-                nome: '',
-                dosagem: '',
-                quantidade: 1,
-                unidade: 'comprimido(s)',
-                frequencia: {
-                    tipo: 'Diária',
-                    horarios: ['08:00'],
-                    diaDaSemana: 1,
-                }
-            });
-            
+            setFormData({ nome: '', dosagem: '', quantidade: 1, unidade: 'comprimido(s)', frequencia: { tipo: 'Diária', horarios: ['08:00'], diaDaSemana: 1 }});
             fetchData();
         } catch (error) {
             toast.error(error.message);
         }
     };
-
-    const handleToggleStatus = async (medication) => {
-        const novoStatus = medication.status === 'Ativo' ? 'Inativo' : 'Ativo';
+    
+    const handleToggleStatus = async (med) => {
+        const novoStatus = med.status === 'Ativo' ? 'Inativo' : 'Ativo';
         try {
-            const response = await fetch(`${apiUrl}/api/medication/${medication._id}/status`, {
+            await fetchApi(`/api/medication/${med._id}/status`, {
                 method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${token}` 
-                },
                 body: JSON.stringify({ status: novoStatus })
             });
-            
-            if (!response.ok) {
-                throw new Error('Erro ao alterar status do medicamento');
-            }
-            
             toast.info(`Medicamento marcado como ${novoStatus}.`);
             fetchData();
         } catch (error) {
-            toast.error('Erro ao alterar status do medicamento');
+            toast.error('Erro ao alterar status.');
         }
     };
-
-    const handleDeleteMedicamento = async (medicationId) => {
-        if (!window.confirm("Tem certeza que deseja apagar este medicamento? Esta ação é irreversível.")) {
-            return;
-        }
-        
-        try {
-            const response = await fetch(`${apiUrl}/api/medication/${medicationId}`, {
-                method: 'DELETE',
-                headers: { 
-                    'Authorization': `Bearer ${token}` 
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error('Erro ao remover medicamento');
+    
+    const handleDelete = async (medId) => {
+        if (window.confirm("Tem certeza que deseja apagar este medicamento?")) {
+            try {
+                await fetchApi(`/api/medication/${medId}`, { method: 'DELETE' });
+                toast.success('Medicamento apagado.');
+                fetchData();
+            } catch (error) {
+                toast.error('Erro ao apagar.');
             }
-            
-            setMedicamentos(previousState => 
-                previousState.filter(medication => medication._id !== medicationId)
-            );
-            toast.success('Medicamento removido com sucesso!');
-        } catch (error) {
-            toast.error(error.message);
         }
     };
 
-        const handleToggleToma = async (medicationId, totalDoses) => {
-        const logDeHoje = historico.get(hoje) || new Map();
-        const tomasAtuais = logDeHoje.get(medicationId) || 0;
+    const handleToggleToma = async (medId, totalDoses) => {
+        const tomasAtuais = historico[hoje]?.[medId] || 0;
         const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
+        
+        // Atualização Otimista
+        const originalHistorico = { ...historico };
+        setHistorico(prev => ({
+            ...prev,
+            [hoje]: { ...prev[hoje], [medId]: novasTomas }
+        }));
 
         try {
-            const response = await fetch(`${apiUrl}/api/medication/log`, {
+            await fetchApi('/api/medication/log', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({ 
-                    date: hoje, 
-                    medId: medicationId, 
-                    count: novasTomas 
-                })
+                body: JSON.stringify({ date: hoje, medId, count: novasTomas })
             });
-            
-            if (!response.ok) {
-                throw new Error('Erro ao atualizar registro de medicação');
-            }
-            
-            const newHistory = new Map(historico);
-            const newLogHoje = new Map(newHistory.get(hoje));
-            newLogHoje.set(medicationId, novasTomas);
-            newHistory.set(hoje, newLogHoje);
-            setHistorico(newHistory);
         } catch (error) {
-            toast.error("Erro ao atualizar registro de medicação.");
+            toast.error("Erro ao registrar a toma. A reverter.");
+            setHistorico(originalHistorico);
         }
     };
 
-    if (loading) {
-        return <LoadingSpinner />;
-    }
+    const proximaDose = useMemo(() => {
+        const agora = new Date();
+        const horaAtual = format(agora, 'HH:mm');
+        let proxima = null;
 
-    const medicamentosAtivos = medicamentos.filter(medication => medication.status === 'Ativo');
-    const medicamentosInativos = medicamentos.filter(medication => medication.status === 'Inativo');
+        medicamentos
+            .filter(med => med.status === 'Ativo' && med.frequencia.tipo === 'Diária')
+            .forEach(med => {
+                med.frequencia.horarios.forEach(horario => {
+                    if (horario > horaAtual) {
+                        if (!proxima || horario < proxima.horario) {
+                            proxima = { ...med, horario };
+                        }
+                    }
+                });
+            });
+        return proxima;
+    }, [medicamentos]);
+
+    if (loading) return <LoadingSpinner />;
+
+    const medicamentosAtivos = medicamentos.filter(m => m.status === 'Ativo');
+    const medicamentosInativos = medicamentos.filter(m => m.status === 'Inativo');
 
     return (
         <div className="page-container">
             <div className="page-header">
                 <h1>Minha Medicação</h1>
-                <p>Controle seus medicamentos e vitaminas diárias</p>
+                <p>Controle os seus medicamentos e vitaminas diárias.</p>
             </div>
+
+            {proximaDose && (
+                <Card className="proxima-dose-card">
+                    <div className="proxima-dose-header">
+                        <span>Próxima Dose</span>
+                        <span className="proxima-dose-horario">{proximaDose.horario}</span>
+                    </div>
+                    <div className="proxima-dose-body">
+                        <strong>{proximaDose.nome}</strong>
+                        <span>{proximaDose.dosagem || `${proximaDose.quantidade} ${proximaDose.unidade}`}</span>
+                    </div>
+                </Card>
+            )}
             
             <Card>
                 <div className="medication-header">
                     <h3>Medicamentos Ativos</h3>
-                    <button 
-                        className="add-btn" 
-                        onClick={() => setIsModalOpen(true)}
-                    >
-                        + Adicionar
-                    </button>
+                    <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar</button>
                 </div>
-                
                 {medicamentosAtivos.length > 0 ? (
                     <div className="medication-list">
-                        {medicamentosAtivos.map(medication => (
-                            <MedicationItem 
-                                key={medication._id} 
-                                med={medication} 
-                                historico={historico} 
-                                hoje={hoje} 
-                                onToggleToma={handleToggleToma} 
-                                onDelete={handleDeleteMedicamento} 
-                                onToggleStatus={handleToggleStatus} 
-                            />
+                        {medicamentosAtivos.map(med => (
+                            <MedicationItem key={med._id} med={med} historicoHoje={historico[hoje] || {}} onToggleToma={handleToggleToma} onToggleStatus={handleToggleStatus} onDelete={handleDelete} />
                         ))}
                     </div>
                 ) : (
-                    <p className="empty-state">Nenhum medicamento ativo cadastrado.</p>
+                    <div className="empty-state">
+                        <span className="empty-icon">💊</span>
+                        <p>Nenhum medicamento ativo cadastrado.</p>
+                    </div>
                 )}
             </Card>
 
             {medicamentosInativos.length > 0 && (
-                <div 
-                    className="inactive-toggle" 
-                    onClick={() => setShowInactive(!showInactive)}
-                >
-                    {showInactive ? 'Ocultar' : 'Mostrar'} Medicamentos Arquivados ({medicamentosInativos.length})
+                <div className="inactive-toggle" onClick={() => setShowInactive(!showInactive)}>
+                    {showInactive ? 'Ocultar' : 'Mostrar'} Arquivados ({medicamentosInativos.length})
                 </div>
             )}
 
             {showInactive && (
                 <Card>
-                    <div className="medication-header">
-                        <h3>Medicamentos Arquivados</h3>
-                    </div>
+                    <div className="medication-header"><h3>Medicamentos Arquivados</h3></div>
                     <div className="medication-list">
-                        {medicamentosInativos.map(medication => (
-                            <MedicationItem 
-                                key={medication._id} 
-                                med={medication} 
-                                onToggleStatus={handleToggleStatus} 
-                                onDelete={handleDeleteMedicamento} 
-                            />
+                        {medicamentosInativos.map(med => (
+                            <MedicationItem key={med._id} med={med} onToggleStatus={handleToggleStatus} onDelete={handleDelete} />
                         ))}
                     </div>
                 </Card>
             )}
             
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <div className="modal-content">
-                    <h2>Adicionar Novo Medicamento</h2>
-                    <form onSubmit={handleAddMedicamento} className="medication-form">
+                <h2>Adicionar Novo Medicamento</h2>
+                <form onSubmit={handleSubmit} className="medication-form">
+                    <div className="form-group">
+                        <label>Nome do Medicamento</label>
+                        <input name="nome" type="text" value={formData.nome} onChange={handleInputChange} required />
+                    </div>
+                    <div className="form-group">
+                        <label>Dosagem (ex: 500mg)</label>
+                        <input name="dosagem" type="text" value={formData.dosagem} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="nome">Nome</label>
-                            <input 
-                                type="text" 
-                                id="nome" 
-                                name="nome" 
-                                value={formData.nome} 
-                                onChange={handleInputChange} 
-                                required 
-                            />
+                            <label>Quantidade</label>
+                            <input name="quantidade" type="number" min="1" value={formData.quantidade} onChange={handleInputChange} />
                         </div>
-                        
                         <div className="form-group">
-                            <label htmlFor="dosagem">Dosagem</label>
-                            <input 
-                                type="text" 
-                                id="dosagem" 
-                                name="dosagem" 
-                                value={formData.dosagem} 
-                                onChange={handleInputChange} 
-                                placeholder="(Opcional)" 
-                            />
-                        </div>
-                        
-                        <div className="form-row">
-                            <div className="form-group">
-                                <label htmlFor="quantidade">Quantidade</label>
-                                <input 
-                                    type="number" 
-                                    id="quantidade" 
-                                    name="quantidade" 
-                                    min="1" 
-                                    value={formData.quantidade} 
-                                    onChange={handleInputChange} 
-                                />
-                            </div>
-                            
-                            <div className="form-group">
-                                <label htmlFor="unidade">Unidade</label>
-                                <select 
-                                    id="unidade" 
-                                    name="unidade" 
-                                    value={formData.unidade} 
-                                    onChange={handleInputChange}
-                                >
-                                    <option>comprimido(s)</option>
-                                    <option>cápsula(s)</option>
-                                    <option>gota(s)</option>
-                                    <option>ml</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div className="form-group">
-                            <label>Frequência</label>
-                            <select 
-                                name="tipo" 
-                                value={formData.frequencia.tipo} 
-                                onChange={handleFrequenciaChange} 
-                                className="frequencia-select"
-                            >
-                                <option>Diária</option>
-                                <option>Semanal</option>
+                            <label>Unidade</label>
+                            <select name="unidade" value={formData.unidade} onChange={handleInputChange}>
+                                <option>comprimido(s)</option><option>cápsula(s)</option><option>gota(s)</option><option>ml</option>
                             </select>
                         </div>
-                        
-                        {formData.frequencia.tipo === 'Diária' && (
-                            <div className="form-group">
-                                <label>Horários das Doses</label>
-                                {formData.frequencia.horarios.map((horario, index) => (
-                                    <div key={index} className="horario-input-group">
-                                        <input 
-                                            type="time" 
-                                            value={horario} 
-                                            onChange={(event) => handleHorarioChange(index, event.target.value)} 
-                                            required 
-                                        />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => removeHorario(index)} 
-                                            className="remove-horario-btn"
-                                        >
-                                            -
-                                        </button>
-                                    </div>
-                                ))}
-                                <button 
-                                    type="button" 
-                                    onClick={addHorario} 
-                                    className="add-horario-btn"
-                                >
-                                    + Adicionar Horário
-                                </button>
-                            </div>
-                        )}
-
-                        {formData.frequencia.tipo === 'Semanal' && (
-                            <div className="form-group">
-                                <label>Dia da Semana</label>
-                                <select 
-                                    name="diaDaSemana" 
-                                    value={formData.frequencia.diaDaSemana} 
-                                    onChange={handleFrequenciaChange}
-                                >
-                                    <option value="1">Segunda-feira</option>
-                                    <option value="2">Terça-feira</option>
-                                    <option value="3">Quarta-feira</option>
-                                    <option value="4">Quinta-feira</option>
-                                    <option value="5">Sexta-feira</option>
-                                    <option value="6">Sábado</option>
-                                    <option value="0">Domingo</option>
-                                </select>
-                            </div>
-                        )}
-                        
-                        <button type="submit" className="submit-btn">
-                            Adicionar à Lista
-                        </button>
-                    </form>
-                </div>
+                    </div>
+                    <div className="form-group">
+                        <label>Frequência</label>
+                        <select name="tipo" value={formData.frequencia.tipo} onChange={handleFrequenciaChange}>
+                            <option>Diária</option><option>Semanal</option>
+                        </select>
+                    </div>
+                    {formData.frequencia.tipo === 'Diária' && (
+                        <div className="form-group">
+                            <label>Horários das Doses</label>
+                            {formData.frequencia.horarios.map((horario, index) => (
+                                <div key={index} className="horario-input-group">
+                                    <input type="time" value={horario} onChange={(e) => handleHorarioChange(index, e.target.value)} required />
+                                    <button type="button" onClick={() => removeHorario(index)} className="remove-horario-btn">-</button>
+                                </div>
+                            ))}
+                            <button type="button" onClick={addHorario} className="add-horario-btn">+ Adicionar Horário</button>
+                        </div>
+                    )}
+                    {formData.frequencia.tipo === 'Semanal' && (
+                        <div className="form-group">
+                            <label>Dia da Semana</label>
+                            <select name="diaDaSemana" value={formData.frequencia.diaDaSemana} onChange={handleFrequenciaChange}>
+                                <option value="1">Segunda-feira</option><option value="2">Terça-feira</option><option value="3">Quarta-feira</option>
+                                <option value="4">Quinta-feira</option><option value="5">Sexta-feira</option><option value="6">Sábado</option><option value="0">Domingo</option>
+                            </select>
+                        </div>
+                    )}
+                    <button type="submit" className="submit-btn">Adicionar à Lista</button>
+                </form>
             </Modal>
         </div>
     );
 };
 
-const MedicationItem = ({ med, historico, hoje, onToggleToma, onDelete, onToggleStatus }) => {
-    const foiTomadoHoje = (medicationId, doseIndex) => {
-        if (!historico || !hoje) return false;
-        const logDeHoje = historico.get(hoje) || new Map();
-        return (logDeHoje.get(medicationId) || 0) > doseIndex;
-    };
+const MedicationItem = ({ med, historicoHoje, onToggleToma, onDelete, onToggleStatus }) => {
+    const tomasDeHoje = historicoHoje?.[med._id] || 0;
+    const totalDoses = med.frequencia.horarios?.length || 0;
 
     return (
         <div className={`med-item status-${med.status.toLowerCase()}`}>
             <div className="med-info">
                 <strong>{med.nome}</strong>
-                <span>
-                    {med.dosagem && `${med.dosagem} - `}
-                    {med.quantidade} {med.unidade}
-                </span>
-                <div className="med-horarios">
-                    {med.frequencia.tipo === 'Diária' && 
-                        med.frequencia.horarios.map((horario, index) => (
-                            <span key={index} className="horario-tag">
-                                {horario}
-                            </span>
-                        ))
-                    }
-                    
-                    {med.frequencia.tipo === 'Semanal' && (
-                        <span className="horario-tag">
-                            Toda {format(new Date(2024, 0, med.frequencia.diaDaSemana + 1), 'EEEE', { locale: ptBR })}
-                        </span>
-                    )}
-                </div>
+                <span>{med.dosagem || `${med.quantidade} ${med.unidade}`}</span>
             </div>
             
-            {med.status === 'Ativo' && onToggleToma && (
-                <div className="daily-med-checks">
-                    {Array.from({ length: med.frequencia.horarios.length }).map((_, index) => (
-                        <button
-                            key={index}
-                            type="button"
-                            className={`med-checkbox-daily ${foiTomadoHoje(med._id, index) ? 'taken' : ''}`}
-                            onClick={() => onToggleToma(med._id, med.frequencia.horarios.length)}
-                            aria-label={`Marcar ${index + 1}ª dose`}
-                        >
-                            {foiTomadoHoje(med._id, index) && '✓'}
-                        </button>
-                    ))}
+            {med.status === 'Ativo' && med.frequencia.tipo === 'Diária' && (
+                <div className="med-checks">
+                    {med.frequencia.horarios.map((horario, index) => {
+                        const foiTomado = index < tomasDeHoje;
+                        return (
+                            <div key={index} className="dose-item">
+                                <button className={`med-checkbox ${foiTomado ? 'taken' : ''}`} onClick={() => onToggleToma(med._id, totalDoses)}>
+                                    {foiTomado && '✓'}
+                                </button>
+                                <span className="dose-time">{horario}</span>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
-            
+
             <div className="med-actions">
-                <button 
-                    onClick={() => onToggleStatus(med)} 
-                    className="action-btn archive-btn"
-                >
-                    {med.status === 'Ativo' ? 'Arquivar' : 'Reativar'}
-                </button>
-                
-                {med.status === 'Inativo' && (
-                    <button 
-                        onClick={() => onDelete(med._id)} 
-                        className="action-btn delete-btn"
-                    >
-                        Apagar
-                    </button>
-                )}
+                <button onClick={() => onToggleStatus(med)} className="action-btn archive-btn">{med.status === 'Ativo' ? 'Arquivar' : 'Reativar'}</button>
+                {med.status === 'Inativo' && <button onClick={() => onDelete(med._id)} className="action-btn delete-btn">Apagar</button>}
             </div>
         </div>
     );

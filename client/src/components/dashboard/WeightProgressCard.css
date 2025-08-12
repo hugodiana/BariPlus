@@ -5,38 +5,63 @@
     flex-direction: column;
     gap: 1rem;
 }
-
 .weight-card h3 {
     margin: 0;
 }
 
-/* ✅ CORREÇÃO: Garante que todos os itens da grelha se comportem da mesma forma */
+/* ✅ NOVO: Grelha com 4 colunas */
 .weight-stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
     gap: 1rem;
     text-align: center;
 }
-
 .stat-item {
     background-color: #f8f9fa;
     padding: 1rem;
     border-radius: 8px;
 }
-
 .stat-label {
     display: block;
     font-size: 0.8rem;
     color: #6c757d;
     margin-bottom: 0.25rem;
 }
-
 .stat-value {
     font-size: 1.5rem;
     font-weight: bold;
 }
 
+/* Cores para os cards de destaque */
 .stat-item.eliminado {
-    background-color: var(--primary-light);
-    color: var(--primary-green);
+    background-color: var(--color-success-light);
+    color: var(--color-success-dark);
+}
+.stat-item.meta {
+    background-color: var(--color-accent-light);
+    color: var(--color-accent);
+}
+
+/* ✅ NOVO: Estilos para a barra de progresso da meta */
+.goal-progress-container {
+    margin-top: 0.5rem;
+}
+.goal-progress-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+.progress-bar-background {
+    background-color: var(--color-border);
+    border-radius: var(--border-radius);
+    height: 10px;
+    overflow: hidden;
+}
+.progress-bar-foreground {
+    background-color: var(--color-primary);
+    height: 100%;
+    border-radius: var(--border-radius);
+    transition: width 0.5s ease-in-out;
 }

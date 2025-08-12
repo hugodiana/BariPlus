@@ -1,7 +1,7 @@
 // src/components/LegalPageLayout.js
 import React from 'react';
 import { Link } from 'react-router-dom';
-import '../pages/LegalPage.css'; // O CSS compartilhado para as páginas legais
+import '../pages/LegalPage.css'; // Usaremos o novo CSS unificado
 
 const LegalPageLayout = ({ children, title }) => {
     return (

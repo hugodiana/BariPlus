@@ -1,114 +1,82 @@
-/* src/pages/LoginPage.css */
-.auth-page-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: var(--space-lg);
+/* src/pages/LegalPage.css */
+
+.legal-page-background {
     background-color: var(--color-background);
+    min-height: 100vh;
+    padding: var(--space-xl) var(--space-lg);
+    font-family: var(--font-family);
 }
 
-.auth-form-wrapper {
-    width: 100%;
-    max-width: 420px;
+.legal-page-container {
+    max-width: 800px;
+    margin: 0 auto;
     background-color: var(--color-surface);
-    padding: var(--space-xl);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
+    overflow: hidden;
 }
 
-.auth-form-header {
-    text-align: center;
-    margin-bottom: var(--space-lg);
+.legal-header {
+    padding: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    background-color: var(--color-surface);
 }
 
-.auth-logo {
-    height: 60px;
+.legal-logo {
+    height: 40px;
+}
+
+.legal-content {
+    padding: var(--space-xl);
+    line-height: var(--line-height);
+    color: var(--color-text-secondary);
+}
+
+.legal-content h1 {
+    font-size: 2.2rem;
+    color: var(--color-text-strong);
+    margin-top: 0;
+    margin-bottom: var(--space-xs);
+}
+
+.legal-content .last-updated {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-xl);
+}
+
+.legal-content h2 {
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    margin-top: 2.5rem;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-primary-light);
+}
+
+.legal-content p, .legal-content li {
     margin-bottom: var(--space-md);
 }
 
-.auth-form-header h2 {
-    color: var(--color-text-strong);
-    margin: 0;
-}
-
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-}
-
-.form-group { /* Adicione esta classe se precisar agrupar label e input */
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-}
-
-.auth-form input {
-    padding: 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    transition: var(--transition);
-}
-.auth-form input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.password-wrapper {
-    position: relative;
-    display: flex;
-}
-.password-wrapper input {
-    width: 100%;
-    padding-right: 45px;
-}
-.password-toggle-icon {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    color: var(--color-text-faint);
-}
-
-.submit-button {
-    padding: 14px;
-    border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--color-primary);
-    color: white;
-    font-size: 1rem;
+.legal-content strong {
+    color: var(--color-text-primary);
     font-weight: var(--font-weight-bold);
-    cursor: pointer;
+}
+
+.legal-content ul {
+    padding-left: var(--space-lg);
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: var(--space-xl);
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: var(--font-weight-bold);
     transition: var(--transition);
 }
-.submit-button:disabled {
-    background-color: var(--color-text-faint);
-    cursor: not-allowed;
-}
 
-.form-footer {
-    text-align: center;
-    margin-top: var(--space-md);
+.back-link:hover {
+    text-decoration: underline;
 }
-.link-button {
-    background: none;
-    border: none;
-    color: var(--color-accent);
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: var(--space-sm);
-}
-
-.terms-container {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: start;
-    gap: var(--space-sm);
-}
-.terms-container input { width: auto; margin-top: 4px; }
-.terms-container a { color: var(--color-accent); }

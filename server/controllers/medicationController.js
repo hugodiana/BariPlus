@@ -4,24 +4,19 @@ const Medication = require('../models/medicationModel');
 exports.getMedication = async (req, res) => {
     try {
         let doc = await Medication.findOne({ userId: req.userId });
-
         if (!doc) {
-            // Se o documento não existe, cria um novo e retorna
             doc = new Medication({ userId: req.userId, medicamentos: [], historico: {} });
             await doc.save();
         }
-
-        // ✅ CORREÇÃO: Garante que o histórico seja sempre um objeto JSON válido
+        
         const plainDoc = doc.toObject();
-        const historicoJSON = plainDoc.historico || {};
-
         res.json({
             ...plainDoc,
-            historico: historicoJSON
+            historico: plainDoc.historico || {}
         });
 
     } catch (error) {
-        console.error('Erro ao buscar medicamentos:', error); // Log do erro no servidor
+        console.error('Erro ao buscar medicamentos:', error);
         res.status(500).json({ message: 'Erro ao buscar medicamentos.' });
     }
 };
@@ -31,7 +26,6 @@ exports.addMedication = async (req, res) => {
     try {
         const { nome, dosagem, quantidade, unidade, frequencia } = req.body;
         
-        // ✅ CORREÇÃO: Validação inteligente baseada no tipo de frequência
         if (!nome || !frequencia || !frequencia.tipo) {
             return res.status(400).json({ message: 'Nome e tipo de frequência são obrigatórios.' });
         }
@@ -47,6 +41,7 @@ exports.addMedication = async (req, res) => {
             quantidade: parseInt(quantidade) || 1, 
             unidade, frequencia, status: 'Ativo'
         };
+
         const result = await Medication.findOneAndUpdate(
             { userId: req.userId },
             { $push: { medicamentos: novoMedicamento } },
@@ -69,6 +64,7 @@ exports.updateStatus = async (req, res) => {
         }
         const medicationDoc = await Medication.findOne({ userId: req.userId });
         if (!medicationDoc) return res.status(404).json({ message: "Nenhum medicamento encontrado." });
+        
         const med = medicationDoc.medicamentos.id(medId);
         if (!med) return res.status(404).json({ message: "Medicamento não encontrado." });
 
@@ -80,18 +76,32 @@ exports.updateStatus = async (req, res) => {
     }
 };
 
-// POST /api/medication/log - Registrar a toma de um medicamento
+// ✅ FUNÇÃO CORRIGIDA FINAL: Registrar a toma de um medicamento
 exports.logMedication = async (req, res) => {
     try {
         const { date, medId, count } = req.body;
+
+        // A "notação de ponto" é a forma correta de dizer ao MongoDB para navegar
+        // até ao campo exato que queremos atualizar, sem tocar no resto.
         const fieldToUpdate = `historico.${date}.${medId}`;
+        
         const updatedDoc = await Medication.findOneAndUpdate(
             { userId: req.userId },
+            // O operador $set garante que apenas este campo seja atualizado ou criado.
+            // Isto evita a validação de outros campos do documento (como o medicamento com erro).
             { $set: { [fieldToUpdate]: parseInt(count) } },
+            // new: true retorna o documento atualizado; upsert: true cria o documento se ele não existir.
             { new: true, upsert: true }
         );
-        res.json(updatedDoc.historico.get(date) || {});
+
+        // Retorna o histórico da data específica para manter o frontend sincronizado.
+        const updatedHistoryForDate = updatedDoc.historico.get(date) || new Map();
+        const responseJSON = Object.fromEntries(updatedHistoryForDate.entries());
+        
+        res.json(responseJSON);
+
     } catch (error) {
+        console.error("Erro detalhado ao registrar medicação:", error); 
         res.status(500).json({ message: 'Erro ao registrar medicação.' });
     }
 };

@@ -1,314 +1,193 @@
-/* Estilos base que se aplicam a todos os dispositivos */
+/* src/pages/MedicationPage.css */
+
+/* Card de Destaque "Próxima Dose" */
+.proxima-dose-card {
+    background: var(--color-primary-light);
+    border-left: 5px solid var(--color-primary);
+    margin-bottom: var(--space-xl);
+    padding: var(--space-lg) !important;
+}
+.proxima-dose-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-sm);
+}
+.proxima-dose-horario {
+    font-size: 1.5rem;
+}
+.proxima-dose-body strong {
+    font-size: 1.2rem;
+    color: var(--color-text-strong);
+    display: block;
+}
+.proxima-dose-body span {
+    color: var(--color-text-secondary);
+}
+
+/* Header principal da página de medicamentos */
 .medication-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-md);
 }
-
 .medication-header h3 { 
     margin: 0; 
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+    color: var(--color-text-strong);
 }
-
 .add-btn {
-    background-color: var(--action-blue);
+    background-color: var(--color-primary);
     color: white;
     border: none;
-    padding: 0.6rem 1rem;
+    padding: 10px 16px;
     border-radius: var(--border-radius);
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
-    font-size: 0.9rem;
-    white-space: nowrap;
+    transition: var(--transition);
+}
+.add-btn:hover {
+    background-color: var(--color-primary-dark);
 }
 
 .medication-list {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--space-lg);
 }
 
+/* Estilo de cada item de medicamento */
 .med-item {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    padding: 1rem;
-    border-radius: 8px;
-    background-color: var(--background-light);
-    border: 1px solid var(--border-color);
-    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto; /* Informações | Checks */
+    gap: var(--space-md) var(--space-lg);
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-lg);
 }
-
+.med-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
 .med-item.status-inativo {
     opacity: 0.6;
 }
-
-.med-info { 
-    flex-grow: 1; 
-    width: 100%;
-}
-
 .med-info strong { 
     display: block; 
-    font-size: 1rem; 
-    margin-bottom: 0.3rem;
+    font-size: 1.1rem; 
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-primary);
 }
-
 .med-info span { 
-    display: block; 
-    font-size: 0.85rem; 
-    color: var(--text-secondary); 
-    margin-bottom: 0.5rem;
+    font-size: var(--font-size-sm); 
+    color: var(--color-text-secondary); 
 }
 
-.med-horarios {
+/* Checks e Horários */
+.med-checks {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
+    gap: var(--space-md);
+    justify-content: flex-end;
 }
-
-.horario-tag {
-    background-color: var(--primary-light);
-    color: var(--primary-green);
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.daily-med-checks {
+.dose-item {
     display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-}
-
-.med-checkbox-daily {
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    gap: var(--space-xs);
+}
+.med-checkbox {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--color-border);
+    border-radius: 50%;
     background: none;
     cursor: pointer;
-}
-
-.med-checkbox-daily.taken {
-    background-color: var(--primary-green);
+    font-size: 1.2rem;
+    font-weight: bold;
     color: white;
-    border-color: var(--primary-green);
+    transition: var(--transition);
 }
-
-.med-actions {
-    display: flex;
-    flex-direction: row;
-    gap: 0.5rem;
-    width: 100%;
+.med-checkbox:hover {
+    border-color: var(--color-text-faint);
 }
-
-.med-actions .action-btn {
-    background: none;
-    border: 1px solid var(--border-color);
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    cursor: pointer;
+.med-checkbox.taken {
+    background-color: var(--color-success);
+    border-color: var(--color-success);
+}
+.dose-time {
     font-size: 0.8rem;
-    flex: 1;
-    text-align: center;
+    color: var(--color-text-secondary);
 }
 
-.archive-btn {
-    border-color: var(--action-blue);
-    color: var(--action-blue);
+/* Ações (Arquivar/Apagar) */
+.med-actions {
+    grid-column: 1 / -1; /* Ocupa a linha toda */
+    display: flex;
+    gap: var(--space-sm);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+    margin-top: var(--space-md);
 }
-
-.delete-btn {
-    border-color: var(--error-red);
-    color: var(--error-red);
+.action-btn {
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    border: 1px solid;
+    background: transparent;
+    font-size: 0.85rem;
 }
+.archive-btn { color: var(--color-accent); border-color: var(--color-accent); }
+.delete-btn { color: var(--color-danger); border-color: var(--color-danger); }
 
+/* Toggle para arquivados */
 .inactive-toggle {
     text-align: center;
-    margin: 1.5rem 0;
-    color: var(--action-blue);
-    font-weight: 600;
+    margin-top: var(--space-xl);
+    color: var(--color-accent);
+    font-weight: bold;
     cursor: pointer;
-    padding: 0.8rem;
-    background-color: var(--background-light);
-    border-radius: 8px;
-}
-
-.empty-state { 
-    text-align: center; 
-    padding: 2rem; 
-    color: var(--text-secondary);
-    font-size: 0.9rem;
+    padding: var(--space-md);
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Formulário no Modal */
-.medication-form { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 1rem; 
+.medication-form { display: flex; flex-direction: column; gap: var(--space-lg); }
+.form-row { display: flex; gap: var(--space-md); }
+.form-group { flex: 1; display: flex; flex-direction: column; }
+.form-group label { margin-bottom: var(--space-sm); font-weight: var(--font-weight-medium); }
+.form-group input, .form-group select {
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
 }
-
-.form-row { 
-    display: flex; 
-    flex-direction: column;
-    gap: 1rem; 
-}
-
-.form-group { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-}
-
-.form-group label { 
-    margin-bottom: 0.5rem; 
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.form-group input, 
-.form-group select { 
-    padding: 0.8rem; 
-    border: 1px solid var(--border-color); 
-    border-radius: 4px; 
-    font-size: 0.9rem;
-}
-
-.horario-input-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.horario-input-group input { 
-    flex-grow: 1; 
-    padding: 0.6rem;
-}
-
-.remove-horario-btn, 
-.add-horario-btn {
-    padding: 0.5rem;
+.horario-input-group { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.horario-input-group input { flex-grow: 1; }
+.remove-horario-btn, .add-horario-btn {
     border: none;
-    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.8rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-weight: bold;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
 }
-
-.remove-horario-btn { 
-    background-color: #f2f2f2; 
-    width: 2rem;
-    height: 2rem;
-}
-
-.add-horario-btn {
-    width: 100%;
-    background-color: var(--primary-light);
-    color: var(--primary-green);
-    margin-top: 0.5rem;
-    padding: 0.6rem;
-}
-
+.remove-horario-btn { background-color: var(--color-background); color: var(--color-danger); padding: 10px 14px; }
+.add-horario-btn { width: 100%; background-color: var(--color-primary-light); color: var(--color-primary); padding: 12px; }
 .submit-btn {
-    padding: 0.8rem;
+    padding: 14px;
     border: none;
     border-radius: var(--border-radius);
-    background-color: var(--primary-green);
+    background-color: var(--color-primary);
     color: white;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    font-weight: bold;
     cursor: pointer;
-    margin-top: 0.5rem;
-}
-
-/* Media Queries para dispositivos maiores */
-@media (min-width: 768px) {
-    .med-item {
-        flex-direction: row;
-        align-items: center;
-    }
-    
-    .med-actions {
-        flex-direction: column;
-        width: auto;
-    }
-    
-    .form-row {
-        flex-direction: row;
-    }
-    
-    .medication-header h3 { 
-        font-size: 1.3rem;
-    }
-    
-    .add-btn {
-        padding: 0.8rem 1.5rem;
-        font-size: 1rem;
-    }
-    
-    .med-info strong { 
-        font-size: 1.1rem; 
-    }
-    
-    .med-info span { 
-        font-size: 0.9rem;
-    }
-    
-    .horario-tag {
-        font-size: 0.8rem;
-    }
-    
-    .med-actions .action-btn {
-        font-size: 0.85rem;
-        padding: 0.5rem 1rem;
-    }
-    
-    .form-group input, 
-    .form-group select { 
-        padding: 0.9rem; 
-    }
-    
-    .submit-btn {
-        padding: 1rem;
-        font-size: 1rem;
-    }
-}
-
-/* Melhorias para telas muito pequenas (menos de 350px) */
-@media (max-width: 349px) {
-    .med-horarios {
-        gap: 0.3rem;
-    }
-    
-    .horario-tag {
-        padding: 0.15rem 0.4rem;
-        font-size: 0.7rem;
-    }
-    
-    .med-actions {
-        flex-direction: column;
-    }
-    
-    .med-actions .action-btn {
-        padding: 0.3rem 0.5rem;
-        font-size: 0.75rem;
-    }
-    
-    .form-group input, 
-    .form-group select { 
-        padding: 0.6rem; 
-    }
 }

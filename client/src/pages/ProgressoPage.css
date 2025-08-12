@@ -1,162 +1,192 @@
-/* ProgressoPage.css refatorado com o novo sistema de design */
-
-.progresso-content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xl);
-}
+/* src/pages/ProgressoPage.css */
 
 .page-header-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
     margin-bottom: var(--space-lg);
+    flex-wrap: wrap;
+    gap: var(--space-md);
 }
-
-
+.header-buttons {
+    display: flex;
+    gap: var(--space-md);
+}
 .add-btn, .pdf-link {
-    background-color: var(--color-info);
+    background-color: var(--color-primary);
     color: white;
     border: none;
     padding: 12px 18px;
-    border-radius: var(--border-radius-md);
+    border-radius: var(--border-radius);
     font-weight: var(--font-weight-bold);
     cursor: pointer;
     font-size: var(--font-size-sm);
     text-decoration: none;
+    transition: var(--transition);
+}
+.add-btn:hover, .pdf-link:hover {
+    background-color: var(--color-primary-dark);
+}
+/* ✅ CORREÇÃO: Estilo para o botão de gerar PDF */
+.pdf-link.generate {
+    background-color: var(--color-accent);
+}
+.pdf-link.ready {
+    background-color: var(--color-success);
 }
 
-pdf-link.ready {
-    background-color: var(--color-secondary);
-}
-
-
-.progresso-content h3 {
-    margin-top: 0;
-    color: var(--primary-green);
-    margin-bottom: 1rem;
-}
-
-.summary-stats-grid {
+.summary-highlights-card {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--space-lg);
+    gap: 1px;
+    background-color: var(--color-border);
+    overflow: hidden;
+    padding: 0 !important;
+    margin-bottom: var(--space-xl);
 }
-
-.stat-item-small {
+.highlight-item {
+    background-color: var(--color-surface);
     padding: var(--space-md);
     text-align: center;
 }
-.stat-item-small h3 {
-    margin: 0 0 5px 0;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--text-secondary);
+.highlight-item.main {
+    background-color: var(--color-primary-light);
 }
-.stat-item-small p {
-    margin: 0;
-    font-size: 2rem;
-    font-weight: bold;
-    color: var(--primary-green);
+.highlight-label {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
 }
-
-.charts-grid {
-    display: grid;
-    /* Em ecrãs pequenos (mobile), 1 coluna. Em ecrãs maiores, até 2 colunas. */
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-xl);
+.highlight-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-strong);
+}
+.highlight-item.main .highlight-value {
+    color: var(--color-primary);
 }
 
+.chart-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-md);
+}
+.chart-selector-btn {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    background: transparent;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: var(--font-weight-medium);
+    transition: var(--transition);
+}
+.chart-selector-btn.active {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
 .chart-container {
-    position: relative;
-    height: 280px;
-    width: 100%;
+    height: 300px;
 }
 
+.gallery-instructions {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+}
 .photo-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: var(--space-md);
 }
+.photo-item {
+    cursor: pointer;
+    border: 3px solid transparent;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+}
+.photo-item.selected {
+    border-color: var(--color-accent);
+}
 .photo-item img {
     width: 100%;
     height: 120px;
     object-fit: cover;
-    border-radius: var(--border-radius);
-    border: 2px solid var(--border-color);
+    border-radius: 8px;
 }
 .photo-item time {
-    font-size: 12px;
-    color: var(--text-faint);
-    margin-top: var(--space-sm);
     display: block;
     text-align: center;
+    font-size: 0.8rem;
+    color: var(--color-text-secondary);
+    margin-top: var(--space-xs);
 }
 
-.table-responsive {
+/* Tabela */
+.table-responsive { width: 100%; overflow-x: auto; }
+table {
     width: 100%;
-    overflow-x: auto;
-}
-.progresso-content table {
-    width: 100%;
-    min-width: 900px;
     border-collapse: collapse;
-    margin-top: var(--space-md);
 }
-.progresso-content th, .progresso-content td {
+th, td {
     padding: 12px;
     text-align: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
     white-space: nowrap;
 }
-
+th {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+}
 .actions-cell {
     display: flex;
     justify-content: center;
     gap: var(--space-md);
 }
-.action-btn {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
-    opacity: 0.6;
-}
-.edit-btn { color: var(--action-blue); }
-.delete-btn { color: var(--danger-red); }
+.action-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.6; }
+.edit-btn { color: var(--color-accent); }
+.delete-btn { color: var(--color-danger); }
 
-/* Formulário do Modal */
+/* Formulário no Modal */
 .progresso-form .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-md);
 }
-.progresso-form .form-group {
-    display: flex;
-    flex-direction: column;
-}
 .progresso-form .medidas-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+.progresso-form .form-group {
+    display: flex;
+    flex-direction: column;
+}
+.progresso-form h4 {
+    margin-top: var(--space-lg);
+    color: var(--color-primary);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
+
 }
 
-@media (max-width: 768px) {
-    .page-header-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    .add-btn {
-        width: 100%;
-        text-align: center;
-    }
-    .charts-grid {
-        grid-template-columns: 1fr;
-    }
-    .progresso-form .form-row,
-    .progresso-form .medidas-grid {
-        grid-template-columns: 1fr;
-    }
+.pdf-chart-studio {
+    position: absolute;
+    left: -9999px; /* Move os gráficos para fora da tela */
+    top: -9999px;
+    opacity: 0; /* Garante que fiquem invisíveis */
 }
+
+/* Modal de Comparação */
+.compare-photos-modal h2 { text-align: center; }
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-lg) 0; }
+.compare-item { text-align: center; }
+.compare-item img { width: 100%; max-height: 300px; object-fit: cover; border-radius: var(--border-radius); margin-bottom: var(--space-sm); }
+.compare-item strong { display: block; font-size: 1.1rem; }
+.compare-item span { color: var(--color-text-secondary); }

@@ -4,37 +4,59 @@ import './OnboardingPage.css';
 
 const OnboardingPage = () => {
     const [step, setStep] = useState(1);
-    const [fezCirurgia, setFezCirurgia] = useState(null);
-    const [temDataMarcada, setTemDataMarcada] = useState(null);
-    const [dataCirurgia, setDataCirurgia] = useState('');
-    const [altura, setAltura] = useState('');
-    const [pesoInicial, setPesoInicial] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Unificando o estado do formulário
+    const [formState, setFormState] = useState({
+        fezCirurgia: null,
+        temDataMarcada: null,
+        dataCirurgia: '',
+        altura: '',
+        pesoInicial: '',
+        metaPeso: '' // ✅ NOVO CAMPO
+    });
 
     const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormState(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleOptionClick = (field, value, nextStep) => {
+        setFormState(prev => ({ ...prev, [field]: value }));
+        setStep(nextStep);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         
-        if (!altura || !pesoInicial) {
-            return toast.error("Por favor, preencha a sua altura e peso inicial.");
+        // Validações
+        if (!formState.altura || !formState.pesoInicial || !formState.metaPeso) {
+            toast.error("Por favor, preencha a sua altura, peso inicial e a sua meta.");
+            setIsLoading(false);
+            return;
         }
-        if ((fezCirurgia === 'sim' || temDataMarcada === 'sim') && !dataCirurgia) {
-            return toast.error("Por favor, informe a data da sua cirurgia.");
-        }
-
+        
         try {
             const response = await fetch(`${apiUrl}/api/onboarding`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ fezCirurgia, dataCirurgia, altura, pesoInicial })
+                body: JSON.stringify(formState)
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || "Erro ao guardar os dados.");
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || "Erro ao guardar os dados.");
+            }
             
-            window.location.href = '/';
+            // Recarrega a página para que o App.js possa redirecionar para a dashboard
+            window.location.href = '/'; 
         } catch (error) {
             toast.error(error.message);
+            setIsLoading(false);
         }
     };
 
@@ -45,14 +67,8 @@ const OnboardingPage = () => {
                     <div className="form-group">
                         <label>Você já realizou a cirurgia bariátrica?</label>
                         <div className="radio-group">
-                            {/* ✅ EMOJI REMOVIDO */}
-                            <button type="button" className={fezCirurgia === 'sim' ? 'active' : ''} onClick={() => { setFezCirurgia('sim'); setStep(3); }}>
-                                Sim, já fiz
-                            </button>
-                            {/* ✅ EMOJI REMOVIDO */}
-                            <button type="button" className={fezCirurgia === 'nao' ? 'active' : ''} onClick={() => { setFezCirurgia('nao'); setStep(2); }}>
-                                Ainda não
-                            </button>
+                            <button type="button" className={formState.fezCirurgia === 'sim' ? 'active' : ''} onClick={() => handleOptionClick('fezCirurgia', 'sim', 3)}>Sim, já fiz</button>
+                            <button type="button" className={formState.fezCirurgia === 'nao' ? 'active' : ''} onClick={() => handleOptionClick('fezCirurgia', 'nao', 2)}>Ainda não</button>
                         </div>
                     </div>
                 );
@@ -61,36 +77,44 @@ const OnboardingPage = () => {
                     <div className="form-group">
                         <label>Já tem uma data marcada?</label>
                         <div className="radio-group">
-                            {/* ✅ EMOJI REMOVIDO */}
-                            <button type="button" className={temDataMarcada === 'sim' ? 'active' : ''} onClick={() => { setTemDataMarcada('sim'); setStep(3); }}>
-                                Sim, já tenho
-                            </button>
-                            {/* ✅ EMOJI REMOVIDO */}
-                            <button type="button" className={temDataMarcada === 'nao' ? 'active' : ''} onClick={() => { setTemDataMarcada('nao'); setStep(3); }}>
-                                Ainda não
-                            </button>
+                            <button type="button" className={formState.temDataMarcada === 'sim' ? 'active' : ''} onClick={() => handleOptionClick('temDataMarcada', 'sim', 3)}>Sim, já tenho</button>
+                            <button type="button" className={formState.temDataMarcada === 'nao' ? 'active' : ''} onClick={() => handleOptionClick('temDataMarcada', 'nao', 3)}>Ainda não</button>
                         </div>
                     </div>
                 );
             case 3:
-                const mostrarCampoData = fezCirurgia === 'sim' || (fezCirurgia === 'nao' && temDataMarcada === 'sim');
+                const mostrarCampoData = formState.fezCirurgia === 'sim' || formState.temDataMarcada === 'sim';
                 return (
                     <>
                         {mostrarCampoData && (
                             <div className="form-group">
                                 <label htmlFor="dataCirurgia">Qual a data da sua cirurgia?</label>
-                                <input id="dataCirurgia" type="date" value={dataCirurgia} onChange={(e) => setDataCirurgia(e.target.value)} required />
+                                <input id="dataCirurgia" name="dataCirurgia" type="date" value={formState.dataCirurgia} onChange={handleInputChange} required />
                             </div>
                         )}
                         <div className="form-group">
                             <label htmlFor="altura">A sua altura (em cm)</label>
-                            <input id="altura" type="number" placeholder="Ex: 175" value={altura} onChange={(e) => setAltura(e.target.value)} required />
+                            <input id="altura" name="altura" type="number" placeholder="Ex: 175" value={formState.altura} onChange={handleInputChange} required />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="peso">O seu peso inicial (em kg)</label>
-                            <input id="peso" type="number" step="0.1" placeholder="Ex: 120.5" value={pesoInicial} onChange={(e) => setPesoInicial(e.target.value)} required />
+                            <label htmlFor="pesoInicial">O seu peso inicial (em kg)</label>
+                            <input id="pesoInicial" name="pesoInicial" type="number" step="0.1" placeholder="Ex: 120.5" value={formState.pesoInicial} onChange={handleInputChange} required />
                         </div>
-                        <button type="submit" className="submit-btn">Salvar e Começar a Usar!</button>
+                        {/* ✅ NOVO: Botão para avançar para o próximo passo */}
+                        <button type="button" className="submit-btn" onClick={() => setStep(4)}>Próximo Passo</button>
+                    </>
+                );
+            case 4:
+                return (
+                    <>
+                        <div className="form-group">
+                            <label htmlFor="metaPeso">Qual a sua meta de peso (em kg)?</label>
+                            <p className="label-description">Este é o peso que você almeja alcançar. Você poderá ajustar este valor mais tarde no seu perfil.</p>
+                            <input id="metaPeso" name="metaPeso" type="number" step="0.1" placeholder="Ex: 75.5" value={formState.metaPeso} onChange={handleInputChange} required />
+                        </div>
+                        <button type="submit" className="submit-btn" disabled={isLoading}>
+                            {isLoading ? 'A salvar...' : 'Salvar e Começar a Usar!'}
+                        </button>
                     </>
                 );
             default:
