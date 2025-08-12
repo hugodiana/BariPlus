@@ -5,7 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Filler } from 'chart.js';
-import { fetchWithAuth } from '../utils/api';
+import { fetchApi } from '../utils/api';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
 import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';

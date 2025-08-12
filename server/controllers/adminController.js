@@ -1,6 +1,8 @@
 const User = require('../models/userModel');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
+const bcrypt = require('bcryptjs'); 
+const jwt = require('jsonwebtoken');
 
 exports.loginAdmin = async (req, res) => {
     try {
