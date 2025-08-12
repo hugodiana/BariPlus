@@ -59,21 +59,6 @@ const DashboardPage = () => {
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchDashboardData = useCallback(async () => {
-<<<<<<< HEAD
-    setLoading(true);
-    try {
-        const today = new Date().toISOString().split('T')[0];
-        const endpoints = ['/api/me', `/api/food-diary/${today}`, '/api/checklist', '/api/consultas', '/api/medication', '/api/pesos', '/api/dailylog/today', '/api/gastos', '/api/exams'];
-        
-        // ✅ CORREÇÃO: Usamos Promise.all com a nossa nova função fetchWithAuth
-        const responses = await Promise.all(
-            endpoints.map(endpoint => fetchWithAuth(endpoint))
-        );
-
-        for (const res of responses) {
-            // A lógica de erro 401 agora é tratada automaticamente pelo fetchWithAuth
-            if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
-=======
         if (!token) {
             setLoading(false);
             return;
@@ -87,15 +72,16 @@ const DashboardPage = () => {
             const dateString = today.toISOString().split('T')[0];
 
             const endpoints = [
-                'me',
-                `food-diary/${dateString}`,
-                'checklist',
-                'consultas',
-                'medication',
-                'pesos',
-                'dailylog/today',
-                `gastos?year=${year}&month=${month}`,
-                'exams'
+                '/api/me', 
+                `/api/food-diary/${today}`, 
+                '/api/checklist', 
+                '/api/consultas', 
+                '/api/medication', 
+                '/api/pesos', 
+                '/api/dailylog/today', 
+                '/api/gastos', 
+                '/api/exams',
+                '/api/conteudos' // Rota em falta
             ];
 
             const responses = await Promise.all(
@@ -153,7 +139,6 @@ const DashboardPage = () => {
             }
         } finally {
             setLoading(false);
->>>>>>> 75ba0ea2f41ae731c28cb11c7eb89cfedf764ef5
         }
 
         const [
