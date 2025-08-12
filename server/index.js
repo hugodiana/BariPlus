@@ -24,6 +24,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const gastoRoutes = require('./routes/gastoRoutes');
 const conteudoRoutes = require('./routes/conteudoRoutes');
 const tacoRoutes = require('./routes/tacoRoutes');
+const conquistasRoutes = require('./routes/conquistasRoutes');
 
 // ✅ IMPORTAÇÃO DOS MIDDLEWARES E MODELOS
 const autenticar = require('./middlewares/autenticar');
@@ -179,6 +180,7 @@ app.use('/api', examsRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', gastoRoutes);
 app.use('/api', conteudoRoutes);
+app.use('/api', conquistasRoutes);
 app.use('/api/taco', autenticar, tacoRoutes);
 
 

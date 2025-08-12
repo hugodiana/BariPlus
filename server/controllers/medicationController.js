@@ -4,12 +4,24 @@ const Medication = require('../models/medicationModel');
 exports.getMedication = async (req, res) => {
     try {
         let doc = await Medication.findOne({ userId: req.userId });
+
         if (!doc) {
+            // Se o documento não existe, cria um novo e retorna
             doc = new Medication({ userId: req.userId, medicamentos: [], historico: {} });
             await doc.save();
         }
-        res.json(doc);
+
+        // ✅ CORREÇÃO: Garante que o histórico seja sempre um objeto JSON válido
+        const plainDoc = doc.toObject();
+        const historicoJSON = plainDoc.historico || {};
+
+        res.json({
+            ...plainDoc,
+            historico: historicoJSON
+        });
+
     } catch (error) {
+        console.error('Erro ao buscar medicamentos:', error); // Log do erro no servidor
         res.status(500).json({ message: 'Erro ao buscar medicamentos.' });
     }
 };

@@ -243,6 +243,10 @@ const DashboardPage = () => {
         }
     };
 
+    const handleUserUpdate = (updatedUser) => {
+    setUsuario(updatedUser);
+    };
+
     const getWelcomeMessage = () => {
         if (!usuario?.nome) return 'Bem-vindo(a)!';
         
@@ -437,6 +441,7 @@ const DashboardPage = () => {
                         log={dailyLog} 
                         onTrack={handleTrack} 
                         usuario={usuario}
+                        onUserUpdate={handleUserUpdate} // ✅ CORREÇÃO: Passe a função aqui
                     />
                 )}
                 

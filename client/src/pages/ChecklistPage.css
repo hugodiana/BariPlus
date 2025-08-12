@@ -1,151 +1,131 @@
+/* src/pages/ChecklistPage.css */
+
 .tab-buttons {
     display: flex;
-    border-bottom: 2px solid var(--border-color);
-    margin-bottom: var(--space-lg);
+    border-bottom: 2px solid var(--color-gray-300);
+    margin-bottom: var(--space-md);
 }
 
 .tab-btn {
-    padding: var(--space-md);
+    padding: var(--space-xs) var(--space-sm);
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text-light);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-gray-500);
     border-bottom: 3px solid transparent;
-    margin-bottom: -2px; /* Alinha com a borda de baixo */
-    transition: all 0.2s ease-in-out;
+    margin-bottom: -2px;
+    transition: all var(--transition-fast);
 }
 
 .tab-btn.active {
-    color: var(--primary-green);
-    font-weight: 600;
-    border-bottom-color: var(--primary-green);
+    color: var(--color-primary);
+    font-weight: var(--font-weight-bold);
+    border-bottom-color: var(--color-primary);
 }
 
-/* ✅ NOVO: Barra de Progresso */
 .progress-container {
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-md);
 }
-.progress-bar-background {
-    background-color: #e9ecef;
-    border-radius: 8px;
+
+.progress-bar {
+    background-color: var(--color-gray-200);
+    border-radius: var(--border-radius-pill);
     height: 10px;
+    overflow: hidden;
 }
-.progress-bar-foreground {
-    background-color: var(--primary-green);
+
+.progress-fill {
+    background-color: var(--color-secondary);
     height: 100%;
-    border-radius: 8px;
-    transition: width 0.3s ease-in-out;
+    border-radius: var(--border-radius-pill);
+    transition: width var(--transition-medium);
 }
+
 .progress-text {
     text-align: right;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-top: 5px;
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-500);
+    margin-top: var(--space-xs);
 }
 
-.add-task-container {
-    margin-bottom: var(--space-md);
-    text-align: right; /* Alinha o botão à direita */
-}
-
-.add-btn {
-    background-color: var(--action-blue);
+.add-task-btn {
+    background-color: var(--color-info);
     color: white;
     border: none;
-    padding: 10px 15px;
-    border-radius: var(--border-radius);
-    font-weight: 600;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--border-radius-md);
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
+    float: right;
+    margin-bottom: var(--space-sm);
 }
 
-.checklist-ul {
+.task-list {
     list-style: none;
     padding: 0;
+    clear: both;
 }
 
-.checklist-ul li {
+.task-item {
     display: flex;
     align-items: center;
-    padding: var(--space-md) 0;
-    border-bottom: 1px solid var(--border-color);
-    transition: opacity 0.3s;
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-gray-300);
+    transition: opacity var(--transition-medium);
 }
-.checklist-ul li.loading { /* ✅ NOVO: Estilo para o item a ser atualizado */
+.task-item.loading {
     opacity: 0.5;
 }
-.checklist-ul li:last-child {
+.task-item:last-child {
     border-bottom: none;
 }
 
-.checkbox-container {
+.checkbox {
     width: 24px;
     height: 24px;
-    border: 2px solid var(--border-color);
+    border: 2px solid var(--color-gray-300);
     border-radius: 50%;
-    margin-right: var(--space-md);
+    margin-right: var(--space-sm);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
 }
 
-.item-text {
+.task-item.completed .checkbox {
+    background-color: var(--color-secondary);
+    border-color: var(--color-secondary);
+}
+
+.task-text {
     flex-grow: 1;
-    transition: color 0.3s;
+    transition: color var(--transition-medium);
 }
 
-li.concluido .item-text {
+.task-item.completed .task-text {
     text-decoration: line-through;
-    color: var(--text-light);
+    color: var(--color-gray-400);
 }
 
-li.concluido .checkbox-container {
-    background-color: var(--primary-green);
-    border-color: var(--primary-green);
-}
-
-.item-actions {
+.task-actions {
     display: flex;
-    gap: 10px;
-    margin-left: auto;
+    gap: var(--space-xs);
 }
 
-.action-btn {
+.task-actions button {
     background: transparent;
     border: none;
-    font-size: 20px;
+    font-size: 1.2rem;
     cursor: pointer;
-    opacity: 0.5;
-    transition: opacity 0.2s;
+    opacity: 0.6;
+    transition: opacity var(--transition-fast);
 }
-.action-btn:hover { opacity: 1; }
-.edit-btn { color: var(--action-blue); }
-.delete-btn { color: var(--danger-red); }
-
-.empty-state-container {
-    text-align: center;
-    padding: 40px 20px;
+.task-actions button:hover {
+    opacity: 1;
 }
-
-/* Estilos para o formulário do Modal */
-.checklist-form input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: var(--space-md);
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 1rem;
-}
-.checklist-form button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    background-color: var(--primary-green);
-    color: white;
-    font-size: 1rem;
-}
+.edit-btn { color: var(--color-info); }
+.delete-btn { color: var(--color-danger); }
