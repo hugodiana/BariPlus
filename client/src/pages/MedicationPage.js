@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import { toast } from 'react-toastify';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const MedicationPage = () => {
@@ -221,12 +221,7 @@ const MedicationPage = () => {
         }
     };
 
-    const foiTomadoHoje = (medicationId, doseIndex) => {
-        const logDeHoje = historico.get(hoje) || new Map();
-        return (logDeHoje.get(medicationId) || 0) > doseIndex;
-    };
-
-    const handleToggleToma = async (medicationId, totalDoses) => {
+        const handleToggleToma = async (medicationId, totalDoses) => {
         const logDeHoje = historico.get(hoje) || new Map();
         const tomasAtuais = logDeHoje.get(medicationId) || 0;
         const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;

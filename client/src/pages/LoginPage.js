@@ -96,11 +96,20 @@ const LoginPage = () => {
                 toast.success('Cadastro quase concluído! Verifique o seu e-mail.');
                 navigate('/verify-email', { state: { email } });
             } else {
-                // ✅ CORREÇÃO AQUI: Usamos o nosso novo sistema para guardar o token
-                setAuthToken(data.accessToken);
-                toast.success("Login bem-sucedido!");
-                window.location.href = '/'; 
+            setAuthToken(data.token);
+            toast.success("Login bem-sucedido!");
+            // ✅ CORREÇÃO: Usa o 'navigate' do React Router em vez de recarregar a página.
+            // E já verifica para onde o usuário deve ir.
+            if (!data.user.isEmailVerified) {
+                navigate('/verify-email', { state: { email: data.user.email } });
+            } else if (!data.user.pagamentoEfetuado) {
+                navigate('/planos');
+            } else if (!data.user.onboardingCompleto) {
+                navigate('/bem-vindo');
+            } else {
+                navigate('/'); // Vai para a Dashboard
             }
+        }
         } catch (error) {
             const errorMessage = error.message || 'Algo deu errado.';
             if (errorMessage.includes('Sua conta ainda não foi ativada')) {

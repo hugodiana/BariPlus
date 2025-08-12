@@ -35,19 +35,18 @@ import ProfilePage from './pages/ProfilePage';
 
 function App() {
   const [usuario, setUsuario] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Começa a carregar
   const apiUrl = process.env.REACT_APP_API_URL;
-  const token = localStorage.getItem('bariplus_token');
 
   useEffect(() => {
     const fetchUser = async () => {
+      const token = localStorage.getItem('bariplus_token');
       if (token) {
         try {
           const res = await fetch(`${apiUrl}/api/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (!res.ok) {
-            // Se o token for inválido, remove-o
             localStorage.removeItem('bariplus_token');
             throw new Error('Sessão inválida');
           }
@@ -58,24 +57,24 @@ function App() {
           setUsuario(null);
         }
       }
-      setLoading(false);
+      setLoading(false); // Para de carregar após a verificação
     };
 
     fetchUser();
-  }, [token, apiUrl]);
+  }, [apiUrl]);
 
-  // ✅ PASSO 1: Mostrar um spinner enquanto se verifica o estado de login
+  // Enquanto estiver a verificar o token, mostra um ecrã de carregamento
   if (loading) {
     return <LoadingSpinner />;
   }
 
-  // ✅ PASSO 2: A lógica de rotas só é renderizada DEPOIS do loading terminar
+  // Após a verificação, renderiza as rotas corretas
   return (
     <>
       <ToastContainer position="top-right" autoClose={4000} />
       <Router>
         <Routes>
-          {/* --- Rotas Públicas --- */}
+          {/* --- Rotas Públicas (acessíveis sem login) --- */}
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/login" element={!usuario ? <LoginPage /> : <Navigate to="/" />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
@@ -83,17 +82,15 @@ function App() {
           <Route path="/termos" element={<TermsPage />} />
           <Route path="/privacidade" element={<PrivacyPage />} />
 
-          {/* --- Rotas que precisam de um utilizador, mas são intermédias --- */}
-          <Route path="/verify-email" element={usuario && !usuario.isEmailVerified ? <VerifyEmailPage /> : <Navigate to="/" />} />
-          <Route path="/planos" element={usuario && !usuario.pagamentoEfetuado ? <PricingPage /> : <Navigate to="/" />} />
-          <Route path="/pagamento-status" element={usuario ? <PaymentStatusPage /> : <Navigate to="/login" />} />
-          <Route path="/bem-vindo" element={usuario && !usuario.onboardingCompleto ? <OnboardingPage /> : <Navigate to="/" />} />
-
-          {/* --- Rotas Protegidas do App Principal --- */}
+          {/* --- Rota Principal da Aplicação --- */}
+          {/* O "/*" captura todas as outras rotas */}
           <Route
             path="/*"
             element={
+              // O ProtectedRoute agora é o único responsável por decidir o que fazer
               <ProtectedRoute usuario={usuario}>
+                {/* Se o utilizador passar em todas as verificações do ProtectedRoute... */}
+                {/* ...ele entra aqui, no Layout principal da aplicação */}
                 <Layout usuario={usuario}>
                   <Routes>
                     <Route path="/" element={<DashboardPage />} />
@@ -109,7 +106,12 @@ function App() {
                     <Route path="/artigos/:id" element={<ArtigoPage />} />
                     <Route path="/ganhe-renda-extra" element={<GanheRendaExtraPage />} />
                     <Route path="/perfil" element={<ProfilePage />} />
-                    {/* Qualquer outra rota dentro do app leva ao painel */}
+                    {/* Rotas intermédias que o ProtectedRoute irá gerir */}
+                    <Route path="/verify-email" element={<VerifyEmailPage />} />
+                    <Route path="/planos" element={<PricingPage />} />
+                    <Route path="/pagamento-status" element={<PaymentStatusPage />} />
+                    <Route path="/bem-vindo" element={<OnboardingPage />} />
+                     {/* Qualquer outra rota desconhecida dentro do app leva ao painel */}
                     <Route path="*" element={<Navigate to="/" />} />
                   </Routes>
                 </Layout>
