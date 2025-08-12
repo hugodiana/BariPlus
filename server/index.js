@@ -45,14 +45,24 @@ const whitelist = [
     'https://bariplus-admin.vercel.app', 'https://bariplus-app.onrender.com',
     'https://bariplus-admin.onrender.com', 'http://localhost:3000',
     'http://localhost:3001', 'http://localhost:3002',
-    'https://www.bariplus.com.br', 'https://bariplus.com.br',
-    'https://bariplus-app.netlify.app', 'https://admin.bariplus.com.br', 'http://localhost:3002/'
+    'https://www.bariplus.com.br', 
+    'https://bariplus.com.br',
+    'https://bariplus-app.netlify.app', 
+    'https://admin.bariplus.com.br', 
+    'https://admin.bariplus.com.br',
+    'http://localhost:3002/',
+    'https://www.bariplus.com.br/' // ✅ Adicionado para garantir
 ];
+
 const corsOptions = {
     origin: function (origin, callback) {
+        // ✅ Adicionado um log para depuração no servidor
+        console.log('CORS check for origin:', origin); 
+        
         if (whitelist.indexOf(origin) !== -1 || !origin) {
             callback(null, true);
         } else {
+            console.error('Origin not allowed by CORS:', origin); // Log de erro
             callback(new Error('Not allowed by CORS'));
         }
     },
