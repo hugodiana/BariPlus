@@ -282,7 +282,6 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
     const [customUnit, setCustomUnit] = useState('');
     const [refMin, setRefMin] = useState('');
     const [refMax, setRefMax] = useState('');
-    const apiUrl = process.env.REACT_APP_API_URL;
 
     const handlePredefinedChange = (e) => {
         const selectedName = e.target.value;
@@ -354,6 +353,7 @@ const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
     const [date, setDate] = useState(resultToEdit ? format(parseISO(resultToEdit.date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
     const [value, setValue] = useState(resultToEdit ? resultToEdit.value : '');
     const [notes, setNotes] = useState(resultToEdit ? resultToEdit.notes : '');
+    // ✅ CORREÇÃO: A variável não utilizada 'apiUrl' foi removida.
 
     const handleSubmit = async (e) => {
         e.preventDefault();
