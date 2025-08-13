@@ -1,232 +1,115 @@
-/* AdminLoginPage.css - Estilo Moderno e Profissional */
+/* src/pages/AdminDashboardPage.css */
 
-:root {
-  --primary-color: #37715b;
-  --primary-dark: #2a5847;
-  --primary-light: #e8f3ef;
-  --secondary-color: #4a6fa5;
-  --error-color: #e74c3c;
-  --success-color: #27ae60;
-  --text-color: #333333;
-  --text-light: #6c757d;
-  --border-color: #e0e0e0;
-  --background-light: #f8f9fa;
-  --white: #ffffff;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
-/* Layout Principal */
-.admin-app {
-  min-height: 100vh;
-  display: flex;
-  background-color: var(--background-light);
-  background-image: linear-gradient(
-    135deg,
-    var(--primary-light) 0%,
-    var(--white) 100%
-  );
-}
-
-.admin-login-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  padding: 2rem;
-}
-
-/* Card de Login */
-.login-box {
-  width: 100%;
-  max-width: 420px;
-  padding: 2.5rem;
-  background: var(--white);
-  border-radius: 12px;
-  box-shadow: var(--shadow-md);
-  transform: translateY(0);
-  transition: var(--transition);
-  animation: fadeIn 0.5s ease-out;
-}
-
-.login-box:hover {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-/* Logo */
-.login-logo-admin {
-  height: 80px;
-  width: auto;
-  margin: 0 auto 1.5rem;
-  display: block;
-  object-fit: contain;
-}
-
-/* Cabeçalho */
-.login-box h2 {
-  text-align: center;
-  color: var(--primary-dark);
-  font-size: 1.75rem;
-  margin-bottom: 1.5rem;
-  font-weight: 600;
-}
-
-/* Formulário */
-form {
-  margin-top: 1.5rem;
-}
-
-.input-group {
-  margin-bottom: 1.5rem;
-}
-
-.input-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: var(--text-color);
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-
-.input-group input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  font-size: 1rem;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  transition: var(--transition);
-  background-color: var(--background-light);
-}
-
-.input-group input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(55, 113, 91, 0.2);
-}
-
-/* Campo de Senha */
-.password-input {
-  position: relative;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0.5rem;
-  color: var(--text-light);
-  transition: var(--transition);
-}
-
-.toggle-password:hover {
-  color: var(--primary-color);
-}
-
-.toggle-password:focus {
-  outline: none;
-  color: var(--primary-dark);
-}
-
-/* Botão de Submit */
-.submit-btn-admin {
-  width: 100%;
-  padding: 0.75rem;
-  background-color: var(--primary-color);
-  color: var(--white);
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: var(--transition);
-  margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.submit-btn-admin:hover {
-  background-color: var(--primary-dark);
-}
-
-.submit-btn-admin:disabled {
-  background-color: var(--text-light);
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-/* Spinner */
-.spinner {
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: var(--white);
-  animation: spin 1s ease-in-out infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Mensagens de Erro */
-.error-message {
-  color: var(--error-color);
-  background-color: rgba(231, 76, 60, 0.1);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
-.error-text {
-  color: var(--error-color);
-  font-size: 0.85rem;
-  margin-top: 0.25rem;
-  display: block;
-}
-
-.input-error {
-  border-color: var(--error-color) !important;
-}
-
-.input-error:focus {
-  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.2) !important;
-}
-
-/* Animações */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Responsividade */
-@media (max-width: 576px) {
-  .login-box {
+.stat-card {
+    background-color: var(--sidebar-bg);
     padding: 1.5rem;
-  }
-  
-  .admin-login-container {
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    transition: var(--transition);
+}
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-icon {
+    font-size: 2.5rem;
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+}
+
+.recent-activity-card, .quick-actions-card {
+    background-color: var(--sidebar-bg);
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.recent-activity-card h3, .quick-actions-card h3 {
+    margin: 0 0 1rem 0;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.user-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.user-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.user-info strong {
+    display: block;
+    font-weight: 500;
+}
+.user-info span {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.user-date {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.quick-actions-card {
+    display: flex;
+    flex-direction: column;
+}
+.action-link {
+    display: block;
     padding: 1rem;
-  }
-  
-  .login-box h2 {
-    font-size: 1.5rem;
-  }
+    background-color: var(--primary-light);
+    color: var(--primary-color);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    font-weight: 600;
+    text-align: center;
+    transition: var(--transition);
+}
+.action-link:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+@media (max-width: 992px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+    }
 }

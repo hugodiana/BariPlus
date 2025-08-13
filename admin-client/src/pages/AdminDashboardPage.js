@@ -1,35 +1,59 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import './AdminDashboardPage.css';
+
+// Componente para os cards de estatística
+const StatCard = ({ icon, label, value }) => (
+    <div className="stat-card">
+        <div className="stat-icon">{icon}</div>
+        <div className="stat-info">
+            <div className="stat-value">{value}</div>
+            <div className="stat-label">{label}</div>
+        </div>
+    </div>
+);
 
 const AdminDashboardPage = () => {
     const [stats, setStats] = useState(null);
+    const [recentUsers, setRecentUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const token = localStorage.getItem('bariplus_admin_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
-    const fetchStats = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${apiUrl}/api/admin/stats`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error("Falha ao carregar estatísticas.");
-            const data = await res.json();
-            setStats(data);
+            // Usando o fetch padrão, pois o fetchApi não existe neste projeto
+            const [statsRes, usersRes] = await Promise.all([
+                fetch(`${apiUrl}/api/admin/stats`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${apiUrl}/api/admin/users?limit=5`, { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
+
+            if (!statsRes.ok || !usersRes.ok) {
+                throw new Error("Falha ao carregar os dados do painel.");
+            }
+
+            const statsData = await statsRes.json();
+            const usersData = await usersRes.json();
+
+            setStats(statsData);
+            setRecentUsers(usersData.users || []);
         } catch (error) {
             toast.error(error.message);
         } finally {
             setLoading(false);
         }
-    }, [token, apiUrl]);
+    }, [apiUrl, token]);
 
     useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
+        fetchData();
+    }, [fetchData]);
 
     if (loading) {
-        return <p>A carregar estatísticas...</p>;
+        return <p>A carregar o painel...</p>;
     }
 
     return (
@@ -38,22 +62,46 @@ const AdminDashboardPage = () => {
                 <h1>Dashboard</h1>
                 <p>Visão geral e estatísticas do BariPlus.</p>
             </header>
+
             {stats && (
                 <div className="stats-grid">
-                    <div className="stat-card">
-                        <h3>Total de Usuários</h3>
-                        <p>{stats.totalUsers}</p>
-                    </div>
-                    <div className="stat-card">
-                        <h3>Usuários Pagantes</h3>
-                        <p>{stats.paidUsers}</p>
-                    </div>
-                    <div className="stat-card">
-                        <h3>Novos na Última Semana</h3>
-                        <p>{stats.newUsersLast7Days}</p>
-                    </div>
+                    <StatCard icon="👥" label="Total de Usuários" value={stats.totalUsers} />
+                    <StatCard icon="💳" label="Usuários Pagantes" value={stats.paidUsers} />
+                    <StatCard icon="✨" label="Novos na Semana" value={stats.newUsersLast7Days} />
                 </div>
             )}
+
+            <div className="dashboard-grid">
+                <div className="recent-activity-card">
+                    <h3>Atividade Recente</h3>
+                    <div className="user-list">
+                        {recentUsers.length > 0 ? (
+                            recentUsers.map(user => (
+                                <div key={user._id} className="user-item">
+                                    <div className="user-info">
+                                        <strong>{user.nome} {user.sobrenome}</strong>
+                                        <span>{user.email}</span>
+                                    </div>
+                                    <span className="user-date">
+                                        {format(new Date(user.createdAt), 'dd MMM, yyyy', { locale: ptBR })}
+                                    </span>
+                                </div>
+                            ))
+                        ) : (
+                            <p>Nenhuma atividade recente de usuários.</p>
+                        )}
+                    </div>
+                </div>
+                <div className="quick-actions-card">
+                    <h3>Ações Rápidas</h3>
+                    <Link to="/users" className="action-link">
+                        Gerir Usuários
+                    </Link>
+                    <Link to="/content/new" className="action-link">
+                        Criar Conteúdo
+                    </Link>
+                </div>
+            </div>
         </div>
     );
 };

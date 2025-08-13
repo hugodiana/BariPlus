@@ -1,20 +1,53 @@
-.users-table-controls {
+/* src/pages/UsersListPage.css */
+
+.table-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
     margin-bottom: 1.5rem;
 }
+
 .search-input {
-    width: 100%;
-    max-width: 400px;
-    padding: 10px 15px;
+    min-width: 300px;
+    padding: 12px 15px;
     font-size: 1rem;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
+    border-radius: var(--border-radius);
 }
 
-.table-responsive {
+.filter-buttons {
+    display: flex;
+    gap: 0.5rem;
+    background-color: #e9ecef;
+    padding: 0.25rem;
+    border-radius: var(--border-radius);
+}
+
+.filter-buttons button {
+    padding: 8px 16px;
+    border: none;
+    background-color: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: var(--transition);
+}
+
+.filter-buttons button.active {
+    background-color: var(--sidebar-bg);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.table-wrapper {
     overflow-x: auto;
     background-color: var(--sidebar-bg);
     border: 1px solid var(--border-color);
-    border-radius: 8px;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
 }
 
 table {
@@ -32,33 +65,48 @@ th, td {
 th {
     font-weight: 600;
     color: var(--text-secondary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
 }
 
 tr:last-child td {
     border-bottom: none;
 }
+tr:hover {
+    background-color: #f8f9fa;
+}
 
 .status-badge {
-    padding: 4px 8px;
-    border-radius: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 600;
-    color: white;
 }
-.status-pago {
-    background-color: var(--primary-color);
+.status-badge.paid, .status-badge.verified {
+    background-color: var(--primary-light);
+    color: var(--primary-color);
 }
-.status-pendente {
-    background-color: #fd7e14; /* Laranja */
+.status-badge.pending {
+    background-color: #fff4e5;
+    color: #f79009;
 }
 
-.actions-cell .action-btn.grant-btn {
-    background-color: var(--primary-color);
-    color: white;
-    font-size: 0.8rem;
-    padding: 6px 10px;
-    border-radius: 4px;
+.actions-cell {
+    display: flex;
+    gap: 0.5rem;
 }
+.action-btn {
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.grant-btn { background-color: var(--primary-color); color: white; }
+.revoke-btn { background-color: #fee2e2; color: #b91c1c; }
+.verify-btn { background-color: #e0e7ff; color: #4338ca; }
 
 .pagination-controls {
     display: flex;
@@ -71,10 +119,17 @@ tr:last-child td {
     padding: 8px 16px;
     border: 1px solid var(--border-color);
     background-color: var(--sidebar-bg);
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
+    font-weight: 500;
 }
 .pagination-controls button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.loading-cell, .empty-cell {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
 }

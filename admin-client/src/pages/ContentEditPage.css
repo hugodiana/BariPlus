@@ -1,7 +1,7 @@
 .content-form {
-    background-color: #ffffff;
-    padding: 1.5rem;
-    border-radius: 8px;
+    background-color: var(--sidebar-bg);
+    padding: 2rem;
+    border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
 }
 .form-group {
@@ -11,29 +11,67 @@
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
+    color: var(--text-primary);
 }
 .form-group input, .form-group textarea, .form-group select {
     width: 100%;
-    padding: 10px;
+    padding: 12px;
     font-size: 1rem;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: var(--border-radius);
+    background-color: var(--admin-bg);
 }
 .form-group textarea {
-    min-height: 100px;
+    min-height: 120px;
+    resize: vertical;
 }
-/* Estilo para o editor de texto */
+
 .ql-editor {
     min-height: 250px;
+    font-size: 1rem;
 }
 .form-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
 }
+
+.toggle-switch {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px; /* Mesma altura do input */
+}
+.toggle-switch input { display: none; }
+.slider {
+    position: relative;
+    cursor: pointer;
+    width: 50px;
+    height: 28px;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--primary-color); }
+input:checked + .slider:before { transform: translateX(22px); }
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
     margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
 }
