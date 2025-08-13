@@ -1,7 +1,65 @@
+/* src/pages/ConteudosPage.css */
+
+.featured-article-card {
+    padding: 0 !important; /* Remove padding do Card base */
+    margin-bottom: var(--space-xl);
+    overflow: hidden; /* Garante que a imagem com borda arredondada não vaze */
+}
+.featured-article-card a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+.featured-image {
+    width: 100%;
+    height: 350px;
+    object-fit: cover;
+}
+.featured-info {
+    padding: var(--space-lg);
+}
+.featured-info h2 {
+    font-size: 2rem;
+    color: var(--color-text-strong);
+    margin: var(--space-sm) 0 var(--space-md) 0;
+}
+.featured-info p {
+    color: var(--color-text-secondary);
+}
+
+.content-filters {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--color-border);
+}
+.content-filters button {
+    padding: var(--space-sm) 0;
+    font-size: 1rem;
+    font-weight: var(--font-weight-medium);
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    border-bottom: 3px solid transparent;
+}
+.content-filters button.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
 .conteudos-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--space-xl);
+}
+
+.artigo-card-list {
+    padding: 0 !important;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 .artigo-card-list a {
     text-decoration: none;
@@ -14,24 +72,28 @@
     width: 100%;
     height: 180px;
     object-fit: cover;
-    border-radius: var(--border-radius) var(--border-radius) 0 0;
 }
 .artigo-texto-list {
     padding: var(--space-lg);
+    flex-grow: 1; /* Faz esta área crescer para preencher o card */
 }
 .artigo-tipo-list {
     display: inline-block;
-    background-color: var(--primary-light);
-    color: var(--primary-green);
-    padding: 3px 10px;
-    border-radius: 12px;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    padding: 5px 12px;
+    border-radius: 20px;
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     margin-bottom: var(--space-md);
 }
 .artigo-texto-list h3 {
     margin: 0 0 var(--space-sm) 0;
+    font-size: 1.2rem;
+    color: var(--color-text-strong);
 }
 .artigo-texto-list p {
     margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
 }

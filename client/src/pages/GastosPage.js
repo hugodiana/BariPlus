@@ -8,6 +8,7 @@ import './GastosPage.css';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { fetchApi } from '../utils/api';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -16,45 +17,44 @@ const GastosPage = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
-    const [descricao, setDescricao] = useState('');
-    const [valor, setValor] = useState('');
-    const [categoria, setCategoria] = useState('Consultas');
-    const [data, setData] = useState(new Date().toISOString().split('T')[0]);
+    const [formData, setFormData] = useState({
+        descricao: '', valor: '', categoria: 'Consultas', data: new Date().toISOString().split('T')[0]
+    });
+    
     const [currentDate, setCurrentDate] = useState(new Date());
-
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchGastos = useCallback(async () => {
         setLoading(true);
-        const year = currentDate.getFullYear();
-        const month = currentDate.getMonth() + 1;
         try {
-            const res = await fetch(`${apiUrl}/api/gastos?year=${year}&month=${month}`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetchApi('/api/gastos'); // Busca todos os gastos
             if (!res.ok) throw new Error("Falha ao carregar gastos.");
             const data = await res.json();
-            setGastos(data); // Agora 'data' é garantidamente um array
+            setGastos(data);
         } catch (error) {
             toast.error(error.message);
         } finally {
             setLoading(false);
         }
-    }, [currentDate, token, apiUrl]);
+    }, []);
 
     useEffect(() => { fetchGastos(); }, [fetchGastos]);
 
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+    
     const handleAddGasto = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch(`${apiUrl}/api/gastos`, {
+            const res = await fetchApi('/api/gastos', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ descricao, valor: parseFloat(valor), categoria, data })
+                body: JSON.stringify({ ...formData, valor: parseFloat(formData.valor) })
             });
             if (!res.ok) throw new Error("Falha ao adicionar gasto.");
             
             setIsModalOpen(false);
-            setDescricao(''); setValor(''); setCategoria('Consultas'); setData(new Date().toISOString().split('T')[0]);
+            setFormData({ descricao: '', valor: '', categoria: 'Consultas', data: new Date().toISOString().split('T')[0] });
             toast.success("Gasto adicionado com sucesso!");
             fetchGastos();
         } catch (error) {
@@ -65,34 +65,44 @@ const GastosPage = () => {
     const handleDeleteGasto = async (gastoId) => {
         if (!window.confirm("Tem certeza que quer apagar este gasto?")) return;
         try {
-            const res = await fetch(`${apiUrl}/api/gastos/${gastoId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error("Falha ao apagar o gasto.");
-            
-            setGastos(prev => prev.filter(g => g._id !== gastoId));
+            await fetchApi(`/api/gastos/${gastoId}`, { method: 'DELETE' });
             toast.info("Gasto apagado.");
+            fetchGastos();
         } catch (error) {
             toast.error(error.message);
         }
     };
 
-    const { totalGasto, dadosDoGrafico } = useMemo(() => {
-        const total = gastos.reduce((sum, gasto) => sum + gasto.valor, 0);
-        const gastosPorCategoria = gastos.reduce((acc, gasto) => {
+    const { gastosDoMes, totalGastoMes, totalGastoAno, dadosDoGrafico } = useMemo(() => {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        const gastosDoMesAtual = gastos.filter(gasto => {
+            const dataGasto = parseISO(gasto.data);
+            return dataGasto.getFullYear() === year && dataGasto.getMonth() === month;
+        });
+        
+        const gastosDoAno = gastos.filter(gasto => parseISO(gasto.data).getFullYear() === year);
+
+        const totalMes = gastosDoMesAtual.reduce((sum, gasto) => sum + gasto.valor, 0);
+        const totalAno = gastosDoAno.reduce((sum, gasto) => sum + gasto.valor, 0);
+
+        const gastosPorCategoria = gastosDoMesAtual.reduce((acc, gasto) => {
             acc[gasto.categoria] = (acc[gasto.categoria] || 0) + gasto.valor;
             return acc;
         }, {});
-        const dadosDoGrafico = {
+
+        const dadosGrafico = {
             labels: Object.keys(gastosPorCategoria),
             datasets: [{
                 data: Object.values(gastosPorCategoria),
-                backgroundColor: ['#37715b', '#007aff', '#ff9f40', '#ff6384', '#36a2eb', '#cc65fe'],
+                backgroundColor: ['#37715b', '#007aff', '#ff9f40', '#e74c3c', '#8e44ad', '#3498db'],
+                borderColor: '#ffffff',
+                borderWidth: 2,
             }]
         };
-        return { totalGasto: total, dadosDoGrafico };
-    }, [gastos]);
+        return { gastosDoMes: gastosDoMesAtual, totalGastoMes: totalMes, totalGastoAno: totalAno, dadosDoGrafico: dadosGrafico };
+    }, [gastos, currentDate]);
 
     const changeMonth = (amount) => {
         setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + amount, 1));
@@ -102,17 +112,26 @@ const GastosPage = () => {
 
     return (
         <div className="page-container">
-            <div className="page-header"><h1>Controle de Gastos</h1><p>Organize suas despesas da jornada bariátrica.</p></div>
+            <div className="page-header">
+                <h1>Controle de Gastos</h1>
+                <p>Organize as despesas da sua jornada bariátrica.</p>
+            </div>
             
-            <Card>
+            <Card className="gastos-control-panel">
                 <div className="date-filter">
-                    <button onClick={() => changeMonth(-1)}>&lt;</button>
+                    <button onClick={() => changeMonth(-1)} aria-label="Mês anterior">‹</button>
                     <h2>{format(currentDate, 'MMMM yyyy', { locale: ptBR })}</h2>
-                    <button onClick={() => changeMonth(1)}>&gt;</button>
+                    <button onClick={() => changeMonth(1)} aria-label="Próximo mês">›</button>
                 </div>
-                <div className="summary-card">
-                    <span>Total Gasto no Mês</span>
-                    <strong>{totalGasto.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                <div className="summary-totals">
+                    <div className="summary-item">
+                        <span>Total Gasto no Mês</span>
+                        <strong>{totalGastoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                    </div>
+                    <div className="summary-item">
+                        <span>Total Gasto no Ano</span>
+                        <strong>{totalGastoAno.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</strong>
+                    </div>
                 </div>
             </Card>
 
@@ -122,9 +141,9 @@ const GastosPage = () => {
                         <h3>Lançamentos do Mês</h3>
                         <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Adicionar Gasto</button>
                     </div>
-                    {gastos.length > 0 ? (
+                    {gastosDoMes.length > 0 ? (
                         <ul className="gastos-list">
-                            {gastos.map(gasto => (
+                            {gastosDoMes.map(gasto => (
                                 <li key={gasto._id}>
                                     <span className="gasto-categoria" data-category={gasto.categoria}></span>
                                     <div className="gasto-info">
@@ -136,35 +155,32 @@ const GastosPage = () => {
                                 </li>
                             ))}
                         </ul>
-                    ) : (<p className="empty-state">Nenhum gasto registrado para este mês.</p>)}
+                    ) : (<div className="empty-state"><span className="empty-icon">💸</span><p>Nenhum gasto registrado para este mês.</p></div>)}
                 </Card>
                 <Card>
                     <h3>Distribuição por Categoria</h3>
                     <div className="chart-container">
-                        {gastos.length > 0 ? <Doughnut data={dadosDoGrafico} /> : <p className="empty-state">Sem dados para o gráfico.</p>}
+                        {gastosDoMes.length > 0 ? <Doughnut data={dadosDoGrafico} options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }} /> : <div className="empty-state"><p>Sem dados para o gráfico.</p></div>}
                     </div>
                 </Card>
             </div>
             
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>Adicionar Novo Gasto</h2>
-                <form onSubmit={handleAddGasto} className="gasto-form">
-                    <label>Descrição</label>
-                    <input type="text" value={descricao} onChange={e => setDescricao(e.target.value)} required />
-                    <label>Valor (R$)</label>
-                    <input type="number" step="0.01" value={valor} onChange={e => setValor(e.target.value)} required />
-                    <label>Categoria</label>
-                    <select value={categoria} onChange={e => setCategoria(e.target.value)}>
-                        <option>Consultas</option>
-                        <option>Suplementos</option>
-                        <option>Farmácia</option>
-                        <option>Alimentação</option>
-                        <option>Academia</option>
-                        <option>Outros</option>
-                    </select>
-                    <label>Data do Gasto</label>
-                    <input type="date" value={data} onChange={e => setData(e.target.value)} required />
-                    <button type="submit">Salvar Gasto</button>
+                <form onSubmit={handleAddGasto} className="modal-form">
+                    <div className="form-group"><label>Descrição</label><input type="text" name="descricao" value={formData.descricao} onChange={handleInputChange} required /></div>
+                    <div className="form-row">
+                        <div className="form-group"><label>Valor (R$)</label><input type="number" name="valor" step="0.01" value={formData.valor} onChange={handleInputChange} required /></div>
+                        <div className="form-group"><label>Data do Gasto</label><input type="date" name="data" value={formData.data} onChange={handleInputChange} required /></div>
+                    </div>
+                    <div className="form-group"><label>Categoria</label><select name="categoria" value={formData.categoria} onChange={handleInputChange}>
+                        <option>Consultas</option><option>Suplementos</option><option>Farmácia</option>
+                        <option>Alimentação</option><option>Academia</option><option>Outros</option>
+                    </select></div>
+                    <div className="form-actions">
+                        <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                        <button type="submit" className="primary-btn">Salvar Gasto</button>
+                    </div>
                 </form>
             </Modal>
         </div>

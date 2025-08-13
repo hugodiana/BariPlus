@@ -1,44 +1,51 @@
-import React, { useState, useEffect } from 'react';
-import './ProfilePage.css';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
+import { format, parseISO } from 'date-fns';
+import { fetchApi } from '../utils/api';
 import { messaging } from '../firebase';
 import { getToken } from 'firebase/messaging';
-import { format } from 'date-fns'; // ✅ A importação que faltava
+import Card from '../components/ui/Card';
+import LoadingSpinner from '../components/LoadingSpinner';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
+import './ProfilePage.css';
 
 const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditMode, setIsEditMode] = useState(false);
-    const [formData, setFormData] = useState({});
-    const [currentPassword, setCurrentPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     
-    const [passwordValidations, setPasswordValidations] = useState({
-        length: false,
-        uppercase: false,
-        number: false,
-        specialChar: false,
+    const [formData, setFormData] = useState({
+        nome: '', sobrenome: '', whatsapp: '', metaPeso: '',
+        detalhesCirurgia: {
+            fezCirurgia: 'nao', dataCirurgia: '', altura: '', pesoInicial: '',
+        }
     });
 
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '', newPassword: '', confirmPassword: ''
+    });
+    
+    const [passwordValidations, setPasswordValidations] = useState({
+        length: false, uppercase: false, number: false, specialChar: false,
+    });
+
+    const fetchUser = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await fetchApi('/api/me');
+            if (!res.ok) throw new Error("Falha ao carregar dados do usuário.");
+            const data = await res.json();
+            setUsuario(data);
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const res = await fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } });
-                const data = await res.json();
-                setUsuario(data);
-            } catch (error) {
-                console.error("Erro ao buscar dados do usuário:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchUser();
-    }, [token, apiUrl]);
+    }, [fetchUser]);
 
     useEffect(() => {
         if (usuario) {
@@ -46,9 +53,10 @@ const ProfilePage = () => {
                 nome: usuario.nome || '',
                 sobrenome: usuario.sobrenome || '',
                 whatsapp: usuario.whatsapp || '',
+                metaPeso: usuario.metaPeso || '',
                 detalhesCirurgia: {
                     fezCirurgia: usuario.detalhesCirurgia?.fezCirurgia || 'nao',
-                    dataCirurgia: usuario.detalhesCirurgia?.dataCirurgia ? format(new Date(usuario.detalhesCirurgia.dataCirurgia), 'yyyy-MM-dd') : '',
+                    dataCirurgia: usuario.detalhesCirurgia?.dataCirurgia ? format(parseISO(usuario.detalhesCirurgia.dataCirurgia), 'yyyy-MM-dd') : '',
                     altura: usuario.detalhesCirurgia?.altura || '',
                     pesoInicial: usuario.detalhesCirurgia?.pesoInicial || '',
                 }
@@ -69,9 +77,8 @@ const ProfilePage = () => {
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch(`${apiUrl}/api/user/profile`, {
+            const response = await fetchApi('/api/user/profile', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(formData)
             });
             if (!response.ok) throw new Error("Falha ao atualizar o perfil.");
@@ -90,38 +97,34 @@ const ProfilePage = () => {
             length: password.length >= 8,
             uppercase: /[A-Z]/.test(password),
             number: /[0-9]/.test(password),
-            specialChar: /[!@#$%^&*(),.?":{}|<>*]/.test(password),
+            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
         };
         setPasswordValidations(validations);
         return Object.values(validations).every(Boolean);
     };
 
-    const handleNewPasswordChange = (e) => {
-        const newPass = e.target.value;
-        setNewPassword(newPass);
-        validatePassword(newPass);
+    const handlePasswordInputChange = (e) => {
+        const { name, value } = e.target;
+        setPasswordData(prev => ({ ...prev, [name]: value }));
+        if (name === 'newPassword') {
+            validatePassword(value);
+        }
     };
 
     const handleChangePassword = async (e) => {
         e.preventDefault();
-        if (!validatePassword(newPassword)) {
-            return toast.error("A nova senha não cumpre todos os requisitos.");
-        }
-        if (newPassword !== confirmPassword) {
-            return toast.error("A nova senha e a confirmação não coincidem.");
-        }
+        if (!validatePassword(passwordData.newPassword)) return toast.error("A nova senha não cumpre os requisitos.");
+        if (passwordData.newPassword !== passwordData.confirmPassword) return toast.error("As senhas não coincidem.");
+
         try {
-            const response = await fetch(`${apiUrl}/api/user/change-password`, {
+            const response = await fetchApi('/api/user/change-password', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({ currentPassword, newPassword })
+                body: JSON.stringify(passwordData)
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
             toast.success("Senha alterada com sucesso!");
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
+            setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error) {
             toast.error(error.message || "Não foi possível alterar a senha.");
         }
@@ -136,9 +139,8 @@ const ProfilePage = () => {
                 
                 const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
                 if (fcmToken) {
-                    await fetch(`${apiUrl}/api/user/save-fcm-token`, {
+                    await fetchApi('/api/user/save-fcm-token', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ fcmToken })
                     });
                     toast.success("Notificações ativadas com sucesso!");
@@ -153,10 +155,7 @@ const ProfilePage = () => {
     
     const handleSendTestNotification = async () => {
         try {
-            await fetch(`${apiUrl}/api/user/send-test-notification`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            await fetchApi('/api/user/send-test-notification', { method: 'POST' });
             toast.info("Pedido de notificação de teste enviado!");
         } catch (error) {
             toast.error("Erro ao enviar notificação de teste.");
@@ -167,111 +166,113 @@ const ProfilePage = () => {
         if (!usuario) return;
         const currentSettings = usuario.notificationSettings || {};
         const newSettings = { ...currentSettings, [settingKey]: value };
+        
+        // Atualização Otimista
         setUsuario(prev => ({ ...prev, notificationSettings: newSettings }));
+        
         try {
-            await fetch(`${apiUrl}/api/user/notification-settings`, {
+            const res = await fetchApi('/api/user/notification-settings', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ settings: newSettings })
             });
+            if (!res.ok) throw new Error("Falha ao salvar preferência.");
             toast.success("Preferência atualizada!");
         } catch (error) {
-            toast.error("Não foi possível salvar a preferência.");
+            toast.error("Não foi possível salvar a preferência. A reverter.");
             setUsuario(prev => ({ ...prev, notificationSettings: usuario.notificationSettings }));
         }
     };
 
-    if (loading || !usuario) {
-        return <div className="page-container">Carregando perfil...</div>;
-    }
+
+    if (loading || !usuario) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
             <div className="page-header-actions">
                 <div className="page-header">
                     <h1>Meu Perfil</h1>
-                    <p>Aqui estão os seus dados e preferências.</p>
+                    <p>Aqui estão os seus dados, metas e preferências.</p>
                 </div>
                 <button className="edit-profile-btn" onClick={() => setIsEditMode(!isEditMode)}>
-                    {isEditMode ? 'Cancelar Edição' : 'Editar Perfil'}
+                    {isEditMode ? 'Cancelar Edição' : 'Editar Perfil e Metas'}
                 </button>
             </div>
             
-            <div className="profile-grid">
-                <div className="profile-card">
-                    <h3>Meus Dados</h3>
-                    {isEditMode ? (
-                        <form onSubmit={handleUpdateProfile}>
+            {isEditMode ? (
+                <form onSubmit={handleUpdateProfile}>
+                    <div className="profile-grid">
+                        <Card>
+                            <h3>Dados Pessoais</h3>
                             <div className="form-group"><label>Nome</label><input type="text" name="nome" value={formData.nome} onChange={handleFormChange} /></div>
                             <div className="form-group"><label>Sobrenome</label><input type="text" name="sobrenome" value={formData.sobrenome} onChange={handleFormChange} /></div>
                             <div className="form-group"><label>WhatsApp</label><input type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleFormChange} /></div>
-                            <hr/>
+                        </Card>
+                        <Card>
+                            <h3>Cirurgia e Metas</h3>
                             <div className="form-group"><label>Já fez a cirurgia?</label><select name="detalhesCirurgia.fezCirurgia" value={formData.detalhesCirurgia.fezCirurgia} onChange={handleFormChange}><option value="nao">Não</option><option value="sim">Sim</option></select></div>
                             <div className="form-group"><label>Data da Cirurgia</label><input type="date" name="detalhesCirurgia.dataCirurgia" value={formData.detalhesCirurgia.dataCirurgia} onChange={handleFormChange} /></div>
                             <div className="form-group"><label>Altura (cm)</label><input type="number" name="detalhesCirurgia.altura" value={formData.detalhesCirurgia.altura} onChange={handleFormChange} /></div>
                             <div className="form-group"><label>Peso Inicial (kg)</label><input type="number" step="0.1" name="detalhesCirurgia.pesoInicial" value={formData.detalhesCirurgia.pesoInicial} onChange={handleFormChange} /></div>
-                            <button type="submit" className="save-btn">Salvar Alterações</button>
+                            <div className="form-group"><label>Meta de Peso (kg)</label><input type="number" step="0.1" name="metaPeso" value={formData.metaPeso} onChange={handleFormChange} /></div>
+                        </Card>
+                    </div>
+                    <button type="submit" className="save-btn">Salvar Alterações</button>
+                </form>
+            ) : (
+                <div className="profile-grid">
+                    <Card>
+                        <h3>Dados Pessoais</h3>
+                        <InfoItem label="Nome Completo" value={`${usuario.nome} ${usuario.sobrenome}`} />
+                        <InfoItem label="Nome de Usuário" value={`${usuario.username} (não pode ser alterado)`} />
+                        <InfoItem label="Email" value={`${usuario.email} (não pode ser alterado)`} />
+                        <InfoItem label="WhatsApp" value={usuario.whatsapp || 'Não informado'} />
+                    </Card>
+                    <Card>
+                        <h3>Segurança</h3>
+                        <form onSubmit={handleChangePassword} className="password-form">
+                            <div className="form-group"><label>Senha Atual</label><input type="password" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordInputChange} required /></div>
+                            <div className="form-group"><label>Nova Senha</label><input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordInputChange} required /></div>
+                            <PasswordStrengthIndicator validations={passwordValidations} />
+                            <div className="form-group"><label>Confirmar Nova Senha</label><input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordInputChange} required /></div>
+                            <button type="submit" className="primary-btn">Alterar Senha</button>
                         </form>
-                    ) : (
-                        <>
-                            <div className="profile-info"><strong>Nome Completo:</strong><span>{usuario.nome} {usuario.sobrenome}</span></div>
-                            <div className="profile-info"><strong>Nome de Usuário:</strong><span>{usuario.username} (não pode ser alterado)</span></div>
-                            <div className="profile-info"><strong>Email:</strong><span>{usuario.email} (não pode ser alterado)</span></div>
-                            <div className="profile-info"><strong>WhatsApp:</strong><span>{usuario.whatsapp || 'Não informado'}</span></div>
-                        </>
-                    )}
+                    </Card>
+                    <Card>
+                        <h3>Preferências de Notificação</h3>
+                        <div className="setting-item">
+                            <span>Lembretes de Consultas</span>
+                            <label className="switch">
+                                <input type="checkbox" checked={usuario.notificationSettings?.appointmentReminders ?? true} onChange={(e) => handleSettingsChange('appointmentReminders', e.target.checked)} />
+                                <span className="slider round"></span>
+                            </label>
+                        </div>
+                        <div className="setting-item">
+                            <span>Lembretes de Medicação</span>
+                            <label className="switch">
+                                <input type="checkbox" checked={usuario.notificationSettings?.medicationReminders ?? true} onChange={(e) => handleSettingsChange('medicationReminders', e.target.checked)} />
+                                <span className="slider round"></span>
+                            </label>
+                        </div>
+                    </Card>
+                    <Card>
+                        <h3>Notificações Push</h3>
+                        <p>Ative para receber lembretes no seu dispositivo.</p>
+                        <div className="notification-actions">
+                            <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar</button>
+                            <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                        </div>
+                    </Card>
                 </div>
-
-                <div className="profile-card">
-                    <h3>Preferências de Notificação</h3>
-                    <div className="setting-item">
-                        <span>Lembretes de Consultas</span>
-                        <label className="switch">
-                            <input type="checkbox" checked={usuario.notificationSettings?.appointmentReminders ?? true} onChange={(e) => handleSettingsChange('appointmentReminders', e.target.checked)} />
-                            <span className="slider round"></span>
-                        </label>
-                    </div>
-                    <div className="setting-item">
-                        <span>Lembretes de Medicação</span>
-                        <label className="switch">
-                            <input type="checkbox" checked={usuario.notificationSettings?.medicationReminders ?? true} onChange={(e) => handleSettingsChange('medicationReminders', e.target.checked)} />
-                            <span className="slider round"></span>
-                        </label>
-                    </div>
-                    <div className="setting-item">
-                        <span>Lembretes de Pesagem Semanal</span>
-                        <label className="switch">
-                            <input type="checkbox" checked={usuario.notificationSettings?.weighInReminders ?? true} onChange={(e) => handleSettingsChange('weighInReminders', e.target.checked)} />
-                            <span className="slider round"></span>
-                        </label>
-                    </div>
-                </div>
-
-                <div className="profile-card">
-                    <h3>Alterar Senha</h3>
-                    <form onSubmit={handleChangePassword} className="password-form">
-                        <label>Senha Atual</label>
-                        <input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
-                        <label>Nova Senha</label>
-                        <input type="password" value={newPassword} onChange={handleNewPasswordChange} required />
-                        <PasswordStrengthIndicator validations={passwordValidations} />
-                        <label>Confirmar Nova Senha</label>
-                        <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
-                        <button type="submit">Salvar Nova Senha</button>
-                    </form>
-                </div>
-                
-                <div className="profile-card">
-                    <h3>Notificações Push</h3>
-                    <p>Ative para receber lembretes no seu dispositivo.</p>
-                    <div className="notification-actions">
-                        <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar Permissão</button>
-                        <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
-                    </div>
-                </div>
-            </div>
+            )}
         </div>
     );
 };
+
+const InfoItem = ({ label, value }) => (
+    <div className="profile-info-item">
+        <strong>{label}</strong>
+        <span>{value}</span>
+    </div>
+);
 
 export default ProfilePage;

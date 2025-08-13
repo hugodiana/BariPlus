@@ -1,256 +1,140 @@
-.profile-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 20px;
-}
+/* src/pages/ProfilePage.css */
 
-.profile-card {
-    background-color: #fff;
-    padding: 20px 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.profile-card h3 {
-    margin-top: 0;
-    color: #37715b;
-    border-bottom: 1px solid #eef0ef;
-    padding-bottom: 10px;
-    margin-bottom: 20px;
-}
-
-.profile-info {
-    margin-bottom: 15px;
-}
-
-.profile-info strong {
-    display: block;
-    color: #555;
-    font-size: 14px;
-    margin-bottom: 3px;
-}
-
-.profile-info span {
-    font-size: 16px;
-    color: #333;
-}
-
-.password-form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 600;
-    font-size: 14px;
-}
-
-.password-form input {
-    width: 100%;
-    padding: 10px;
-    margin-bottom: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-}
-
-.password-form button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    background-color: #007aff;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.notification-btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    background-color: #37715b;
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0;
-    border-bottom: 1px solid #eef0ef;
-}
-.setting-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-.setting-item span {
-    font-weight: 500;
-}
-.switch{position:relative;display:inline-block;width:50px;height:28px}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background-color:#ccc;-webkit-transition:.4s;transition:.4s}.slider:before{position:absolute;content:"";height:20px;width:20px;left:4px;bottom:4px;background-color:white;-webkit-transition:.4s;transition:.4s}input:checked+.slider{background-color:#37715b}input:focus+.slider{box-shadow:0 0 1px #37715b}input:checked+.slider:before{-webkit-transform:translateX(22px);-ms-transform:translateX(22px);transform:translateX(22px)}.slider.round{border-radius:34px}.slider.round:before{border-radius:50%}
-
-.password-strength-meter {
-    font-size: 13px;
-    margin-top: -10px;
-    margin-bottom: 15px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5px;
-}
-
-.password-strength-meter div {
-    transition: color 0.3s;
-}
-
-.password-strength-meter .valid {
-    color: #28a745; /* Verde de sucesso */
-}
-
-.password-strength-meter .invalid {
-    color: #aaa; /* Cinza para "ainda não cumprido" */
-}
-
-.terms-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.terms-container input[type="checkbox"] {
-    width: auto; /* Tira a largura de 100% dos inputs */
-    margin: 0;
-}
-
-.terms-container label {
-    font-size: 13px;
-    color: #666;
-}
-
-.terms-container a {
-    color: #007aff;
-    text-decoration: none;
-}
-
-.terms-container a:hover {
-    text-decoration: underline;
-}
-
-.setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-.setting-item:last-child {
-    border-bottom: none;
-}
-.switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 28px;
-}
-.switch input { 
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-}
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-}
-input:checked + .slider {
-    background-color: #37715b;
-}
-input:checked + .slider:before {
-    transform: translateX(22px);
-}
-.slider.round {
-    border-radius: 34px;
-}
-.slider.round:before {
-    border-radius: 50%;
-}
-
-/* ✅ NOVOS ESTILOS */
 .page-header-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--space-lg);
+    flex-wrap: wrap;
+    gap: var(--space-md);
 }
 
 .edit-profile-btn, .save-btn {
-    padding: 10px 15px;
+    padding: 12px 24px;
     border: none;
     border-radius: var(--border-radius);
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition);
 }
-
 .edit-profile-btn {
-    background-color: var(--primary-light);
-    color: var(--primary-green);
+    background-color: var(--color-primary);
+    color: white;
 }
 .save-btn {
-    background-color: var(--primary-green);
+    background-color: var(--color-success);
     color: white;
     width: 100%;
-    margin-top: 1rem;
+    margin-top: var(--space-lg);
 }
 
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--space-xl);
+}
+
+.profile-card h3 {
+    margin-top: 0;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-lg);
+}
+
+/* Modo de Visualização */
+.profile-info-item {
+    margin-bottom: var(--space-lg);
+}
+.profile-info-item strong {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-xs);
+    font-weight: var(--font-weight-medium);
+}
+.profile-info-item span {
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+}
+
+/* Modo de Edição e Formulários */
 .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-lg);
 }
-
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
+    margin-bottom: var(--space-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
 }
-
 .form-group input, .form-group select {
     width: 100%;
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    background-color: var(--color-background);
+    transition: var(--transition);
+}
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
+.password-form .primary-btn {
+    width: 100%;
+    margin-top: var(--space-sm);
+}
+
+/* ✅ CORREÇÃO: Estilos para os botões de notificação */
 .notification-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 10px;
+    flex-direction: column;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
 }
 .notification-btn, .notification-btn-test {
-    flex: 1;
     padding: 12px;
     border: none;
     border-radius: var(--border-radius);
     color: white;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition);
 }
 .notification-btn {
-    background-color: var(--primary-green);
+    background-color: var(--color-primary);
 }
 .notification-btn-test {
-    background-color: var(--action-blue);
+    background-color: var(--color-accent);
 }
+.notification-btn:hover {
+    background-color: var(--color-primary-dark);
+}
+.notification-btn-test:hover {
+    background-color: #0056b3; /* Um tom de azul mais escuro */
+}
+
+/* Switch de Notificações */
+.setting-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+.setting-item:last-child { border-bottom: none; }
+.setting-item span { font-weight: var(--font-weight-medium); }
+
+.switch { position: relative; display: inline-block; width: 50px; height: 28px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
+input:checked + .slider { background-color: var(--color-primary); }
+input:checked + .slider:before { transform: translateX(22px); }
+.slider.round { border-radius: 34px; }
+.slider.round:before { border-radius: 50%; }

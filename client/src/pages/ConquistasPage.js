@@ -3,18 +3,16 @@ import './ConquistasPage.css';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { toast } from 'react-toastify';
+import { fetchApi } from '../utils/api';
 
 const ConquistasPage = () => {
     const [conquistas, setConquistas] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
-
     const fetchConquistas = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${apiUrl}/api/conquistas`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetchApi('/api/conquistas');
             if (!res.ok) throw new Error("Falha ao carregar conquistas.");
             const data = await res.json();
             setConquistas(data);
@@ -23,7 +21,7 @@ const ConquistasPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, apiUrl]);
+    }, []);
 
     useEffect(() => { fetchConquistas(); }, [fetchConquistas]);
     
@@ -31,6 +29,8 @@ const ConquistasPage = () => {
 
     const desbloqueadas = conquistas.filter(c => c.desbloqueada);
     const bloqueadas = conquistas.filter(c => !c.desbloqueada);
+    const totalConquistas = conquistas.length;
+    const progresso = totalConquistas > 0 ? Math.round((desbloqueadas.length / totalConquistas) * 100) : 0;
 
     return (
         <div className="page-container">
@@ -39,26 +39,43 @@ const ConquistasPage = () => {
                 <p>A sua jornada é feita de vitórias. Celebre cada uma delas!</p>
             </div>
 
-            <Card>
-                <h3>Desbloqueadas ({desbloqueadas.length})</h3>
-                <div className="conquistas-grid">
-                    {desbloqueadas.length > 0 ? desbloqueadas.map(c => <ConquistaItem key={c.idConquista} conquista={c} />) : <p>Continue a usar o app para desbloquear novas conquistas!</p>}
+            <Card className="progress-summary-card">
+                <h3>Progresso Total</h3>
+                <div className="progress-bar-container">
+                    <div className="progress-bar-fill" style={{ width: `${progresso}%` }}></div>
+                </div>
+                <div className="progress-details">
+                    <span>{progresso}% Completo</span>
+                    <span>{desbloqueadas.length} de {totalConquistas} conquistas</span>
                 </div>
             </Card>
 
-            <Card>
-                <h3>Por Desbloquear ({bloqueadas.length})</h3>
+            <div className="conquistas-section">
+                <h2>Desbloqueadas ({desbloqueadas.length})</h2>
+                {desbloqueadas.length > 0 ? (
+                    <div className="conquistas-grid">
+                        {desbloqueadas.map(c => <ConquistaItem key={c.idConquista} conquista={c} />)}
+                    </div>
+                ) : (
+                    <div className="empty-state">
+                        <p>Continue a usar o app para desbloquear as suas primeiras conquistas!</p>
+                    </div>
+                )}
+            </div>
+
+            <div className="conquistas-section">
+                <h2>Por Desbloquear ({bloqueadas.length})</h2>
                 <div className="conquistas-grid">
                     {bloqueadas.map(c => <ConquistaItem key={c.idConquista} conquista={c} />)}
                 </div>
-            </Card>
+            </div>
         </div>
     );
 };
 
 const ConquistaItem = ({ conquista }) => (
-    <div className={`conquista-item ${conquista.desbloqueada ? 'desbloqueada' : 'bloqueada'}`}>
-        <div className="conquista-icone">{conquista.icone}</div>
+    <div className={`conquista-item ${conquista.desbloqueada ? 'unlocked' : 'locked'}`}>
+        <div className="conquista-icon">{conquista.icone}</div>
         <div className="conquista-info">
             <h4>{conquista.nome}</h4>
             <p>{conquista.descricao}</p>

@@ -1,0 +1,130 @@
+/* src/pages/PaymentPages.css */
+
+.payment-page-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: var(--space-lg);
+    background-color: var(--color-background);
+}
+
+.payment-page-logo {
+    height: 60px;
+    margin-bottom: var(--space-xl);
+}
+
+/* Card de Preços */
+.pricing-card {
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+    padding: var(--space-xl) !important;
+    border: 2px solid var(--color-primary);
+}
+
+.plan-badge {
+    display: inline-block;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: 20px;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--space-md);
+}
+
+.pricing-title {
+    font-size: 1.8rem;
+    color: var(--color-text-strong);
+}
+
+.pricing-description {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-lg);
+}
+
+.price-tag {
+    margin-bottom: var(--space-xs);
+}
+
+.price-amount {
+    font-size: 3.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+}
+.price-details {
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+    margin-bottom: var(--space-lg);
+}
+
+.checkout-button {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    background-color: var(--color-success);
+    color: white;
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    font-weight: var(--font-weight-bold);
+    font-size: 1.1rem;
+    transition: var(--transition);
+}
+.checkout-button:hover {
+    background-color: #218838; /* Verde mais escuro */
+}
+
+.secure-info {
+    margin-top: var(--space-lg);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-faint);
+}
+
+/* Card de Status (Sucesso) */
+.status-card {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    padding: 2.5rem !important;
+}
+.status-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem auto;
+}
+.status-icon.success {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+}
+.status-icon span {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+.status-title {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--color-text-strong);
+}
+.status-message {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+.status-next-step {
+    background-color: var(--color-background);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    margin: 1.5rem 0;
+    text-align: left;
+    color: var(--color-text-primary);
+}
+.redirect-notice {
+    margin-top: 1.5rem;
+    color: var(--color-text-faint);
+}

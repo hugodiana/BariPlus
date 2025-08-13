@@ -13,5 +13,6 @@ router.post('/admin/conteudos', autenticar, isAdmin, conteudoController.criarCon
 router.get('/admin/conteudos', autenticar, isAdmin, conteudoController.listarTodosConteudosAdmin);
 router.put('/admin/conteudos/:id', autenticar, isAdmin, conteudoController.atualizarConteudo);
 router.delete('/admin/conteudos/:id', autenticar, isAdmin, conteudoController.apagarConteudo);
+router.get('/conteudos/related/:currentId', autenticar, conteudoController.listarConteudosRelacionados);
 
 module.exports = router;

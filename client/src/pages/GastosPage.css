@@ -1,68 +1,79 @@
+/* src/pages/GastosPage.css */
+
+.gastos-control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
 .date-filter {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-md);
 }
 .date-filter h2 {
     margin: 0;
-    color: var(--text-dark);
+    color: var(--color-text-strong);
     font-size: 1.5rem;
 }
 .date-filter button {
     background: none;
     border: none;
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 2rem;
     cursor: pointer;
-    color: var(--primary-green);
+    color: var(--color-primary);
 }
-
-.summary-card {
-    background: var(--primary-light);
-    padding: var(--space-lg);
-    border-radius: var(--border-radius);
+.summary-totals {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
     text-align: center;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
 }
-.summary-card span {
+.summary-item span {
     display: block;
-    color: var(--primary-green);
+    color: var(--color-text-secondary);
     margin-bottom: var(--space-sm);
 }
-.summary-card strong {
+.summary-item strong {
     display: block;
     font-size: 2.2rem;
-    color: var(--primary-green);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
 }
 
 .gastos-main-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
     gap: var(--space-xl);
-    margin-top: var(--space-xl);
 }
 
 .list-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--space-md);
     margin-bottom: var(--space-md);
 }
 .list-header h3 {
     margin: 0;
-    color: var(--text-dark);
+    color: var(--color-text-strong);
 }
 
 .add-btn {
-    background-color: var(--action-blue);
+    background-color: var(--color-primary);
     color: white;
     border: none;
-    padding: var(--space-sm) var(--space-md);
+    padding: 10px 16px;
     border-radius: var(--border-radius);
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
+    transition: var(--transition);
+}
+.add-btn:hover {
+    background-color: var(--color-primary-dark);
 }
 
 .gastos-list {
@@ -75,67 +86,41 @@
     align-items: center;
     gap: var(--space-md);
     padding: var(--space-md) 0;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
 }
 .gastos-list li:last-child {
     border-bottom: none;
 }
 .gasto-categoria {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
     flex-shrink: 0;
 }
-.gasto-categoria[data-category="Consultas"] { background-color: #36a2eb; }
-.gasto-categoria[data-category="Suplementos"] { background-color: #ff9f40; }
-.gasto-categoria[data-category="Farmácia"] { background-color: #ff6384; }
-.gasto-categoria[data-category="Alimentação"] { background-color: #cc65fe; }
-.gasto-categoria[data-category="Academia"] { background-color: #37715b; }
-.gasto-categoria[data-category="Outros"] { background-color: #aaa; }
-.gasto-info {
-    flex-grow: 1;
-}
-.gasto-info span { display: block; }
-.gasto-info small { color: var(--text-light); }
-.gasto-valor { font-weight: bold; }
-.delete-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 20px; }
-.delete-btn:hover { color: var(--danger-red); }
+.gasto-categoria[data-category="Consultas"] { background-color: #37715b; }
+.gasto-categoria[data-category="Suplementos"] { background-color: #007aff; }
+.gasto-categoria[data-category="Farmácia"] { background-color: #ff9f40; }
+.gasto-categoria[data-category="Alimentação"] { background-color: #e74c3c; }
+.gasto-categoria[data-category="Academia"] { background-color: #8e44ad; }
+.gasto-categoria[data-category="Outros"] { background-color: #6c757d; }
+
+.gasto-info { flex-grow: 1; }
+.gasto-info span { display: block; font-weight: var(--font-weight-medium); }
+.gasto-info small { color: var(--color-text-secondary); }
+.gasto-valor { font-weight: var(--font-weight-bold); }
+.delete-btn { background: none; border: none; color: var(--color-text-faint); cursor: pointer; font-size: 1.5rem; transition: var(--transition); }
+.delete-btn:hover { color: var(--color-danger); }
 
 .chart-container {
-    height: 300px; /* Altura para o gráfico de rosca */
+    height: 300px;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-.empty-state {
-    text-align: center;
-    color: var(--text-light);
-    padding: var(--space-lg);
-}
+.empty-state { text-align: center; color: var(--color-text-faint); padding: var(--space-xl); }
+.empty-icon { font-size: 2.5rem; display: block; margin-bottom: var(--space-sm); }
 
-.gasto-form label,
-.gasto-form input,
-.gasto-form select,
-.gasto-form button {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: var(--space-md);
-}
-.gasto-form input, .gasto-form select {
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-}
-.gasto-form button {
-    padding: 12px;
-    border: none;
-    border-radius: 4px;
-    background-color: var(--primary-green);
-    color: white;
-    font-weight: 600;
-}
 
 @media (max-width: 900px) {
     .gastos-main-grid {

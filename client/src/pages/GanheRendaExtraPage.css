@@ -1,59 +1,117 @@
-.affiliate-promo-card {
-    text-align: center;
-    padding: 2rem !important;
-}
+/* src/pages/GanheRendaExtraPage.css */
 
-.affiliate-promo-card h2 {
-    color: var(--primary-green);
-    margin-bottom: 1rem;
-}
-
-.affiliate-promo-card .description {
-    max-width: 600px;
-    margin: 0 auto 2rem auto;
-    line-height: 1.6;
-    color: var(--text-secondary);
-}
-
-.benefits-grid {
+.benefits-section {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2.5rem;
-    text-align: left;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
 }
 
-.benefit-item {
-    background-color: var(--background-light);
-    padding: 1.5rem;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
+.benefit-card {
+    text-align: center;
+    padding: var(--space-lg) !important;
 }
 
-.benefit-item h3 {
+.benefit-icon {
+    font-size: 2.5rem;
+    background-color: var(--color-primary-light);
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-md) auto;
+}
+
+.benefit-card h3 {
+    color: var(--color-text-strong);
+    margin-bottom: var(--space-sm);
+}
+
+.benefit-card p {
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+}
+
+.how-it-works-card {
+    padding: var(--space-xl) !important;
+    text-align: center;
+}
+
+.how-it-works-card h2 {
+    color: var(--color-text-strong);
     margin-top: 0;
-    margin-bottom: 0.5rem;
-    color: var(--text-strong);
+}
+
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+    margin-top: var(--space-lg);
+    text-align: left;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-md);
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--color-primary);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: var(--font-weight-bold);
+    font-size: 1.2rem;
+}
+
+.step-info h4 {
+    margin: 0 0 var(--space-xs) 0;
+    color: var(--color-text-primary);
+}
+
+.step-info p {
+    margin: 0;
+    color: var(--color-text-secondary);
+}
+
+.cta-section {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--color-border);
 }
 
 .apply-button {
     display: inline-block;
-    background-color: var(--action-blue);
+    background-color: var(--color-success);
     color: white;
-    padding: 1rem 2rem;
+    padding: 1rem 2.5rem;
     border-radius: var(--border-radius);
     text-decoration: none;
-    font-size: 1.1rem;
-    font-weight: bold;
-    transition: transform 0.2s;
+    font-size: 1.2rem;
+    font-weight: var(--font-weight-bold);
+    transition: var(--transition);
 }
 
 .apply-button:hover {
-    transform: scale(1.05);
+    background-color: #218838; /* Um tom de verde mais escuro */
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
 }
 
 .kiwify-notice {
     display: block;
-    margin-top: 1rem;
-    color: var(--text-faint);
+    margin-top: var(--space-md);
+    color: var(--color-text-faint);
+    font-size: var(--font-size-sm);
 }

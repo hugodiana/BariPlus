@@ -1,31 +1,35 @@
 import React from 'react';
-import './PricingPage.css';
+import { Link } from 'react-router-dom';
+import Card from '../components/ui/Card';
+import './PaymentPages.css'; // Usaremos um novo CSS unificado
 
 const PricingPage = () => {
-    // ✅ ESTE É O LINK DE CHECKOUT QUE VOCÊ PEGOU DA KIWIFY
     const kiwifyCheckoutLink = "https://pay.kiwify.com.br/SFeg1G8";
 
     return (
-        <div className="pricing-page-container">
-            <div className="pricing-card">
-                <h1 className="pricing-title">BariPlus - Acesso Vitalício</h1>
-                <p className="pricing-description">Todas as funcionalidades presentes e futuras, com um único pagamento seguro.</p>
+        <div className="payment-page-container">
+            <Link to="/landing">
+                <img src="/bariplus_logo.png" alt="BariPlus Logo" className="payment-page-logo" />
+            </Link>
+            <Card className="pricing-card">
+                <div className="plan-badge">Acesso Vitalício</div>
+                <h1 className="pricing-title">Um investimento único na sua saúde.</h1>
+                <p className="pricing-description">
+                    Todas as funcionalidades presentes e futuras do BariPlus, para sempre.
+                </p>
                 <div className="price-tag">
                     <span className="price-amount">R$ 109,99</span>
                 </div>
-                <p className="coupon-info">
-                    Tem um cupom de afiliado? Ele será aplicado automaticamente se você acedeu pelo link do seu parceiro!
-                </p>
+                <p className="price-details">Pagamento único, sem mensalidades.</p>
                 
-                {/* O botão agora é um link direto para a Kiwify */}
                 <a href={kiwifyCheckoutLink} className="checkout-button">
-                    Comprar Agora
+                    Garantir Meu Acesso Vitalício
                 </a>
                 
-                <div className="secure-logos">
-                    <p>Pagamento 100% seguro processado pela Kiwify.</p>
+                <div className="secure-info">
+                    <p>🔒 Pagamento 100% seguro processado pela Kiwify.</p>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };

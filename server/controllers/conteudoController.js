@@ -81,3 +81,21 @@ exports.apagarConteudo = async (req, res) => {
         res.status(500).json({ message: 'Erro ao apagar conteúdo.' });
     }
 };
+
+// GET /api/conteudos/related/:currentId - Listar 3 artigos relacionados
+exports.listarConteudosRelacionados = async (req, res) => {
+    try {
+        const { currentId } = req.params;
+        // Encontra 3 artigos publicados, que não sejam o artigo atual, e ordena pelos mais recentes
+        const conteudos = await Conteudo.find({ 
+            publicado: true,
+            _id: { $ne: currentId } // $ne = "not equal", para excluir o artigo atual
+        })
+        .sort({ createdAt: -1 })
+        .limit(3);
+        
+        res.json(conteudos);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar conteúdos relacionados.' });
+    }
+};
