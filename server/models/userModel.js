@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String },
-    username: { type: String, unique: true, sparse: true }, // sparse: true permite valores nulos sem violar a regra de unicidade
+    username: { type: String, unique: true, sparse: true },
     email: { type: String, unique: true, required: true },
-    password: { type: String }, // Senha não é obrigatória no início por causa do fluxo da Kiwify
+    password: { type: String },
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: String,
     emailVerificationExpires: Date,
@@ -20,13 +20,18 @@ const UserSchema = new mongoose.Schema({
         pesoAtual: Number
     },
     pagamentoEfetuado: { type: Boolean, default: false },
-    kiwifySubscriptionId: String, // Para guardar a referência da compra na Kiwify
+    kiwifySubscriptionId: String,
     conquistas: [{ type: String }],
-    metaAguaDiaria: { type: Number, default: 2000 }, // Valor padrão de 2000ml
-    metaProteinaDiaria: { type: Number, default: 60 }, // Valor padrão de 60g
-    metaPeso: { type: Number },
-    role: { type: String, enum: ['user', 'admin'], default: 'user' }, // Simplificado, sem afiliados por agora
-    fcmToken: String, // Para notificações push
+    // ✅ NOVOS CAMPOS AQUI
+    metaPeso: { type: Number, default: 0 },
+    metaAguaDiaria: { type: Number, default: 2000 },
+    metaProteinaDiaria: { type: Number, default: 60 },
+    metaCalorias: { type: Number, default: 1200 },
+    metaCarboidratos: { type: Number, default: 100 },
+    metaGorduras: { type: Number, default: 40 },
+    // FIM DOS NOVOS CAMPOS
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
+    fcmToken: String,
     notificationSettings: {
         appointmentReminders: { type: Boolean, default: true },
         medicationReminders: { type: Boolean, default: true },

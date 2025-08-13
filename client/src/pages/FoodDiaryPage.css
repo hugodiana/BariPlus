@@ -1,3 +1,5 @@
+/* src/pages/FoodDiaryPage.css */
+
 .date-selector-card {
     display: flex;
     justify-content: space-between;
@@ -7,168 +9,112 @@
 }
 .date-selector-card button {
     background: none;
-    border: 1px solid var(--border-color);
-    padding: 8px 12px;
-    border-radius: 6px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
     cursor: pointer;
     font-weight: bold;
+    font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
 }
 .date-selector-card input[type="date"] {
     border: none;
     font-size: 1.2rem;
     font-weight: bold;
     background: transparent;
-    color: var(--text-strong);
+    color: var(--color-text-strong);
+    text-align: center;
 }
 
+/* NOVO: Card de Resumo de Macros */
+.macro-summary-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+    text-align: center;
+    margin-bottom: var(--space-xl);
+    padding: var(--space-lg) !important;
+}
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.summary-value {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-strong);
+}
+.summary-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+}
+.summary-goal {
+    font-size: 0.8rem;
+    color: var(--color-text-faint);
+}
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-sm);
+    background-color: var(--color-border); /* Cor de fundo */
+}
+.progress-circle .summary-value {
+    color: var(--color-primary);
+}
+
+/* Grelha de refeições */
 .meals-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: var(--space-lg);
 }
 
-.meal-card {
-    display: flex;
-    flex-direction: column;
-}
+.meal-card { display: flex; flex-direction: column; }
 .meal-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color);
+    align-items: baseline;
+    border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--space-sm);
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
 }
-.meal-header h4 {
-    margin: 0;
-    color: var(--primary-green);
-}
-.add-food-btn {
-    background-color: var(--primary-green);
-    color: white;
-    border: none;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    font-size: 1.5rem;
-    line-height: 1;
-    cursor: pointer;
-}
+.meal-header h4 { margin: 0; color: var(--color-primary); }
+.meal-subtotals { font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
+.meal-subtotals span { margin-left: var(--space-md); }
 
-.logged-food-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    flex-grow: 1;
-}
+.logged-food-list { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
 .logged-food-list li {
     display: flex;
     align-items: center;
     padding: var(--space-sm) 0;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
 }
-.logged-food-list li:last-child {
-    border-bottom: none;
-}
-.item-info {
-    flex-grow: 1;
-}
-.item-info span, .item-info small {
-    display: block;
-}
-.item-nutrients {
-    font-size: 0.8rem;
-    color: var(--text-light);
-}
-.delete-food-btn {
-    background: transparent;
-    border: none;
-    color: var(--danger-red);
-    font-size: 1.5rem;
-    cursor: pointer;
-    opacity: 0.5;
-}
-.delete-food-btn:hover {
-    opacity: 1;
-}
+.logged-food-list li:last-child { border-bottom: none; }
+.item-info { flex-grow: 1; }
+.item-info span, .item-info small { display: block; }
+.item-nutrients { font-size: 0.8rem; color: var(--color-text-secondary); }
 
-.empty-meal {
-    text-align: center;
-    padding: 20px;
-    color: var(--text-light);
-}
-
-/* Modal de Porção */
-.portion-container h3 {
-    text-align: center;
-}
-.nutrient-details {
-    font-size: 0.9rem;
-    text-align: center;
-    color: var(--text-secondary);
-    margin: 1rem 0;
-}
-.portion-input-group {
-    margin: 1.5rem 0;
-}
-.portion-input-group label {
-    display: block;
-    text-align: center;
-    margin-bottom: 0.5rem;
-    font-weight: bold;
-}
-.portion-input-group input {
+.add-food-btn {
     width: 100%;
+    margin-top: auto;
+    padding-top: var(--space-md);
     padding: 12px;
-    font-size: 1.2rem;
-    text-align: center;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-}
-.portion-actions {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
-.back-btn, .log-btn {
-    flex: 1;
-    padding: 12px;
-    border-radius: 8px;
-    font-weight: bold;
+    border: 1px dashed var(--color-border);
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
+    border-radius: var(--border-radius);
     cursor: pointer;
-    border: none;
+    font-weight: var(--font-weight-bold);
+    transition: var(--transition);
 }
-.back-btn {
-    background-color: var(--border-color);
-    color: var(--text-primary);
-}
-.log-btn {
-    background-color: var(--primary-green);
-    color: white;
-}
-
-.macro-summary-card {
-    margin-bottom: var(--space-xl);
-}
-.macro-summary-card h3 {
-    text-align: center;
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-}
-.macro-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    text-align: center;
-}
-.macro-item span {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--primary-green);
-    display: block;
-}
-.macro-item label {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
+.add-food-btn:hover { background-color: var(--color-primary-light); color: var(--color-primary); border-color: var(--color-primary); }
+.delete-food-btn { background: transparent; border: none; color: var(--color-danger); font-size: 1.5rem; cursor: pointer; opacity: 0.5; }
+.delete-food-btn:hover { opacity: 1; }
+.empty-meal { text-align: center; padding: 20px; color: var(--color-text-secondary); }

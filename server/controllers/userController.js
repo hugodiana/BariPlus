@@ -165,24 +165,33 @@ exports.sendTestNotification = async (req, res) => {
 
 exports.updateGoals = async (req, res) => {
     try {
-        const { metaAguaDiaria, metaProteinaDiaria } = req.body;
+        // Recebe todas as metas possíveis do corpo do pedido
+        const { metaAguaDiaria, metaProteinaDiaria, metaCalorias, metaCarboidratos, metaGorduras } = req.body;
+
         const updateData = {};
+        // Adiciona ao objeto de atualização apenas as metas que foram enviadas
         if (metaAguaDiaria) updateData.metaAguaDiaria = metaAguaDiaria;
         if (metaProteinaDiaria) updateData.metaProteinaDiaria = metaProteinaDiaria;
+        if (metaCalorias) updateData.metaCalorias = metaCalorias;
+        if (metaCarboidratos) updateData.metaCarboidratos = metaCarboidratos;
+        if (metaGorduras) updateData.metaGorduras = metaGorduras;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ message: "Nenhuma meta fornecida para atualização." });
         }
+
         const usuarioAtualizado = await User.findByIdAndUpdate(
             req.userId,
             { $set: updateData },
             { new: true, runValidators: true }
         ).select('-password');
+
         if (!usuarioAtualizado) {
             return res.status(404).json({ message: "Usuário não encontrado." });
         }
         res.json(usuarioAtualizado);
     } catch (error) {
+        console.error("Erro ao atualizar metas:", error);
         res.status(500).json({ message: 'Erro ao atualizar as metas.' });
     }
 };

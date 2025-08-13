@@ -3,23 +3,15 @@ import ReactDOM from 'react-dom';
 import './Modal.css';
 
 const Modal = ({ isOpen, onClose, children, ariaLabel = "Modal" }) => {
-    const modalRef = useRef(null); // Adicionando a referência
+    const modalRef = useRef(null);
 
-    // Efeito para lidar com o teclado e foco
     useEffect(() => {
         if (!isOpen) return;
-
         const handleKeyDown = (e) => {
-            if (e.key === 'Escape') {
-                onClose();
-            }
-            // Mantém o foco dentro do modal
+            if (e.key === 'Escape') onClose();
             if (e.key === 'Tab') {
-                const focusableElements = modalRef.current?.querySelectorAll(
-                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-                );
+                const focusableElements = modalRef.current?.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
                 if (!focusableElements?.length) return;
-
                 const firstElement = focusableElements[0];
                 const lastElement = focusableElements[focusableElements.length - 1];
 
@@ -32,30 +24,23 @@ const Modal = ({ isOpen, onClose, children, ariaLabel = "Modal" }) => {
                 }
             }
         };
-
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [isOpen, onClose]);
 
-    // Efeito para desativar scroll da página quando modal está aberto
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
-            document.body.style.paddingRight = '15px'; // Compensa a barra de rolagem desaparecida
-            
-            // Focar no modal quando abre
-            if (modalRef.current) {
-                modalRef.current.focus();
-            }
-        } else {
-            document.body.style.overflow = '';
-            document.body.style.paddingRight = '';
+            modalRef.current?.focus();
         }
+        // ✅ CORREÇÃO: Esta função de limpeza é chamada quando o modal fecha (unmounts).
+        // Ela garante que o estilo do body seja sempre restaurado.
+        return () => {
+            document.body.style.overflow = '';
+        };
     }, [isOpen]);
 
-    if (!isOpen) {
-        return null;
-    }
+    if (!isOpen) return null;
 
     return ReactDOM.createPortal(
         <div 
@@ -69,7 +54,7 @@ const Modal = ({ isOpen, onClose, children, ariaLabel = "Modal" }) => {
                 className="modal-content-container" 
                 onClick={(e) => e.stopPropagation()}
                 ref={modalRef}
-                tabIndex={-1} // Permite que o modal receba foco
+                tabIndex={-1}
             >
                 <button 
                     className="modal-close-btn" 

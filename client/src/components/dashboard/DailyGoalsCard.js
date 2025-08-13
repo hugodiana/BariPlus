@@ -3,31 +3,35 @@ import { toast } from 'react-toastify';
 import './DailyGoalsCard.css';
 import Card from '../ui/Card';
 import Modal from '../Modal';
-import { fetchApi } from '../../utils/api'; // Importar o fetchApi
+import { fetchApi } from '../../utils/api';
 
-// O novo Modal para personalizar as metas
 const CustomizeGoalsModal = ({ usuario, onClose, onSave }) => {
-    // ✅ CORREÇÃO: Lê as metas do local correto
-    const [metaAgua, setMetaAgua] = useState(usuario.metaAguaDiaria || 2000);
-    const [metaProteina, setMetaProteina] = useState(usuario.metaProteinaDiaria || 60);
+    // ✅ ESTADO PARA TODAS AS METAS
+    const [metas, setMetas] = useState({
+        metaAguaDiaria: usuario.metaAguaDiaria || 2000,
+        metaProteinaDiaria: usuario.metaProteinaDiaria || 60,
+        metaCalorias: usuario.metaCalorias || 1200,
+        metaCarboidratos: usuario.metaCarboidratos || 100,
+        metaGorduras: usuario.metaGorduras || 40,
+    });
     const [isLoading, setIsLoading] = useState(false);
 
-    // Sugestão de metas com base no peso atual
-    const pesoAtual = usuario.detalhesCirurgia?.pesoAtual || 0;
-    const sugestaoAgua = pesoAtual > 0 ? pesoAtual * 35 : 2000;
-    const sugestaoProteina = pesoAtual > 0 ? Math.round(pesoAtual * 1.2) : 60;
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setMetas(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const res = await fetchApi('/api/user/goals', { // Usa o fetchApi
+            const res = await fetchApi('/api/user/goals', {
                 method: 'PUT',
-                body: JSON.stringify({ metaAguaDiaria: metaAgua, metaProteinaDiaria: metaProteina })
+                body: JSON.stringify(metas) // Envia o objeto completo de metas
             });
             if (!res.ok) throw new Error("Falha ao salvar metas.");
             const updatedUser = await res.json();
-            onSave(updatedUser); // Atualiza o estado do usuário na Dashboard
+            onSave(updatedUser);
             toast.success("Metas atualizadas com sucesso!");
             onClose();
         } catch (error) {
@@ -41,20 +45,26 @@ const CustomizeGoalsModal = ({ usuario, onClose, onSave }) => {
         <Modal isOpen={true} onClose={onClose}>
             <h2>Personalizar Metas Diárias</h2>
             <form onSubmit={handleSubmit} className="goals-form">
-                <div className="suggestion-box">
-                    <p>Com base no seu peso atual de <strong>{pesoAtual.toFixed(1)} kg</strong>, sugerimos:</p>
-                    <ul>
-                        <li><strong>Água:</strong> {sugestaoAgua.toFixed(0)} ml</li>
-                        <li><strong>Proteína:</strong> {sugestaoProteina.toFixed(0)} g</li>
-                    </ul>
-                </div>
+                {/* ✅ NOVOS CAMPOS NO FORMULÁRIO */}
                 <div className="form-group">
-                    <label>Minha meta de Água (ml)</label>
-                    <input type="number" value={metaAgua} onChange={(e) => setMetaAgua(e.target.value)} />
+                    <label>Minha meta de Calorias (kcal)</label>
+                    <input type="number" name="metaCalorias" value={metas.metaCalorias} onChange={handleInputChange} />
                 </div>
                 <div className="form-group">
                     <label>Minha meta de Proteína (g)</label>
-                    <input type="number" value={metaProteina} onChange={(e) => setMetaProteina(e.target.value)} />
+                    <input type="number" name="metaProteinaDiaria" value={metas.metaProteinaDiaria} onChange={handleInputChange} />
+                </div>
+                <div className="form-group">
+                    <label>Minha meta de Carboidratos (g)</label>
+                    <input type="number" name="metaCarboidratos" value={metas.metaCarboidratos} onChange={handleInputChange} />
+                </div>
+                <div className="form-group">
+                    <label>Minha meta de Gorduras (g)</label>
+                    <input type="number" name="metaGorduras" value={metas.metaGorduras} onChange={handleInputChange} />
+                </div>
+                <div className="form-group">
+                    <label>Minha meta de Água (ml)</label>
+                    <input type="number" name="metaAguaDiaria" value={metas.metaAguaDiaria} onChange={handleInputChange} />
                 </div>
                 <button type="submit" className="submit-button" disabled={isLoading}>
                     {isLoading ? 'A salvar...' : 'Salvar Novas Metas'}
@@ -68,7 +78,6 @@ const CustomizeGoalsModal = ({ usuario, onClose, onSave }) => {
 const DailyGoalsCard = ({ log, onTrack, usuario, onUserUpdate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     
-    // ✅ CORREÇÃO: Lê as metas do local correto (raiz do objeto usuario)
     const metaAgua = usuario.metaAguaDiaria || 2000;
     const metaProteina = usuario.metaProteinaDiaria || 60;
 

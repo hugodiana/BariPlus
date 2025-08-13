@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
-import { fetchApi } from '../utils/api'; // Usar a nossa API centralizada
+import { ptBR } from 'date-fns/locale';
+import { fetchApi } from '../utils/api';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -109,9 +110,8 @@ const MedicationPage = () => {
 
     const handleToggleToma = async (medId, totalDoses) => {
         const tomasAtuais = historico[hoje]?.[medId] || 0;
-        const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
+        const novasTomas = tomasAtuais >= totalDoses ? 0 : tomasAtuais + 1;
         
-        // Atualização Otimista
         const originalHistorico = { ...historico };
         setHistorico(prev => ({
             ...prev,
@@ -119,10 +119,11 @@ const MedicationPage = () => {
         }));
 
         try {
-            await fetchApi('/api/medication/log', {
+            const response = await fetchApi('/api/medication/log', {
                 method: 'POST',
                 body: JSON.stringify({ date: hoje, medId, count: novasTomas })
             });
+            if (!response.ok) throw new Error("Falha ao salvar registro.");
         } catch (error) {
             toast.error("Erro ao registrar a toma. A reverter.");
             setHistorico(originalHistorico);
@@ -137,16 +138,19 @@ const MedicationPage = () => {
         medicamentos
             .filter(med => med.status === 'Ativo' && med.frequencia.tipo === 'Diária')
             .forEach(med => {
-                med.frequencia.horarios.forEach(horario => {
-                    if (horario > horaAtual) {
-                        if (!proxima || horario < proxima.horario) {
-                            proxima = { ...med, horario };
-                        }
+                const tomasDeHoje = historico[hoje]?.[med._id] || 0;
+                const horariosOrdenados = [...med.frequencia.horarios].sort();
+
+                const proximoHorarioNaoTomado = horariosOrdenados.find((horario, index) => horario > horaAtual && index >= tomasDeHoje);
+                
+                if (proximoHorarioNaoTomado) {
+                    if (!proxima || proximoHorarioNaoTomado < proxima.horario) {
+                        proxima = { ...med, horario: proximoHorarioNaoTomado };
                     }
-                });
+                }
             });
         return proxima;
-    }, [medicamentos]);
+    }, [medicamentos, historico, hoje]);
 
     if (loading) return <LoadingSpinner />;
 
@@ -268,6 +272,7 @@ const MedicationPage = () => {
 
 const MedicationItem = ({ med, historicoHoje, onToggleToma, onDelete, onToggleStatus }) => {
     const tomasDeHoje = historicoHoje?.[med._id] || 0;
+    // ✅ CORREÇÃO: Usa o tamanho do array de horários para saber o total de doses
     const totalDoses = med.frequencia.horarios?.length || 0;
 
     return (
@@ -291,6 +296,14 @@ const MedicationItem = ({ med, historicoHoje, onToggleToma, onDelete, onToggleSt
                         );
                     })}
                 </div>
+            )}
+            
+            {med.status === 'Ativo' && med.frequencia.tipo === 'Semanal' && (
+                 <div className="med-horarios">
+                    <span className="horario-tag">
+                        Toda {format(new Date(2024, 0, Number(med.frequencia.diaDaSemana) + 1), 'EEEE', { locale: ptBR })}
+                    </span>
+                 </div>
             )}
 
             <div className="med-actions">

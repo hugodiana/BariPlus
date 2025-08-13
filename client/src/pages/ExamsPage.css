@@ -1,15 +1,63 @@
-/* ExamsPage.css refatorado com o novo sistema de design */
+/* src/pages/ExamsPage.css */
 
+.page-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+}
 .add-btn-main {
-    background-color: var(--action-blue);
+    background-color: var(--color-primary);
     color: white;
     border: none;
     padding: 12px 18px;
     border-radius: var(--border-radius);
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
-    font-size: 1rem;
-    margin-bottom: var(--space-lg);
+    font-size: var(--font-size-sm);
+    transition: var(--transition);
+}
+.add-btn-main:hover {
+    background-color: var(--color-primary-dark);
+}
+
+/* NOVO: Card de Destaques */
+.summary-highlights-card {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1px;
+    background-color: var(--color-border);
+    overflow: hidden;
+    padding: 0 !important;
+    margin-bottom: var(--space-xl);
+}
+.highlight-item {
+    background-color: var(--color-surface);
+    padding: var(--space-md);
+    text-align: center;
+}
+.highlight-label {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-xs);
+}
+.highlight-value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-strong);
+}
+.highlight-value.no-data {
+    color: var(--color-text-faint);
+}
+.highlight-value small {
+    font-size: 0.8rem;
+    color: var(--color-text-faint);
+    font-weight: var(--font-weight-regular);
 }
 
 .exams-accordion {
@@ -17,48 +65,68 @@
     flex-direction: column;
     gap: var(--space-md);
 }
-
+.exam-entry {
+    transition: var(--transition);
+}
 .exam-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
+    padding: var(--space-md);
 }
-.exam-info {
-    display: flex;
-    flex-direction: column;
+.exam-entry.active .exam-header {
+    background-color: var(--color-primary-light);
 }
+
+.exam-info { display: flex; flex-direction: column; }
 .exam-name {
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     font-size: 1.1rem;
+    color: var(--color-text-strong);
+}
+.exam-name small {
+    font-weight: var(--font-weight-regular);
+    color: var(--color-text-secondary);
 }
 .exam-latest-result {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
     margin-top: var(--space-xs);
+    display: flex;
+    align-items: center;
 }
 .accordion-icon {
     font-size: 1.5rem;
     font-weight: bold;
-    color: var(--primary-green);
+    color: var(--color-primary);
 }
 
 .exam-content {
-    margin-top: var(--space-lg);
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--border-color);
+    margin-top: var(--space-md);
+    padding: 0 var(--space-md) var(--space-md) var(--space-md);
+    border-top: 1px solid var(--color-border);
+}
+.exam-chart-container {
+    height: 250px;
+    margin-bottom: var(--space-lg);
 }
 
 .add-result-btn {
     display: inline-block;
     margin-bottom: var(--space-lg);
-    background-color: var(--primary-light);
-    color: var(--primary-green);
-    border: 1px solid var(--primary-green);
+    background-color: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
     padding: 8px 12px;
     border-radius: var(--border-radius);
-    font-weight: 600;
+    font-weight: var(--font-weight-bold);
     cursor: pointer;
+    transition: var(--transition);
+}
+.add-result-btn:hover {
+    background-color: var(--color-primary);
+    color: white;
 }
 
 .status-indicator {
@@ -67,21 +135,98 @@
     height: 10px;
     border-radius: 50%;
     margin-right: 8px;
-    background-color: var(--border-color);
 }
-td.status-normal .status-indicator { background-color: var(--secondary-green); }
-td.status-low .status-indicator { background-color: var(--action-blue); }
-td.status-high .status-indicator { background-color: var(--danger-red); }
+.status-normal .status-indicator, .highlight-value.status-normal .status-indicator { background-color: var(--color-success); }
+.status-low .status-indicator, .highlight-value.status-low .status-indicator { background-color: var(--color-accent); }
+.status-high .status-indicator, .highlight-value.status-high .status-indicator { background-color: var(--color-danger); }
 
-/* Responsividade para a tabela */
-@media (max-width: 768px) {
-    .exam-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-    }
-    .accordion-icon {
-        align-self: flex-end;
-        margin-top: -30px;
-    }
+/* Tabela */
+.table-responsive { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--color-border); }
+th { color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
+.actions-cell { text-align: right; }
+.action-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--color-text-faint); }
+.edit-btn:hover { color: var(--color-accent); }
+.delete-btn:hover { color: var(--color-danger); }
+
+/* Formulários no Modal */
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+.form-row { display: flex; gap: var(--space-md); }
+.form-group { flex: 1; display: flex; flex-direction: column; }
+.form-group label { margin-bottom: var(--space-sm); font-weight: var(--font-weight-medium); }
+.form-group input, .form-group select, .form-group textarea {
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-family: var(--font-family);
+}
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+/* --- Estilos para os Formulários no Modal --- */
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+}
+.form-row {
+    display: flex;
+    gap: var(--space-md);
+}
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.form-group label {
+    margin-bottom: var(--space-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-family: var(--font-family);
+    background-color: var(--color-background);
+}
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+.primary-btn, .secondary-btn {
+    padding: 12px 24px;
+    font-weight: var(--font-weight-bold);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1rem;
+}
+.primary-btn {
+    background-color: var(--color-primary);
+    color: white;
+}
+.secondary-btn {
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
 }

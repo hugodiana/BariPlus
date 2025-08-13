@@ -11,6 +11,7 @@ import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ExamsReport from '../components/ExamsReport';
+import { fetchApi } from '../utils/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -23,6 +24,12 @@ const predefinedExams = [
     { name: 'Colesterol Total', unit: 'mg/dL', refMin: 0, refMax: 199 },
     { name: 'Triglicerídeos', unit: 'mg/dL', refMin: 0, refMax: 150 },
 ];
+
+const getResultStatusClass = (value, refMin, refMax) => {
+    if (refMin != null && value < refMin) return 'status-low';
+    if (refMax != null && value > refMax) return 'status-high';
+    return 'status-normal';
+};
 
 const DownloadExamsPDFButton = ({ usuario, examsData }) => {
     const [chartImages, setChartImages] = useState(null);
@@ -48,9 +55,9 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
             setShouldRenderChartsForPDF(false);
             toast.success("Gráficos prontos! Pode baixar o seu PDF.");
         };
-        const timer = setTimeout(generateImages, 100); 
+        const timer = setTimeout(generateImages, 500); 
         return () => clearTimeout(timer);
-    }, [shouldRenderChartsForPDF, examsData, usuario]);
+    }, [shouldRenderChartsForPDF, examsData]);
 
     const handlePreparePDF = () => {
         setIsGenerating(true);
@@ -91,7 +98,7 @@ const DownloadExamsPDFButton = ({ usuario, examsData }) => {
     );
 };
 
-const ExamsPage = ({ onDataUpdate: onDataUpdateProp }) => {
+const ExamsPage = () => {
     const [examsData, setExamsData] = useState({ examEntries: [] });
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -100,15 +107,12 @@ const ExamsPage = ({ onDataUpdate: onDataUpdateProp }) => {
     const [currentExamEntry, setCurrentExamEntry] = useState(null);
     const [currentResult, setCurrentResult] = useState(null);
 
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
-
     const fetchExamsData = useCallback(async () => {
         setLoading(true);
         try {
             const [resExams, resMe] = await Promise.all([
-                fetch(`${apiUrl}/api/exams`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetchApi('/api/exams'),
+                fetchApi('/api/me')
             ]);
             if (!resExams.ok || !resMe.ok) throw new Error("Falha ao carregar dados.");
             const dataExams = await resExams.json();
@@ -120,13 +124,26 @@ const ExamsPage = ({ onDataUpdate: onDataUpdateProp }) => {
         } finally { 
             setLoading(false); 
         }
-    }, [token, apiUrl]);
+    }, []);
 
     useEffect(() => { fetchExamsData(); }, [fetchExamsData]);
 
     const toggleAccordion = (examId) => {
         setActiveExamId(prevId => (prevId === examId ? null : examId));
     };
+    
+    const highlightedExams = useMemo(() => {
+        if (!examsData.examEntries) return [];
+        const keyExams = ['Vitamina D', 'Vitamina B12', 'Ferritina'];
+        return keyExams.map(name => {
+            const exam = examsData.examEntries.find(e => e.name === name);
+            if (!exam || exam.history.length === 0) {
+                return { name, latestResult: null };
+            }
+            const latestResult = [...exam.history].sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+            return { ...exam, latestResult };
+        });
+    }, [examsData]);
 
     if (loading || !usuario) return <LoadingSpinner />;
 
@@ -140,7 +157,23 @@ const ExamsPage = ({ onDataUpdate: onDataUpdateProp }) => {
                 <DownloadExamsPDFButton usuario={usuario} examsData={examsData} />
             </div>
             
-            <button className="add-btn-main" onClick={() => setModalType('add_type')}>+ Adicionar Tipo de Exame</button>
+            <Card className="summary-highlights-card">
+                {highlightedExams.map(exam => (
+                    <div className="highlight-item" key={exam.name}>
+                        <span className="highlight-label">{exam.name}</span>
+                        {exam.latestResult ? (
+                            <span className={`highlight-value ${getResultStatusClass(exam.latestResult.value, exam.refMin, exam.refMax)}`}>
+                                <span className="status-indicator"></span>
+                                {exam.latestResult.value} <small>{exam.unit}</small>
+                            </span>
+                        ) : (
+                            <span className="highlight-value no-data">-</span>
+                        )}
+                    </div>
+                ))}
+            </Card>
+
+            <button className="add-btn-main" onClick={() => setModalType('add_type')}>+ Adicionar Novo Tipo de Exame</button>
 
             {examsData.examEntries && examsData.examEntries.length > 0 ? (
                 <div className="exams-accordion">
@@ -157,7 +190,7 @@ const ExamsPage = ({ onDataUpdate: onDataUpdateProp }) => {
                     ))}
                 </div>
             ) : (
-                <Card><p style={{textAlign: 'center'}}>Nenhum tipo de exame adicionado. Comece por adicionar o seu primeiro!</p></Card>
+                <Card><div className="empty-state"><span className="empty-icon">🧪</span><p>Nenhum exame adicionado. Comece por adicionar o seu primeiro!</p></div></Card>
             )}
 
             {modalType === 'add_type' && <AddExamTypeModal onClose={() => setModalType(null)} onSave={fetchExamsData} existingExams={examsData.examEntries} />}
@@ -168,7 +201,6 @@ const ExamsPage = ({ onDataUpdate: onDataUpdateProp }) => {
 };
 
 const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onDataUpdate }) => {
-    const [itemLoading, setItemLoading] = useState(null);
     const sortedHistory = useMemo(() => 
         [...exam.history].sort((a, b) => new Date(a.date) - new Date(b.date)), 
     [exam.history]);
@@ -185,41 +217,25 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onData
         }]
     };
     const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } };
-    const latestResult = sortedHistory[sortedHistory.length - 1];
+    const latestResult = sortedHistory.length > 0 ? sortedHistory[sortedHistory.length - 1] : null;
 
     const handleDelete = async (resultId) => {
         if (!window.confirm("Tem certeza que quer apagar este resultado?")) return;
-        setItemLoading(resultId);
-        const token = localStorage.getItem('bariplus_token');
-        const apiUrl = process.env.REACT_APP_API_URL;
         try {
-            const res = await fetch(`${apiUrl}/api/exams/result/${exam._id}/${resultId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error("Falha ao apagar.");
+            await fetchApi(`/api/exams/result/${exam._id}/${resultId}`, { method: 'DELETE' });
             toast.info("Resultado apagado.");
             onDataUpdate();
         } catch (error) { toast.error(error.message); }
-        finally { setItemLoading(null); }
-    };
-    
-    const getResultStatusClass = (value) => {
-        if (exam.refMin != null && exam.refMax != null) {
-            if (value < exam.refMin) return 'status-low';
-            if (value > exam.refMax) return 'status-high';
-            return 'status-normal';
-        }
-        return '';
     };
 
     return (
         <Card className={`exam-entry ${isActive ? 'active' : ''}`}>
             <div className="exam-header" onClick={onToggle}>
                 <div className="exam-info">
-                    <span className="exam-name">{exam.name} ({exam.unit})</span>
+                    <span className="exam-name">{exam.name} <small>({exam.unit})</small></span>
                     {latestResult && (
-                        <span className="exam-latest-result">
+                        <span className={`exam-latest-result ${getResultStatusClass(latestResult.value, exam.refMin, exam.refMax)}`}>
+                            <span className="status-indicator"></span>
                             Último: <strong>{latestResult.value}</strong> em {format(parseISO(latestResult.date), 'dd/MM/yyyy')}
                         </span>
                     )}
@@ -233,20 +249,19 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onData
                             <Line data={chartData} options={chartOptions} />
                         </div>
                     )}
-                    <button className="add-result-btn" onClick={onAddResult}>+ Adicionar Novo Resultado</button>
+                    <button className="add-result-btn" onClick={onAddResult}>+ Adicionar Resultado</button>
                     <div className="table-responsive">
                         <table>
-                            <thead><tr><th>Data</th><th>Valor ({exam.unit})</th><th>Notas</th><th>Ações</th></tr></thead>
+                            <thead><tr><th>Data</th><th>Valor</th><th>Notas</th><th>Ações</th></tr></thead>
                             <tbody>
                                 {sortedHistory.slice().reverse().map(result => (
-                                    <tr key={result._id} className={itemLoading === result._id ? 'loading' : ''}>
+                                    <tr key={result._id}>
                                         <td>{format(parseISO(result.date), 'dd/MM/yyyy')}</td>
-                                        <td className={getResultStatusClass(result.value)}>
-                                            <span className="status-indicator"></span>
-                                            {result.value}
+                                        <td className={getResultStatusClass(result.value, exam.refMin, exam.refMax)}>
+                                            <span className="status-indicator"></span>{result.value}
                                         </td>
                                         <td>{result.notes || '-'}</td>
-                                        <td className="actions">
+                                        <td className="actions-cell">
                                             <button onClick={() => onEditResult(result)} className="action-btn edit-btn">✎</button>
                                             <button onClick={() => handleDelete(result._id)} className="action-btn delete-btn">×</button>
                                         </td>
@@ -267,8 +282,6 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
     const [customUnit, setCustomUnit] = useState('');
     const [refMin, setRefMin] = useState('');
     const [refMax, setRefMax] = useState('');
-
-    const token = localStorage.getItem('bariplus_token');
     const apiUrl = process.env.REACT_APP_API_URL;
 
     const handlePredefinedChange = (e) => {
@@ -277,8 +290,8 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
         if (selectedName && selectedName !== 'custom') {
             const exam = predefinedExams.find(ex => ex.name === selectedName);
             if (exam) {
-                setRefMin(exam.refMin || '');
-                setRefMax(exam.refMax || '');
+                setRefMin(exam.refMin ?? '');
+                setRefMax(exam.refMax ?? '');
             }
         } else {
             setRefMin('');
@@ -296,9 +309,8 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
         if (existingExams.some(ex => ex.name.toLowerCase() === examData.name.toLowerCase())) return toast.warn("Este tipo de exame já foi adicionado.");
 
         try {
-            await fetch(`${apiUrl}/api/exams/type`, {
+            await fetchApi('/api/exams/type', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(examData),
             });
             toast.success("Tipo de exame adicionado!");
@@ -310,32 +322,29 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
     return (
         <Modal isOpen={true} onClose={onClose}>
             <h2>Adicionar Novo Tipo de Exame</h2>
-            <form onSubmit={handleSubmit}>
-                <label>Selecione um exame da lista ou crie um novo</label>
-                <select value={selectedPredefined} onChange={handlePredefinedChange}>
-                    <option value="">-- Exames Comuns --</option>
-                    {predefinedExams.map(ex => <option key={ex.name} value={ex.name}>{ex.name} ({ex.unit})</option>)}
-                    <option value="custom">Outro (Personalizado)</option>
-                </select>
+            <form onSubmit={handleSubmit} className="modal-form">
+                <div className="form-group">
+                    <label>Selecione um exame ou crie um novo</label>
+                    <select value={selectedPredefined} onChange={handlePredefinedChange}>
+                        <option value="">-- Exames Comuns --</option>
+                        {predefinedExams.map(ex => <option key={ex.name} value={ex.name}>{ex.name} ({ex.unit})</option>)}
+                        <option value="custom">Outro (Personalizado)</option>
+                    </select>
+                </div>
                 {selectedPredefined === 'custom' && (
                     <>
-                        <label>Nome do Exame Personalizado</label>
-                        <input type="text" value={customName} onChange={e => setCustomName(e.target.value)} required />
-                        <label>Unidade de Medida</label>
-                        <input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} required />
+                        <div className="form-group"><label>Nome do Exame</label><input type="text" value={customName} onChange={e => setCustomName(e.target.value)} required /></div>
+                        <div className="form-group"><label>Unidade de Medida</label><input type="text" value={customUnit} onChange={e => setCustomUnit(e.target.value)} required /></div>
                     </>
                 )}
                 <div className="form-row">
-                    <div className="form-group">
-                        <label>Valor Mínimo de Referência</label>
-                        <input type="number" step="any" value={refMin} onChange={e => setRefMin(e.target.value)} placeholder="(Opcional)" />
-                    </div>
-                    <div className="form-group">
-                        <label>Valor Máximo de Referência</label>
-                        <input type="number" step="any" value={refMax} onChange={e => setRefMax(e.target.value)} placeholder="(Opcional)" />
-                    </div>
+                    <div className="form-group"><label>Ref. Mínima</label><input type="number" step="any" value={refMin} onChange={e => setRefMin(e.target.value)} placeholder="(Opcional)" /></div>
+                    <div className="form-group"><label>Ref. Máxima</label><input type="number" step="any" value={refMax} onChange={e => setRefMax(e.target.value)} placeholder="(Opcional)" /></div>
                 </div>
-                <button type="submit">Adicionar à Minha Lista</button>
+                <div className="form-actions">
+                    <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+                    <button type="submit" className="primary-btn">Adicionar</button>
+                </div>
             </form>
         </Modal>
     );
@@ -345,22 +354,19 @@ const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
     const [date, setDate] = useState(resultToEdit ? format(parseISO(resultToEdit.date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
     const [value, setValue] = useState(resultToEdit ? resultToEdit.value : '');
     const [notes, setNotes] = useState(resultToEdit ? resultToEdit.notes : '');
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const resultData = { date: new Date(date).toISOString(), value: parseFloat(value), notes };
         const isEditing = !!resultToEdit;
         const url = isEditing 
-            ? `${apiUrl}/api/exams/result/${examEntry._id}/${resultToEdit._id}`
-            : `${apiUrl}/api/exams/result/${examEntry._id}`;
+            ? `/api/exams/result/${examEntry._id}/${resultToEdit._id}`
+            : `/api/exams/result/${examEntry._id}`;
         const method = isEditing ? 'PUT' : 'POST';
 
         try {
-            await fetch(url, {
+            await fetchApi(url, {
                 method: method,
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(resultData),
             });
             toast.success(`Resultado ${isEditing ? 'atualizado' : 'adicionado'}!`);
@@ -372,14 +378,14 @@ const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
     return (
         <Modal isOpen={true} onClose={onClose}>
             <h2>{resultToEdit ? 'Editar' : 'Adicionar'} Resultado de {examEntry.name}</h2>
-            <form onSubmit={handleSubmit}>
-                <label>Data</label>
-                <input type="date" value={date} onChange={e => setDate(e.target.value)} required />
-                <label>Valor ({examEntry.unit})</label>
-                <input type="number" step="any" value={value} onChange={e => setValue(e.target.value)} required />
-                <label>Notas (opcional)</label>
-                <textarea value={notes} onChange={e => setNotes(e.target.value)}></textarea>
-                <button type="submit">Salvar Resultado</button>
+            <form onSubmit={handleSubmit} className="modal-form">
+                <div className="form-group"><label>Data</label><input type="date" value={date} onChange={e => setDate(e.target.value)} required /></div>
+                <div className="form-group"><label>Valor ({examEntry.unit})</label><input type="number" step="any" value={value} onChange={e => setValue(e.target.value)} required /></div>
+                <div className="form-group"><label>Notas (opcional)</label><textarea value={notes} onChange={e => setNotes(e.target.value)}></textarea></div>
+                <div className="form-actions">
+                    <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
+                    <button type="submit" className="primary-btn">Salvar</button>
+                </div>
             </form>
         </Modal>
     );

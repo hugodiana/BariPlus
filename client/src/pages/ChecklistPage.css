@@ -2,130 +2,150 @@
 
 .tab-buttons {
     display: flex;
-    border-bottom: 2px solid var(--color-gray-300);
-    margin-bottom: var(--space-md);
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: var(--space-lg);
 }
-
 .tab-btn {
-    padding: var(--space-xs) var(--space-sm);
+    padding: var(--space-md);
     border: none;
     background: none;
     cursor: pointer;
     font-size: var(--font-size-md);
     font-weight: var(--font-weight-medium);
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
     border-bottom: 3px solid transparent;
     margin-bottom: -2px;
-    transition: all var(--transition-fast);
+    transition: var(--transition);
 }
-
 .tab-btn.active {
     color: var(--color-primary);
-    font-weight: var(--font-weight-bold);
     border-bottom-color: var(--color-primary);
 }
 
 .progress-container {
-    margin-bottom: var(--space-md);
+    margin-bottom: var(--space-lg);
 }
-
 .progress-bar {
-    background-color: var(--color-gray-200);
-    border-radius: var(--border-radius-pill);
-    height: 10px;
+    background-color: var(--color-border);
+    border-radius: var(--border-radius);
+    height: 12px;
     overflow: hidden;
 }
-
 .progress-fill {
-    background-color: var(--color-secondary);
+    background-color: var(--color-success);
     height: 100%;
-    border-radius: var(--border-radius-pill);
-    transition: width var(--transition-medium);
+    border-radius: var(--border-radius);
+    transition: width 0.5s ease-in-out;
 }
-
 .progress-text {
     text-align: right;
     font-size: var(--font-size-sm);
-    color: var(--color-gray-500);
+    color: var(--color-text-secondary);
     margin-top: var(--space-xs);
-}
-
-.add-task-btn {
-    background-color: var(--color-info);
-    color: white;
-    border: none;
-    padding: var(--space-xs) var(--space-sm);
-    border-radius: var(--border-radius-md);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
-    float: right;
-    margin-bottom: var(--space-sm);
 }
 
 .task-list {
     list-style: none;
     padding: 0;
-    clear: both;
 }
-
 .task-item {
     display: flex;
     align-items: center;
-    padding: var(--space-sm) 0;
-    border-bottom: 1px solid var(--color-gray-300);
-    transition: opacity var(--transition-medium);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-border);
+    transition: opacity var(--transition);
 }
-.task-item.loading {
-    opacity: 0.5;
-}
-.task-item:last-child {
-    border-bottom: none;
-}
+.task-item.loading { opacity: 0.5; }
+.task-item:last-child { border-bottom: none; }
 
 .checkbox {
     width: 24px;
     height: 24px;
-    border: 2px solid var(--color-gray-300);
+    border: 2px solid var(--color-border);
     border-radius: 50%;
-    margin-right: var(--space-sm);
+    margin-right: var(--space-md);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
-    transition: all var(--transition-fast);
+    transition: var(--transition);
 }
-
 .task-item.completed .checkbox {
-    background-color: var(--color-secondary);
-    border-color: var(--color-secondary);
+    background-color: var(--color-success);
+    border-color: var(--color-success);
 }
-
+.check-icon { font-weight: var(--font-weight-bold); }
 .task-text {
     flex-grow: 1;
-    transition: color var(--transition-medium);
+    transition: color var(--transition);
 }
-
 .task-item.completed .task-text {
     text-decoration: line-through;
-    color: var(--color-gray-400);
+    color: var(--color-text-faint);
 }
 
-.task-actions {
-    display: flex;
-    gap: var(--space-xs);
-}
-
+.task-actions { display: flex; gap: var(--space-sm); }
 .task-actions button {
     background: transparent;
     border: none;
     font-size: 1.2rem;
     cursor: pointer;
-    opacity: 0.6;
-    transition: opacity var(--transition-fast);
+    color: var(--color-text-faint);
+    transition: var(--transition);
 }
-.task-actions button:hover {
-    opacity: 1;
+.task-actions button:hover:not(:disabled) { transform: scale(1.1); }
+.edit-btn:hover:not(:disabled) { color: var(--color-accent); }
+.delete-btn:hover:not(:disabled) { color: var(--color-danger); }
+.task-actions button:disabled { cursor: not-allowed; }
+
+/* ✅ CORREÇÃO: Estilos para a área dos botões principais */
+.checklist-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
 }
-.edit-btn { color: var(--color-info); }
-.delete-btn { color: var(--color-danger); }
+
+/* ✅ CORREÇÃO: Estilos para os botões primário e secundário */
+.primary-btn, .secondary-btn {
+    padding: 12px 24px;
+    font-weight: var(--font-weight-bold);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: var(--transition);
+}
+.primary-btn {
+    background-color: var(--color-primary);
+    color: white;
+}
+.primary-btn:hover {
+    background-color: var(--color-primary-dark);
+}
+.secondary-btn {
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+.secondary-btn:hover {
+    background-color: var(--color-border);
+}
+
+/* ✅ CORREÇÃO: Estilos para o formulário no modal */
+.modal-form input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    margin-bottom: var(--space-lg);
+}
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+}

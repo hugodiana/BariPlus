@@ -1,19 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
-
-import './ConsultasPage.css';
+import { fetchApi } from '../utils/api';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
+import './ConsultasPage.css';
 
 const ConsultasPage = () => {
     const [consultas, setConsultas] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [itemLoading, setItemLoading] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [consultaEmEdicao, setConsultaEmEdicao] = useState(null);
 
@@ -21,13 +20,10 @@ const ConsultasPage = () => {
         especialidade: '', data: '', local: '', notas: '', status: 'Agendado'
     });
 
-    const token = localStorage.getItem('bariplus_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
-
     const fetchConsultas = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch(`${apiUrl}/api/consultas`, { headers: { 'Authorization': `Bearer ${token}` } });
+            const res = await fetchApi('/api/consultas');
             if (!res.ok) throw new Error("Falha ao carregar consultas.");
             const data = await res.json();
             setConsultas(data);
@@ -36,7 +32,7 @@ const ConsultasPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [token, apiUrl]);
+    }, []);
 
     useEffect(() => { fetchConsultas(); }, [fetchConsultas]);
     
@@ -66,20 +62,18 @@ const ConsultasPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         const isEditing = !!consultaEmEdicao;
-        const url = isEditing ? `${apiUrl}/api/consultas/${consultaEmEdicao._id}` : `${apiUrl}/api/consultas`;
+        const url = isEditing ? `/api/consultas/${consultaEmEdicao._id}` : `/api/consultas`;
         const method = isEditing ? 'PUT' : 'POST';
-        // ✅ CORREÇÃO: Garante que a data local é convertida para o formato universal (ISO)
         const dadosConsulta = { ...formState, data: new Date(formState.data).toISOString() };
 
         try {
-            const res = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(dadosConsulta) // ✅ Envia os dados corrigidos
+            const res = await fetchApi(url, {
+                method,
+                body: JSON.stringify(dadosConsulta)
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Falha ao salvar consulta');
-            toast.success(`Consulta ${isEditing ? 'atualizada' : 'agendada'} com sucesso!`);
+            toast.success(`Consulta ${isEditing ? 'atualizada' : 'agendada'}!`);
             setIsModalOpen(false);
             fetchConsultas();
         } catch (error) {
@@ -89,64 +83,73 @@ const ConsultasPage = () => {
     
     const handleApagarConsulta = async (consultaId) => {
         if (window.confirm("Tem certeza que deseja apagar esta consulta?")) {
-            setItemLoading(consultaId);
             try {
-                const res = await fetch(`${apiUrl}/api/consultas/${consultaId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const res = await fetchApi(`/api/consultas/${consultaId}`, { method: 'DELETE' });
                 if (!res.ok) throw new Error("Falha ao apagar consulta.");
                 toast.info("Consulta apagada.");
                 fetchConsultas();
             } catch (error) {
                 toast.error(error.message);
-            } finally {
-                setItemLoading(null);
             }
         }
     };
 
-    if (loading) return <LoadingSpinner />;
+    const { proximasConsultas, consultasAnteriores, proximaConsultaDestaque } = useMemo(() => {
+        const hoje = new Date();
+        const futuras = consultas
+            .filter(c => parseISO(c.data) >= hoje && c.status === 'Agendado')
+            .sort((a, b) => new Date(a.data) - new Date(b.data));
+        const passadas = consultas
+            .filter(c => parseISO(c.data) < hoje)
+            .sort((a, b) => new Date(b.data) - new Date(a.data));
+        
+        return {
+            proximasConsultas: futuras,
+            consultasAnteriores: passadas,
+            proximaConsultaDestaque: futuras[0] || null
+        };
+    }, [consultas]);
 
-    const hoje = new Date();
-    const proximasConsultas = consultas.filter(c => parseISO(c.data) >= hoje).sort((a, b) => new Date(a.data) - new Date(b.data));
-    const consultasAnteriores = consultas.filter(c => parseISO(c.data) < hoje).sort((a, b) => new Date(b.data) - new Date(a.data));
-    const diasComConsulta = consultas.map(c => parseISO(c.data));
+    const diasComConsulta = useMemo(() => consultas.map(c => parseISO(c.data)), [consultas]);
+
+    if (loading) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>As Minhas Consultas</h1>
+                <h1>Minhas Consultas</h1>
                 <p>Registe e organize todos os seus compromissos médicos.</p>
             </div>
             
+            {proximaConsultaDestaque && <ProximaConsultaCard consulta={proximaConsultaDestaque} />}
+            
             <div className="consultas-layout">
                 <Card className="calendario-card">
-                    <DayPicker mode="single" modifiers={{ comConsulta: diasComConsulta }} modifiersClassNames={{ comConsulta: 'dia-com-consulta' }} locale={ptBR} showOutsideDays />
+                    <DayPicker mode="multiple" selected={diasComConsulta} locale={ptBR} showOutsideDays />
                 </Card>
                 <div className="consultas-list-container">
-                    <Card className="lista-consultas-card">
+                    <Card>
                         <div className="lista-header">
                             <h3>Próximas Consultas</h3>
                             <button className="add-btn" onClick={handleOpenModalParaAdicionar}>+ Agendar</button>
                         </div>
                         {proximasConsultas.length > 0 ? (
-                            <ul> {proximasConsultas.map(c => <ConsultaItem key={c._id} consulta={c} loading={itemLoading === c._id} onEdit={handleOpenModalParaEditar} onDelete={handleApagarConsulta} />)} </ul>
-                        ) : ( <p className="empty-list-message">Nenhuma consulta futura agendada.</p> )}
+                            <ul className="consultas-list"> {proximasConsultas.map(c => <ConsultaItem key={c._id} consulta={c} onEdit={handleOpenModalParaEditar} onDelete={handleApagarConsulta} />)} </ul>
+                        ) : ( <div className="empty-state"><span className="empty-icon">🗓️</span><p>Nenhuma consulta futura agendada.</p></div> )}
                     </Card>
 
-                    <Card className="lista-consultas-card">
+                    <Card>
                         <div className="lista-header"><h3>Consultas Anteriores</h3></div>
                         {consultasAnteriores.length > 0 ? (
-                            <ul> {consultasAnteriores.map(c => <ConsultaItem key={c._id} consulta={c} loading={itemLoading === c._id} onEdit={handleOpenModalParaEditar} onDelete={handleApagarConsulta} />)} </ul>
-                        ) : ( <p className="empty-list-message">Nenhum histórico de consultas.</p> )}
+                            <ul className="consultas-list"> {consultasAnteriores.map(c => <ConsultaItem key={c._id} consulta={c} onEdit={handleOpenModalParaEditar} onDelete={handleApagarConsulta} />)} </ul>
+                        ) : ( <div className="empty-state"><span className="empty-icon">📂</span><p>Nenhum histórico de consultas.</p></div> )}
                     </Card>
                 </div>
             </div>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
                 <h2>{consultaEmEdicao ? 'Editar Consulta' : 'Agendar Nova Consulta'}</h2>
-                <form onSubmit={handleSubmit} className="consulta-form">
+                <form onSubmit={handleSubmit} className="modal-form">
                     <div className="form-row">
                         <div className="form-group">
                             <label>Especialidade</label>
@@ -173,24 +176,49 @@ const ConsultasPage = () => {
                         <label>Notas</label>
                         <textarea name="notas" placeholder="Ex: Levar últimos exames." value={formState.notas} onChange={handleInputChange}></textarea>
                     </div>
-                    <button type="submit">{consultaEmEdicao ? 'Salvar Alterações' : 'Salvar Consulta'}</button>
+                    <div className="form-actions">
+                        <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                        <button type="submit" className="primary-btn">{consultaEmEdicao ? 'Salvar' : 'Agendar'}</button>
+                    </div>
                 </form>
             </Modal>
         </div>
     );
 };
 
-const ConsultaItem = ({ consulta, loading, onEdit, onDelete }) => (
-    <li className={loading ? 'loading' : ''}>
+const ProximaConsultaCard = ({ consulta }) => {
+    const diasRestantes = differenceInDays(parseISO(consulta.data), new Date());
+    return (
+        <Card className="proxima-consulta-card">
+            <div className="proxima-consulta-header">
+                <span>Sua Próxima Consulta</span>
+                <span className="countdown">
+                    {diasRestantes > 0 ? `em ${diasRestantes} dia(s)` : 'é hoje!'}
+                </span>
+            </div>
+            <div className="proxima-consulta-body">
+                <h3>{consulta.especialidade}</h3>
+                <p>{format(parseISO(consulta.data), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}</p>
+            </div>
+        </Card>
+    );
+};
+
+const ConsultaItem = ({ consulta, onEdit, onDelete }) => (
+    <li className={`consulta-item status-${consulta.status?.toLowerCase()}`}>
         <div className="consulta-data">
             <span>{format(parseISO(consulta.data), 'dd')}</span>
             <span>{format(parseISO(consulta.data), 'MMM', { locale: ptBR })}</span>
         </div>
         <div className="consulta-info">
             <strong>{consulta.especialidade}</strong>
-            <span className={`status-badge status-${consulta.status?.toLowerCase()}`}>{consulta.status}</span>
-            <span>{format(parseISO(consulta.data), 'p', { locale: ptBR })} - {consulta.local || 'Local não informado'}</span>
-            {consulta.notas && <small>Nota: {consulta.notas}</small>}
+            <span className="consulta-details">
+                {format(parseISO(consulta.data), 'p', { locale: ptBR })} - {consulta.local || 'Local não informado'}
+            </span>
+            {consulta.notas && <small className="consulta-notas">Nota: {consulta.notas}</small>}
+        </div>
+        <div className="consulta-status">
+            <span className={`status-badge`}>{consulta.status}</span>
         </div>
         <div className="consulta-actions">
             <button onClick={() => onEdit(consulta)} className="action-btn edit-btn">✎</button>
