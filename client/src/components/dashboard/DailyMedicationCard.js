@@ -3,15 +3,21 @@ import { Link } from 'react-router-dom';
 import Card from '../ui/Card';
 import './DailyMedicationCard.css';
 
-const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
-    const hoje = new Date().toISOString().split('T')[0];
-    const historicoDeHoje = (historico && historico[hoje]) || {};
-
-    // Filtra apenas os medicamentos que têm doses agendadas para hoje
+const DailyMedicationCard = ({ medicamentos, logDoDia, onToggleToma, isReadOnly = false }) => {
+    
+    // ✅ CORREÇÃO: Lógica para filtrar medicamentos do dia, incluindo semanais
     const medicamentosDeHoje = medicamentos.filter(med => {
         if (med.status !== 'Ativo') return false;
-        if (med.frequencia.tipo === 'Diária' && med.frequencia.horarios?.length > 0) return true;
-        if (med.frequencia.tipo === 'Semanal' && med.frequencia.diaDaSemana === new Date().getDay()) return true;
+        
+        const hoje = new Date();
+        const diaDaSemanaHoje = hoje.getDay(); // 0 = Domingo, 1 = Segunda, ...
+
+        if (med.frequencia.tipo === 'Diária') {
+            return true;
+        }
+        if (med.frequencia.tipo === 'Semanal' && med.frequencia.diaDaSemana === diaDaSemanaHoje) {
+            return true;
+        }
         return false;
     });
 
@@ -23,8 +29,8 @@ const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
             {medicamentosDeHoje.length > 0 ? (
                 <ul className="med-list">
                     {medicamentosDeHoje.map(med => {
-                        const tomasDeHoje = historicoDeHoje[med._id] || 0;
-                        const totalDoses = med.frequencia.horarios?.length || 0;
+                        // A lógica para diários e semanais é a mesma: iterar sobre os horários
+                        const horarios = med.frequencia.horarios || [];
 
                         return (
                             <li key={med._id} className="med-item">
@@ -33,13 +39,17 @@ const DailyMedicationCard = ({ medicamentos, historico, onToggleToma }) => {
                                     <span>{med.dosagem || `${med.quantidade} ${med.unidade}`}</span>
                                 </div>
                                 <div className="med-checks">
-                                    {med.frequencia.horarios.map((horario, index) => {
-                                        const foiTomado = index < tomasDeHoje;
+                                    {horarios.map((horario, index) => {
+                                        // ✅ CORREÇÃO: Verifica se a dose foi tomada com base no logDoDia
+                                        const foiTomado = logDoDia.dosesTomadas.some(
+                                            dose => dose.medicationId === med._id && dose.horario === horario
+                                        );
                                         return (
                                             <div key={index} className="dose-item">
                                                 <button
                                                     className={`med-checkbox ${foiTomado ? 'taken' : ''}`}
-                                                    onClick={() => onToggleToma(med._id, totalDoses)}
+                                                    onClick={() => onToggleToma(med, horario)}
+                                                    disabled={isReadOnly} // ✅ NOVO: Desativa o botão se for read-only
                                                     aria-label={`Marcar dose das ${horario}`}
                                                 >
                                                     {foiTomado && '✓'}

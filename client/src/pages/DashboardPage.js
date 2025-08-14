@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { format, differenceInDays, parseISO, isToday, startOfMonth, endOfMonth } from 'date-fns';
+import { format, parseISO, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
-import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { fetchApi } from '../utils/api';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
@@ -17,55 +16,27 @@ import './DashboardPage.css';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const calcularPeriodo = (dataInicio, dataFim) => {
-    let anos = dataFim.getFullYear() - dataInicio.getFullYear();
-    let meses = dataFim.getMonth() - dataInicio.getMonth();
-    let dias = dataFim.getDate() - dataInicio.getDate();
-
-    if (dias < 0) {
-        meses--;
-        dias += new Date(dataFim.getFullYear(), dataFim.getMonth(), 0).getDate();
-    }
-    if (meses < 0) {
-        anos--;
-        meses += 12;
-    }
-    
-    const parts = [];
-    if (anos > 0) parts.push(`${anos} ${anos > 1 ? 'anos' : 'ano'}`);
-    if (meses > 0) parts.push(`${meses} ${meses > 1 ? 'meses' : 'mês'}`);
-    if (dias > 0 || parts.length === 0) parts.push(`${dias} ${dias === 1 ? 'dia' : 'dias'}`);
-    
-    return parts.join(', ');
-};
-
 const DashboardPage = () => {
     const [usuario, setUsuario] = useState(null);
-    const [pesos, setPesos] = useState([]);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
-    const [medicationData, setMedicationData] = useState({ medicamentos: [], historico: {} });
-    const [foodLog, setFoodLog] = useState(null);
-    const [gastos, setGastos] = useState([]);
-    const [exames, setExames] = useState({ examEntries: [] });
+    const [medicationData, setMedicationData] = useState({ medicamentos: [], logDoDia: { dosesTomadas: [] } });
     const [conteudos, setConteudos] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
-    const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchDashboardData = useCallback(async () => {
         setLoading(true);
         try {
             const today = new Date().toISOString().split('T')[0];
-            const year = new Date().getFullYear();
-            const month = new Date().getMonth() + 1;
             
+            // ✅ CORREÇÃO: Adicionamos a busca pelo log de medicação do dia
             const endpoints = [
-                '/api/me', `/api/food-diary/${today}`, '/api/checklist', '/api/consultas',
-                '/api/medication', '/api/pesos', '/api/dailylog/today',
-                `/api/gastos?year=${year}&month=${month}`, '/api/exams', '/api/conteudos'
+                '/api/me', '/api/checklist', '/api/consultas',
+                '/api/medication/list', '/api/dailylog/today', '/api/conteudos',
+                `/api/medication/log/${today}`
             ];
 
             const responses = await Promise.all(endpoints.map(endpoint => fetchApi(endpoint)));
@@ -74,20 +45,19 @@ const DashboardPage = () => {
             }
 
             const [
-                dadosUsuario, dadosFoodLog, dadosChecklist, dadosConsultas, dadosMedication,
-                dadosPesos, dadosLog, dadosGastos, dadosExames, dadosConteudos
+                dadosUsuario, dadosChecklist, dadosConsultas, dadosMedicationList,
+                dadosLog, dadosConteudos, dadosMedicationLog
             ] = await Promise.all(responses.map(res => res.json()));
 
             setUsuario(dadosUsuario);
-            setFoodLog(dadosFoodLog);
             setChecklist(dadosChecklist);
             setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
-            setMedicationData(dadosMedication);
-            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
+            setMedicationData({ 
+                medicamentos: dadosMedicationList.medicamentos || [], 
+                logDoDia: dadosMedicationLog || { dosesTomadas: [] }
+            });
             setDailyLog(dadosLog);
-            setExames(dadosExames);
             setConteudos(dadosConteudos);
-            setGastos(Array.isArray(dadosGastos) ? dadosGastos : dadosGastos?.registros || []);
 
         } catch (error) {
             if (!error.message.includes('Sessão expirada')) {
@@ -96,7 +66,7 @@ const DashboardPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [apiUrl]);
+    }, []);
 
     useEffect(() => {
         fetchDashboardData();
@@ -147,28 +117,9 @@ const DashboardPage = () => {
         }
     };
     
-    const handleToggleMedToma = async (medId, totalDoses) => {
-        const hoje = new Date().toISOString().split('T')[0];
-        const historicoDeHoje = medicationData.historico?.[hoje] || {};
-        const tomasAtuais = historicoDeHoje[medId] || 0;
-        const novasTomas = (tomasAtuais + 1) > totalDoses ? 0 : tomasAtuais + 1;
-
-        const originalState = { ...medicationData };
-        setMedicationData(prev => {
-            const newHistory = { ...prev.historico };
-            newHistory[hoje] = { ...newHistory[hoje], [medId]: novasTomas };
-            return { ...prev, historico: newHistory };
-        });
-
-        try {
-            await fetchApi('/api/medication/log', {
-                method: 'POST',
-                body: JSON.stringify({ date: hoje, medId: medId, count: novasTomas })
-            });
-        } catch (error) {
-            toast.error('Erro ao atualizar medicação. A reverter.');
-            setMedicationData(originalState);
-        }
+    // ✅ CORREÇÃO: Esta função agora é apenas um placeholder, não realiza ações.
+    const handleToggleMedToma = () => {
+        toast.info("Para registrar uma dose, por favor, vá para a página de Medicação.");
     };
 
     const handleUserUpdate = (updatedUser) => {
@@ -204,7 +155,7 @@ const DashboardPage = () => {
             };
         }
         
-        if (dailyLog && dailyLog.waterConsumed < (usuario.detalhesCirurgia?.metaAguaDiaria || 2000)) {
+        if (dailyLog && dailyLog.waterConsumed < (usuario.metaAguaDiaria || 2000)) {
              return {
                 tipo: 'meta', icone: '💧', titulo: 'Mantenha-se Hidratado',
                 descricao: 'Continue a registar o seu consumo de água para atingir a sua meta diária.',
@@ -247,19 +198,24 @@ const DashboardPage = () => {
             <div className="dashboard-main-grid">
                 <div className="dashboard-coluna-principal">
                     {dailyLog && <DailyGoalsCard log={dailyLog} onTrack={handleTrack} usuario={usuario} onUserUpdate={handleUserUpdate} />}
-                    {medicationData?.medicamentos?.length > 0 && <DailyMedicationCard medicamentos={medicationData.medicamentos} historico={medicationData.historico || {}} onToggleToma={handleToggleMedToma} />}
+                    {medicationData?.medicamentos?.length > 0 && 
+                        <DailyMedicationCard 
+                            medicamentos={medicationData.medicamentos} 
+                            logDoDia={medicationData.logDoDia} 
+                            onToggleToma={handleToggleMedToma}
+                            isReadOnly={true} // ✅ NOVO: Passando a propriedade para desativar cliques
+                        />
+                    }
                     <WeightProgressCard usuario={usuario} />
                 </div>
                 <div className="dashboard-coluna-secundaria">
                     <Card className="dashboard-card summary-card">
-                        {/* ✅ Ícone adicionado */}
                         <h3><span className="card-icon">📌</span> Próximas Tarefas</h3>
                         {proximasTarefas.length > 0 ? (
                             <ul className="summary-list">
                                 {proximasTarefas.map(task => <li key={task._id}>{task.descricao}</li>)}
                             </ul>
                         ) : (
-                            // ✅ Empty state melhorado
                             <div className="summary-empty">
                                 <span className="empty-icon">🎉</span>
                                 <p>Nenhuma tarefa pendente!</p>
@@ -268,7 +224,6 @@ const DashboardPage = () => {
                         )}
                     </Card>
                     <Card className="dashboard-card summary-card">
-                        {/* ✅ Ícone adicionado */}
                         <h3><span className="card-icon">🗓️</span> Próximas Consultas</h3>
                         {proximasConsultas.length > 0 ? (
                             <ul className="summary-list">
@@ -279,7 +234,6 @@ const DashboardPage = () => {
                                 ))}
                             </ul>
                         ) : (
-                            // ✅ Empty state melhorado
                             <div className="summary-empty">
                                 <span className="empty-icon">🗓️</span>
                                 <p>Nenhuma consulta agendada.</p>

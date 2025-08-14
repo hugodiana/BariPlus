@@ -1,4 +1,5 @@
 const Medication = require('../models/medicationModel');
+const MedicationLog = require('../models/medicationLogModel');
 
 // GET /api/medication - Buscar os medicamentos e o histórico
 exports.getMedication = async (req, res) => {
@@ -18,6 +19,77 @@ exports.getMedication = async (req, res) => {
     } catch (error) {
         console.error('Erro ao buscar medicamentos:', error);
         res.status(500).json({ message: 'Erro ao buscar medicamentos.' });
+    }
+};
+
+// GET /api/medication/list - Buscar apenas a lista de medicamentos
+exports.getMedicationList = async (req, res) => {
+    try {
+        let doc = await Medication.findOne({ userId: req.userId });
+        if (!doc) {
+            doc = new Medication({ userId: req.userId, medicamentos: [] });
+            await doc.save();
+        }
+        res.json(doc);
+    } catch (error) {
+        console.error('Erro ao buscar lista de medicamentos:', error);
+        res.status(500).json({ message: 'Erro ao buscar medicamentos.' });
+    }
+};
+
+// GET /api/medication/log/:date - Buscar o registro de um dia específico
+exports.getMedicationLogByDate = async (req, res) => {
+    try {
+        const { date } = req.params;
+        let log = await MedicationLog.findOne({ userId: req.userId, date });
+        if (!log) {
+            log = { date, dosesTomadas: [] }; // Retorna um log vazio se não existir
+        }
+        res.json(log);
+    } catch (error) {
+        console.error('Erro ao buscar log de medicação:', error);
+        res.status(500).json({ message: 'Erro ao buscar histórico do dia.' });
+    }
+};
+
+// POST /api/medication/log/toggle - Adicionar ou remover uma dose
+exports.toggleDoseTaken = async (req, res) => {
+    try {
+        const { date, doseInfo } = req.body; // doseInfo = { medicationId, nome, horario, dosagem }
+
+        if (!date || !doseInfo || !doseInfo.medicationId || !doseInfo.horario) {
+            return res.status(400).json({ message: 'Dados insuficientes para registrar a dose.' });
+        }
+
+        const log = await MedicationLog.findOne({ userId: req.userId, date });
+
+        // Verifica se a dose já foi registrada
+        const doseIndex = log ? log.dosesTomadas.findIndex(d => 
+            d.medicationId.toString() === doseInfo.medicationId && d.horario === doseInfo.horario
+        ) : -1;
+
+        let updatedLog;
+
+        if (doseIndex > -1) {
+            // Se a dose existe, remove (desmarca)
+            updatedLog = await MedicationLog.findOneAndUpdate(
+                { userId: req.userId, date },
+                { $pull: { dosesTomadas: { _id: log.dosesTomadas[doseIndex]._id } } },
+                { new: true }
+            );
+        } else {
+            // Se a dose não existe, adiciona (marca)
+            updatedLog = await MedicationLog.findOneAndUpdate(
+                { userId: req.userId, date },
+                { $push: { dosesTomadas: doseInfo } },
+                { new: true, upsert: true } // upsert: true cria o log do dia se ele não existir
+            );
+        }
+
+        res.status(200).json(updatedLog);
+    } catch (error) {
+        console.error('Erro ao registrar/desmarcar dose:', error);
+        res.status(500).json({ message: 'Erro ao processar a dose.' });
     }
 };
 

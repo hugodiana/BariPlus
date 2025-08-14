@@ -82,36 +82,62 @@ app.use(helmet());
 app.use(express.json());
 
 
+
 // --- 2. WEBHOOK DA KIWIFY ---
 app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
     try {
         const kiwifyEvent = req.body;
-        if (kiwifyEvent.order_status === 'paid' || kiwifyEvent.subscription_status === 'active') {
-            const customer = kiwifyEvent.Customer;
-            if (!customer) { return res.sendStatus(400); }
-            const userEmail = customer.email.toLowerCase();
-            const userName = customer.full_name;
+        const customerEmail = kiwifyEvent.Customer?.email?.toLowerCase();
+        const orderStatus = kiwifyEvent.order_status;
+        const subscriptionStatus = kiwifyEvent.subscription_status;
 
-            let usuario = await User.findOne({ email: userEmail });
+        if (!customerEmail) {
+            console.log('Webhook da Kiwify recebido sem e-mail do cliente.');
+            return res.sendStatus(400);
+        }
+
+        // ✅ LÓGICA PARA PAGAMENTO APROVADO
+        if (orderStatus === 'paid' || subscriptionStatus === 'active') {
+            const userName = kiwifyEvent.Customer.full_name;
+            let usuario = await User.findOne({ email: customerEmail });
+
             if (usuario) {
+                // Utilizador já existe, apenas atualiza o status de pagamento
                 usuario.pagamentoEfetuado = true;
                 usuario.kiwifySubscriptionId = kiwifyEvent.order_id;
                 await usuario.save();
+                console.log(`Acesso atualizado para o usuário existente: ${customerEmail}`);
+                
+                // ✅ NOVO: Envia um e-mail de boas-vindas mesmo se o usuário já existir
+                const emailHtml = emailTemplate(
+                    'Seu Acesso ao BariPlus Foi Liberado!',
+                    `Olá, ${usuario.nome}! Confirmamos o seu pagamento. O seu acesso a todas as funcionalidades do BariPlus já está ativo.`,
+                    'Aceder à Minha Conta',
+                    `${process.env.CLIENT_URL}/login`
+                );
+
+                await resend.emails.send({
+                    from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                    to: [customerEmail],
+                    subject: 'Acesso Liberado - BariPlus',
+                    html: emailHtml,
+                });
+
             } else {
-                const tempPassword = crypto.randomBytes(16).toString('hex');
-                const hashedPassword = await bcrypt.hash(tempPassword, 10);
+                // Utilizador não existe, cria uma nova conta
                 const resetToken = crypto.randomBytes(32).toString('hex');
                 const novoUsuario = new User({
                     nome: userName,
-                    email: userEmail,
-                    password: hashedPassword,
+                    email: customerEmail,
+                    password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
                     pagamentoEfetuado: true,
                     kiwifySubscriptionId: kiwifyEvent.order_id,
                     resetPasswordToken: resetToken,
-                    resetPasswordExpires: Date.now() + 24 * 3600000,
+                    resetPasswordExpires: Date.now() + 24 * 3600000, // 24 horas
                 });
                 await novoUsuario.save();
-                
+
+                // Cria os documentos associados (checklist, etc.)
                 await Promise.all([
                     new Checklist({ userId: novoUsuario._id }).save(),
                     new Peso({ userId: novoUsuario._id }).save(),
@@ -119,20 +145,43 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
                     new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
                     new Medication({ userId: novoUsuario._id }).save(),
                     new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-                    new Gasto({ userId: novoUsuario._id, registros: [] }).save(),
+                    new Gasto({ userId: novoUsuario._id }).save(),
                     new Exams({ userId: novoUsuario._id }).save()
                 ]);
+                
+                console.log(`Novo usuário criado e acesso concedido: ${customerEmail}`);
 
-                const resend = new Resend(process.env.RESEND_API_KEY);
                 const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+                const emailHtml = emailTemplate(
+                    'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
+                    `Olá, ${userName}! A sua compra foi aprovada e o seu acesso ao BariPlus foi liberado. Clique no botão abaixo para criar a sua senha de acesso.`,
+                    'Criar Minha Senha',
+                    setupPasswordLink
+                );
+
                 await resend.emails.send({
                     from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
-                    to: [userEmail],
-                    subject: 'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
-                    html: `<h1>Compra Aprovada!</h1><p>Olá, ${userName}!</p><p>O seu acesso ao BariPlus foi liberado. Clique no link abaixo para criar a sua senha de acesso:</p><a href="${setupPasswordLink}">Criar Minha Senha</a>`,
+                    to: [customerEmail],
+                    subject: 'Bem-vindo(a) ao BariPlus!',
+                    html: emailHtml,
                 });
             }
+        } 
+        // ✅ NOVA LÓGICA PARA ESTORNO, CANCELAMENTO OU EXPIRAÇÃO
+        else if (['refunded', 'canceled', 'expired'].includes(orderStatus) || ['canceled', 'expired'].includes(subscriptionStatus)) {
+            const usuario = await User.findOne({
+                $or: [{ email: customerEmail }, { kiwifySubscriptionId: kiwifyEvent.order_id }]
+            });
+
+            if (usuario) {
+                usuario.pagamentoEfetuado = false;
+                await usuario.save();
+                console.log(`Acesso revogado para ${customerEmail} devido ao status: ${orderStatus || subscriptionStatus}`);
+            } else {
+                console.log(`Recebido status de revogação (${orderStatus || subscriptionStatus}) para um usuário não encontrado: ${customerEmail}`);
+            }
         }
+
         res.sendStatus(200);
     } catch (error) {
         console.error('Erro no webhook da Kiwify:', error);

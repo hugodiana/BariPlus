@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Card from '../components/ui/Card';
-import LoadingSpinner from '../components/LoadingSpinner';
 import './PaymentPages.css'; // Usando o mesmo CSS unificado
 
 const PaymentStatusPage = () => {
