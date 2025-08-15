@@ -30,6 +30,7 @@ const AdminLayout = () => {
                 <nav className="sidebar-nav">
                     <NavItem to="/" icon="📊" text="Dashboard" />
                     <NavItem to="/users" icon="👥" text="Usuários" />
+                    <NavLink to="/admin/notifications">Enviar Notificação</NavLink>
                     <NavItem to="/content" icon="📄" text="Conteúdo" />
                 </nav>
                 <div className="sidebar-footer">

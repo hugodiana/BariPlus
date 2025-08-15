@@ -9,6 +9,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import UsersListPage from './pages/UsersListPage';
 import ContentListPage from './pages/ContentListPage';
 import ContentEditPage from './pages/ContentEditPage';
+import SendNotificationPage from './pages/SendNotificationPage';
 
 const PrivateRoute = ({ children }) => {
     const token = localStorage.getItem('bariplus_admin_token');
@@ -36,6 +37,7 @@ function App() {
                         <Route path="content/new" element={<ContentEditPage />} /> 
                         <Route path="content/edit/:id" element={<ContentEditPage />} />
                         <Route path="content" element={<ContentListPage />} />
+                        <Route path="/admin/notifications" element={<AdminLayout><SendNotificationPage /></AdminLayout>} />
                         {/* Redirecionamento para o dashboard caso nenhuma rota filha corresponda */}
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Route>

@@ -1,0 +1,50 @@
+/* src/pages/SendNotificationPage.css */
+
+.notification-form-card {
+    max-width: 700px;
+    margin: 0 auto; /* Centraliza o card na página */
+}
+
+.notification-form .form-group {
+    margin-bottom: var(--space-lg);
+}
+
+.notification-form .form-group label {
+    display: block;
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-primary);
+    margin-bottom: var(--space-sm);
+}
+
+.notification-form .form-group input,
+.notification-form .form-group textarea {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-family: var(--font-family);
+    background-color: var(--color-background);
+    transition: var(--transition);
+}
+
+.notification-form .form-group input:focus,
+.notification-form .form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.notification-form .form-group small {
+    display: block;
+    margin-top: var(--space-xs);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.notification-form .primary-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 1.1rem;
+    margin-top: var(--space-md);
+}

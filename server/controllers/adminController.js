@@ -105,3 +105,55 @@ exports.getStats = async (req, res) => {
         res.status(500).json({ message: "Erro no servidor" });
     }
 };
+
+// ✅ NOVA FUNÇÃO PARA ENVIO EM MASSA
+exports.sendBroadcastNotification = async (req, res) => {
+    try {
+        const { title, body, link } = req.body;
+
+        if (!title || !body) {
+            return res.status(400).json({ message: 'Título e corpo da mensagem são obrigatórios.' });
+        }
+
+        // 1. Busca todos os usuários que têm um token de notificação válido
+        const usersWithTokens = await User.find({ fcmToken: { $exists: true, $ne: null } }).select('fcmToken');
+        
+        if (usersWithTokens.length === 0) {
+            return res.status(404).json({ message: 'Nenhum usuário apto a receber notificações foi encontrado.' });
+        }
+
+        const tokens = usersWithTokens.map(user => user.fcmToken);
+
+        // 2. Monta a mensagem da notificação
+        const message = {
+            notification: {
+                title: title,
+                body: body,
+            },
+            webpush: {
+                // É aqui que a "mágica" do link acontece!
+                fcmOptions: {
+                    link: link || 'https://bariplus.vercel.app' // Usa o link enviado ou um padrão
+                },
+                notification: {
+                    // Adiciona um ícone à notificação (opcional, mas recomendado)
+                    icon: 'https://bariplus.vercel.app/bariplus_logo.png' 
+                }
+            },
+            tokens: tokens, // Envia para todos os tokens encontrados
+        };
+
+        // 3. Envia as mensagens usando o método multicast do Firebase
+        const response = await admin.messaging().sendMulticast(message);
+
+        res.status(200).json({
+            message: 'Notificações enviadas com sucesso!',
+            successCount: response.successCount,
+            failureCount: response.failureCount,
+        });
+
+    } catch (error) {
+        console.error('Erro ao enviar notificações em massa:', error);
+        res.status(500).json({ message: 'Erro no servidor ao tentar enviar notificações.' });
+    }
+};

@@ -13,5 +13,6 @@ router.post('/admin/grant-access/:userId', autenticar, isAdmin, adminController.
 router.post('/admin/users/:userId/revoke-access', autenticar, isAdmin, adminController.revokeAccess);
 router.post('/admin/users/:userId/verify-email', autenticar, isAdmin, adminController.verifyUserEmail);
 router.get('/admin/stats', autenticar, isAdmin, adminController.getStats);
+router.post('/admin/notifications/broadcast', autenticar, isAdmin, adminController.sendBroadcastNotification);
 
 module.exports = router;
