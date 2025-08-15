@@ -214,6 +214,11 @@ cloudinary.config({
 const PORT = process.env.PORT || 3001;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
+// ROTA DE VERIFICAÇÃO DE SAÚDE (PARA MANTER O SERVIÇO ATIVO)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'API is healthy and awake!' });
+});
+
 
 // --- 4. ROTAS DA API ---
 app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPlus API is running!' }));
