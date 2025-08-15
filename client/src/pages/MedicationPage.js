@@ -241,10 +241,16 @@ const MedicationItem = ({ med, logDoDia, selectedDate, onToggleToma, onDelete, o
     const formatarDiasSemana = () => {
         // ✅ CORREÇÃO: Garante que o array exista antes de tentar manipulá-lo
         const dias = med.frequencia.diasDaSemana || [];
-        if (dias.length === 0) return 'Nenhum dia selecionado';
+        if (dias.length === 0) {
+            // Lida com o dado antigo que tinha apenas 'diaDaSemana' como um número
+            if (typeof med.frequencia.diaDaSemana === 'number') {
+                return diasDaSemanaOptions.find(d => d.value === med.frequencia.diaDaSemana)?.label || '';
+            }
+            return 'Nenhum dia selecionado';
+        }
         
         return dias
-            .sort()
+            .sort((a, b) => a - b) // Garante a ordem correta (Dom, Seg, Ter...)
             .map(dia => diasDaSemanaOptions.find(d => d.value === dia)?.label)
             .join(', ');
     };
