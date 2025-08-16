@@ -10,6 +10,9 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const admin = require('firebase-admin');
 
+// ✅ INICIALIZAÇÃO CORRIGIDA: A linha que faltava foi adicionada aqui
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 // IMPORTAÇÃO DO TEMPLATE DE E-MAIL
 const emailTemplate = require('./utils/emailTemplate');
 
@@ -71,6 +74,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(helmet());
 app.use(express.json());
+
 
 // --- 2. WEBHOOK DA KIWIFY ---
 app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
