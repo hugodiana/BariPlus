@@ -10,9 +10,10 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const admin = require('firebase-admin');
 
-const emailTemplate = require('./utils/emailTemplate'); 
+// IMPORTAÇÃO DO TEMPLATE DE E-MAIL
+const emailTemplate = require('./utils/emailTemplate');
 
-// ✅ IMPORTAÇÃO DE TODAS AS ROTAS MODULARIZADAS
+// IMPORTAÇÃO DE TODAS AS ROTAS MODULARIZADAS
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const pesoRoutes = require('./routes/pesoRoutes');
@@ -28,8 +29,7 @@ const conteudoRoutes = require('./routes/conteudoRoutes');
 const tacoRoutes = require('./routes/tacoRoutes');
 const conquistasRoutes = require('./routes/conquistasRoutes');
 
-// ✅ IMPORTAÇÃO DOS MIDDLEWARES E MODELOS
-const autenticar = require('./middlewares/autenticar');
+// IMPORTAÇÃO DOS MIDDLEWARES E MODELOS
 const User = require('./models/userModel');
 const Peso = require('./models/pesoModel');
 const Consulta = require('./models/consultaModel');
@@ -44,8 +44,6 @@ const app = express();
 app.set('trust proxy', 1);
 
 // --- 1. CONFIGURAÇÃO DE MIDDLEWARES ---
-
-// ✅ CORREÇÃO INICIA AQUI
 const whitelist = [
     'https://bariplus.vercel.app', 
     'https://bari-plus.vercel.app',
@@ -55,40 +53,26 @@ const whitelist = [
     'http://localhost:3000',
     'http://localhost:3001', 
     'http://localhost:3002',
-    'https://www.bariplus.com.br', // Domínio principal do app
-    'https://bariplus.com.br',     // Variação sem 'www'
-    'https://admin.bariplus.com.br', // Domínio do painel de administração
+    'https://www.bariplus.com.br',
+    'https://bariplus.com.br',
+    'https://admin.bariplus.com.br',
     'https://bariplus-app.netlify.app'
 ];
-
 const corsOptions = {
     origin: function (origin, callback) {
-        // Este log ajuda a ver no servidor qual origem está a fazer o pedido
-        console.log('Requisição recebida da origem:', origin); 
-        
-        // A lógica agora permite pedidos da whitelist E pedidos sem uma origem definida (como Postman ou outros serviços de servidor)
         if (!origin || whitelist.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            console.error('Origem bloqueada por CORS:', origin); 
             callback(new Error('Não permitido por CORS'));
         }
     },
     credentials: true,
 };
-
-app.use(cors(corsOptions)); // A configuração corrigida é aplicada aqui
-// ✅ CORREÇÃO TERMINA AQUI
-
+app.use(cors(corsOptions));
 app.use(helmet());
 app.use(express.json());
 
-
-
 // --- 2. WEBHOOK DA KIWIFY ---
-// Em server/index.js
-
-// --- WEBHOOK DA KIWIFY (COM LOGS DE DIAGNÓSTICO) ---
 app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
     console.log('--- NOVO EVENTO DO WEBHOOK KIWIFY RECEBIDO ---');
     console.log('Timestamp:', new Date().toISOString());
@@ -145,7 +129,7 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
                     new Exams({ userId: usuario._id }).save()
                 ]);
 
-                console.log(`Enviando e-mail de configuração de senha para ${customerEmail}...`);
+                console.log(`Enviando e-mail de configuração de senha para NOVO usuário ${customerEmail}...`);
                 const resetToken = crypto.randomBytes(32).toString('hex');
                 usuario.resetPasswordToken = resetToken;
                 usuario.resetPasswordExpires = Date.now() + 24 * 3600000;
@@ -154,7 +138,25 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
                 const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
                 const emailHtml = emailTemplate('Bem-vindo(a) ao BariPlus!', `Sua compra foi aprovada. Clique no botão abaixo para criar sua senha.`, 'Criar Minha Senha', setupPasswordLink);
 
-                await resend.emails.send({ from: `BariPlus <contato@bariplus.com>`, to: [customerEmail], subject: 'Bem-vindo(a) ao BariPlus!', html: emailHtml });
+                await resend.emails.send({ from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`, to: [customerEmail], subject: 'Bem-vindo(a) ao BariPlus!', html: emailHtml });
+            
+            } else {
+                console.log(`Enviando e-mail de confirmação de pagamento para usuário EXISTENTE ${customerEmail}...`);
+                
+                const loginLink = `${process.env.CLIENT_URL}/login`;
+                const emailHtml = emailTemplate(
+                    'Seu acesso ao BariPlus foi liberado!',
+                    `Olá, ${usuario.nome}! Confirmamos o seu pagamento e o seu acesso a todas as funcionalidades do BariPlus já está ativo.`,
+                    'Acessar Minha Conta',
+                    loginLink
+                );
+
+                await resend.emails.send({
+                    from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                    to: [customerEmail],
+                    subject: 'Acesso Liberado - BariPlus',
+                    html: emailHtml,
+                });
             }
         }
         else if (['refunded', 'canceled', 'expired'].includes(orderStatus) || ['canceled', 'expired'].includes(subscriptionStatus)) {
@@ -180,14 +182,34 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
 });
 
 
+// --- 3. CONFIGURAÇÕES DE SERVIÇOS ---
+if (process.env.FIREBASE_PRIVATE_KEY) {
+    if (!admin.apps.length) {
+        try {
+            const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
+            const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
+            const serviceAccount = JSON.parse(decodedKey);
+            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+            console.log('Firebase Admin inicializado com sucesso.');
+        } catch (error) { 
+            console.error('Erro ao inicializar Firebase Admin:', error); 
+        }
+    }
+}
 
+cloudinary.config({ 
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET 
+});
 
 const PORT = process.env.PORT || 3001;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));
 
-// ROTA DE VERIFICAÇÃO DE SAÚDE (PARA MANTER O SERVIÇO ATIVO)
+
+// --- ROTA DE VERIFICAÇÃO DE SAÚDE ---
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', message: 'API is healthy and awake!' });
+  res.status(200).json({ status: 'ok', message: 'BariPlus API is healthy and awake!' });
 });
 
 
@@ -206,7 +228,7 @@ app.use('/api', adminRoutes);
 app.use('/api', gastoRoutes);
 app.use('/api', conteudoRoutes);
 app.use('/api', conquistasRoutes);
-app.use('/api/taco', autenticar, tacoRoutes);
+app.use('/api/taco', tacoRoutes);
 
 
 // --- 5. INICIALIZAÇÃO DO SERVIDOR ---
