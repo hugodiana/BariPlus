@@ -122,6 +122,7 @@ exports.sendBroadcastNotification = async (req, res) => {
 
         const tokens = usersWithTokens.map(user => user.fcmToken);
 
+        // A mensagem agora está dentro de um objeto 'multicast'
         const message = {
             notification: {
                 title: title,
@@ -138,7 +139,8 @@ exports.sendBroadcastNotification = async (req, res) => {
             tokens: tokens,
         };
 
-        const response = await admin.messaging().sendMulticast(message);
+        // ✅ CORREÇÃO: A função foi alterada de sendMulticast para sendEachForMulticast
+        const response = await admin.messaging().sendEachForMulticast(message);
 
         res.status(200).json({
             message: 'Notificações enviadas com sucesso!',
