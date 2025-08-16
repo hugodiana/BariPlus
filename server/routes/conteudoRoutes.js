@@ -3,10 +3,12 @@ const router = express.Router();
 const conteudoController = require('../controllers/conteudoController');
 const autenticar = require('../middlewares/autenticar');
 const isAdmin = require('../middlewares/isAdmin');
+const verificarPagamento = require('../middlewares/verificarPagamento');
+
 
 // --- Rotas para o App (Abertas para qualquer usuário logado) ---
-router.get('/conteudos', autenticar, conteudoController.listarConteudosPublicados);
-router.get('/conteudos/:id', autenticar, conteudoController.getConteudoPorId);
+router.get('/conteudos', autenticar, verificarPagamento, conteudoController.listarConteudosPublicados);
+router.get('/conteudos/:id', autenticar, verificarPagamento, conteudoController.getConteudoPorId);
 
 // --- Rotas para o Painel de Admin (Protegidas) ---
 router.post('/admin/conteudos', autenticar, isAdmin, conteudoController.criarConteudo);
