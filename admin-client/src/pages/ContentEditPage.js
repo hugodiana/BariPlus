@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import Card from '../components/ui/Card';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './ContentEditPage.css';
 
 const ContentEditPage = () => {
@@ -17,12 +19,12 @@ const ContentEditPage = () => {
         imagemDeCapa: ''
     });
     const [loading, setLoading] = useState(!!id);
-    const token = localStorage.getItem('bariplus_admin_token');
-    const apiUrl = process.env.REACT_APP_API_URL;
 
     const fetchConteudo = useCallback(async () => {
         if (!id) return;
         try {
+            const token = localStorage.getItem('bariplus_admin_token');
+            const apiUrl = process.env.REACT_APP_API_URL;
             const res = await fetch(`${apiUrl}/api/admin/conteudos/${id}`, { headers: { 'Authorization': `Bearer ${token}` } });
             if (!res.ok) throw new Error("Falha ao carregar conteúdo.");
             const data = await res.json();
@@ -33,7 +35,7 @@ const ContentEditPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [id, token, apiUrl, navigate]);
+    }, [id, navigate]);
 
     useEffect(() => {
         fetchConteudo();
@@ -53,6 +55,8 @@ const ContentEditPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const token = localStorage.getItem('bariplus_admin_token');
+        const apiUrl = process.env.REACT_APP_API_URL;
         const url = id ? `${apiUrl}/api/admin/conteudos/${id}` : `${apiUrl}/api/admin/conteudos`;
         const method = id ? 'PUT' : 'POST';
 
@@ -70,7 +74,7 @@ const ContentEditPage = () => {
         }
     };
     
-    if (loading) return <p>A carregar conteúdo...</p>;
+    if (loading) return <LoadingSpinner />;
 
     return (
         <div className="admin-page-container">
@@ -78,38 +82,44 @@ const ContentEditPage = () => {
                 <h1>{id ? 'Editar Conteúdo' : 'Criar Novo Conteúdo'}</h1>
             </header>
             <form onSubmit={handleSubmit} className="content-form">
-                <div className="form-group">
-                    <label htmlFor="titulo">Título</label>
-                    <input id="titulo" name="titulo" type="text" value={formData.titulo} onChange={handleInputChange} required />
+                <div className="form-main-column">
+                    <Card>
+                        <div className="form-group">
+                            <label htmlFor="titulo">Título</label>
+                            <input id="titulo" name="titulo" type="text" value={formData.titulo} onChange={handleInputChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Conteúdo Completo</label>
+                            <ReactQuill theme="snow" value={formData.conteudoCompleto} onChange={handleQuillChange} />
+                        </div>
+                    </Card>
                 </div>
-                <div className="form-group">
-                    <label htmlFor="resumo">Resumo (aparecerá nos cards)</label>
-                    <textarea id="resumo" name="resumo" value={formData.resumo} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="imagemDeCapa">URL da Imagem de Capa</label>
-                    <input id="imagemDeCapa" name="imagemDeCapa" type="text" value={formData.imagemDeCapa} onChange={handleInputChange} placeholder="https://..." />
-                </div>
-                <div className="form-group">
-                    <label>Conteúdo Completo</label>
-                    <ReactQuill theme="snow" value={formData.conteudoCompleto} onChange={handleQuillChange} />
-                </div>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label htmlFor="tipo">Tipo</label>
-                        <select id="tipo" name="tipo" value={formData.tipo} onChange={handleInputChange}>
-                            <option value="Artigo">Artigo</option>
-                            <option value="Receita">Receita</option>
-                        </select>
-                    </div>
-                    <div className="form-group">
-                        <label>Status</label>
-                        <label className="toggle-switch">
-                            <input type="checkbox" name="publicado" checked={formData.publicado} onChange={handleInputChange} />
-                            <span className="slider"></span>
-                            <span className="label-text">{formData.publicado ? 'Publicado' : 'Rascunho'}</span>
-                        </label>
-                    </div>
+                <div className="form-sidebar-column">
+                    <Card>
+                        <div className="form-group">
+                            <label htmlFor="resumo">Resumo</label>
+                            <textarea id="resumo" name="resumo" value={formData.resumo} onChange={handleInputChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="imagemDeCapa">URL da Imagem de Capa</label>
+                            <input id="imagemDeCapa" name="imagemDeCapa" type="url" value={formData.imagemDeCapa} onChange={handleInputChange} placeholder="https://..." />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="tipo">Tipo</label>
+                            <select id="tipo" name="tipo" value={formData.tipo} onChange={handleInputChange}>
+                                <option value="Artigo">Artigo</option>
+                                <option value="Receita">Receita</option>
+                            </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Status</label>
+                            <label className="toggle-switch">
+                                <input type="checkbox" name="publicado" checked={formData.publicado} onChange={handleInputChange} />
+                                <span className="slider"></span>
+                                <span className="label-text">{formData.publicado ? 'Publicado' : 'Rascunho'}</span>
+                            </label>
+                        </div>
+                    </Card>
                 </div>
                 <div className="form-actions">
                     <button type="button" className="secondary-btn" onClick={() => navigate('/content')}>Cancelar</button>

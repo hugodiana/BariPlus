@@ -1,95 +1,180 @@
-/* src/pages/ConquistasPage.css */
+/* src/pages/ConsultasPage.css - NOVO DESIGN */
+.consultas-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+}
+@media (min-width: 992px) {
+    .consultas-layout {
+        grid-template-columns: 350px 1fr;
+    }
+}
 
-.progress-summary-card {
-    padding: var(--space-lg) !important;
-    margin-bottom: var(--space-xl);
+.calendario-card .rdp {
+    margin: 0 auto;
 }
-.progress-summary-card h3 {
-    margin: 0 0 var(--space-sm) 0;
-    text-align: center;
-    color: var(--color-text-strong);
-}
-.progress-bar-container {
-    background-color: var(--color-border);
-    border-radius: 20px;
-    height: 16px;
-    overflow: hidden;
-}
-.progress-bar-fill {
-    background: linear-gradient(90deg, var(--color-success), var(--color-primary));
-    height: 100%;
-    border-radius: 20px;
-    transition: width 0.5s ease-in-out;
-}
-.progress-details {
+
+.lista-header {
     display: flex;
     justify-content: space-between;
-    margin-top: var(--space-sm);
+    align-items: center;
+    margin-bottom: var(--space-md);
+}
+.lista-header h3 {
+    margin: 0;
+    color: var(--color-text-strong);
+}
+.add-btn {
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: var(--border-radius);
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.add-btn:hover {
+    background-color: var(--color-primary-dark);
+}
+
+/* Card de Próxima Consulta */
+.proxima-consulta-card {
+    margin-bottom: var(--space-xl);
+    background: linear-gradient(135deg, var(--color-primary-light), #fff);
+    border: 1px solid var(--color-primary-light);
+    border-left: 5px solid var(--color-primary);
+}
+.proxima-consulta-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+.proxima-consulta-tag {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 20px;
     font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-bold);
+}
+.countdown {
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
 }
-
-.conquistas-section {
-    margin-bottom: var(--space-xl);
-}
-.conquistas-section h2 {
+.proxima-consulta-body h3 {
+    font-size: 1.8rem;
     color: var(--color-text-strong);
-    padding-bottom: var(--space-sm);
-    border-bottom: 1px solid var(--color-border);
-    margin-bottom: var(--space-lg);
+    margin: 0.5rem 0;
+}
+.proxima-consulta-body p {
+    margin: 0.5rem 0 0 0;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.info-icon {
+    font-size: 1.2rem;
 }
 
-.conquistas-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--space-lg);
+/* Lista e Itens de Consulta */
+.consultas-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
 }
 
-.conquista-item {
+.consulta-item {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--space-md);
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    background-color: var(--color-surface);
-    padding: var(--space-md);
-    border-radius: var(--border-radius);
-    border: 1px solid var(--color-border);
     transition: var(--transition);
 }
+.consulta-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
 
-.conquista-icon {
-    font-size: 2.5rem;
-    width: 60px;
-    height: 60px;
+.status-icon-wrapper {
+    width: 40px;
+    height: 40px;
     flex-shrink: 0;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    font-size: 1.5rem;
 }
-.conquista-info h4 {
-    margin: 0 0 0.25rem 0;
-    color: var(--color-text-strong);
+
+.consulta-info {
+    flex-grow: 1;
 }
-.conquista-info p {
-    font-size: var(--font-size-sm);
+.consulta-info strong {
+    display: block;
+    color: var(--color-text-primary);
+    font-size: 1.1rem;
+}
+.consulta-details {
     color: var(--color-text-secondary);
-    margin: 0;
+    font-size: var(--font-size-sm);
+}
+.consulta-notas {
+    color: var(--color-text-faint);
+    font-size: 0.8rem;
+    margin-top: 4px;
+    display: block;
+    font-style: italic;
 }
 
-/* Estilos para Conquistas Desbloqueadas */
-.conquista-item.unlocked {
-    border-left: 5px solid var(--color-success);
+.consulta-actions {
+    display: flex;
+    gap: var(--space-sm);
 }
-.conquista-item.unlocked .conquista-icon {
+.action-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--color-text-faint);
+    transition: var(--transition);
+}
+.edit-btn:hover {
+    color: var(--color-accent);
+}
+.delete-btn:hover {
+    color: var(--color-danger);
+}
+
+/* Status Cores e Estilos */
+.status-agendado .status-icon-wrapper {
     background-color: var(--color-primary-light);
+    color: var(--color-primary);
+}
+.status-realizado .status-icon-wrapper {
+    background-color: #eaf6ec;
+    color: var(--color-success);
+}
+.status-cancelado .status-icon-wrapper {
+    background-color: #fbeeeC;
+    color: var(--color-danger);
 }
 
-/* Estilos para Conquistas Bloqueadas */
-.conquista-item.locked {
-    filter: grayscale(1);
+.status-realizado,
+.status-cancelado {
     opacity: 0.7;
+    background-color: #fafafa;
 }
-.conquista-item.locked .conquista-icon {
-    background-color: var(--color-background);
+.status-realizado .consulta-info *,
+.status-cancelado .consulta-info * {
+    text-decoration: line-through;
+    color: var(--color-text-faint) !important;
 }

@@ -8,6 +8,7 @@ import { fetchApi } from '../utils/api';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EmptyState from '../components/EmptyState';
 import './ConsultasPage.css';
 
 const ConsultasPage = () => {
@@ -97,7 +98,7 @@ const ConsultasPage = () => {
     const { proximasConsultas, consultasAnteriores, proximaConsultaDestaque } = useMemo(() => {
         const hoje = new Date();
         const futuras = consultas
-            .filter(c => parseISO(c.data) >= hoje && c.status === 'Agendado')
+            .filter(c => parseISO(c.data) >= hoje)
             .sort((a, b) => new Date(a.data) - new Date(b.data));
         const passadas = consultas
             .filter(c => parseISO(c.data) < hoje)
@@ -106,7 +107,7 @@ const ConsultasPage = () => {
         return {
             proximasConsultas: futuras,
             consultasAnteriores: passadas,
-            proximaConsultaDestaque: futuras[0] || null
+            proximaConsultaDestaque: futuras.find(c => c.status === 'Agendado') || null
         };
     }, [consultas]);
 
@@ -135,15 +136,15 @@ const ConsultasPage = () => {
                         </div>
                         {proximasConsultas.length > 0 ? (
                             <ul className="consultas-list"> {proximasConsultas.map(c => <ConsultaItem key={c._id} consulta={c} onEdit={handleOpenModalParaEditar} onDelete={handleApagarConsulta} />)} </ul>
-                        ) : ( <div className="empty-state"><span className="empty-icon">🗓️</span><p>Nenhuma consulta futura agendada.</p></div> )}
+                        ) : ( <EmptyState title="Tudo em dia!" message="Você não tem nenhuma consulta futura agendada." /> )}
                     </Card>
 
-                    <Card>
-                        <div className="lista-header"><h3>Consultas Anteriores</h3></div>
-                        {consultasAnteriores.length > 0 ? (
+                    {consultasAnteriores.length > 0 && (
+                        <Card>
+                            <div className="lista-header"><h3>Consultas Anteriores</h3></div>
                             <ul className="consultas-list"> {consultasAnteriores.map(c => <ConsultaItem key={c._id} consulta={c} onEdit={handleOpenModalParaEditar} onDelete={handleApagarConsulta} />)} </ul>
-                        ) : ( <div className="empty-state"><span className="empty-icon">📂</span><p>Nenhum histórico de consultas.</p></div> )}
-                    </Card>
+                        </Card>
+                    )}
                 </div>
             </div>
 
@@ -151,31 +152,12 @@ const ConsultasPage = () => {
                 <h2>{consultaEmEdicao ? 'Editar Consulta' : 'Agendar Nova Consulta'}</h2>
                 <form onSubmit={handleSubmit} className="modal-form">
                     <div className="form-row">
-                        <div className="form-group">
-                            <label>Especialidade</label>
-                            <input name="especialidade" type="text" placeholder="Ex: Nutricionista" value={formState.especialidade} onChange={handleInputChange} required />
-                        </div>
-                        <div className="form-group">
-                            <label>Status</label>
-                            <select name="status" value={formState.status} onChange={handleInputChange}>
-                                <option value="Agendado">Agendado</option>
-                                <option value="Realizado">Realizado</option>
-                                <option value="Cancelado">Cancelado</option>
-                            </select>
-                        </div>
+                        <div className="form-group"><label>Especialidade</label><input name="especialidade" type="text" placeholder="Ex: Nutricionista" value={formState.especialidade} onChange={handleInputChange} required /></div>
+                        <div className="form-group"><label>Status</label><select name="status" value={formState.status} onChange={handleInputChange}><option value="Agendado">Agendado</option><option value="Realizado">Realizado</option><option value="Cancelado">Cancelado</option></select></div>
                     </div>
-                    <div className="form-group">
-                        <label>Data e Hora</label>
-                        <input name="data" type="datetime-local" value={formState.data} onChange={handleInputChange} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Local</label>
-                        <input name="local" type="text" placeholder="Ex: Consultório Dr. Silva" value={formState.local} onChange={handleInputChange} />
-                    </div>
-                    <div className="form-group">
-                        <label>Notas</label>
-                        <textarea name="notas" placeholder="Ex: Levar últimos exames." value={formState.notas} onChange={handleInputChange}></textarea>
-                    </div>
+                    <div className="form-group"><label>Data e Hora</label><input name="data" type="datetime-local" value={formState.data} onChange={handleInputChange} required /></div>
+                    <div className="form-group"><label>Local</label><input name="local" type="text" placeholder="Ex: Consultório Dr. Silva" value={formState.local} onChange={handleInputChange} /></div>
+                    <div className="form-group"><label>Notas</label><textarea name="notas" placeholder="Ex: Levar últimos exames." value={formState.notas} onChange={handleInputChange}></textarea></div>
                     <div className="form-actions">
                         <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancelar</button>
                         <button type="submit" className="primary-btn">{consultaEmEdicao ? 'Salvar' : 'Agendar'}</button>
@@ -188,43 +170,59 @@ const ConsultasPage = () => {
 
 const ProximaConsultaCard = ({ consulta }) => {
     const diasRestantes = differenceInDays(parseISO(consulta.data), new Date());
+    let countdownText = 'É hoje!';
+    if (diasRestantes > 0) {
+        countdownText = `em ${diasRestantes} ${diasRestantes === 1 ? 'dia' : 'dias'}`;
+    }
+
     return (
         <Card className="proxima-consulta-card">
             <div className="proxima-consulta-header">
-                <span>Sua Próxima Consulta</span>
-                <span className="countdown">
-                    {diasRestantes > 0 ? `em ${diasRestantes} dia(s)` : 'é hoje!'}
-                </span>
+                <span className="proxima-consulta-tag">Próxima Consulta</span>
+                <span className="countdown">{countdownText}</span>
             </div>
             <div className="proxima-consulta-body">
                 <h3>{consulta.especialidade}</h3>
-                <p>{format(parseISO(consulta.data), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}</p>
+                <p>
+                    <span className="info-icon">🗓️</span>
+                    {format(parseISO(consulta.data), "EEEE, dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
+                </p>
+                {consulta.local && (
+                    <p>
+                        <span className="info-icon">📍</span>
+                        {consulta.local}
+                    </p>
+                )}
             </div>
         </Card>
     );
 };
 
-const ConsultaItem = ({ consulta, onEdit, onDelete }) => (
-    <li className={`consulta-item status-${consulta.status?.toLowerCase()}`}>
-        <div className="consulta-data">
-            <span>{format(parseISO(consulta.data), 'dd')}</span>
-            <span>{format(parseISO(consulta.data), 'MMM', { locale: ptBR })}</span>
-        </div>
-        <div className="consulta-info">
-            <strong>{consulta.especialidade}</strong>
-            <span className="consulta-details">
-                {format(parseISO(consulta.data), 'p', { locale: ptBR })} - {consulta.local || 'Local não informado'}
-            </span>
-            {consulta.notas && <small className="consulta-notas">Nota: {consulta.notas}</small>}
-        </div>
-        <div className="consulta-status">
-            <span className={`status-badge`}>{consulta.status}</span>
-        </div>
-        <div className="consulta-actions">
-            <button onClick={() => onEdit(consulta)} className="action-btn edit-btn">✎</button>
-            <button onClick={() => onDelete(consulta._id)} className="action-btn delete-btn">×</button>
-        </div>
-    </li>
-);
+const ConsultaItem = ({ consulta, onEdit, onDelete }) => {
+    const statusInfo = {
+        Agendado: { icon: '🔔', className: 'agendado' },
+        Realizado: { icon: '✅', className: 'realizado' },
+        Cancelado: { icon: '❌', className: 'cancelado' },
+    };
+    const { icon, className } = statusInfo[consulta.status] || { icon: '🔔', className: 'agendado' };
+
+    return (
+        <li className={`consulta-item status-${className}`}>
+            <div className={`status-icon-wrapper`}>{icon}</div>
+            <div className="consulta-info">
+                <strong>{consulta.especialidade}</strong>
+                <span className="consulta-details">
+                    {format(parseISO(consulta.data), "dd/MM/yy 'às' p", { locale: ptBR })}
+                    {consulta.local && ` • ${consulta.local}`}
+                </span>
+                {consulta.notas && <small className="consulta-notas">Nota: {consulta.notas}</small>}
+            </div>
+            <div className="consulta-actions">
+                <button onClick={() => onEdit(consulta)} className="action-btn edit-btn">✎</button>
+                <button onClick={() => onDelete(consulta._id)} className="action-btn delete-btn">×</button>
+            </div>
+        </li>
+    );
+};
 
 export default ConsultasPage;

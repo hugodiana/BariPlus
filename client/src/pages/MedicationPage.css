@@ -1,44 +1,42 @@
-/* src/pages/MedicationPage.css */
+/* src/pages/MedicationPage.css - NOVO DESIGN */
+.page-header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-lg);
+}
 
-.proxima-dose-card {
-    background: var(--color-primary-light);
-    border-left: 5px solid var(--color-primary);
+.date-selector-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: var(--space-xl);
-    padding: var(--space-lg) !important;
+    padding: var(--space-md) !important;
 }
-.proxima-dose-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: var(--color-primary);
-    font-weight: var(--font-weight-bold);
-    margin-bottom: var(--space-sm);
-}
-.proxima-dose-horario {
+.date-selector-card button {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: bold;
     font-size: 1.5rem;
+    width: 44px;
+    height: 44px;
+    transition: var(--transition);
 }
-.proxima-dose-body strong {
+.date-selector-card button:hover {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+}
+.date-selector-card input[type="date"] {
+    border: none;
     font-size: 1.2rem;
+    font-weight: bold;
+    background: transparent;
     color: var(--color-text-strong);
-    display: block;
-}
-.proxima-dose-body span {
-    color: var(--color-text-secondary);
+    text-align: center;
 }
 
-.medication-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-md);
-    margin-bottom: var(--space-md);
-}
-.medication-header h3 { 
-    margin: 0; 
-    font-size: 1.3rem;
-    color: var(--color-text-strong);
-}
 .add-btn {
     background-color: var(--color-primary);
     color: white;
@@ -53,172 +51,105 @@
     background-color: var(--color-primary-dark);
 }
 
-.medication-list {
+.medication-layout {
     display: flex;
     flex-direction: column;
     gap: var(--space-lg);
 }
 
-.med-item {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--space-md) var(--space-lg);
-    align-items: center;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-lg);
-}
-.med-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-.med-item.status-inativo {
-    opacity: 0.6;
-}
-.med-info strong { 
-    display: block; 
-    font-size: 1.1rem; 
-    font-weight: var(--font-weight-bold);
-    color: var(--color-text-primary);
-}
-.med-info span { 
-    font-size: var(--font-size-sm); 
-    color: var(--color-text-secondary); 
-}
-.med-horarios .horario-tag {
-    background-color: var(--color-primary-light);
-    color: var(--color-primary);
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
+.med-group-card {
+    padding: var(--space-lg) !important;
 }
 
-.med-checks {
+.med-group-header {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-md);
-    justify-content: flex-end;
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid var(--color-border);
 }
-.dose-item {
+.med-group-header h3 {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 1.5rem;
+}
+.med-group-icon {
+    font-size: 1.5rem;
+}
+
+.med-group-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: var(--space-xs);
+    gap: var(--space-md);
 }
-.med-checkbox {
-    width: 36px;
-    height: 36px;
-    border: 2px solid var(--color-border);
-    border-radius: 50%;
-    background: none;
+
+.med-list-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
     cursor: pointer;
+    transition: var(--transition);
+}
+.med-list-item:hover {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+}
+
+.med-item-checkbox {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border: 2px solid var(--color-text-faint);
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
-    font-size: 1.2rem;
-    font-weight: bold;
+    font-weight: var(--font-weight-bold);
     color: white;
     transition: var(--transition);
 }
-.med-checkbox:hover {
-    border-color: var(--color-text-faint);
+
+.med-item-info strong {
+    color: var(--color-text-primary);
 }
-.med-checkbox.taken {
+.med-item-info span {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+/* Estilo para item "tomado" */
+.med-list-item.taken {
+    background-color: #f0fdf4;
+    border-color: var(--color-success);
+}
+.med-list-item.taken .med-item-checkbox {
     background-color: var(--color-success);
     border-color: var(--color-success);
 }
-.dose-time {
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
+.med-list-item.taken .med-item-info strong {
+    text-decoration: line-through;
+    color: var(--color-text-faint);
 }
 
-.med-actions {
-    grid-column: 1 / -1;
-    display: flex;
-    gap: var(--space-sm);
-    padding-top: var(--space-md);
-    border-top: 1px solid var(--color-border);
-    margin-top: var(--space-md);
-}
-.action-btn {
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--border-radius);
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
-    border: 1px solid;
-    background: transparent;
-    font-size: 0.85rem;
-}
-.archive-btn { color: var(--color-accent); border-color: var(--color-accent); }
-.delete-btn { color: var(--color-danger); border-color: var(--color-danger); }
-
-.inactive-toggle {
-    text-align: center;
-    margin-top: var(--space-xl);
-    color: var(--color-accent);
-    font-weight: bold;
-    cursor: pointer;
-    padding: var(--space-md);
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-sm);
-}
-
+/* Estilos do Formulário no Modal */
 .medication-form { display: flex; flex-direction: column; gap: var(--space-lg); }
 .form-row { display: flex; gap: var(--space-md); }
 .form-group { flex: 1; display: flex; flex-direction: column; }
 .form-group label { margin-bottom: var(--space-sm); font-weight: var(--font-weight-medium); }
-.form-group input, .form-group select {
-    padding: 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-}
+.form-group input, .form-group select { padding: 14px; border: 1px solid var(--color-border); border-radius: var(--border-radius); font-size: 1rem; }
 .horario-input-group { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
 .horario-input-group input { flex-grow: 1; }
-.remove-horario-btn, .add-horario-btn {
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-    border-radius: var(--border-radius);
-    transition: var(--transition);
-}
+.remove-horario-btn, .add-horario-btn { border: none; cursor: pointer; font-weight: bold; border-radius: var(--border-radius); transition: var(--transition); }
 .remove-horario-btn { background-color: var(--color-background); color: var(--color-danger); padding: 10px 14px; }
 .add-horario-btn { width: 100%; background-color: var(--color-primary-light); color: var(--color-primary); padding: 12px; }
-.submit-btn {
-    padding: 14px;
-    border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--color-primary);
-    color: white;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-/* Adicionar ao final de src/pages/MedicationPage.css */
-
-.dias-semana-group {
-    display: flex;
-    justify-content: space-between;
-    gap: var(--space-sm);
-}
-
-.dias-semana-group button {
-    flex: 1;
-    padding: 12px 5px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    background-color: var(--color-surface);
-    cursor: pointer;
-    font-weight: var(--font-weight-medium);
-    transition: var(--transition);
-}
-
-.dias-semana-group button.active {
-    background-color: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
-}
-
+.submit-btn { padding: 14px; border: none; border-radius: var(--border-radius); background-color: var(--color-primary); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; }
+.dias-semana-group { display: flex; justify-content: space-between; gap: var(--space-sm); }
+.dias-semana-group button { flex: 1; padding: 12px 5px; border: 1px solid var(--color-border); border-radius: var(--border-radius); background-color: var(--color-surface); cursor: pointer; font-weight: var(--font-weight-medium); transition: var(--transition); }
+.dias-semana-group button.active { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }

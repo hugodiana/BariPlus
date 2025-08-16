@@ -43,10 +43,18 @@
 }
 
 .sidebar-nav {
-    display: flex;
     flex-direction: column;
     gap: 0.5rem;
     flex-grow: 1;
+    display: flex; /* Adicione esta linha para alinhar o ícone e o texto */
+    align-items: center;
+}
+
+.nav-icon {
+    margin-right: 12px; /* Adiciona um espaço entre o ícone e o texto */
+    font-size: 1.2rem;
+    width: 24px; /* Garante que todos os ícones ocupem o mesmo espaço */
+    text-align: center;
 }
 
 .sidebar-nav a {

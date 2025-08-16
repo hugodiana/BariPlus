@@ -11,39 +11,43 @@ import ContentListPage from './pages/ContentListPage';
 import ContentEditPage from './pages/ContentEditPage';
 import SendNotificationPage from './pages/SendNotificationPage';
 
-const PrivateRoute = ({ children }) => {
+// Componente para proteger as rotas que exigem login
+const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem('bariplus_admin_token');
+    // Se não houver token, redireciona para a página de login
     return token ? children : <Navigate to="/login" />;
 };
 
 function App() {
     return (
-        <>
+        <Router>
             <ToastContainer position="top-right" autoClose={4000} />
-            <Router>
-                <Routes>
-                    <Route path="/login" element={<AdminLoginPage />} />
-                    <Route 
-                        path="/" 
-                        element={
-                            <PrivateRoute>
-                                <AdminLayout />
-                            </PrivateRoute>
-                        } 
-                    >
-                        <Route index element={<AdminDashboardPage />} />
-                        <Route path="users" element={<UsersListPage />} />
-                        {/* ✅ CORREÇÃO: A rota mais específica vem primeiro */}
-                        <Route path="content/new" element={<ContentEditPage />} /> 
-                        <Route path="content/edit/:id" element={<ContentEditPage />} />
-                        <Route path="content" element={<ContentListPage />} />
-                        <Route path="/admin/notifications" element={<AdminLayout><SendNotificationPage /></AdminLayout>} />
-                        {/* Redirecionamento para o dashboard caso nenhuma rota filha corresponda */}
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                    </Route>
-                </Routes>
-            </Router>
-        </>
+            <Routes>
+                <Route path="/login" element={<AdminLoginPage />} />
+
+                {/* Rota "pai" que protege todo o layout do admin */}
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedRoute>
+                            <AdminLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    {/* Rotas "filhas" que serão renderizadas dentro do AdminLayout */}
+                    <Route index element={<Navigate to="/dashboard" replace />} />
+                    <Route path="dashboard" element={<AdminDashboardPage />} />
+                    <Route path="users" element={<UsersListPage />} />
+                    <Route path="content" element={<ContentListPage />} />
+                    <Route path="content/new" element={<ContentEditPage />} />
+                    <Route path="content/edit/:id" element={<ContentEditPage />} />
+                    <Route path="notifications" element={<SendNotificationPage />} />
+                    
+                    {/* Se nenhuma rota filha for encontrada, redireciona para o dashboard */}
+                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                </Route>
+            </Routes>
+        </Router>
     );
 }
 

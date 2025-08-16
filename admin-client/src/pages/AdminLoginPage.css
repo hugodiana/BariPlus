@@ -1,115 +1,41 @@
-/* src/pages/AdminDashboardPage.css */
+/* src/pages/AdminLoginPage.css */
 
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.stat-card {
-    background-color: var(--sidebar-bg);
-    padding: 1.5rem;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
+.admin-login-page {
     display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    transition: var(--transition);
-}
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-sm);
-}
-
-.stat-icon {
-    font-size: 2.5rem;
-    background-color: var(--primary-light);
-    color: var(--primary-color);
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
     justify-content: center;
-}
-
-.stat-value {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr;
-    gap: 1.5rem;
-}
-
-.recent-activity-card, .quick-actions-card {
-    background-color: var(--sidebar-bg);
-    padding: 1.5rem;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
-}
-
-.recent-activity-card h3, .quick-actions-card h3 {
-    margin: 0 0 1rem 0;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.user-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-.user-item {
-    display: flex;
-    justify-content: space-between;
     align-items: center;
-}
-.user-info strong {
-    display: block;
-    font-weight: 500;
-}
-.user-info span {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-.user-date {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    white-space: nowrap;
+    min-height: 100vh;
+    background-color: var(--color-background);
 }
 
-.quick-actions-card {
-    display: flex;
-    flex-direction: column;
-}
-.action-link {
-    display: block;
-    padding: 1rem;
-    background-color: var(--primary-light);
-    color: var(--primary-color);
-    text-decoration: none;
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem;
+    background-color: var(--color-surface);
     border-radius: var(--border-radius);
-    font-weight: 600;
+    box-shadow: var(--shadow-md);
     text-align: center;
-    transition: var(--transition);
-}
-.action-link:hover {
-    background-color: var(--primary-color);
-    color: white;
 }
 
-@media (max-width: 992px) {
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
+.login-logo {
+    height: 60px;
+    margin-bottom: 1rem;
+}
+
+.login-card h2 {
+    margin-bottom: 2rem;
+    color: var(--color-secondary);
+    font-weight: 600;
+}
+
+.login-card .form-group {
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+
+.login-card .login-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 14px;
 }

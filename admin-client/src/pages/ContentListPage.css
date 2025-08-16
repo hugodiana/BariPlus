@@ -1,81 +1,81 @@
+/* src/pages/ContentListPage.css */
 .page-header-actions {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 2rem;
 }
-.primary-btn {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 12px 20px;
-    border: none;
-    border-radius: var(--border-radius);
-    font-weight: 600;
-    text-decoration: none;
-    transition: var(--transition);
-}
-.primary-btn:hover {
-    background-color: var(--primary-color-dark);
-}
 
 .table-wrapper {
     overflow-x: auto;
-    background-color: var(--sidebar-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
 }
+
 table {
     width: 100%;
     border-collapse: collapse;
 }
+
 th, td {
-    padding: 1rem;
+    padding: 1rem 1.5rem;
     text-align: left;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--color-border);
     white-space: nowrap;
 }
+
 th {
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 0.8rem;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
+
 tr:last-child td {
     border-bottom: none;
 }
 tr:hover {
-    background-color: #f8f9fa;
+    background-color: var(--color-background);
 }
 
 .type-badge, .status-badge {
-    padding: 4px 10px;
+    padding: 4px 12px;
     border-radius: 20px;
     font-size: 0.8rem;
     font-weight: 600;
 }
 .type-badge {
-    background-color: #e0e7ff;
-    color: #4338ca;
+    background-color: #e0e7ff; /* Azul claro */
+    color: #4338ca; /* Azul escuro */
 }
 .status-badge.published {
-    background-color: var(--primary-light);
-    color: var(--primary-color);
+    background-color: #d1fae5; /* Verde claro */
+    color: #065f46; /* Verde escuro */
 }
 .status-badge.draft {
-    background-color: #f3f4f6;
-    color: #4b5563;
+    background-color: #f3f4f6; /* Cinza claro */
+    color: #4b5563; /* Cinza escuro */
 }
+
 .actions-cell {
     display: flex;
     gap: 0.5rem;
 }
 .action-btn {
     border: none;
-    padding: 6px 12px;
+    padding: 8px 14px;
     border-radius: 6px;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
+    transition: var(--transition);
 }
 .edit-btn { background-color: #e0e7ff; color: #4338ca; }
+.edit-btn:hover { background-color: #c7d2fe; }
 .delete-btn { background-color: #fee2e2; color: #b91c1c; }
+.delete-btn:hover { background-color: #fecaca; }
+
+.empty-cell {
+    text-align: center;
+    padding: 2.5rem;
+    color: var(--color-text-secondary);
+}

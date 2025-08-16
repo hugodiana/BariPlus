@@ -1,47 +1,75 @@
+/* src/pages/ContentEditPage.css */
 .content-form {
-    background-color: var(--sidebar-bg);
-    padding: 2rem;
-    border-radius: var(--border-radius);
-    border: 1px solid var(--border-color);
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
 }
+
+@media (max-width: 992px) {
+    .content-form {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-main-column, .form-sidebar-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
 .form-group {
     margin-bottom: 1.5rem;
 }
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
 .form-group label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    color: var(--text-primary);
 }
+
 .form-group input, .form-group textarea, .form-group select {
     width: 100%;
     padding: 12px;
     font-size: 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--admin-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius, 8px);
+    background-color: #f8f9fa;
 }
+
 .form-group textarea {
     min-height: 120px;
     resize: vertical;
 }
 
-.ql-editor {
-    min-height: 250px;
+/* Estilos para o editor de texto ReactQuill */
+.ql-toolbar.ql-snow {
+    border-top-left-radius: var(--border-radius, 8px);
+    border-top-right-radius: var(--border-radius, 8px);
+    border-color: var(--color-border);
+}
+.ql-container.ql-snow {
+    border-bottom-left-radius: var(--border-radius, 8px);
+    border-bottom-right-radius: var(--border-radius, 8px);
+    border-color: var(--color-border);
+    font-family: inherit;
     font-size: 1rem;
 }
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+.ql-editor {
+    min-height: 300px;
 }
 
+/* Estilo para o Toggle Switch de Status */
 .toggle-switch {
     position: relative;
     display: flex;
     align-items: center;
     gap: 10px;
-    height: 48px; /* Mesma altura do input */
+    height: 48px;
 }
 .toggle-switch input { display: none; }
 .slider {
@@ -64,14 +92,32 @@
     transition: .4s;
     border-radius: 50%;
 }
-input:checked + .slider { background-color: var(--primary-color); }
+input:checked + .slider { background-color: var(--color-primary); }
 input:checked + .slider:before { transform: translateX(22px); }
+.label-text {
+    font-weight: 500;
+}
 
+/* Ações do Formulário */
 .form-actions {
+    grid-column: 1 / -1; /* Ocupa todas as colunas */
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
     margin-top: 1.5rem;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid var(--color-border);
+}
+
+.secondary-btn {
+    padding: 10px 20px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius, 8px);
+    background-color: transparent;
+    color: var(--text-primary);
+    font-weight: 500;
+    cursor: pointer;
+}
+.secondary-btn:hover {
+    background-color: #f8f9fa;
 }

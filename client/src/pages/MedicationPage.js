@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { format, addDays, subDays, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -6,6 +6,7 @@ import { fetchApi } from '../utils/api';
 import Modal from '../components/Modal';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
+import EmptyState from '../components/EmptyState';
 import './MedicationPage.css';
 
 const diasDaSemanaOptions = [
@@ -160,37 +161,86 @@ const MedicationPage = () => {
         setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
     };
 
-    if (loading) return <LoadingSpinner />;
+    const medicamentosPorHorario = useCallback(() => {
+        const diaDaSemanaSelecionado = selectedDate.getDay();
+        const medsDoDia = medicamentos.filter(med => {
+            if (med.status !== 'Ativo') return false;
+            if (med.frequencia.tipo === 'Diária') return true;
+            if (med.frequencia.tipo === 'Semanal' && Array.isArray(med.frequencia.diasDaSemana) && med.frequencia.diasDaSemana.includes(diaDaSemanaSelecionado)) {
+                return true;
+            }
+            return false;
+        });
 
-    const medicamentosAtivos = medicamentos.filter(m => m.status === 'Ativo');
-    const medicamentosInativos = medicamentos.filter(m => m.status === 'Inativo');
+        const grouped = {};
+        medsDoDia.forEach(med => {
+            (med.frequencia.horarios || []).forEach(horario => {
+                if (!grouped[horario]) {
+                    grouped[horario] = [];
+                }
+                grouped[horario].push(med);
+            });
+        });
+        
+        return Object.keys(grouped).sort().reduce((acc, key) => {
+            acc[key] = grouped[key];
+            return acc;
+        }, {});
+    }, [medicamentos, selectedDate]);
+
+    if (loading) return <LoadingSpinner />;
+    
+    const horariosAgrupados = medicamentosPorHorario();
 
     return (
         <div className="page-container">
-            <div className="page-header"><h1>Minha Medicação</h1><p>Controle os seus medicamentos e vitaminas diárias.</p></div>
+            <div className="page-header-actions">
+                <div className="page-header">
+                    <h1>Minha Medicação</h1>
+                    <p>Acompanhe os medicamentos e vitaminas para o dia selecionado.</p>
+                </div>
+                <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Gerir Meus Tratamentos</button>
+            </div>
+
             <Card className="date-selector-card">
                 <button onClick={() => changeDate(-1)} aria-label="Dia anterior">‹</button>
                 <input type="date" value={format(selectedDate, 'yyyy-MM-dd')} onChange={(e) => setSelectedDate(parseISO(e.target.value))} />
                 <button onClick={() => changeDate(1)} aria-label="Próximo dia">›</button>
             </Card>
-            <Card>
-                 <div className="medication-header">
-                    <h3>Tratamentos para {format(selectedDate, 'dd/MM/yyyy', { locale: ptBR })}</h3>
-                    <button className="add-btn" onClick={() => setIsModalOpen(true)}>+ Gerir Lista</button>
-                </div>
-                {medicamentosAtivos.length > 0 ? (
-                    <div className="medication-list">{medicamentosAtivos.map(med => (<MedicationItem key={med._id} med={med} logDoDia={logDoDia} selectedDate={selectedDate} onToggleToma={handleToggleToma} onToggleStatus={handleToggleStatus} onDelete={handleDelete} />))}</div>
-                ) : (<div className="empty-state"><span className="empty-icon">💊</span><p>Nenhum medicamento ativo cadastrado.</p></div>)}
-            </Card>
-            {medicamentosInativos.length > 0 && (<div className="inactive-toggle" onClick={() => setShowInactive(!showInactive)}>{showInactive ? 'Ocultar' : 'Mostrar'} Arquivados ({medicamentosInativos.length})</div>)}
-            {showInactive && (
-                <Card>
-                    <div className="medication-header"><h3>Medicamentos Arquivados</h3></div>
-                    <div className="medication-list">{medicamentosInativos.map(med => (<MedicationItem key={med._id} med={med} logDoDia={logDoDia} selectedDate={selectedDate} onToggleStatus={handleToggleStatus} onDelete={handleDelete}/>))}</div>
-                </Card>
-            )}
+            
+            <div className="medication-layout">
+                {Object.keys(horariosAgrupados).length > 0 ? (
+                    Object.entries(horariosAgrupados).map(([horario, meds]) => (
+                        <Card key={horario} className="med-group-card">
+                            <div className="med-group-header">
+                                <span className="med-group-icon">🕒</span>
+                                <h3>{horario}</h3>
+                            </div>
+                            <ul className="med-group-list">
+                                {meds.map(med => (
+                                    <MedicationItem
+                                        key={med._id}
+                                        med={med}
+                                        horario={horario}
+                                        logDoDia={logDoDia}
+                                        onToggleToma={handleToggleToma}
+                                    />
+                                ))}
+                            </ul>
+                        </Card>
+                    ))
+                ) : (
+                    <EmptyState
+                        title="Nenhum Medicamento Hoje"
+                        message="Não há medicamentos ou vitaminas agendados para a data selecionada. Você pode gerir seus tratamentos a qualquer momento."
+                        buttonText="Gerir Tratamentos"
+                        onButtonClick={() => setIsModalOpen(true)}
+                    />
+                )}
+            </div>
+            
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>Adicionar Novo Medicamento</h2>
+                <h2>Novo Tratamento</h2>
                 <form onSubmit={handleSubmit} className="medication-form">
                     <div className="form-group"><label>Nome</label><input name="nome" type="text" value={formData.nome} onChange={handleInputChange} required /></div>
                     <div className="form-group"><label>Dosagem (ex: 500mg)</label><input name="dosagem" type="text" value={formData.dosagem} onChange={handleInputChange} /></div>
@@ -199,76 +249,39 @@ const MedicationPage = () => {
                         <div className="form-group"><label>Unidade</label><select name="unidade" value={formData.unidade} onChange={handleInputChange}><option>comprimido(s)</option><option>cápsula(s)</option><option>gota(s)</option><option>ml</option></select></div>
                     </div>
                     <div className="form-group"><label>Frequência</label><select name="tipo" value={formData.frequencia.tipo} onChange={handleFrequenciaChange}><option>Diária</option><option>Semanal</option></select></div>
-                    
                     {formData.frequencia.tipo === 'Semanal' && (
                         <div className="form-group">
                             <label>Dias da Semana</label>
-                            <div className="dias-semana-group">
-                                {diasDaSemanaOptions.map(dia => (
-                                    <button type="button" key={dia.value} onClick={() => handleDiasDaSemanaChange(dia.value)} className={formData.frequencia.diasDaSemana.includes(dia.value) ? 'active' : ''}>
-                                        {dia.label}
-                                    </button>
-                                ))}
-                            </div>
+                            <div className="dias-semana-group">{diasDaSemanaOptions.map(dia => (<button type="button" key={dia.value} onClick={() => handleDiasDaSemanaChange(dia.value)} className={formData.frequencia.diasDaSemana.includes(dia.value) ? 'active' : ''}>{dia.label}</button>))}</div>
                         </div>
                     )}
-
                     <div className="form-group">
                         <label>Horários das Doses</label>
                         {formData.frequencia.horarios.map((horario, index) => (<div key={index} className="horario-input-group"><input type="time" value={horario} onChange={(e) => handleHorarioChange(index, e.target.value)} required /><button type="button" onClick={() => removeHorario(index)} className="remove-horario-btn">-</button></div>))}
                         <button type="button" onClick={addHorario} className="add-horario-btn">+ Horário</button>
                     </div>
-
-                    <button type="submit" className="submit-btn">Adicionar à Lista</button>
+                    <button type="submit" className="submit-btn">Adicionar</button>
                 </form>
             </Modal>
         </div>
     );
 };
 
-const MedicationItem = ({ med, logDoDia, selectedDate, onToggleToma, onDelete, onToggleStatus }) => {
-    
-    const diaDaSemanaSelecionado = selectedDate.getDay();
-    
-    // ✅ CORREÇÃO: Verifica se 'diasDaSemana' existe e é um array antes de usar '.includes()'
-    const isTodayWeeklyDose = med.frequencia.tipo === 'Semanal' && 
-                              Array.isArray(med.frequencia.diasDaSemana) && 
-                              med.frequencia.diasDaSemana.includes(diaDaSemanaSelecionado);
-    
-    const deveMostrarHorarios = med.frequencia.tipo === 'Diária' || isTodayWeeklyDose;
-    const horarios = med.frequencia.horarios || [];
-
-    const formatarDiasSemana = () => {
-        // ✅ CORREÇÃO: Garante que o array exista antes de tentar manipulá-lo
-        const dias = med.frequencia.diasDaSemana || [];
-        if (dias.length === 0) {
-            // Lida com o dado antigo que tinha apenas 'diaDaSemana' como um número
-            if (typeof med.frequencia.diaDaSemana === 'number') {
-                return diasDaSemanaOptions.find(d => d.value === med.frequencia.diaDaSemana)?.label || '';
-            }
-            return 'Nenhum dia selecionado';
-        }
-        
-        return dias
-            .sort((a, b) => a - b) // Garante a ordem correta (Dom, Seg, Ter...)
-            .map(dia => diasDaSemanaOptions.find(d => d.value === dia)?.label)
-            .join(', ');
-    };
+const MedicationItem = ({ med, horario, logDoDia, onToggleToma }) => {
+    const foiTomado = logDoDia.dosesTomadas.some(
+        dose => dose.medicationId === med._id && dose.horario === horario
+    );
 
     return (
-        <div className={`med-item status-${med.status.toLowerCase()}`}>
-            <div className="med-info"><strong>{med.nome}</strong><span>{med.dosagem || `${med.quantidade} ${med.unidade}`}</span></div>
-            {med.status === 'Ativo' && deveMostrarHorarios && (
-                <div className="med-checks">
-                    {horarios.map((horario, index) => {
-                        const foiTomado = logDoDia.dosesTomadas.some(dose => dose.medicationId === med._id && dose.horario === horario);
-                        return (<div key={index} className="dose-item"><button className={`med-checkbox ${foiTomado ? 'taken' : ''}`} onClick={() => onToggleToma(med, horario)}>{foiTomado && '✓'}</button><span className="dose-time">{horario}</span></div>);
-                    })}
-                </div>
-            )}
-            {med.status === 'Ativo' && med.frequencia.tipo === 'Semanal' && !deveMostrarHorarios && (<div className="med-horarios"><span className="horario-tag">Toda {formatarDiasSemana()}</span></div>)}
-            <div className="med-actions"><button onClick={() => onToggleStatus(med)} className="action-btn archive-btn">{med.status === 'Ativo' ? 'Arquivar' : 'Reativar'}</button>{med.status === 'Inativo' && <button onClick={() => onDelete(med._id)} className="action-btn delete-btn">Apagar</button>}</div>
-        </div>
+        <li className={`med-list-item ${foiTomado ? 'taken' : ''}`} onClick={() => onToggleToma(med, horario)}>
+            <div className="med-item-checkbox">
+                {foiTomado && '✓'}
+            </div>
+            <div className="med-item-info">
+                <strong>{med.nome}</strong>
+                <span>{med.dosagem || `${med.quantidade} ${med.unidade}`}</span>
+            </div>
+        </li>
     );
 };
 
