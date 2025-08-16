@@ -84,26 +84,38 @@ app.use(express.json());
 
 
 // --- 2. WEBHOOK DA KIWIFY ---
+// Em server/index.js
+
+// --- WEBHOOK DA KIWIFY (COM LOGS DE DIAGNÓSTICO) ---
 app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
+    console.log('--- NOVO EVENTO DO WEBHOOK KIWIFY RECEBIDO ---');
+    console.log('Timestamp:', new Date().toISOString());
+    console.log('Corpo do Evento (Body):', JSON.stringify(req.body, null, 2)); // Loga todo o conteúdo recebido
+
     try {
         const kiwifyEvent = req.body;
         const customerEmail = kiwifyEvent.Customer?.email?.toLowerCase();
+        
+        // ✅ LÓGICA ATUALIZADA: Considera tanto o status da ordem quanto da assinatura
         const orderStatus = kiwifyEvent.order_status;
+        const subscriptionStatus = kiwifyEvent.subscription_status;
 
         if (!customerEmail) {
-            console.log('Webhook da Kiwify recebido sem e-mail do cliente.');
+            console.log('Webhook da Kiwify recebido sem e-mail do cliente. Encerrando.');
             return res.sendStatus(400);
         }
 
-        // Cenário 1: Pagamento Aprovado
-        if (orderStatus === 'paid') {
+        // Cenário 1: Pagamento Aprovado ou Assinatura Ativa
+        if (orderStatus === 'paid' || subscriptionStatus === 'active') {
+            console.log(`Evento de SUCESSO recebido para ${customerEmail}. Status: ${orderStatus || subscriptionStatus}`);
+            
             const userName = kiwifyEvent.Customer.full_name || 'Novo Usuário';
             let usuario = await User.findOne({ email: customerEmail });
             let isNewUser = false;
 
-            // Se o usuário não existir, cria um novo
             if (!usuario) {
                 isNewUser = true;
+                console.log(`Usuário ${customerEmail} não encontrado. Criando nova conta...`);
                 const temporaryPassword = crypto.randomBytes(16).toString('hex');
                 const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
                 
@@ -112,19 +124,18 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
                     sobrenome: userName.split(' ').slice(1).join(' '),
                     email: customerEmail,
                     password: hashedPassword,
-                    isEmailVerified: true, // Já que o pagamento foi confirmado
+                    isEmailVerified: true,
                 });
             }
 
-            // Atualiza o status do pagamento e salva
             usuario.pagamentoEfetuado = true;
-            usuario.kiwifySubscriptionId = kiwifyEvent.order_id;
+            usuario.kiwifySubscriptionId = kiwifyEvent.order_id || kiwifyEvent.subscription_id;
             await usuario.save();
-
-            console.log(`Acesso concedido para: ${customerEmail}. Novo usuário: ${isNewUser}`);
+            console.log(`Acesso concedido e salvo no banco de dados para: ${customerEmail}.`);
 
             // Se for um novo usuário, cria os documentos associados
             if (isNewUser) {
+                console.log(`Criando documentos iniciais para o novo usuário ${customerEmail}...`);
                 await Promise.all([
                     new Checklist({ userId: usuario._id }).save(),
                     new Peso({ userId: usuario._id }).save(),
@@ -136,45 +147,41 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
                     new Exams({ userId: usuario._id }).save()
                 ]);
 
-                // Envia e-mail de boas-vindas para o novo usuário configurar a senha
+                console.log(`Enviando e-mail de configuração de senha para ${customerEmail}...`);
                 const resetToken = crypto.randomBytes(32).toString('hex');
                 usuario.resetPasswordToken = resetToken;
-                usuario.resetPasswordExpires = Date.now() + 24 * 3600000; // 24 horas
+                usuario.resetPasswordExpires = Date.now() + 24 * 3600000;
                 await usuario.save();
-
+                
                 const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
-                const emailHtml = emailTemplate(
-                    'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
-                    `Olá, ${usuario.nome}! Sua compra foi aprovada. Clique no botão abaixo para criar sua senha de acesso.`,
-                    'Criar Minha Senha',
-                    setupPasswordLink
-                );
+                const emailHtml = emailTemplate('Bem-vindo(a) ao BariPlus!', `Sua compra foi aprovada. Clique no botão abaixo para criar sua senha.`, 'Criar Minha Senha', setupPasswordLink);
 
-                await resend.emails.send({
-                    from: `BariPlus <onboarding@resend.dev>`,
-                    to: [customerEmail],
-                    subject: 'Bem-vindo(a) ao BariPlus!',
-                    html: emailHtml,
-                });
+                await resend.emails.send({ from: `BariPlus <onboarding@resend.dev>`, to: [customerEmail], subject: 'Bem-vindo(a) ao BariPlus!', html: emailHtml });
             }
         }
         // Cenário 2: Pagamento Reembolsado ou Cancelado
-        else if (['refunded', 'canceled', 'expired'].includes(orderStatus)) {
+        else if (['refunded', 'canceled', 'expired'].includes(orderStatus) || ['canceled', 'expired'].includes(subscriptionStatus)) {
+            console.log(`Evento de REVOGAÇÃO recebido para ${customerEmail}. Status: ${orderStatus || subscriptionStatus}`);
             const usuario = await User.findOne({ email: customerEmail });
 
             if (usuario) {
                 usuario.pagamentoEfetuado = false;
                 await usuario.save();
-                console.log(`Acesso revogado para ${customerEmail} devido ao status: ${orderStatus}`);
+                console.log(`Acesso revogado para ${customerEmail}.`);
             }
+        } else {
+            console.log(`Evento com status não tratado recebido: ${orderStatus || subscriptionStatus}. Nenhuma ação tomada.`);
         }
 
+        console.log('Webhook processado com sucesso.');
         res.sendStatus(200);
+
     } catch (error) {
-        console.error('Erro no webhook da Kiwify:', error);
+        console.error('--- ERRO CRÍTICO NO WEBHOOK KIWIFY ---:', error);
         res.sendStatus(500);
     }
 });
+
 
 
 const PORT = process.env.PORT || 3001;
