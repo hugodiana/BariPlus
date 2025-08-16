@@ -75,7 +75,7 @@ const CustomizeGoalsModal = ({ usuario, onClose, onSave }) => {
 };
 
 
-const DailyGoalsCard = ({ log, onTrack, usuario, onUserUpdate }) => {
+const DailyGoalsCard = ({ log, usuario, onUserUpdate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     const metaAgua = usuario.metaAguaDiaria || 2000;
@@ -100,11 +100,7 @@ const DailyGoalsCard = ({ log, onTrack, usuario, onUserUpdate }) => {
                     <div className="progress-bar-background">
                         <div className="progress-bar-foreground" style={{ width: `${progressoAgua}%` }}></div>
                     </div>
-                    <div className="goal-actions">
-                        <button onClick={() => onTrack('water', 250)}>+250ml</button>
-                        <button onClick={() => onTrack('water', 500)}>+500ml</button>
-                        <button onClick={() => onTrack('water', 750)}>+750ml</button>
-                    </div>
+                    {/* ✅ BOTÕES DE ADICIONAR ÁGUA REMOVIDOS DAQUI */}
                 </div>
 
                 <div className="goal-item">

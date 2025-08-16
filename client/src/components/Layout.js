@@ -71,6 +71,7 @@ const Layout = ({ usuario }) => {
                     <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} />
                     <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
                     <NavItem to="/diario-alimentar" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
+                    <NavItem to="/hidratacao" icon="💧" text="Hidratação" onClick={handleLinkClick} />
                     <NavItem to="/checklist" icon="✅" text="Checklist" onClick={handleLinkClick} />
                     <NavItem to="/medicacao" icon="💊" text="Medicação" onClick={handleLinkClick} />
                     <NavItem to="/consultas" icon="🗓️" text="Consultas" onClick={handleLinkClick} />
@@ -78,6 +79,7 @@ const Layout = ({ usuario }) => {
                     <NavItem to="/gastos" icon="💳" text="Meus Gastos" onClick={handleLinkClick} />
                     <NavItem to="/conquistas" icon="🏆" text="Conquistas" onClick={handleLinkClick} />
                     <NavItem to="/artigos" icon="📚" text="Artigos e Dicas" onClick={handleLinkClick} />
+                    <NavItem to="/relatorios" icon="🔗" text="Partilhar Relatórios" onClick={handleLinkClick} />
                     <NavItem to="/perfil" icon="👤" text="Meu Perfil" onClick={handleLinkClick} />
                     <NavItem to="/ganhe-renda-extra" icon="💰" text="Ganhe Renda Extra" onClick={handleLinkClick} />
                 </nav>

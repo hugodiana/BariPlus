@@ -1,0 +1,55 @@
+/* src/pages/PublicReportPage.css */
+.public-report-background {
+    background-color: var(--color-background);
+    min-height: 100vh;
+    padding: var(--space-xl);
+}
+
+.public-report-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.public-report-header {
+    text-align: center;
+    margin-bottom: var(--space-lg);
+}
+.public-report-header img {
+    height: 50px;
+}
+
+.report-content {
+    padding: var(--space-lg);
+}
+.report-content h1 {
+    color: var(--color-text-strong);
+    margin-bottom: var(--space-md);
+}
+.report-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    background-color: var(--color-background);
+    padding: var(--space-md);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--space-xl);
+}
+.report-meta span { color: var(--color-text-secondary); }
+
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--color-border); }
+th { color: var(--color-text-secondary); font-weight: 500; }
+
+.exams-list { display: flex; flex-direction: column; gap: var(--space-xl); }
+.exam-group h4 { color: var(--color-primary); margin-bottom: var(--space-sm); }
+
+.report-error { text-align: center; padding: 2rem; }
+.report-error h2 { color: var(--color-danger); }
+
+.public-report-footer {
+    text-align: center;
+    margin-top: var(--space-xl);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-faint);
+}

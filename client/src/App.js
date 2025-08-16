@@ -19,10 +19,11 @@ import PrivacyPage from './pages/PrivacyPage';
 import PricingPage from './pages/PricingPage';
 import OnboardingPage from './pages/OnboardingPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import PublicReportPage from './pages/PublicReportPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 
-// Páginas do App (com menu lateral)
+// Páginas do App (dentro do Layout)
 import DashboardPage from './pages/DashboardPage';
 import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
@@ -36,6 +37,8 @@ import ConteudosPage from './pages/ConteudosPage';
 import ArtigoPage from './pages/ArtigoPage';
 import GanheRendaExtraPage from './pages/GanheRendaExtraPage';
 import ProfilePage from './pages/ProfilePage';
+import HydrationPage from './pages/HydrationPage';
+import ReportCenterPage from './pages/ReportCenterPage';
 
 function App() {
     const [usuario, setUsuario] = useState(null);
@@ -75,51 +78,50 @@ function App() {
 
     return (
         <Router>
-            <div className="App">
-                <ToastContainer position="bottom-right" autoClose={4000} hideProgressBar={false} />
-                <Routes>
-                    {/* --- Grupo 1: Rotas Públicas (acessíveis sem login) --- */}
-                    <Route path="/landing" element={<LandingPage />} />
-                    <Route path="/login" element={!usuario ? <LoginPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
-                    <Route path="/verify-email/:token?" element={<VerifyPage />} />
-                    <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-                    <Route path="/termos" element={<TermsPage />} />
-                    <Route path="/privacidade" element={<PrivacyPage />} />
+            <ToastContainer position="bottom-right" autoClose={4000} hideProgressBar={false} />
+            <Routes>
+                {/* --- Grupo 1: Rotas Públicas e de Fluxo (sempre acessíveis) --- */}
+                <Route path="/landing" element={<LandingPage />} />
+                <Route path="/login" element={!usuario ? <LoginPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
+                <Route path="/verify-email/:token?" element={<VerifyPage />} />
+                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/termos" element={<TermsPage />} />
+                <Route path="/privacidade" element={<PrivacyPage />} />
+                <Route path="/planos" element={<PricingPage />} />
+                <Route path="/bem-vindo" element={<OnboardingPage />} />
+                <Route path="/payment/success" element={<PaymentSuccessPage />} />
+                <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+                <Route path="/relatorio/:token" element={<PublicReportPage />} />
 
-                    {/* --- Grupo 2: Rotas de Fluxo (páginas de etapa única, sem layout) --- */}
-                    <Route path="/planos" element={<PricingPage />} />
-                    <Route path="/bem-vindo" element={<OnboardingPage />} />
-                    <Route path="/payment/success" element={<PaymentSuccessPage />} />
-                    <Route path="/payment/cancel" element={<PaymentCancelPage />} />
-
-                    {/* --- Grupo 3: Rotas Principais da Aplicação (protegidas e com layout) --- */}
-                    <Route
-                        path="/"
-                        element={
-                            <ProtectedRoute usuario={usuario}>
-                                <Layout usuario={usuario} />
-                            </ProtectedRoute>
-                        }
-                    >
-                        <Route index element={<DashboardPage />} />
-                        <Route path="progresso" element={<ProgressoPage />} />
-                        <Route path="checklist" element={<ChecklistPage />} />
-                        <Route path="consultas" element={<ConsultasPage />} />
-                        <Route path="medicacao" element={<MedicationPage />} />
-                        <Route path="diario-alimentar" element={<FoodDiaryPage />} />
-                        <Route path="exames" element={<ExamsPage />} />
-                        <Route path="gastos" element={<GastosPage />} />
-                        <Route path="conquistas" element={<ConquistasPage />} />
-                        <Route path="artigos" element={<ConteudosPage />} />
-                        <Route path="artigos/:id" element={<ArtigoPage />} />
-                        <Route path="ganhe-renda-extra" element={<GanheRendaExtraPage />} />
-                        <Route path="perfil" element={<ProfilePage />} />
-                    </Route>
-                    
-                    {/* --- Fallback: Se nenhuma rota for encontrada, redireciona para a landing page --- */}
-                    <Route path="*" element={<Navigate to="/landing" />} />
-                </Routes>
-            </div>
+                {/* --- Grupo 2: Rotas Principais da Aplicação (protegidas) --- */}
+                <Route
+                    path="/"
+                    element={
+                        <ProtectedRoute usuario={usuario}>
+                            <Layout usuario={usuario} />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route index element={<DashboardPage />} />
+                    <Route path="hidratacao" element={<HydrationPage />} />
+                    <Route path="progresso" element={<ProgressoPage />} />
+                    <Route path="checklist" element={<ChecklistPage />} />
+                    <Route path="consultas" element={<ConsultasPage />} />
+                    <Route path="medicacao" element={<MedicationPage />} />
+                    <Route path="diario-alimentar" element={<FoodDiaryPage />} />
+                    <Route path="exames" element={<ExamsPage />} />
+                    <Route path="gastos" element={<GastosPage />} />
+                    <Route path="conquistas" element={<ConquistasPage />} />
+                    <Route path="artigos" element={<ConteudosPage />} />
+                    <Route path="artigos/:id" element={<ArtigoPage />} />
+                    <Route path="ganhe-renda-extra" element={<GanheRendaExtraPage />} />
+                    <Route path="relatorios" element={<ReportCenterPage />} />
+                    <Route path="perfil" element={<ProfilePage />} />
+                </Route>
+                
+                {/* --- Fallback: Se nenhuma rota for encontrada, redireciona para a landing page --- */}
+                <Route path="*" element={<Navigate to="/landing" replace />} />
+            </Routes>
         </Router>
     );
 }

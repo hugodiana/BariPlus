@@ -18,6 +18,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DashboardPage = () => {
     const [usuario, setUsuario] = useState(null);
+    const [pesos, setPesos] = useState([]); // Adicionado para guardar o histórico de peso
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
@@ -32,9 +33,8 @@ const DashboardPage = () => {
         try {
             const today = new Date().toISOString().split('T')[0];
             
-            // ✅ CORREÇÃO: Adicionamos a busca pelo log de medicação do dia
             const endpoints = [
-                '/api/me', '/api/checklist', '/api/consultas',
+                '/api/me', '/api/pesos', '/api/checklist', '/api/consultas',
                 '/api/medication/list', '/api/dailylog/today', '/api/conteudos',
                 `/api/medication/log/${today}`
             ];
@@ -45,11 +45,12 @@ const DashboardPage = () => {
             }
 
             const [
-                dadosUsuario, dadosChecklist, dadosConsultas, dadosMedicationList,
-                dadosLog, dadosConteudos, dadosMedicationLog
+                dadosUsuario, dadosPesos, dadosChecklist, dadosConsultas, 
+                dadosMedicationList, dadosLog, dadosConteudos, dadosMedicationLog
             ] = await Promise.all(responses.map(res => res.json()));
 
             setUsuario(dadosUsuario);
+            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data))); // Dados de peso são guardados
             setChecklist(dadosChecklist);
             setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setMedicationData({ 
@@ -117,9 +118,38 @@ const DashboardPage = () => {
         }
     };
     
-    // ✅ CORREÇÃO: Esta função agora é apenas um placeholder, não realiza ações.
-    const handleToggleMedToma = () => {
-        toast.info("Para registrar uma dose, por favor, vá para a página de Medicação.");
+    const handleToggleMedToma = async (med, horario) => {
+        const today = new Date().toISOString().split('T')[0];
+        const doseInfo = {
+            medicationId: med._id,
+            nome: med.nome,
+            horario: horario,
+            dosagem: med.dosagem || `${med.quantidade} ${med.unidade}`
+        };
+
+        const originalState = { ...medicationData };
+        setMedicationData(prev => {
+            const foiTomado = prev.logDoDia.dosesTomadas.some(d => d.medicationId === med._id && d.horario === horario);
+            const newDosesTomadas = foiTomado
+                ? prev.logDoDia.dosesTomadas.filter(d => !(d.medicationId === med._id && d.horario === horario))
+                : [...prev.logDoDia.dosesTomadas, doseInfo];
+            return { ...prev, logDoDia: { ...prev.logDoDia, dosesTomadas: newDosesTomadas } };
+        });
+
+        try {
+            const response = await fetchApi('/api/medication/log/toggle', {
+                method: 'POST',
+                body: JSON.stringify({ date: today, doseInfo })
+            });
+            if (!response.ok) throw new Error("Falha ao salvar registro.");
+            
+            const updatedLog = await response.json();
+            setMedicationData(prev => ({ ...prev, logDoDia: updatedLog }));
+
+        } catch (error) {
+            toast.error("Erro ao registrar a toma. A reverter.");
+            setMedicationData(originalState);
+        }
     };
 
     const handleUserUpdate = (updatedUser) => {
@@ -203,10 +233,9 @@ const DashboardPage = () => {
                             medicamentos={medicationData.medicamentos} 
                             logDoDia={medicationData.logDoDia} 
                             onToggleToma={handleToggleMedToma}
-                            isReadOnly={true} // ✅ NOVO: Passando a propriedade para desativar cliques
                         />
                     }
-                    <WeightProgressCard usuario={usuario} />
+                    <WeightProgressCard usuario={usuario} historicoPesos={pesos} />
                 </div>
                 <div className="dashboard-coluna-secundaria">
                     <Card className="dashboard-card summary-card">
@@ -260,5 +289,6 @@ const DashboardPage = () => {
             </Modal>
         </div>
     );
-}
+};
+
 export default DashboardPage;

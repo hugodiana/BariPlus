@@ -1,0 +1,63 @@
+/* src/pages/ReportCenterPage.css */
+.report-generator-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-xl);
+    margin-bottom: var(--space-xl);
+}
+
+.report-option-card {
+    text-align: center;
+    padding: var(--space-xl) !important;
+}
+
+.report-option-icon {
+    font-size: 3rem;
+    margin-bottom: var(--space-md);
+}
+
+.report-option-card h3 {
+    color: var(--color-text-strong);
+    margin-bottom: var(--space-sm);
+}
+.report-option-card p {
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-lg);
+    min-height: 40px;
+}
+
+.generated-link-card {
+    margin-top: var(--space-xl);
+    text-align: center;
+}
+.generated-link-card h3 {
+    color: var(--color-success);
+}
+.generated-link-card p {
+    color: var(--color-text-secondary);
+}
+.link-container {
+    display: flex;
+    margin-top: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+.link-container input {
+    flex-grow: 1;
+    border: none;
+    padding: 12px;
+    font-size: 1rem;
+    background-color: var(--color-background);
+}
+.link-container input:focus {
+    outline: none;
+}
+.link-container button {
+    border: none;
+    background-color: var(--color-primary);
+    color: white;
+    padding: 0 20px;
+    cursor: pointer;
+    font-weight: 500;
+}

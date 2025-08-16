@@ -127,6 +127,7 @@ const ProgressoPage = () => {
     const [activeChart, setActiveChart] = useState('peso');
     const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     const [comparePhotos, setComparePhotos] = useState({ foto1: null, foto2: null });
+    const [previewImage, setPreviewImage] = useState(null);
 
     const [formState, setFormState] = useState({
         peso: '', data: new Date().toISOString().split('T')[0], foto: null, cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
@@ -170,18 +171,22 @@ const ProgressoPage = () => {
     };
 
     const handleFileChange = (e) => {
-        setFormState(prev => ({ ...prev, foto: e.target.files[0] }));
+        const file = e.target.files[0];
+        if (file) {
+            setFormState(prev => ({ ...prev, foto: file }));
+            setPreviewImage(URL.createObjectURL(file));
+        }
     };
 
     const handleOpenAddModal = () => {
         setRegistroEmEdicao(null);
         setFormState({
-            peso: '', data: new Date().toISOString().split('T')[0], foto: null, cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
-            bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
-            coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: ''
+            peso: '', data: new Date().toISOString().split('T')[0], foto: null, // ...reseta o resto do formulário
         });
+        setPreviewImage(null); // Limpa a pré-visualização
         setIsModalOpen(true);
     };
+
 
     const handleOpenEditModal = (registro) => {
         setRegistroEmEdicao(registro);
@@ -209,26 +214,32 @@ const ProgressoPage = () => {
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
         const formDataToSend = new FormData();
+        
+        // Adiciona todos os campos do formulário ao FormData
         Object.keys(formState).forEach(key => {
-            if (key !== 'foto' && formState[key]) {
+            if (formState[key]) { // Garante que só envia campos preenchidos
                 formDataToSend.append(key, formState[key]);
             }
         });
-        if (formState.foto) {
-            formDataToSend.append('foto', formState.foto);
-        }
 
         const isEditing = !!registroEmEdicao;
         const url = isEditing ? `/api/pesos/${registroEmEdicao._id}` : `/api/pesos`;
         const method = isEditing ? 'PUT' : 'POST';
+        const token = localStorage.getItem('bariplus_token');
 
         try {
+            // Usa o fetch padrão porque o fetchApi está configurado para JSON,
+            // e aqui precisamos enviar multipart/form-data.
             const response = await fetch(`${process.env.REACT_APP_API_URL}${url}`, { 
                 method, 
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('bariplus_token')}` }, 
+                headers: { 'Authorization': `Bearer ${token}` }, // Sem 'Content-Type', o browser define-o automaticamente para FormData
                 body: formDataToSend 
             });
-            if (!response.ok) throw new Error(`Falha ao ${isEditing ? 'atualizar' : 'salvar'}`);
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Falha ao ${isEditing ? 'atualizar' : 'salvar'}`);
+            }
             
             toast.success(`Registro ${isEditing ? 'atualizado' : 'adicionado'}!`);
             setIsModalOpen(false);
@@ -237,6 +248,7 @@ const ProgressoPage = () => {
             toast.error(error.message);
         }
     };
+
     
     const handleDeleteProgresso = async (registroId) => {
         if (!window.confirm("Tem certeza?")) return;
@@ -372,7 +384,23 @@ const ProgressoPage = () => {
                     </div>
                     <div className="form-group">
                         <label>Foto de Progresso</label>
-                        <input type="file" name="foto" accept="image/*" onChange={handleFileChange} />
+                        <div className="image-uploader">
+                            <input 
+                                type="file" 
+                                name="foto" 
+                                id="fotoUpload"
+                                accept="image/png, image/jpeg" 
+                                onChange={handleFileChange} 
+                                className="image-input"
+                            />
+                            <label htmlFor="fotoUpload" className="image-drop-zone">
+                                {previewImage ? (
+                                    <img src={previewImage} alt="Pré-visualização" className="image-preview" />
+                                ) : (
+                                    <span>Clique ou arraste uma foto aqui</span>
+                                )}
+                            </label>
+                        </div>
                     </div>
                     <div className="form-actions">
                         <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancelar</button>

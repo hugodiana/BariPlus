@@ -63,12 +63,14 @@ const ConquistasPage = () => {
                 )}
             </div>
 
-            <div className="conquistas-section">
-                <h2>Por Desbloquear ({bloqueadas.length})</h2>
-                <div className="conquistas-grid">
-                    {bloqueadas.map(c => <ConquistaItem key={c.idConquista} conquista={c} />)}
+            {bloqueadas.length > 0 && (
+                <div className="conquistas-section">
+                    <h2>Por Desbloquear ({bloqueadas.length})</h2>
+                    <div className="conquistas-grid">
+                        {bloqueadas.map(c => <ConquistaItem key={c.idConquista} conquista={c} />)}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

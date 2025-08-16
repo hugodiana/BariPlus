@@ -31,6 +31,8 @@ const gastoRoutes = require('./routes/gastoRoutes');
 const conteudoRoutes = require('./routes/conteudoRoutes');
 const tacoRoutes = require('./routes/tacoRoutes');
 const conquistasRoutes = require('./routes/conquistasRoutes');
+const hydrationRoutes = require('./routes/hydrationRoutes');
+const reportRoutes = require('./routes/reportRoutes'); 
 
 // IMPORTAÇÃO DOS MIDDLEWARES E MODELOS
 const User = require('./models/userModel');
@@ -237,7 +239,8 @@ app.use('/api', gastoRoutes);
 app.use('/api', conteudoRoutes);
 app.use('/api', conquistasRoutes);
 app.use('/api/taco', tacoRoutes);
-
+app.use('/api', hydrationRoutes);
+app.use('/api', reportRoutes);
 
 // --- 5. INICIALIZAÇÃO DO SERVIDOR ---
 const server = app.listen(PORT, () => {

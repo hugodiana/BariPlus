@@ -1,29 +1,104 @@
+/* src/pages/ConquistasPage.css - NOVO DESIGN */
+
+.progress-summary-card {
+    padding: var(--space-lg) !important;
+    margin-bottom: var(--space-xl);
+}
+.progress-summary-card h3 {
+    margin: 0 0 var(--space-sm) 0;
+    text-align: center;
+    color: var(--color-text-strong);
+}
+.progress-bar-container {
+    background-color: var(--color-border);
+    border-radius: 20px;
+    height: 16px;
+    overflow: hidden;
+}
+.progress-bar-fill {
+    background: linear-gradient(90deg, var(--color-success), var(--color-primary));
+    height: 100%;
+    border-radius: 20px;
+    transition: width 0.5s ease-in-out;
+}
+.progress-details {
+    display: flex;
+    justify-content: space-between;
+    margin-top: var(--space-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+}
+
+.conquistas-section {
+    margin-bottom: var(--space-xl);
+}
+.conquistas-section h2 {
+    color: var(--color-text-strong);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-lg);
+}
+
 .conquistas-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
 }
+
 .conquista-item {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
+    gap: var(--space-md);
+    background-color: var(--color-surface);
+    padding: var(--space-md);
     border-radius: var(--border-radius);
-    background-color: var(--background-light);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--color-border);
+    transition: var(--transition);
 }
-.conquista-item.bloqueada {
-    opacity: 0.5;
-}
-.conquista-icone {
+
+.conquista-icon {
     font-size: 2.5rem;
+    width: 60px;
+    height: 60px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
 }
 .conquista-info h4 {
     margin: 0 0 0.25rem 0;
+    color: var(--color-text-strong);
 }
 .conquista-info p {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
     margin: 0;
+}
+
+/* Estilos para Conquistas Desbloqueadas */
+.conquista-item.unlocked {
+    border-left: 5px solid var(--color-success);
+}
+.conquista-item.unlocked .conquista-icon {
+    background-color: var(--color-primary-light);
+}
+
+/* Estilos para Conquistas Bloqueadas */
+.conquista-item.locked {
+    filter: grayscale(1);
+    opacity: 0.7;
+}
+.conquista-item.locked .conquista-icon {
+    background-color: var(--color-background);
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--color-text-faint);
+    padding: var(--space-xl);
+    background-color: var(--color-surface);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--border-radius);
 }

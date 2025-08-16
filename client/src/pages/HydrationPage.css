@@ -1,0 +1,68 @@
+/* src/pages/HydrationPage.css */
+
+.hydration-summary-card {
+    padding: var(--space-lg) !important;
+    margin-bottom: var(--space-xl);
+}
+
+.quick-add-header, .log-history-header {
+    margin-bottom: var(--space-md);
+}
+.quick-add-header h3, .log-history-header h3 {
+    margin: 0;
+    color: var(--color-text-strong);
+}
+
+.quick-add-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: var(--space-md);
+}
+
+.quick-add-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: var(--color-surface);
+    cursor: pointer;
+    transition: var(--transition);
+}
+.quick-add-btn:hover {
+    background-color: var(--color-primary-light);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+}
+
+.drink-icon { font-size: 2rem; }
+.drink-label { font-weight: var(--font-weight-medium); color: var(--color-text-primary); }
+.drink-amount { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+
+.log-history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.log-history-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+.log-history-list li:last-child {
+    border-bottom: none;
+}
+
+.log-icon { font-size: 1.5rem; }
+.log-info { flex-grow: 1; }
+.log-info strong { display: block; }
+.log-info span { font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.log-time { font-weight: var(--font-weight-medium); color: var(--color-text-secondary); }
+.delete-log-btn { background: none; border: none; font-size: 1.5rem; color: var(--color-text-faint); cursor: pointer; }
+.delete-log-btn:hover { color: var(--color-danger); }

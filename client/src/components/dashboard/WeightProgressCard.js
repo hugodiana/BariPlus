@@ -1,15 +1,72 @@
 import React from 'react';
-import './WeightProgressCard.css';
+import { Line } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler } from 'chart.js';
+import { format } from 'date-fns';
 import Card from '../ui/Card';
+import './WeightProgressCard.css';
 
-const WeightProgressCard = ({ usuario }) => {
-    // Extrai os dados do objeto do usuário para maior clareza
+// Registrando os componentes necessários do Chart.js
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
+
+const WeightProgressCard = ({ usuario, historicoPesos = [] }) => {
     const pesoInicial = usuario?.detalhesCirurgia?.pesoInicial || 0;
     const pesoAtual = usuario?.detalhesCirurgia?.pesoAtual || 0;
     const metaPeso = usuario?.metaPeso || 0;
 
     const pesoEliminado = pesoInicial - pesoAtual;
     const faltamParaMeta = pesoAtual - metaPeso;
+
+    // Pega os últimos 7 registros para um gráfico limpo
+    const ultimosRegistros = historicoPesos.slice(-7);
+
+    const chartData = {
+        labels: ultimosRegistros.map(p => format(new Date(p.data), 'dd/MM')),
+        datasets: [
+            {
+                label: 'Peso (kg)',
+                data: ultimosRegistros.map(p => p.peso),
+                fill: true,
+                backgroundColor: 'rgba(55, 113, 91, 0.2)',
+                borderColor: 'rgba(55, 113, 91, 1)',
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: 'rgba(55, 113, 91, 1)',
+            },
+        ],
+    };
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: {
+                    font: {
+                        size: 10
+                    }
+                }
+            },
+            y: {
+                beginAtZero: false,
+                ticks: {
+                    font: {
+                        size: 10
+                    }
+                }
+            },
+        },
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `Peso: ${context.parsed.y} kg`;
+                    }
+                }
+            }
+        },
+    };
 
     return (
         <Card className="dashboard-card weight-card">
@@ -27,7 +84,6 @@ const WeightProgressCard = ({ usuario }) => {
                     <span className="stat-label">Eliminado</span>
                     <span className="stat-value">{pesoEliminado >= 0 ? pesoEliminado.toFixed(1) : 0} kg</span>
                 </div>
-                {/* ✅ NOVO: Bloco para a meta */}
                 {metaPeso > 0 && (
                     <div className="stat-item meta">
                         <span className="stat-label">Meta</span>
@@ -35,7 +91,13 @@ const WeightProgressCard = ({ usuario }) => {
                     </div>
                 )}
             </div>
-            {/* ✅ NOVO: Barra de progresso para a meta */}
+            
+            {ultimosRegistros.length > 1 && (
+                <div className="chart-container">
+                    <Line options={chartOptions} data={chartData} />
+                </div>
+            )}
+
             {metaPeso > 0 && pesoInicial > metaPeso && (
                  <div className="goal-progress-container">
                     <div className="goal-progress-info">
