@@ -24,15 +24,26 @@ exports.register = async (req, res) => {
         if (!validatePassword(password)) {
             return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
         }
-        if (await User.findOne({ email })) {
+
+        // ✅ CORREÇÃO: Adicionamos a verificação para username duplicado
+        const existingUserEmail = await User.findOne({ email: email.toLowerCase() });
+        if (existingUserEmail) {
             return res.status(400).json({ message: 'Este e-mail já está em uso.' });
+        }
+        
+        const existingUsername = await User.findOne({ username });
+        if (existingUsername) {
+            return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
         }
         
         const hashedPassword = await bcrypt.hash(password, 10);
         const verificationToken = crypto.randomBytes(32).toString('hex');
         
         novoUsuario = new User({
-            nome, sobrenome, username, email, whatsapp, password: hashedPassword,
+            nome, sobrenome, username, 
+            email: email.toLowerCase(), // Salva o e-mail em minúsculas para consistência
+            whatsapp, 
+            password: hashedPassword,
             emailVerificationToken: verificationToken,
             emailVerificationExpires: new Date(Date.now() + 3600000), // 1 hora
         });
@@ -48,7 +59,7 @@ exports.register = async (req, res) => {
         );
 
         await resend.emails.send({
-            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+            from: `BariPlus <onboarding@resend.dev>`,
             to: [novoUsuario.email],
             subject: 'Ative a sua Conta no BariPlus',
             html: emailHtml,
@@ -61,6 +72,7 @@ exports.register = async (req, res) => {
         res.status(500).json({ message: 'Erro no servidor.' });
     }
 };
+
 
 exports.login = async (req, res) => {
     try {

@@ -1,9 +1,9 @@
-// src/components/Layout.js
 import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+// ✅ 1. Importar Outlet e useNavigate
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'; 
 import './Layout.css';
+import { toast } from 'react-toastify';
 
-// Componente para o item de navegação com ícone
 const NavItem = ({ to, icon, text, onClick }) => (
     <NavLink to={to} end onClick={onClick}>
         <span className="nav-icon">{icon}</span>
@@ -11,9 +11,10 @@ const NavItem = ({ to, icon, text, onClick }) => (
     </NavLink>
 );
 
-const Layout = ({ children, usuario }) => {
+const Layout = ({ usuario }) => {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const handleResize = () => {
@@ -39,7 +40,9 @@ const Layout = ({ children, usuario }) => {
 
     const handleLogout = () => {
         localStorage.removeItem('bariplus_token');
-        window.location.href = '/login';
+        toast.info("Sessão encerrada.");
+        // Redireciona para a landing page após o logout
+        navigate('/landing'); 
     };
 
     return (
@@ -65,7 +68,6 @@ const Layout = ({ children, usuario }) => {
                 </div>
                 
                 <nav className="sidebar-nav">
-                    {/* ✅ NOVIDADE: Links com ícones */}
                     <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} />
                     <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
                     <NavItem to="/diario-alimentar" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
@@ -95,7 +97,8 @@ const Layout = ({ children, usuario }) => {
             </aside>
             
             <main className="main-content">
-                {children}
+                {/* ✅ 2. Substituir {children} por <Outlet /> */}
+                <Outlet />
             </main>
         </div>
     );

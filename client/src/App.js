@@ -1,116 +1,126 @@
-// src/App.js
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Componentes e Páginas
+import { setAuthToken, fetchApi } from './utils/api';
+
+// Layouts e Componentes de Rota
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
+
+// Páginas Públicas e de Fluxo (sem menu lateral)
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import OnboardingPage from './pages/OnboardingPage';
-import PricingPage from './pages/PricingPage';
-import VerifyPage from './pages/VerifyPage'; // A página correta de verificação
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import PaymentStatusPage from './pages/PaymentStatusPage';
+import VerifyPage from './pages/VerifyPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
+import PricingPage from './pages/PricingPage';
+import OnboardingPage from './pages/OnboardingPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import PaymentCancelPage from './pages/PaymentCancelPage';
+
+// Páginas do App (com menu lateral)
 import DashboardPage from './pages/DashboardPage';
 import ProgressoPage from './pages/ProgressoPage';
 import ChecklistPage from './pages/ChecklistPage';
 import ConsultasPage from './pages/ConsultasPage';
-import FoodDiaryPage from './pages/FoodDiaryPage';
 import MedicationPage from './pages/MedicationPage';
+import FoodDiaryPage from './pages/FoodDiaryPage';
+import ExamsPage from './pages/ExamsPage';
 import GastosPage from './pages/GastosPage';
 import ConquistasPage from './pages/ConquistasPage';
-import ExamsPage from './pages/ExamsPage';
-import ArtigoPage from './pages/ArtigoPage';
 import ConteudosPage from './pages/ConteudosPage';
+import ArtigoPage from './pages/ArtigoPage';
 import GanheRendaExtraPage from './pages/GanheRendaExtraPage';
 import ProfilePage from './pages/ProfilePage';
-import { setAuthToken } from './utils/api';
 
 function App() {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
-    const apiUrl = process.env.REACT_APP_API_URL;
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            const token = localStorage.getItem('bariplus_token');
-            if (token) {
-                try {
-                    const res = await fetch(`${apiUrl}/api/me`, { headers: { 'Authorization': `Bearer ${token}` } });
-                    if (!res.ok) throw new Error('Sessão inválida');
+    const checkUserStatus = useCallback(async () => {
+        const token = localStorage.getItem('bariplus_token');
+        if (token) {
+            setAuthToken(token);
+            try {
+                const res = await fetchApi('/api/me');
+                if (res.ok) {
                     const data = await res.json();
                     setUsuario(data);
-                } catch (error) {
+                } else {
                     setAuthToken(null);
-                    setUsuario(null);
                 }
+            } catch (error) {
+                setAuthToken(null);
             }
-            setLoading(false);
-        };
-        fetchUser();
-    }, [apiUrl]);
+        }
+        setLoading(false);
+    }, []);
 
-    const handleLoginSuccess = (loginData) => {
-        setAuthToken(loginData.token);
-        setUsuario(loginData.user);
+    useEffect(() => {
+        checkUserStatus();
+    }, [checkUserStatus]);
+
+    const handleLoginSuccess = (data) => {
+        setAuthToken(data.token);
+        setUsuario(data.user);
     };
 
     if (loading) {
-        return <LoadingSpinner />;
+        return <LoadingSpinner fullPage />;
     }
 
     return (
-        <>
-            <ToastContainer position="top-right" autoClose={4000} />
-            <Router>
+        <Router>
+            <div className="App">
+                <ToastContainer position="bottom-right" autoClose={4000} hideProgressBar={false} />
                 <Routes>
-                    {/* --- Rotas Públicas --- */}
+                    {/* --- Grupo 1: Rotas Públicas (acessíveis sem login) --- */}
                     <Route path="/landing" element={<LandingPage />} />
                     <Route path="/login" element={!usuario ? <LoginPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
+                    <Route path="/verify-email/:token?" element={<VerifyPage />} />
                     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-                    <Route path="/verify-email/:token" element={<VerifyPage />} />
                     <Route path="/termos" element={<TermsPage />} />
                     <Route path="/privacidade" element={<PrivacyPage />} />
 
-                    {/* --- Rota Principal Protegida --- */}
-                    <Route path="/*" element={
-                        <ProtectedRoute usuario={usuario}>
-                            <Layout usuario={usuario}>
-                                <Routes>
-                                    <Route path="/" element={<DashboardPage />} />
-                                    <Route path="/progresso" element={<ProgressoPage />} />
-                                    <Route path="/checklist" element={<ChecklistPage />} />
-                                    <Route path="/consultas" element={<ConsultasPage />} />
-                                    <Route path="/diario-alimentar" element={<FoodDiaryPage />} />
-                                    <Route path="/medicacao" element={<MedicationPage />} />
-                                    <Route path="/gastos" element={<GastosPage />} />
-                                    <Route path="/conquistas" element={<ConquistasPage />} />
-                                    <Route path="/exames" element={<ExamsPage />} />
-                                    <Route path="/artigos" element={<ConteudosPage />} />
-                                    <Route path="/artigos/:id" element={<ArtigoPage />} />
-                                    <Route path="/ganhe-renda-extra" element={<GanheRendaExtraPage />} />
-                                    <Route path="/perfil" element={<ProfilePage />} />
-                                    
-                                    {/* Rotas Intermediárias que o ProtectedRoute irá gerir */}
-                                    <Route path="/planos" element={<PricingPage />} />
-                                    <Route path="/pagamento-status" element={<PaymentStatusPage />} />
-                                    <Route path="/bem-vindo" element={<OnboardingPage />} />
-                                    
-                                    <Route path="*" element={<Navigate to="/" />} />
-                                </Routes>
-                            </Layout>
-                        </ProtectedRoute>
-                    }/>
+                    {/* --- Grupo 2: Rotas de Fluxo (páginas de etapa única, sem layout) --- */}
+                    <Route path="/planos" element={<PricingPage />} />
+                    <Route path="/bem-vindo" element={<OnboardingPage />} />
+                    <Route path="/payment/success" element={<PaymentSuccessPage />} />
+                    <Route path="/payment/cancel" element={<PaymentCancelPage />} />
+
+                    {/* --- Grupo 3: Rotas Principais da Aplicação (protegidas e com layout) --- */}
+                    <Route
+                        path="/"
+                        element={
+                            <ProtectedRoute usuario={usuario}>
+                                <Layout usuario={usuario} />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route index element={<DashboardPage />} />
+                        <Route path="progresso" element={<ProgressoPage />} />
+                        <Route path="checklist" element={<ChecklistPage />} />
+                        <Route path="consultas" element={<ConsultasPage />} />
+                        <Route path="medicacao" element={<MedicationPage />} />
+                        <Route path="diario-alimentar" element={<FoodDiaryPage />} />
+                        <Route path="exames" element={<ExamsPage />} />
+                        <Route path="gastos" element={<GastosPage />} />
+                        <Route path="conquistas" element={<ConquistasPage />} />
+                        <Route path="artigos" element={<ConteudosPage />} />
+                        <Route path="artigos/:id" element={<ArtigoPage />} />
+                        <Route path="ganhe-renda-extra" element={<GanheRendaExtraPage />} />
+                        <Route path="perfil" element={<ProfilePage />} />
+                    </Route>
+                    
+                    {/* --- Fallback: Se nenhuma rota for encontrada, redireciona para a landing page --- */}
+                    <Route path="*" element={<Navigate to="/landing" />} />
                 </Routes>
-            </Router>
-        </>
+            </div>
+        </Router>
     );
 }
 

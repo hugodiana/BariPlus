@@ -89,96 +89,83 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
         const kiwifyEvent = req.body;
         const customerEmail = kiwifyEvent.Customer?.email?.toLowerCase();
         const orderStatus = kiwifyEvent.order_status;
-        const subscriptionStatus = kiwifyEvent.subscription_status;
 
         if (!customerEmail) {
             console.log('Webhook da Kiwify recebido sem e-mail do cliente.');
             return res.sendStatus(400);
         }
 
-        // ✅ LÓGICA PARA PAGAMENTO APROVADO
-        if (orderStatus === 'paid' || subscriptionStatus === 'active') {
-            const userName = kiwifyEvent.Customer.full_name;
+        // Cenário 1: Pagamento Aprovado
+        if (orderStatus === 'paid') {
+            const userName = kiwifyEvent.Customer.full_name || 'Novo Usuário';
             let usuario = await User.findOne({ email: customerEmail });
+            let isNewUser = false;
 
-            if (usuario) {
-                // Utilizador já existe, apenas atualiza o status de pagamento
-                usuario.pagamentoEfetuado = true;
-                usuario.kiwifySubscriptionId = kiwifyEvent.order_id;
-                await usuario.save();
-                console.log(`Acesso atualizado para o usuário existente: ${customerEmail}`);
+            // Se o usuário não existir, cria um novo
+            if (!usuario) {
+                isNewUser = true;
+                const temporaryPassword = crypto.randomBytes(16).toString('hex');
+                const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
                 
-                // ✅ NOVO: Envia um e-mail de boas-vindas mesmo se o usuário já existir
-                const emailHtml = emailTemplate(
-                    'Seu Acesso ao BariPlus Foi Liberado!',
-                    `Olá, ${usuario.nome}! Confirmamos o seu pagamento. O seu acesso a todas as funcionalidades do BariPlus já está ativo.`,
-                    'Aceder à Minha Conta',
-                    `${process.env.CLIENT_URL}/login`
-                );
-
-                await resend.emails.send({
-                    from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
-                    to: [customerEmail],
-                    subject: 'Acesso Liberado - BariPlus',
-                    html: emailHtml,
-                });
-
-            } else {
-                // Utilizador não existe, cria uma nova conta
-                const resetToken = crypto.randomBytes(32).toString('hex');
-                const novoUsuario = new User({
-                    nome: userName,
+                usuario = new User({
+                    nome: userName.split(' ')[0],
+                    sobrenome: userName.split(' ').slice(1).join(' '),
                     email: customerEmail,
-                    password: await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10),
-                    pagamentoEfetuado: true,
-                    kiwifySubscriptionId: kiwifyEvent.order_id,
-                    resetPasswordToken: resetToken,
-                    resetPasswordExpires: Date.now() + 24 * 3600000, // 24 horas
+                    password: hashedPassword,
+                    isEmailVerified: true, // Já que o pagamento foi confirmado
                 });
-                await novoUsuario.save();
+            }
 
-                // Cria os documentos associados (checklist, etc.)
+            // Atualiza o status do pagamento e salva
+            usuario.pagamentoEfetuado = true;
+            usuario.kiwifySubscriptionId = kiwifyEvent.order_id;
+            await usuario.save();
+
+            console.log(`Acesso concedido para: ${customerEmail}. Novo usuário: ${isNewUser}`);
+
+            // Se for um novo usuário, cria os documentos associados
+            if (isNewUser) {
                 await Promise.all([
-                    new Checklist({ userId: novoUsuario._id }).save(),
-                    new Peso({ userId: novoUsuario._id }).save(),
-                    new Consulta({ userId: novoUsuario._id }).save(),
-                    new DailyLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-                    new Medication({ userId: novoUsuario._id }).save(),
-                    new FoodLog({ userId: novoUsuario._id, date: new Date().toISOString().split('T')[0] }).save(),
-                    new Gasto({ userId: novoUsuario._id }).save(),
-                    new Exams({ userId: novoUsuario._id }).save()
+                    new Checklist({ userId: usuario._id }).save(),
+                    new Peso({ userId: usuario._id }).save(),
+                    new Consulta({ userId: usuario._id }).save(),
+                    new DailyLog({ userId: usuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+                    new Medication({ userId: usuario._id }).save(),
+                    new FoodLog({ userId: usuario._id, date: new Date().toISOString().split('T')[0] }).save(),
+                    new Gasto({ userId: usuario._id }).save(),
+                    new Exams({ userId: usuario._id }).save()
                 ]);
-                
-                console.log(`Novo usuário criado e acesso concedido: ${customerEmail}`);
+
+                // Envia e-mail de boas-vindas para o novo usuário configurar a senha
+                const resetToken = crypto.randomBytes(32).toString('hex');
+                usuario.resetPasswordToken = resetToken;
+                usuario.resetPasswordExpires = Date.now() + 24 * 3600000; // 24 horas
+                await usuario.save();
 
                 const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
                 const emailHtml = emailTemplate(
                     'Bem-vindo(a) ao BariPlus! Configure o seu acesso.',
-                    `Olá, ${userName}! A sua compra foi aprovada e o seu acesso ao BariPlus foi liberado. Clique no botão abaixo para criar a sua senha de acesso.`,
+                    `Olá, ${usuario.nome}! Sua compra foi aprovada. Clique no botão abaixo para criar sua senha de acesso.`,
                     'Criar Minha Senha',
                     setupPasswordLink
                 );
 
                 await resend.emails.send({
-                    from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+                    from: `BariPlus <onboarding@resend.dev>`,
                     to: [customerEmail],
                     subject: 'Bem-vindo(a) ao BariPlus!',
                     html: emailHtml,
                 });
             }
-        } 
-        // ✅ NOVA LÓGICA PARA ESTORNO, CANCELAMENTO OU EXPIRAÇÃO
-        else if (['refunded', 'canceled', 'expired'].includes(orderStatus) || ['canceled', 'expired'].includes(subscriptionStatus)) {
-            const usuario = await User.findOne({
-                $or: [{ email: customerEmail }, { kiwifySubscriptionId: kiwifyEvent.order_id }]
-            });
+        }
+        // Cenário 2: Pagamento Reembolsado ou Cancelado
+        else if (['refunded', 'canceled', 'expired'].includes(orderStatus)) {
+            const usuario = await User.findOne({ email: customerEmail });
 
             if (usuario) {
                 usuario.pagamentoEfetuado = false;
                 await usuario.save();
-                console.log(`Acesso revogado para ${customerEmail} devido ao status: ${orderStatus || subscriptionStatus}`);
-            } else {
-                console.log(`Recebido status de revogação (${orderStatus || subscriptionStatus}) para um usuário não encontrado: ${customerEmail}`);
+                console.log(`Acesso revogado para ${customerEmail} devido ao status: ${orderStatus}`);
             }
         }
 
@@ -189,27 +176,6 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
     }
 });
 
-
-// --- 3. CONFIGURAÇÕES DE SERVIÇOS ---
-if (process.env.FIREBASE_PRIVATE_KEY) {
-    if (!admin.apps.length) {
-        try {
-            const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
-            const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
-            const serviceAccount = JSON.parse(decodedKey);
-            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-            console.log('Firebase Admin inicializado com sucesso.');
-        } catch (error) { 
-            console.error('Erro ao inicializar Firebase Admin:', error); 
-        }
-    }
-}
-
-cloudinary.config({ 
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-    api_key: process.env.CLOUDINARY_API_KEY, 
-    api_secret: process.env.CLOUDINARY_API_SECRET 
-});
 
 const PORT = process.env.PORT || 3001;
 mongoose.connect(process.env.DATABASE_URL).then(() => console.log('Conectado ao MongoDB!')).catch(err => console.error(err));

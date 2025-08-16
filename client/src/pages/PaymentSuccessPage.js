@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import './PricingPage.css'; // Reutilizando o estilo
+// ✅ CORREÇÃO: O nome do arquivo CSS foi atualizado aqui
+import './PaymentPages.css'; 
 
 const PaymentSuccessPage = () => {
     const navigate = useNavigate();
@@ -42,7 +43,7 @@ const PaymentSuccessPage = () => {
     }, [searchParams, navigate]);
 
     return (
-        <div className="pricing-page-container">
+        <div className="payment-page-container">
             <div className="feedback-card">
                 {status === 'confirmando' && (
                     <>
