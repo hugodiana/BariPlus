@@ -3,18 +3,17 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const bcrypt = require('bcryptjs'); 
 const jwt = require('jsonwebtoken');
+const admin = require('firebase-admin'); // ✅ IMPORTAÇÃO ADICIONADA AQUI
 
 exports.loginAdmin = async (req, res) => {
     try {
         const { identifier, password } = req.body;
         const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
 
-        // ✅ CORREÇÃO: Usa bcrypt.compare para comparar a senha enviada com a hash no DB
         if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
             return res.status(401).json({ message: 'Credenciais inválidas.' });
         }
 
-        // ✅ VERIFICAÇÃO CRUCIAL: Garante que o usuário tem a permissão de 'admin'
         if (usuario.role !== 'admin') {
             return res.status(403).json({ message: 'Acesso negado. Esta área é exclusiva para administradores.' });
         }
@@ -68,7 +67,7 @@ exports.grantAccess = async (req, res) => {
     }
 };
 
-// ✅ NOVA FUNÇÃO: Revogar o acesso de um usuário
+// POST /api/admin/users/:userId/revoke-access - Revogar o acesso de um usuário
 exports.revokeAccess = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -80,7 +79,7 @@ exports.revokeAccess = async (req, res) => {
     }
 };
 
-// ✅ NOVA FUNÇÃO: Confirmar manualmente o e-mail de um usuário
+// POST /api/admin/users/:userId/verify-email - Confirmar manualmente o e-mail de um usuário
 exports.verifyUserEmail = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -106,7 +105,7 @@ exports.getStats = async (req, res) => {
     }
 };
 
-// ✅ NOVA FUNÇÃO PARA ENVIO EM MASSA
+// POST /api/admin/notifications/broadcast - Enviar notificação em massa
 exports.sendBroadcastNotification = async (req, res) => {
     try {
         const { title, body, link } = req.body;
@@ -115,7 +114,6 @@ exports.sendBroadcastNotification = async (req, res) => {
             return res.status(400).json({ message: 'Título e corpo da mensagem são obrigatórios.' });
         }
 
-        // 1. Busca todos os usuários que têm um token de notificação válido
         const usersWithTokens = await User.find({ fcmToken: { $exists: true, $ne: null } }).select('fcmToken');
         
         if (usersWithTokens.length === 0) {
@@ -124,26 +122,22 @@ exports.sendBroadcastNotification = async (req, res) => {
 
         const tokens = usersWithTokens.map(user => user.fcmToken);
 
-        // 2. Monta a mensagem da notificação
         const message = {
             notification: {
                 title: title,
                 body: body,
             },
             webpush: {
-                // É aqui que a "mágica" do link acontece!
                 fcmOptions: {
-                    link: link || 'https://bariplus.vercel.app' // Usa o link enviado ou um padrão
+                    link: link || 'https://bariplus.vercel.app'
                 },
                 notification: {
-                    // Adiciona um ícone à notificação (opcional, mas recomendado)
                     icon: 'https://bariplus.vercel.app/bariplus_logo.png' 
                 }
             },
-            tokens: tokens, // Envia para todos os tokens encontrados
+            tokens: tokens,
         };
 
-        // 3. Envia as mensagens usando o método multicast do Firebase
         const response = await admin.messaging().sendMulticast(message);
 
         res.status(200).json({

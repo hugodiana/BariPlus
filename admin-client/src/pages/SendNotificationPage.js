@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
-import './SendNotificationPage.css'; // ✅ IMPORTAÇÃO DO NOVO CSS
+import LoadingSpinner from '../components/LoadingSpinner'; // Adicionado para feedback de carregamento
+import './SendNotificationPage.css';
 
 const SendNotificationPage = () => {
     const [formData, setFormData] = useState({
@@ -46,13 +47,13 @@ const SendNotificationPage = () => {
     };
 
     return (
-        <div>
+        <div className="admin-page-container">
             <header className="page-header">
                 <h1>Enviar Notificação em Massa</h1>
                 <p>Envie uma mensagem push para todos os usuários com notificações ativas.</p>
             </header>
 
-            <Card className="notification-form-card">
+            <Card>
                 <form onSubmit={handleSubmit} className="notification-form">
                     <div className="form-group">
                         <label htmlFor="title">Título da Notificação</label>
@@ -86,13 +87,16 @@ const SendNotificationPage = () => {
                             name="link"
                             value={formData.link}
                             onChange={handleInputChange}
-                            placeholder="Ex: https://bariplus.vercel.app/artigos/12345"
+                            placeholder="https://bariplus.vercel.app/artigos/12345"
                         />
                          <small>Se deixado em branco, abrirá a página inicial do app.</small>
                     </div>
-                    <button type="submit" className="primary-btn" disabled={isLoading}>
-                        {isLoading ? 'Enviando...' : 'Enviar para Todos os Usuários'}
-                    </button>
+                    <div className="form-actions">
+                        <button type="submit" className="primary-btn" disabled={isLoading}>
+                            {isLoading && <span className="btn-spinner"></span>}
+                            {isLoading ? 'Enviando...' : 'Enviar para Todos os Usuários'}
+                        </button>
+                    </div>
                 </form>
             </Card>
         </div>

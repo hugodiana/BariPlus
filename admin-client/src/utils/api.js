@@ -1,51 +1,55 @@
-// src/utils/api.js
 import { toast } from 'react-toastify';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
-// Guarda o token na memória para segurança.
-let accessToken = localStorage.getItem('bariplus_token');
+// ✅ CORREÇÃO: A chave do token foi alterada para 'bariplus_admin_token'
+const TOKEN_KEY = 'bariplus_admin_token';
 
-// Função para definir/limpar o token
+// A função agora lê o token do localStorage sempre que é chamada,
+// garantindo que ele esteja sempre atualizado.
+const getToken = () => localStorage.getItem(TOKEN_KEY);
+
 export const setAuthToken = (token) => {
     if (token) {
-        localStorage.setItem('bariplus_token', token);
-        accessToken = token;
+        localStorage.setItem(TOKEN_KEY, token);
     } else {
-        localStorage.removeItem('bariplus_token');
-        accessToken = null;
+        localStorage.removeItem(TOKEN_KEY);
     }
 };
 
-// A nossa função fetch "inteligente" e centralizada
 export const fetchApi = async (endpoint, options = {}) => {
+    const token = getToken();
+    
     const headers = {
         'Content-Type': 'application/json',
         ...options.headers,
     };
 
-    if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
     try {
         const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
 
-        // Se o token expirar (erro 401/403), desloga o utilizador.
-        // A lógica de refresh token pode ser adicionada aqui no futuro se necessário.
+        // Se o token for inválido, o servidor retornará 401 ou 403
         if ([401, 403].includes(response.status)) {
             setAuthToken(null); // Limpa o token inválido
-            toast.error('Sessão expirada. Por favor, faça o login novamente.');
-            // Força o recarregamento da página para o ecrã de login
+            toast.error('Sessão expirada ou acesso negado. Por favor, faça o login novamente.');
+            
+            // Redireciona para a página de login do admin
             window.location.href = '/login'; 
-            // Lança um erro para interromper a execução do código que chamou a função
+            
             throw new Error('Sessão expirada');
         }
 
         return response;
 
     } catch (error) {
-        // Se a chamada de rede falhar, rejeita a promessa
+        // Evita mostrar a mesma mensagem de erro duas vezes
+        if (error.message !== 'Sessão expirada') {
+            toast.error(error.message || "Erro de conexão com a API.");
+        }
         return Promise.reject(error);
     }
 };

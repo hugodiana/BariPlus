@@ -187,19 +187,23 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
 
 
 // --- 3. CONFIGURAÇÕES DE SERVIÇOS ---
-if (process.env.FIREBASE_PRIVATE_KEY) {
-    if (!admin.apps.length) {
-        try {
-            const encodedKey = process.env.FIREBASE_PRIVATE_KEY;
-            const decodedKey = Buffer.from(encodedKey, 'base64').toString('utf-8');
-            const serviceAccount = JSON.parse(decodedKey);
-            admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-            console.log('Firebase Admin inicializado com sucesso.');
-        } catch (error) { 
-            console.error('Erro ao inicializar Firebase Admin:', error); 
-        }
+if (process.env.FIREBASE_PROJECT_ID && !admin.apps.length) {
+    try {
+        const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
+
+        admin.initializeApp({
+            credential: admin.credential.cert({
+                projectId: process.env.FIREBASE_PROJECT_ID,
+                clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+                privateKey: privateKey,
+            })
+        });
+        console.log('Firebase Admin inicializado com sucesso.');
+    } catch (error) {
+        console.error('Erro CRÍTICO ao inicializar Firebase Admin:', error);
     }
 }
+
 
 cloudinary.config({ 
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
