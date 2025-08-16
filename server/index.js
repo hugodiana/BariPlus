@@ -10,6 +10,8 @@ const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
 const admin = require('firebase-admin');
 
+const emailTemplate = require('./utils/emailTemplate'); 
+
 // ✅ IMPORTAÇÃO DE TODAS AS ROTAS MODULARIZADAS
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -90,13 +92,11 @@ app.use(express.json());
 app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
     console.log('--- NOVO EVENTO DO WEBHOOK KIWIFY RECEBIDO ---');
     console.log('Timestamp:', new Date().toISOString());
-    console.log('Corpo do Evento (Body):', JSON.stringify(req.body, null, 2)); // Loga todo o conteúdo recebido
+    console.log('Corpo do Evento (Body):', JSON.stringify(req.body, null, 2));
 
     try {
         const kiwifyEvent = req.body;
         const customerEmail = kiwifyEvent.Customer?.email?.toLowerCase();
-        
-        // ✅ LÓGICA ATUALIZADA: Considera tanto o status da ordem quanto da assinatura
         const orderStatus = kiwifyEvent.order_status;
         const subscriptionStatus = kiwifyEvent.subscription_status;
 
@@ -105,7 +105,6 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
             return res.sendStatus(400);
         }
 
-        // Cenário 1: Pagamento Aprovado ou Assinatura Ativa
         if (orderStatus === 'paid' || subscriptionStatus === 'active') {
             console.log(`Evento de SUCESSO recebido para ${customerEmail}. Status: ${orderStatus || subscriptionStatus}`);
             
@@ -133,7 +132,6 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
             await usuario.save();
             console.log(`Acesso concedido e salvo no banco de dados para: ${customerEmail}.`);
 
-            // Se for um novo usuário, cria os documentos associados
             if (isNewUser) {
                 console.log(`Criando documentos iniciais para o novo usuário ${customerEmail}...`);
                 await Promise.all([
@@ -156,10 +154,9 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
                 const setupPasswordLink = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
                 const emailHtml = emailTemplate('Bem-vindo(a) ao BariPlus!', `Sua compra foi aprovada. Clique no botão abaixo para criar sua senha.`, 'Criar Minha Senha', setupPasswordLink);
 
-                await resend.emails.send({ from: `BariPlus <onboarding@resend.dev>`, to: [customerEmail], subject: 'Bem-vindo(a) ao BariPlus!', html: emailHtml });
+                await resend.emails.send({ from: `BariPlus <contato@bariplus.com>`, to: [customerEmail], subject: 'Bem-vindo(a) ao BariPlus!', html: emailHtml });
             }
         }
-        // Cenário 2: Pagamento Reembolsado ou Cancelado
         else if (['refunded', 'canceled', 'expired'].includes(orderStatus) || ['canceled', 'expired'].includes(subscriptionStatus)) {
             console.log(`Evento de REVOGAÇÃO recebido para ${customerEmail}. Status: ${orderStatus || subscriptionStatus}`);
             const usuario = await User.findOne({ email: customerEmail });
@@ -181,6 +178,7 @@ app.post('/api/kiwify-webhook', express.json(), async (req, res) => {
         res.sendStatus(500);
     }
 });
+
 
 
 
