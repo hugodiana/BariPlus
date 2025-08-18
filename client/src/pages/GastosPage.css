@@ -127,3 +127,14 @@
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 768px) {
+    .summary-totals {
+        grid-template-columns: 1fr; /* Muda para uma única coluna */
+        gap: var(--space-md);
+    }
+
+    .summary-item strong {
+        font-size: 1.8rem; /* Reduz o tamanho da fonte dos valores */
+    }
+}

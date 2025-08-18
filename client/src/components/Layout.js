@@ -98,11 +98,19 @@ const Layout = ({ usuario }) => {
                 <div className="sidebar-footer">
                     {usuario && (
                         <div className="user-info">
-                            <span className="user-name">{usuario.nome} {usuario.sobrenome}</span>
-                            <span className="user-email">{usuario.email}</span>
+                            {/* NOVO ELEMENTO DE IMAGEM */}
+                            <img 
+                                src={usuario.fotoPerfilUrl || '/placeholder-avatar.png'} 
+                                alt="Foto de Perfil" 
+                                className="sidebar-avatar" 
+                            />
+                            <div className="user-details">
+                                <span className="user-name">{usuario.nome} {usuario.sobrenome}</span>
+                                <span className="user-email">{usuario.email}</span>
+                            </div>
                         </div>
                     )}
-                    <button onClick={handleLogout} className="logout-btn">
+                        <button onClick={handleLogout} className="logout-btn">
                         <span className="nav-icon">🚪</span>
                         <span className="nav-text">Sair</span>
                     </button>

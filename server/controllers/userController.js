@@ -195,3 +195,30 @@ exports.updateGoals = async (req, res) => {
         res.status(500).json({ message: 'Erro ao atualizar as metas.' });
     }
 };
+
+exports.updateProfilePicture = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Nenhuma imagem foi enviada.' });
+        }
+
+        // Faz o upload para a Cloudinary a partir do buffer do ficheiro
+        const b64 = Buffer.from(req.file.buffer).toString('base64');
+        const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+        const result = await cloudinary.uploader.upload(dataURI, {
+            folder: 'bariplus_profile_pictures' // Uma pasta dedicada para fotos de perfil
+        });
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.userId,
+            { $set: { fotoPerfilUrl: result.secure_url } },
+            { new: true }
+        ).select('-password');
+
+        res.json({ message: 'Foto de perfil atualizada!', usuario: updatedUser });
+
+    } catch (error) {
+        console.error("Erro ao atualizar foto de perfil:", error);
+        res.status(500).json({ message: 'Erro ao atualizar a foto de perfil.' });
+    }
+};

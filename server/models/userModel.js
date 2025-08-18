@@ -37,6 +37,7 @@ const UserSchema = new mongoose.Schema({
         medicationReminders: { type: Boolean, default: true },
         weighInReminders: { type: Boolean, default: true }
     },
+    fotoPerfilUrl: { type: String, default: '' }
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);

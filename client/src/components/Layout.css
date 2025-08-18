@@ -151,3 +151,25 @@
         padding-top: 80px; /* Espaço para o botão hamburger */
     }
 }
+
+.sidebar-footer .user-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+    padding: 0 var(--space-xs);
+}
+
+.sidebar-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border); /* Adiciona uma borda subtil */
+}
+
+.user-details {
+    display: flex;
+    flex-direction: column;
+}

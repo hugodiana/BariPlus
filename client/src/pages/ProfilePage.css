@@ -126,6 +126,8 @@
     align-items: center;
     padding: var(--space-md) 0;
     border-bottom: 1px solid var(--color-border);
+    flex-wrap: wrap; /* ADICIONE ESTA LINHA para permitir que o conteúdo quebre a linha */
+    gap: var(--space-md); /* Adiciona um espaçamento entre os itens */
 }
 .setting-item:last-child { border-bottom: none; }
 .setting-item span { font-weight: var(--font-weight-medium); }
@@ -138,3 +140,55 @@ input:checked + .slider { background-color: var(--color-primary); }
 input:checked + .slider:before { transform: translateX(22px); }
 .slider.round { border-radius: 34px; }
 .slider.round:before { border-radius: 50%; }
+
+.profile-picture-container {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    margin: 0 auto var(--space-lg) auto; /* Centraliza o contentor */
+}
+
+.profile-picture {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 4px solid var(--color-surface);
+    box-shadow: var(--shadow-md);
+}
+
+.picture-upload-label {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    padding: 6px 10px;
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    backdrop-filter: blur(2px);
+}
+
+.picture-upload-label:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.password-form .primary-btn {
+    width: 100%;
+    margin-top: var(--space-sm);
+    padding: 14px;
+    font-size: 1rem;
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.password-form .primary-btn:hover {
+    background-color: var(--color-primary-dark);
+}

@@ -13,6 +13,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import Card from '../components/ui/Card';
 import ConteudoRecenteCard from '../components/dashboard/ConteudoRecenteCard';
 import './DashboardPage.css';
+import { messaging } from '../firebase'; // Importe o messaging do firebase
+import { getToken } from 'firebase/messaging';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -27,6 +29,44 @@ const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
+    const [showNotificationModal, setShowNotificationModal] = useState(false);
+
+    const handleEnableNotifications = async () => {
+        try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
+                if (!vapidKey) return toast.error("Configuração de notificações em falta.");
+                
+                const fcmToken = await getToken(messaging, { vapidKey });
+                if (fcmToken) {
+                    await fetchApi('/api/user/save-fcm-token', {
+                        method: 'POST',
+                        body: JSON.stringify({ fcmToken })
+                    });
+                    toast.success("Notificações ativadas com sucesso!");
+                }
+            } else {
+                toast.warn("Permissão para notificações foi negada.");
+            }
+        } catch (error) {
+            toast.error("Ocorreu um erro ao ativar as notificações.");
+        } finally {
+            setShowNotificationModal(false); // Fecha o modal independentemente do resultado
+        }
+    };
+
+    useEffect(() => {
+        // Lógica para mostrar o modal apenas uma vez
+        const hasAskedForNotifications = localStorage.getItem('notification_prompted');
+        if (usuario && !hasAskedForNotifications) {
+            // Espera um pouco para não ser a primeira coisa que o utilizador vê
+            setTimeout(() => {
+                setShowNotificationModal(true);
+                localStorage.setItem('notification_prompted', 'true');
+            }, 3000); // 3 segundos após o carregamento da dashboard
+        }
+    }, [usuario]);
 
     const fetchDashboardData = useCallback(async () => {
         setLoading(true);
@@ -269,6 +309,15 @@ const DashboardPage = () => {
                     {conteudos && conteudos.length > 0 && <ConteudoRecenteCard conteudos={conteudos} />}
                 </div>
             </div>
+
+            <Modal isOpen={showNotificationModal} onClose={() => setShowNotificationModal(false)}>
+                <h2>Ativar Notificações</h2>
+                <p>Gostaria de ativar as notificações para receber atualizações importantes?</p>
+                <div className="modal-actions">
+                    <button onClick={handleEnableNotifications} className="primary-btn">Ativar</button>
+                    <button onClick={() => setShowNotificationModal(false)} className="secondary-btn">Cancelar</button>
+                </div>
+            </Modal>
 
             <Modal isOpen={isDateModalOpen} onClose={() => setIsDateModalOpen(false)}>
                 <h2>Registrar Data da Cirurgia</h2>

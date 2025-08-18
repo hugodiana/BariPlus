@@ -9,10 +9,20 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import './ProfilePage.css';
 
+// Componente auxiliar movido para dentro do ficheiro para organização
+const InfoItem = ({ label, value }) => (
+    <div className="profile-info-item">
+        <strong>{label}</strong>
+        <span>{value}</span>
+    </div>
+);
+
+
 const ProfilePage = () => {
     const [usuario, setUsuario] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     
     const [formData, setFormData] = useState({
         nome: '', sobrenome: '', whatsapp: '', metaPeso: '',
@@ -30,9 +40,8 @@ const ProfilePage = () => {
     });
 
     const fetchUser = useCallback(async () => {
-        setLoading(true);
+        if (!loading) setLoading(true);
         try {
-            // CORREÇÃO APLICADA AQUI
             const data = await fetchApi('/api/me');
             setUsuario(data);
         } catch (error) {
@@ -40,11 +49,12 @@ const ProfilePage = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [loading]);
 
     useEffect(() => {
         fetchUser();
-    }, [fetchUser]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (usuario) {
@@ -76,13 +86,10 @@ const ProfilePage = () => {
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetchApi('/api/user/profile', {
+            const updatedUser = await fetchApi('/api/user/profile', {
                 method: 'PUT',
                 body: JSON.stringify(formData)
             });
-            if (!response.ok) throw new Error("Falha ao atualizar o perfil.");
-            
-            const updatedUser = await response.json();
             setUsuario(updatedUser);
             setIsEditMode(false);
             toast.success("Perfil atualizado com sucesso!");
@@ -116,16 +123,14 @@ const ProfilePage = () => {
         if (passwordData.newPassword !== passwordData.confirmPassword) return toast.error("As senhas não coincidem.");
 
         try {
-            const response = await fetchApi('/api/user/change-password', {
+            const data = await fetchApi('/api/user/change-password', {
                 method: 'PUT',
                 body: JSON.stringify(passwordData)
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message);
-            toast.success("Senha alterada com sucesso!");
+            toast.success(data.message || "Senha alterada com sucesso!");
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error) {
-            toast.error(error.message || "Não foi possível alterar a senha.");
+            toast.error(error.message);
         }
     };
     
@@ -145,7 +150,7 @@ const ProfilePage = () => {
                     toast.success("Notificações ativadas com sucesso!");
                 }
             } else {
-                toast.error("Permissão para notificações foi negada.");
+                toast.warn("Permissão para notificações foi negada.");
             }
         } catch (error) {
             toast.error("Ocorreu um erro ao ativar as notificações.");
@@ -166,22 +171,50 @@ const ProfilePage = () => {
         const currentSettings = usuario.notificationSettings || {};
         const newSettings = { ...currentSettings, [settingKey]: value };
         
-        // Atualização Otimista
         setUsuario(prev => ({ ...prev, notificationSettings: newSettings }));
         
         try {
-            const res = await fetchApi('/api/user/notification-settings', {
+            await fetchApi('/api/user/notification-settings', {
                 method: 'PUT',
                 body: JSON.stringify({ settings: newSettings })
             });
-            if (!res.ok) throw new Error("Falha ao salvar preferência.");
             toast.success("Preferência atualizada!");
         } catch (error) {
             toast.error("Não foi possível salvar a preferência. A reverter.");
-            setUsuario(prev => ({ ...prev, notificationSettings: usuario.notificationSettings }));
+            setUsuario(prev => ({ ...prev, notificationSettings: currentSettings }));
         }
     };
 
+    const handlePictureUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('fotoPerfil', file);
+        setIsUploading(true);
+
+        try {
+            const token = localStorage.getItem('bariplus_token');
+            const response = await fetch(`${process.env.REACT_APP_API_URL}/api/user/profile-picture`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 throw new Error(errorData.message || 'Falha no upload da imagem.');
+            }
+            
+            const data = await response.json();
+            setUsuario(data.usuario);
+            toast.success('Foto de perfil atualizada!');
+        } catch (error) {
+            toast.error(error.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     if (loading || !usuario) return <LoadingSpinner />;
 
@@ -221,6 +254,13 @@ const ProfilePage = () => {
                 <div className="profile-grid">
                     <Card>
                         <h3>Dados Pessoais</h3>
+                        <div className="profile-picture-container">
+                            <img src={usuario.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt="Foto de Perfil" className="profile-picture" />
+                            <label htmlFor="picture-upload" className="picture-upload-label">
+                                {isUploading ? 'A enviar...' : 'Alterar Foto'}
+                            </label>
+                            <input id="picture-upload" type="file" accept="image/png, image/jpeg" onChange={handlePictureUpload} style={{ display: 'none' }} disabled={isUploading} />
+                        </div>
                         <InfoItem label="Nome Completo" value={`${usuario.nome} ${usuario.sobrenome}`} />
                         <InfoItem label="Nome de Usuário" value={`${usuario.username} (não pode ser alterado)`} />
                         <InfoItem label="Email" value={`${usuario.email} (não pode ser alterado)`} />
@@ -252,13 +292,13 @@ const ProfilePage = () => {
                                 <span className="slider round"></span>
                             </label>
                         </div>
-                    </Card>
-                    <Card>
-                        <h3>Notificações Push</h3>
-                        <p>Ative para receber lembretes no seu dispositivo.</p>
-                        <div className="notification-actions">
-                            <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar</button>
-                            <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                        <div className="setting-item">
+                            <h3>Notificações Push</h3>
+                            <p>Ative para receber lembretes no seu dispositivo.</p>
+                            <div className="notification-actions">
+                                <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar</button>
+                                <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
+                            </div>
                         </div>
                     </Card>
                 </div>
@@ -266,12 +306,5 @@ const ProfilePage = () => {
         </div>
     );
 };
-
-const InfoItem = ({ label, value }) => (
-    <div className="profile-info-item">
-        <strong>{label}</strong>
-        <span>{value}</span>
-    </div>
-);
 
 export default ProfilePage;
