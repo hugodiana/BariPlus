@@ -1,10 +1,19 @@
-# Arquivos de ambiente
-.server/.env
+# Ficheiro de variáveis de ambiente
+.env
 *.env
-server/*.json
-server/config/
+.env.*
 
-# Firebase
-**/firebase-admin.json
-**/firebase-*.json
-node_modules
+# Dependências
+/node_modules
+/server/node_modules
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Pasta de build do React
+/build
+
+# Ficheiros de sistema
+.DS_Store

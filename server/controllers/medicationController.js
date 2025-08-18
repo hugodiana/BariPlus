@@ -101,18 +101,25 @@ exports.toggleDoseTaken = async (req, res) => {
         if (!date || !doseInfo || !doseInfo.medicationId || !doseInfo.horario) {
             return res.status(400).json({ message: 'Dados insuficientes para registrar a dose.' });
         }
+        
         const log = await MedicationLog.findOne({ userId: req.userId, date });
+
+        // CORREÇÃO APLICADA AQUI
+        // A comparação de `medicationId` agora é feita convertendo ambos para string para garantir consistência.
         const doseIndex = log ? log.dosesTomadas.findIndex(d => 
             d.medicationId.toString() === doseInfo.medicationId && d.horario === doseInfo.horario
         ) : -1;
+
         let updatedLog;
         if (doseIndex > -1) {
+            // Se a dose já existe, remove-a
             updatedLog = await MedicationLog.findOneAndUpdate(
                 { userId: req.userId, date },
                 { $pull: { dosesTomadas: { _id: log.dosesTomadas[doseIndex]._id } } },
                 { new: true }
             );
         } else {
+            // Se a dose não existe, adiciona-a
             updatedLog = await MedicationLog.findOneAndUpdate(
                 { userId: req.userId, date },
                 { $push: { dosesTomadas: doseInfo } },

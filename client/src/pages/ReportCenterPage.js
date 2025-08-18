@@ -12,15 +12,11 @@ const ReportCenterPage = () => {
         setLoading(true);
         setGeneratedLink('');
         try {
-            const res = await fetchApi('/api/reports/generate', {
+            // CORREÇÃO APLICADA AQUI
+            const data = await fetchApi('/api/reports/generate', {
                 method: 'POST',
                 body: JSON.stringify({ type })
             });
-            if (!res.ok) {
-                const errorData = await res.json();
-                throw new Error(errorData.message || 'Falha ao gerar o link.');
-            }
-            const data = await res.json();
             setGeneratedLink(data.shareableLink);
             toast.success('Link gerado com sucesso!');
         } catch (error) {

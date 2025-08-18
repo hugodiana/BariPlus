@@ -60,7 +60,7 @@
 .highlight-value {
     display: block;
     font-size: 1.8rem;
-    font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold); /* A estilização fica aqui */
     color: var(--color-text-strong);
 }
 .highlight-item.main .highlight-value {

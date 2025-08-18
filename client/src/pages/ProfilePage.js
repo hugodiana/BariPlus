@@ -32,12 +32,11 @@ const ProfilePage = () => {
     const fetchUser = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetchApi('/api/me');
-            if (!res.ok) throw new Error("Falha ao carregar dados do usuário.");
-            const data = await res.json();
+            // CORREÇÃO APLICADA AQUI
+            const data = await fetchApi('/api/me');
             setUsuario(data);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error.message || "Falha ao carregar dados do usuário.");
         } finally {
             setLoading(false);
         }

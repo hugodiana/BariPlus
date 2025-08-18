@@ -118,6 +118,7 @@
 
 .med-item-info strong {
     color: var(--color-text-primary);
+    margin-right: var(--space-sm); /* ADICIONE ESTA LINHA */
 }
 .med-item-info span {
     color: var(--color-text-secondary);
@@ -153,3 +154,86 @@
 .dias-semana-group { display: flex; justify-content: space-between; gap: var(--space-sm); }
 .dias-semana-group button { flex: 1; padding: 12px 5px; border: 1px solid var(--color-border); border-radius: var(--border-radius); background-color: var(--color-surface); cursor: pointer; font-weight: var(--font-weight-medium); transition: var(--transition); }
 .dias-semana-group button.active { background-color: var(--color-primary); color: white; border-color: var(--color-primary); }
+
+/* ESTILOS PARA A LISTA DE GESTÃO NO MODAL */
+.management-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    max-height: 40vh;
+    overflow-y: auto;
+}
+
+.management-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.management-list li.inactive {
+    opacity: 0.6;
+}
+
+.management-list .med-info {
+    flex-grow: 1;
+}
+
+.management-list .med-info strong {
+    display: block;
+}
+
+.management-list .med-info span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.management-list .med-actions {
+    display: flex;
+    gap: var(--space-sm);
+    flex-shrink: 0;
+}
+
+.management-list .action-btn-status,
+.management-list .action-btn-delete {
+    background: none;
+    border: 1px solid var(--color-border);
+    padding: 6px 12px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.management-list .action-btn-status:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+.management-list .action-btn-delete:hover {
+    background-color: var(--color-danger);
+    border-color: var(--color-danger);
+    color: white;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+.secondary-btn {
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    padding: 12px 24px;
+    font-weight: var(--font-weight-bold);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+
+.secondary-btn:hover {
+    background-color: var(--color-border);
+}

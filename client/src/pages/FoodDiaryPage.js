@@ -34,19 +34,15 @@ const FoodDiaryPage = () => {
     const [foodToLog, setFoodToLog] = useState(null);
     const [portion, setPortion] = useState(100);
 
-    const fetchDiaryAndUser = useCallback(async (date) => {
+     const fetchDiaryAndUser = useCallback(async (date) => {
         setLoading(true);
         try {
             const dateString = format(date, 'yyyy-MM-dd');
-            const [resDiary, resUser] = await Promise.all([
+            // CORREÇÃO: Promise.all agora retorna os dados diretamente
+            const [dataDiary, dataUser] = await Promise.all([
                 fetchApi(`/api/food-diary/${dateString}`),
                 fetchApi('/api/me')
             ]);
-            if (!resDiary.ok || !resUser.ok) throw new Error("Falha ao carregar os dados.");
-            
-            const dataDiary = await resDiary.json();
-            const dataUser = await resUser.json();
-
             setDiary(dataDiary);
             setUsuario(dataUser);
         } catch (error) {

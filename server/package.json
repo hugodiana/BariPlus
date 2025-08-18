@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "cross-env NODE_ENV=test jest --testTimeout=5000"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +19,9 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
+    "express-async-handler": "^1.2.0",
     "express-rate-limit": "^8.0.1",
+    "express-validator": "^7.2.1",
     "firebase-admin": "^13.4.0",
     "graphql": "^16.11.0",
     "graphql-request": "^7.2.0",
@@ -31,5 +33,10 @@
     "resend": "^4.7.0",
     "stripe": "^18.3.0",
     "winston": "^3.17.0"
+  },
+  "devDependencies": {
+    "cross-env": "^10.0.0",
+    "jest": "^30.0.5",
+    "supertest": "^7.1.4"
   }
 }

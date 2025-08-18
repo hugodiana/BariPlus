@@ -31,9 +31,7 @@ const ChecklistPage = () => {
     const fetchChecklist = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await fetchApi('/api/checklist');
-            if (!response.ok) throw new Error("Falha ao carregar checklist.");
-            const data = await response.json();
+            const data = await fetchApi('/api/checklist'); // Simplificado
             setChecklist(data);
         } catch (error) {
             toast.error(error.message);
@@ -65,11 +63,10 @@ const ChecklistPage = () => {
         const method = isEditing ? 'PUT' : 'POST';
         
         try {
-            const response = await fetchApi(endpoint, {
+            await fetchApi(endpoint, { // Simplificado
                 method,
                 body: JSON.stringify({ descricao: taskText, type: activeTab, concluido: editingTask?.concluido || false })
             });
-            if (!response.ok) throw new Error(`Falha ao ${isEditing ? 'atualizar' : 'criar'} tarefa.`);
             
             toast.success(`Tarefa ${isEditing ? 'atualizada' : 'criada'}!`);
             setIsTaskModalOpen(false);
@@ -79,13 +76,11 @@ const ChecklistPage = () => {
         }
     };
     
-    // ✅ NOVO: Função para adicionar tarefas de um template
     const handleAddTemplate = async (tasksToAdd) => {
         toast.info("A adicionar tarefas do template...");
         try {
-            // Envia cada tarefa do template para a API
             for (const task of tasksToAdd) {
-                await fetchApi('/api/checklist', {
+                await fetchApi('/api/checklist', { // Simplificado
                     method: 'POST',
                     body: JSON.stringify({ descricao: task, type: activeTab })
                 });
@@ -102,13 +97,11 @@ const ChecklistPage = () => {
         if (itemLoading) return;
         setItemLoading(task._id);
         try {
-            const response = await fetchApi(`/api/checklist/${task._id}`, {
+            const data = await fetchApi(`/api/checklist/${task._id}`, { // Simplificado
                 method: 'PUT',
                 body: JSON.stringify({ concluido: !task.concluido, type: activeTab, descricao: task.descricao })
             });
-            if (!response.ok) throw new Error("Falha ao atualizar status.");
             
-            const data = await response.json();
             setChecklist(prev => ({
                 ...prev,
                 [activeTab]: prev[activeTab].map(item => item._id === task._id ? data.item : item)
@@ -128,7 +121,7 @@ const ChecklistPage = () => {
         if (!window.confirm("Tem certeza que deseja excluir esta tarefa?")) return;
         setItemLoading(taskId);
         try {
-            await fetchApi(`/api/checklist/${taskId}?type=${activeTab}`, { method: 'DELETE' });
+            await fetchApi(`/api/checklist/${taskId}?type=${activeTab}`, { method: 'DELETE' }); // Simplificado
             toast.success("Tarefa excluída.");
             setChecklist(prev => ({ ...prev, [activeTab]: prev[activeTab].filter(item => item._id !== taskId) }));
         } catch (error) {

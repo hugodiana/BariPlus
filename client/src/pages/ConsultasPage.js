@@ -24,9 +24,7 @@ const ConsultasPage = () => {
     const fetchConsultas = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetchApi('/api/consultas');
-            if (!res.ok) throw new Error("Falha ao carregar consultas.");
-            const data = await res.json();
+            const data = await fetchApi('/api/consultas'); // Simplificado
             setConsultas(data);
         } catch (error) {
             toast.error(error.message);
@@ -68,12 +66,10 @@ const ConsultasPage = () => {
         const dadosConsulta = { ...formState, data: new Date(formState.data).toISOString() };
 
         try {
-            const res = await fetchApi(url, {
+            await fetchApi(url, { // Simplificado
                 method,
                 body: JSON.stringify(dadosConsulta)
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Falha ao salvar consulta');
             toast.success(`Consulta ${isEditing ? 'atualizada' : 'agendada'}!`);
             setIsModalOpen(false);
             fetchConsultas();
@@ -85,8 +81,7 @@ const ConsultasPage = () => {
     const handleApagarConsulta = async (consultaId) => {
         if (window.confirm("Tem certeza que deseja apagar esta consulta?")) {
             try {
-                const res = await fetchApi(`/api/consultas/${consultaId}`, { method: 'DELETE' });
-                if (!res.ok) throw new Error("Falha ao apagar consulta.");
+                await fetchApi(`/api/consultas/${consultaId}`, { method: 'DELETE' }); // Simplificado
                 toast.info("Consulta apagada.");
                 fetchConsultas();
             } catch (error) {

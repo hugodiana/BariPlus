@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { format, addDays, subDays, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
@@ -25,15 +24,12 @@ const HydrationPage = () => {
         setLoading(true);
         const dateString = format(date, 'yyyy-MM-dd');
         try {
-            const [resLog, resUser] = await Promise.all([
+            // CORREÇÃO APLICADA AQUI
+            const [dataLog, dataUser] = await Promise.all([
                 fetchApi(`/api/hydration/${dateString}`),
                 fetchApi('/api/me')
             ]);
-            if (!resLog.ok || !resUser.ok) throw new Error("Falha ao carregar dados de hidratação.");
             
-            const dataLog = await resLog.json();
-            const dataUser = await resUser.json();
-
             setLog(dataLog);
             setUsuario(dataUser);
         } catch (error) {
@@ -50,13 +46,10 @@ const HydrationPage = () => {
     const handleLogDrink = async (entry) => {
         const dateString = format(selectedDate, 'yyyy-MM-dd');
         try {
-            const res = await fetchApi('/api/hydration/log', {
+            const updatedLog = await fetchApi('/api/hydration/log', {
                 method: 'POST',
                 body: JSON.stringify({ date: dateString, entry })
             });
-            if (!res.ok) throw new Error("Falha ao registrar bebida.");
-            
-            const updatedLog = await res.json();
             setLog(updatedLog);
             toast.success(`${entry.type} adicionado!`);
         } catch (error) {
@@ -71,7 +64,6 @@ const HydrationPage = () => {
             await fetchApi(`/api/hydration/log/${dateString}/${entryId}`, {
                 method: 'DELETE'
             });
-            // Refaz o fetch para garantir a sincronização total dos dados
             fetchData(selectedDate);
             toast.info("Registo removido.");
         } catch (error) {

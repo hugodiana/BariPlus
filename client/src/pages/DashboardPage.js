@@ -33,24 +33,23 @@ const DashboardPage = () => {
         try {
             const today = new Date().toISOString().split('T')[0];
             
-            const endpoints = [
-                '/api/me', '/api/pesos', '/api/checklist', '/api/consultas',
-                '/api/medication/list', '/api/dailylog/today', '/api/conteudos',
-                `/api/medication/log/${today}`
-            ];
-
-            const responses = await Promise.all(endpoints.map(endpoint => fetchApi(endpoint)));
-            for (const res of responses) {
-                if (!res.ok) throw new Error('Falha ao carregar os dados do painel.');
-            }
-
+            // Usando Promise.all para chamadas paralelas
             const [
                 dadosUsuario, dadosPesos, dadosChecklist, dadosConsultas, 
                 dadosMedicationList, dadosLog, dadosConteudos, dadosMedicationLog
-            ] = await Promise.all(responses.map(res => res.json()));
+            ] = await Promise.all([
+                fetchApi('/api/me'),
+                fetchApi('/api/pesos'),
+                fetchApi('/api/checklist'),
+                fetchApi('/api/consultas'),
+                fetchApi('/api/medication/list'),
+                fetchApi('/api/dailylog/today'),
+                fetchApi('/api/conteudos'),
+                fetchApi(`/api/medication/log/${today}`)
+            ]);
 
             setUsuario(dadosUsuario);
-            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data))); // Dados de peso são guardados
+            setPesos(dadosPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setChecklist(dadosChecklist);
             setConsultas(dadosConsultas.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setMedicationData({ 
@@ -75,13 +74,11 @@ const DashboardPage = () => {
 
     const handleTrack = async (type, amount) => {
         try {
-            const response = await fetchApi('/api/dailylog/track', {
+            const data = await fetchApi('/api/dailylog/track', { // Simplificado
                 method: 'POST',
                 body: JSON.stringify({ type, amount })
             });
-            if (!response.ok) throw new Error('Falha ao registrar');
             
-            const data = await response.json();
             setDailyLog(data.updatedLog);
             toast.success('Registro atualizado!');
 
@@ -137,13 +134,12 @@ const DashboardPage = () => {
         });
 
         try {
-            const response = await fetchApi('/api/medication/log/toggle', {
+            // CORREÇÃO: `fetchApi` agora retorna os dados (updatedLog) diretamente.
+            const updatedLog = await fetchApi('/api/medication/log/toggle', {
                 method: 'POST',
                 body: JSON.stringify({ date: today, doseInfo })
             });
-            if (!response.ok) throw new Error("Falha ao salvar registro.");
             
-            const updatedLog = await response.json();
             setMedicationData(prev => ({ ...prev, logDoDia: updatedLog }));
 
         } catch (error) {

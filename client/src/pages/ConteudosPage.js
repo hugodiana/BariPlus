@@ -14,12 +14,11 @@ const ConteudosPage = () => {
     const fetchConteudos = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetchApi('/api/conteudos');
-            if (!res.ok) throw new Error("Falha ao carregar conteúdos.");
-            const data = await res.json();
+            // CORREÇÃO APLICADA AQUI
+            const data = await fetchApi('/api/conteudos');
             setConteudos(data);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error.message || "Falha ao carregar conteúdos.");
         } finally {
             setLoading(false);
         }

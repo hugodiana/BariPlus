@@ -1,10 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
+const { body } = require('express-validator');
+
+
+const registerValidation = [
+    body('nome', 'O nome é obrigatório').notEmpty().trim().escape(),
+    body('sobrenome', 'O sobrenome é obrigatório').notEmpty().trim().escape(),
+    body('username', 'O nome de usuário é obrigatório e deve ser alfanumérico').isAlphanumeric().trim(),
+    body('email', 'Por favor, inclua um e-mail válido').isEmail().normalizeEmail(),
+    body('password', 'A senha não cumpre os requisitos de segurança.')
+        .isLength({ min: 8 })
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>*]).{8,}$/)
+];
 
 // --- ROTAS PÚBLICAS DE AUTENTICAÇÃO ---
 // Estas rotas não devem ter os middlewares 'autenticar' ou 'isAdmin'
-router.post('/register', authController.register);
+router.post('/register', registerValidation, authController.register);
 router.post('/login', authController.login);
 router.get('/verify-email/:token', authController.verifyEmail);
 router.post('/resend-verification', authController.resendVerification);

@@ -47,7 +47,8 @@ const allMeasures = {
 const HighlightItem = ({ label, value, isMain = false }) => (
     <div className={`highlight-item ${isMain ? 'main' : ''}`}>
         <span className="highlight-label">{label}</span>
-        <span className="highlight-value">{value}</span>
+        {/* Usamos um span com classe em vez de `strong` para o valor */}
+        <span className="highlight-value">{value}</span> 
     </div>
 );
 
@@ -138,14 +139,21 @@ const ProgressoPage = () => {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [resPesos, resMe] = await Promise.all([ fetchApi('/api/pesos'), fetchApi('/api/me') ]);
-            if (!resPesos.ok || !resMe.ok) throw new Error("Falha ao carregar os dados.");
-            const dataPesos = await resPesos.json();
-            const dataMe = await resMe.json();
+            // CORREÇÃO APLICADA AQUI
+            // `fetchApi` agora retorna os dados diretamente. Não precisamos mais de `res.ok` ou `res.json()`.
+            const [dataPesos, dataMe] = await Promise.all([ 
+                fetchApi('/api/pesos'), 
+                fetchApi('/api/me') 
+            ]);
+            
             setHistorico(dataPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setUsuario(dataMe);
-        } catch (error) { toast.error(error.message); }
-        finally { setLoading(false); }
+        } catch (error) { 
+            // O erro capturado aqui agora vem diretamente da `fetchApi`, com a mensagem correta do backend.
+            toast.error(error.message || "Falha ao carregar os dados."); 
+        } finally { 
+            setLoading(false); 
+        }
     }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);

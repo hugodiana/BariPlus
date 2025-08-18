@@ -110,13 +110,10 @@ const ExamsPage = () => {
     const fetchExamsData = useCallback(async () => {
         setLoading(true);
         try {
-            const [resExams, resMe] = await Promise.all([
+            const [dataExams, dataMe] = await Promise.all([
                 fetchApi('/api/exams'),
                 fetchApi('/api/me')
             ]);
-            if (!resExams.ok || !resMe.ok) throw new Error("Falha ao carregar dados.");
-            const dataExams = await resExams.json();
-            const dataMe = await resMe.json();
             setExamsData(dataExams);
             setUsuario(dataMe);
         } catch (error) { 
@@ -222,7 +219,7 @@ const ExamEntry = ({ exam, isActive, onToggle, onAddResult, onEditResult, onData
     const handleDelete = async (resultId) => {
         if (!window.confirm("Tem certeza que quer apagar este resultado?")) return;
         try {
-            await fetchApi(`/api/exams/result/${exam._id}/${resultId}`, { method: 'DELETE' });
+            await fetchApi(`/api/exams/result/${exam._id}/${resultId}`, { method: 'DELETE' }); // Simplificado
             toast.info("Resultado apagado.");
             onDataUpdate();
         } catch (error) { toast.error(error.message); }
@@ -308,7 +305,7 @@ const AddExamTypeModal = ({ onClose, onSave, existingExams }) => {
         if (existingExams.some(ex => ex.name.toLowerCase() === examData.name.toLowerCase())) return toast.warn("Este tipo de exame já foi adicionado.");
 
         try {
-            await fetchApi('/api/exams/type', {
+            await fetchApi('/api/exams/type', { // Simplificado
                 method: 'POST',
                 body: JSON.stringify(examData),
             });
@@ -353,7 +350,7 @@ const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
     const [date, setDate] = useState(resultToEdit ? format(parseISO(resultToEdit.date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
     const [value, setValue] = useState(resultToEdit ? resultToEdit.value : '');
     const [notes, setNotes] = useState(resultToEdit ? resultToEdit.notes : '');
-    // ✅ CORREÇÃO: A variável não utilizada 'apiUrl' foi removida.
+    
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -365,7 +362,7 @@ const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
         const method = isEditing ? 'PUT' : 'POST';
 
         try {
-            await fetchApi(url, {
+            await fetchApi(url, { // Simplificado
                 method: method,
                 body: JSON.stringify(resultData),
             });
@@ -374,6 +371,7 @@ const AddEditResultModal = ({ onClose, onSave, examEntry, resultToEdit }) => {
             onClose();
         } catch (error) { toast.error("Erro ao salvar resultado."); }
     };
+
 
     return (
         <Modal isOpen={true} onClose={onClose}>

@@ -2,11 +2,8 @@
 import { toast } from 'react-toastify';
 
 const API_URL = process.env.REACT_APP_API_URL;
-
-// Guarda o token na memória para segurança.
 let accessToken = localStorage.getItem('bariplus_token');
 
-// Função para definir/limpar o token
 export const setAuthToken = (token) => {
     if (token) {
         localStorage.setItem('bariplus_token', token);
@@ -32,20 +29,31 @@ export const fetchApi = async (endpoint, options = {}) => {
         const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
 
         // Se o token expirar (erro 401/403), desloga o utilizador.
-        // A lógica de refresh token pode ser adicionada aqui no futuro se necessário.
         if ([401, 403].includes(response.status)) {
-            setAuthToken(null); // Limpa o token inválido
+            setAuthToken(null);
             toast.error('Sessão expirada. Por favor, faça o login novamente.');
-            // Força o recarregamento da página para o ecrã de login
             window.location.href = '/login'; 
-            // Lança um erro para interromper a execução do código que chamou a função
             throw new Error('Sessão expirada');
         }
 
-        return response;
+        // --- MELHORIA APLICADA AQUI ---
+
+        // Se a resposta NÃO for bem-sucedida, tenta extrair a mensagem de erro do JSON
+        if (!response.ok) {
+            const errorData = await response.json();
+            // Lança um erro com a mensagem vinda do backend
+            throw new Error(errorData.message || `Erro: ${response.statusText}`);
+        }
+
+        // Se a resposta for bem-sucedida, já retorna o JSON processado
+        // (A menos que seja uma resposta sem conteúdo, como um status 204 de um DELETE)
+        if (response.status === 204) {
+            return; // Retorna undefined para respostas sem conteúdo
+        }
+        return response.json();
 
     } catch (error) {
-        // Se a chamada de rede falhar, rejeita a promessa
+        // Se a chamada de rede falhar ou se um erro for lançado acima, rejeita a promessa
         return Promise.reject(error);
     }
 };

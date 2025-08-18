@@ -12,9 +12,7 @@ const ConquistasPage = () => {
     const fetchConquistas = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetchApi('/api/conquistas');
-            if (!res.ok) throw new Error("Falha ao carregar conquistas.");
-            const data = await res.json();
+            const data = await fetchApi('/api/conquistas'); // Simplificado
             setConquistas(data);
         } catch (error) {
             toast.error(error.message);

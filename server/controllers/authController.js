@@ -4,28 +4,25 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { Resend } = require('resend');
 const emailTemplate = require('../utils/emailTemplate');
+const { validationResult } = require('express-validator');
+const asyncHandler = require('express-async-handler');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const validatePassword = (password) => {
-    if (password.length < 8) return false;
-    if (!/[A-Z]/.test(password)) return false;
-    if (!/[a-z]/.test(password)) return false;
-    if (!/[0-9]/.test(password)) return false;
-    if (!/[!@#$%^&*(),.?":{}|<>*]/.test(password)) return false;
-    return true;
-};
-
 exports.register = async (req, res) => {
+    // 2. Verificar se existem erros de validação
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        // Se houver erros, retorna um status 400 com a lista de erros
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     let novoUsuario;
     try {
         const { nome, sobrenome, username, email, password, whatsapp } = req.body;
 
-        if (!validatePassword(password)) {
-            return res.status(400).json({ message: "A senha não cumpre os requisitos de segurança." });
-        }
+        // A validação manual da senha foi removida, pois já foi feita pelo middleware.
 
-        // ✅ CORREÇÃO: Adicionamos a verificação para username duplicado
         const existingUserEmail = await User.findOne({ email: email.toLowerCase() });
         if (existingUserEmail) {
             return res.status(400).json({ message: 'Este e-mail já está em uso.' });
@@ -41,7 +38,7 @@ exports.register = async (req, res) => {
         
         novoUsuario = new User({
             nome, sobrenome, username, 
-            email: email.toLowerCase(), // Salva o e-mail em minúsculas para consistência
+            email: email.toLowerCase(),
             whatsapp, 
             password: hashedPassword,
             emailVerificationToken: verificationToken,
@@ -73,37 +70,34 @@ exports.register = async (req, res) => {
     }
 };
 
+exports.login = asyncHandler(async (req, res) => {
+    // O bloco try...catch foi REMOVIDO!
+    const { identifier, password } = req.body;
+    const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
 
-exports.login = async (req, res) => {
-    try {
-        const { identifier, password } = req.body;
-        const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
-
-        if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
-            return res.status(401).json({ message: 'Credenciais inválidas.' });
-        }
-        if (!usuario.isEmailVerified) {
-            return res.status(403).json({ message: 'Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.' });
-        }
-        
-        
-        const token = jwt.sign({ userId: usuario._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
-        res.json({ 
-            token, 
-            user: {
-                _id: usuario._id,
-                nome: usuario.nome,
-                email: usuario.email,
-                isEmailVerified: usuario.isEmailVerified,
-                pagamentoEfetuado: usuario.pagamentoEfetuado,
-                onboardingCompleto: usuario.onboardingCompleto
-            } 
-        });
-    } catch (error) {
-        console.error("Erro no login:", error);
-        res.status(500).json({ message: 'Erro no servidor.' });
+    if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
+        res.status(401); // Apenas definimos o status
+        throw new Error('Credenciais inválidas.'); // E lançamos um erro
     }
-};
+    if (!usuario.isEmailVerified) {
+        res.status(403);
+        throw new Error('Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.');
+    }
+    
+    const token = jwt.sign({ userId: usuario._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
+    res.json({ 
+        token, 
+        user: {
+            _id: usuario._id,
+            nome: usuario.nome,
+            email: usuario.email,
+            isEmailVerified: usuario.isEmailVerified,
+            pagamentoEfetuado: usuario.pagamentoEfetuado,
+            onboardingCompleto: usuario.onboardingCompleto
+        } 
+    });
+});
+
 
 exports.verifyEmail = async (req, res) => {
     try {

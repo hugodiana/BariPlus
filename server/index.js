@@ -34,7 +34,9 @@ const conquistasRoutes = require('./routes/conquistasRoutes');
 const hydrationRoutes = require('./routes/hydrationRoutes');
 const reportRoutes = require('./routes/reportRoutes'); 
 
+
 // IMPORTAÇÃO DOS MIDDLEWARES E MODELOS
+const errorHandler = require('./middlewares/errorHandler');
 const User = require('./models/userModel');
 const Peso = require('./models/pesoModel');
 const Consulta = require('./models/consultaModel');
@@ -61,7 +63,9 @@ const whitelist = [
     'https://www.bariplus.com.br',
     'https://bariplus.com.br',
     'https://admin.bariplus.com.br',
-    'https://bariplus-app.netlify.app'
+    'https://bariplus-app.netlify.app',
+    'https://nutri.bariplus.com.br', // Seu domínio final
+    /https:\/\/bariblus-nutri-.*\.vercel\.app$/, 
 ];
 const corsOptions = {
     origin: function (origin, callback) {
@@ -241,6 +245,7 @@ app.use('/api', conquistasRoutes);
 app.use('/api/taco', tacoRoutes);
 app.use('/api', hydrationRoutes);
 app.use('/api', reportRoutes);
+app.use(errorHandler);
 
 // --- 5. INICIALIZAÇÃO DO SERVIDOR ---
 const server = app.listen(PORT, () => {

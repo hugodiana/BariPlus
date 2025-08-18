@@ -26,12 +26,11 @@ const GastosPage = () => {
     const fetchGastos = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetchApi('/api/gastos'); // Busca todos os gastos
-            if (!res.ok) throw new Error("Falha ao carregar gastos.");
-            const data = await res.json();
+            // CORREÇÃO APLICADA AQUI
+            const data = await fetchApi('/api/gastos'); // Busca todos os gastos
             setGastos(data);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error.message || "Falha ao carregar gastos.");
         } finally {
             setLoading(false);
         }
