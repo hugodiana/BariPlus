@@ -1,5 +1,5 @@
 // src/pages/LandingPage.js
-import React, { useState, memo } from 'react';
+import React, { useEffect, useRef, memo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import './LandingPage.css';
 
@@ -35,23 +35,52 @@ const TestimonialCard = memo(({ text, author, details }) => (
     </div>
 ));
 
-const FaqItem = memo(({ question, answer, isOpen, onClick }) => (
-    <div className={`faq-item ${isOpen ? 'open' : ''}`} onClick={onClick}>
-        <div className="faq-question">
+// NOVO COMPONENTE SEMÂNTICO PARA O FAQ
+const FaqItem = memo(({ question, answer }) => (
+    <details className="faq-item">
+        <summary className="faq-question">
             <h4>{question}</h4>
-            <span>{isOpen ? '−' : '+'}</span>
+            <span className="faq-icon" aria-hidden="true"></span>
+        </summary>
+        <div className="faq-answer">
+            <p>{answer}</p>
         </div>
-        {isOpen && <div className="faq-answer"><p>{answer}</p></div>}
-    </div>
+    </details>
 ));
+
 
 // --- COMPONENTE PRINCIPAL DA PÁGINA ---
 
 const LandingPage = () => {
-    const [openFaq, setOpenFaq] = useState(null);
     const [searchParams] = useSearchParams();
     const afiliadoCode = searchParams.get('afiliado');
     const ctaLink = afiliadoCode ? `/login?afiliado=${afiliadoCode}` : '/login';
+
+    // LÓGICA PARA ANIMAÇÃO NO SCROLL
+    const sectionsRef = useRef([]);
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.1 // A animação começa quando 10% do elemento está visível
+        });
+
+        sectionsRef.current.forEach(section => {
+            if (section) observer.observe(section);
+        });
+
+        return () => {
+            sectionsRef.current.forEach(section => {
+                if (section) observer.unobserve(section);
+            });
+        };
+    }, []);
+
 
     const features = [
         { icon: '📊', title: 'Acompanhe seu Progresso', description: 'Registre seu peso, medidas e fotos. Veja sua evolução em gráficos detalhados e motive-se a cada conquista.' },
@@ -77,7 +106,7 @@ const LandingPage = () => {
             <Header loginLink={ctaLink} ctaLink={ctaLink} />
 
             <section className="hero-section">
-                <img src="/bariplus_logo.png" alt="BariPlus Logo" className="hero-logo" />
+                <img src="/bariplus_logo.png" alt="BariPlus Logo" className="hero-logo" loading="lazy" />
                 <h1 className="hero-title">A sua jornada bariátrica, organizada e no seu bolso.</h1>
                 <p className="hero-subtitle">Acompanhe seu progresso, exames, consultas e diário alimentar de forma simples e intuitiva.</p>
                 <Link to={ctaLink} className="hero-cta-button">Começar a Minha Jornada</Link>
@@ -85,17 +114,17 @@ const LandingPage = () => {
             </section>
 
             <main>
-                <section className="features-section">
+                <section ref={el => sectionsRef.current[0] = el} className="features-section animated-section">
                     <h2>Tudo o que você precisa para uma jornada de sucesso</h2>
                     <div className="features-grid">{features.map((f, i) => <FeatureCard key={i} {...f} />)}</div>
                 </section>
 
-                <section className="testimonials-section">
+                <section ref={el => sectionsRef.current[1] = el} className="testimonials-section animated-section">
                     <h2>O que os nossos utilizadores dizem</h2>
                     <div className="testimonials-grid">{testimonials.map((t, i) => <TestimonialCard key={i} {...t} />)}</div>
                 </section>
 
-                <section className="pricing-section-lp">
+                <section ref={el => sectionsRef.current[2] = el} className="pricing-section-lp animated-section">
                     <h2>Um investimento único na sua saúde</h2>
                     <div className="pricing-card-lp">
                         <h3>Acesso Vitalício</h3>
@@ -105,12 +134,10 @@ const LandingPage = () => {
                     </div>
                 </section>
 
-                <section className="faq-section">
+                <section ref={el => sectionsRef.current[3] = el} className="faq-section animated-section">
                     <h2>Perguntas Frequentes</h2>
                     <div className="faq-list">
-                        {faqs.map((faq, i) => (
-                            <FaqItem key={i} {...faq} isOpen={openFaq === i} onClick={() => setOpenFaq(openFaq === i ? null : i)} />
-                        ))}
+                        {faqs.map((faq, i) => <FaqItem key={i} {...faq} />)}
                     </div>
                 </section>
             </main>

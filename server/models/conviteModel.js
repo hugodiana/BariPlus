@@ -1,5 +1,6 @@
+// server/models/conviteModel.js
 const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid'); // Usaremos UUID para gerar códigos únicos
+const { v4: uuidv4 } = require('uuid');
 
 const conviteSchema = new mongoose.Schema({
   nutricionistaId: {
@@ -9,7 +10,7 @@ const conviteSchema = new mongoose.Schema({
   },
   codigo: {
     type: String,
-    default: () => uuidv4(), // Gera um código único automaticamente
+    default: () => uuidv4(),
     unique: true
   },
   emailPaciente: { type: String },
@@ -21,8 +22,7 @@ const conviteSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
   expiresAt: {
     type: Date,
-    // O convite expira em 7 dias por padrão
-    default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // Expira em 7 dias
   }
 });
 

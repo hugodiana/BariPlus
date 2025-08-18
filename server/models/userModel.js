@@ -37,7 +37,8 @@ const UserSchema = new mongoose.Schema({
         medicationReminders: { type: Boolean, default: true },
         weighInReminders: { type: Boolean, default: true }
     },
-    fotoPerfilUrl: { type: String, default: '' }
+    fotoPerfilUrl: { type: String, default: '' },
+    nutricionistaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Nutricionista' }
 }, { timestamps: true });
 
 const User = mongoose.model('User', UserSchema);

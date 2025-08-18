@@ -1,0 +1,15 @@
+/* Card.css refatorado com o novo sistema de design e micro-interações */
+
+.card {
+    background-color: var(--background-white);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    padding: var(--space-lg);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* ✅ Animação suave */
+}
+
+/* Efeito de "levantar" ao passar o rato, se o card for clicável ou contiver ações */
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}

@@ -81,6 +81,10 @@ section h2 {
     transform: translateY(-3px);
     box-shadow: var(--shadow-md);
 }
+.afiliado-info {
+    margin-top: 1.5rem;
+    color: var(--color-text-secondary);
+}
 
 /* --- FEATURES --- */
 .features-grid {
@@ -91,6 +95,11 @@ section h2 {
 .feature-card {
     text-align: center;
     padding: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Efeito hover */
+}
+.feature-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-md);
 }
 .feature-icon-wrapper {
     display: inline-flex;
@@ -122,6 +131,11 @@ section h2 {
     box-shadow: var(--shadow-sm);
     display: flex;
     flex-direction: column;
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Efeito hover */
+}
+.testimonial-card:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-md);
 }
 .testimonial-text {
     font-style: italic;
@@ -151,31 +165,56 @@ section h2 {
 .price-lp { font-size: 3.5rem; font-weight: bold; color: var(--color-primary); margin: 1rem 0; }
 .price-desc-lp { color: var(--color-text-secondary); margin-bottom: 1.5rem; }
 
-/* --- FAQ --- */
+/* --- FAQ SEMÂNTICO --- */
 .faq-list { max-width: 800px; margin: 0 auto; }
 .faq-item {
     border-bottom: 1px solid var(--color-border);
-    cursor: pointer;
 }
 .faq-question {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 1.5rem 0;
+    cursor: pointer;
+    list-style: none; /* Remove o marcador padrão do summary */
 }
+.faq-question::-webkit-details-marker { display: none; } /* Remove o marcador no Chrome/Safari */
 .faq-question h4 { margin: 0; font-size: 1.2rem; }
-.faq-question span { font-size: 1.5rem; color: var(--color-primary); }
+.faq-icon {
+    content: '+';
+    font-size: 1.5rem;
+    color: var(--color-primary);
+    transition: transform 0.3s ease;
+}
+.faq-item[open] .faq-icon {
+    transform: rotate(45deg);
+}
 .faq-answer {
     padding-bottom: 1.5rem;
     color: var(--color-text-secondary);
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding-bottom 0.3s ease;
-}
-.faq-item.open .faq-answer {
-    max-height: 200px; /* Altura suficiente para a resposta */
+    line-height: 1.7;
 }
 .faq-answer p { margin: 0; }
+
+
+/* --- ANIMAÇÃO DE SCROLL --- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+.animated-section {
+    opacity: 0; /* Começa invisível */
+}
+.animated-section.visible {
+    animation: fadeInUp 0.8s ease-out forwards;
+}
+
 
 /* --- FOOTER --- */
 .landing-footer {

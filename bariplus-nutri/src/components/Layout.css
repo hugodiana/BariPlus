@@ -1,0 +1,21 @@
+/* src/components/Layout.css */
+.layout-container { display: flex; }
+.sidebar {
+    width: 260px;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+.sidebar-header { margin-bottom: var(--space-xl); }
+.sidebar-logo { height: 40px; }
+.sidebar-nav { display: flex; flex-direction: column; gap: var(--space-sm); flex-grow: 1; }
+.sidebar-nav a { text-decoration: none; color: var(--color-text-secondary); padding: 12px; border-radius: 8px; }
+.sidebar-nav a.active { background-color: var(--color-primary); color: white; }
+.sidebar-footer { border-top: 1px solid var(--color-border); padding-top: var(--space-md); }
+.user-info { margin-bottom: 1rem; }
+.user-info span, .user-info small { display: block; }
+.logout-btn { width: 100%; padding: 10px; background: var(--color-danger); color: white; border: none; border-radius: 8px; cursor: pointer; }
+.main-content { flex-grow: 1; padding: var(--space-xl); background-color: var(--color-background); }

@@ -1,0 +1,49 @@
+/* src/theme.css */
+
+:root {
+  /* ============ CORES ============ */
+  /* Primárias */
+  --color-primary: #37715b;       /* Verde BariPlus - Ações principais, títulos */
+  --color-primary-dark: #2a5a48;  /* Verde mais escuro para hover/ativo */
+  --color-primary-light: #e8f3ef; /* Verde bem claro para fundos sutis */
+
+  /* Acento e Feedback */
+  --color-accent: #007aff;        /* Azul para links, botões secundários e informação */
+  --color-success: #27ae60;       /* Verde para sucesso */
+  --color-warning: #f39c12;       /* Laranja para avisos */
+  --color-danger: #e74c3c;        /* Vermelho para erros e exclusão */
+
+  /* Escala de Cinzas (Neutros) */
+  --color-text-strong: #2c3e50;    /* Para títulos importantes */
+  --color-text-primary: #334e68;  /* Cor de texto principal */
+  --color-text-secondary: #627d98;/* Cor de texto secundário, placeholders */
+  --color-text-faint: #a0b2c2;    /* Texto menos importante, desativado */
+  
+  --color-background: #f4f7f6;    /* Cor de fundo principal da aplicação */
+  --color-surface: #ffffff;       /* Cor de fundo para cards e modais */
+  --color-border: #dce7f3;        /* Cor para bordas e divisórias */
+
+  /* ============ TIPOGRAFIA ============ */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-md: 1rem;     /* 16px */
+  --font-size-lg: 1.25rem;  /* 20px */
+  --font-size-xl: 1.5rem;   /* 24px */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+  --line-height: 1.6;
+
+  /* ============ ESPAÇAMENTO ============ */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* ============ EFEITOS VISUAIS ============ */
+  --border-radius: 12px;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --transition: all 0.2s ease-in-out;
+}

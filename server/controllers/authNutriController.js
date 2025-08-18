@@ -4,10 +4,9 @@ const Nutricionista = require('../models/Nutricionista');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-// Função para gerar o token JWT
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d', // O token expira em 30 dias
+    expiresIn: '30d',
   });
 };
 
@@ -15,26 +14,16 @@ const generateToken = (id) => {
 // @route   POST /api/nutri/auth/register
 // @access  Public
 exports.register = async (req, res) => {
-  const { nome, email, senha, crn, especializacao, clinica } = req.body;
+  const { nome, email, senha, crn } = req.body;
 
   try {
-    // Verifica se já existe um nutri com o mesmo email ou CRN
     const nutriExists = await Nutricionista.findOne({ $or: [{ email }, { crn }] });
     if (nutriExists) {
       return res.status(400).json({ message: 'Nutricionista já cadastrado com este e-mail ou CRN.' });
     }
 
-    // Cria o novo nutricionista (a senha será criptografada pelo hook no model)
-    const nutricionista = await Nutricionista.create({
-      nome,
-      email,
-      senha,
-      crn,
-      especializacao,
-      clinica,
-    });
+    const nutricionista = await Nutricionista.create({ nome, email, senha, crn });
 
-    // Gera o token e envia a resposta
     const token = generateToken(nutricionista._id);
     res.status(201).json({
       token,
@@ -56,21 +45,12 @@ exports.login = async (req, res) => {
   const { email, senha } = req.body;
 
   try {
-    // Procura o nutricionista pelo email e inclui a senha na busca
     const nutricionista = await Nutricionista.findOne({ email }).select('+senha');
 
-    if (!nutricionista) {
+    if (!nutricionista || !(await bcrypt.compare(senha, nutricionista.senha))) {
       return res.status(401).json({ message: 'Credenciais inválidas.' });
     }
 
-    // Compara a senha enviada com a senha no banco de dados
-    const isMatch = await bcrypt.compare(senha, nutricionista.senha);
-
-    if (!isMatch) {
-      return res.status(401).json({ message: 'Credenciais inválidas.' });
-    }
-
-    // Gera o token e envia a resposta
     const token = generateToken(nutricionista._id);
     res.status(200).json({
       token,
