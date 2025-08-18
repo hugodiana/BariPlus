@@ -1,21 +1,24 @@
+// server/models/Nutricionista.js
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const nutricionistaSchema = new mongoose.Schema({
   nome: { type: String, required: true },
   email: { type: String, required: true, unique: true, lowercase: true },
-  senha: { type: String, required: true, select: false }, // `select: false` para não vir por padrão nas buscas
+  senha: { type: String, required: true, select: false },
   crn: { type: String, required: true, unique: true },
   especializacao: { type: String },
   clinica: { type: String },
   pacientes: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Paciente'
+    // CORREÇÃO APLICADA AQUI: O modelo correto é 'User'
+    ref: 'User'
   }],
   limiteGratis: { type: Number, default: 10 },
   assinatura: {
-      id: String, // ID da assinatura no Mercado Pago/Kiwify
-      status: { type: String, default: 'inativa' } // ex: ativa, inativa, cancelada
+      id: String,
+      status: { type: String, default: 'inativa' }
   },
   createdAt: { type: Date, default: Date.now }
 });

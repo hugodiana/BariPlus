@@ -8,8 +8,7 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
-// Placeholder para páginas futuras
-const PacientesPage = lazy(() => new Promise(resolve => setTimeout(() => resolve({ default: () => <div>Página de Pacientes</div> }), 1000)));
+const PacientesPage = lazy(() => import('./pages/PacientesPage'));
 
 function App() {
     const [nutricionista, setNutricionista] = useState(null);

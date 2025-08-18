@@ -1,0 +1,129 @@
+/* src/pages/PacientesPage.css */
+.page-header {
+    margin-bottom: var(--space-lg);
+}
+.page-header h1 {
+    font-size: 2rem;
+    color: var(--color-text-strong);
+}
+
+.pacientes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl);
+}
+
+.pacientes-list-card, .convite-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.pacientes-list-card h3, .convite-card h3 {
+    margin-top: 0;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-md);
+}
+
+.pacientes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.paciente-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.paciente-item:last-child {
+    border-bottom: none;
+}
+
+.paciente-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.paciente-name {
+    flex-grow: 1;
+    font-weight: 500;
+}
+
+.paciente-action-btn {
+    background-color: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    padding: 8px 12px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.paciente-action-btn:hover {
+    background-color: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.convite-card p {
+    color: var(--color-text-secondary);
+    flex-grow: 1;
+}
+
+.generate-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: white;
+    background-color: var(--color-success);
+    border: none;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+}
+
+.generated-link-container {
+    margin-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
+}
+
+.link-input-group {
+    display: flex;
+    margin-top: var(--space-sm);
+}
+
+.link-input-group input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius) 0 0 var(--border-radius);
+    background-color: var(--color-background);
+}
+
+.link-input-group button {
+    padding: 0 20px;
+    border: 1px solid var(--color-primary);
+    background-color: var(--color-primary);
+    color: white;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    cursor: pointer;
+}
+
+@media (max-width: 992px) {
+    .pacientes-grid {
+        grid-template-columns: 1fr;
+    }
+}
