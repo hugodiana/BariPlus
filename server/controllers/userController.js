@@ -3,6 +3,7 @@ const Peso = require('../models/pesoModel');
 const bcrypt = require('bcryptjs');
 const admin = require('firebase-admin');
 const conquistasService = require('../services/conquistasService');
+const { v2: cloudinary } = require('cloudinary');
 
 // --- Funções do Controller ---
 
