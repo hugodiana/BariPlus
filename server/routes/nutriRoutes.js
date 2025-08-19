@@ -6,10 +6,9 @@ const router = express.Router();
 const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController');
 const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById } = require('../controllers/planoAlimentarController');
-// CORREÇÃO: Importa as funções do novo controlador de dados do paciente
 const { getProgressoPaciente, getDiarioAlimentarPaciente } = require('../controllers/pacienteDataController');
-const { getConversationForNutri } = require('../controllers/messageController');
-
+// CORREÇÃO: Importa a função do controlador correto
+const { getConversationForNutri } = require('../controllers/messageController'); 
 const { protectNutri } = require('../middlewares/authNutri');
 
 // Rotas de Gestão
@@ -25,6 +24,9 @@ router.get('/planos/:planoId', protectNutri, getPlanoById);
 // Rotas de Acesso a Dados do Paciente
 router.get('/paciente/:pacienteId/progresso', protectNutri, getProgressoPaciente);
 router.get('/paciente/:pacienteId/diario/:date', protectNutri, getDiarioAlimentarPaciente);
+router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationForNutri); 
+
+// Rota para o nutri buscar a conversa (agora está correta)
 router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationForNutri); 
 
 module.exports = router;

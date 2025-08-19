@@ -11,19 +11,27 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
 
     useEffect(() => {
         const fetchConversation = async () => {
+            setLoading(true);
             try {
-                // CORREÇÃO: A rota para o paciente buscar a conversa é a que criámos agora.
+                // --- CORREÇÃO APLICADA AQUI ---
+                // A rota para o paciente buscar a conversa é a que acabámos de criar no backend.
                 const endpoint = '/api/conversation'; 
                 const conversation = await fetchApi(endpoint);
                 setMessages(conversation.messages || []);
             } catch (error) {
                 console.error("Erro ao carregar mensagens:", error);
+                // Não mostra toast para 404, pois significa apenas que não há conversa ainda.
+                if (!error.message.includes('404')) {
+                    toast.error("Não foi possível carregar o chat.");
+                }
             } finally {
                 setLoading(false);
             }
         };
-        fetchConversation();
-    }, [receiver._id]);
+        if (currentUser && receiver) {
+            fetchConversation();
+        }
+    }, [currentUser, receiver]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -36,7 +44,7 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
         const tempId = Date.now();
         const sentMessage = {
             _id: tempId,
-            senderId: currentUser._id, // Usa _id em vez de id para consistência
+            senderId: currentUser._id,
             content: newMessage,
             createdAt: new Date().toISOString()
         };
