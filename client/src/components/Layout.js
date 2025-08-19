@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// ✅ 1. Importar Outlet e useNavigate
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'; 
 import './Layout.css';
 import { toast } from 'react-toastify';
@@ -41,7 +40,6 @@ const Layout = ({ usuario }) => {
     const handleLogout = () => {
         localStorage.removeItem('bariplus_token');
         toast.info("Sessão encerrada.");
-        // Redireciona para a landing page após o logout
         navigate('/landing'); 
     };
 
@@ -49,18 +47,7 @@ const Layout = ({ usuario }) => {
         <div className="layout-container">
             {windowWidth <= 768 && !isSidebarOpen && (
                 <button className="hamburger-btn" onClick={toggleSidebar} aria-label="Abrir menu">
-                    {/* Substituímos o caractere por um SVG para melhor acessibilidade */}
-                    <svg 
-                        width="24" 
-                        height="24" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        aria-hidden="true" /* O ícone é decorativo, o aria-label já descreve a ação */
-                    >
-                        <title>Menu</title>
-                        <path d="M4 6H20M4 12H20M4 18H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                    &#9776;
                 </button>
             )}
 
@@ -81,7 +68,16 @@ const Layout = ({ usuario }) => {
                 <nav className="sidebar-nav">
                     <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} />
                     <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
-                    <NavItem to="/plano-alimentar" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
+                    
+                    {/* --- CORREÇÃO APLICADA AQUI --- */}
+                    {/* Agora, ambos os links só aparecem se o paciente tiver um nutricionista vinculado */}
+                    {usuario?.nutricionistaId && (
+                        <>
+                            <NavItem to="/plano-alimentar" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
+                            <NavItem to="/chat" icon="💬" text="Chat com Nutri" onClick={handleLinkClick} />
+                        </>
+                    )}
+                    
                     <NavItem to="/diario-alimentar" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
                     <NavItem to="/hidratacao" icon="💧" text="Hidratação" onClick={handleLinkClick} />
                     <NavItem to="/checklist" icon="✅" text="Checklist" onClick={handleLinkClick} />
@@ -99,19 +95,11 @@ const Layout = ({ usuario }) => {
                 <div className="sidebar-footer">
                     {usuario && (
                         <div className="user-info">
-                            {/* NOVO ELEMENTO DE IMAGEM */}
-                            <img 
-                                src={usuario.fotoPerfilUrl || '/placeholder-avatar.png'} 
-                                alt="Foto de Perfil" 
-                                className="sidebar-avatar" 
-                            />
-                            <div className="user-details">
-                                <span className="user-name">{usuario.nome} {usuario.sobrenome}</span>
-                                <span className="user-email">{usuario.email}</span>
-                            </div>
+                            <span className="user-name">{usuario.nome} {usuario.sobrenome}</span>
+                            <span className="user-email">{usuario.email}</span>
                         </div>
                     )}
-                        <button onClick={handleLogout} className="logout-btn">
+                    <button onClick={handleLogout} className="logout-btn">
                         <span className="nav-icon">🚪</span>
                         <span className="nav-text">Sair</span>
                     </button>
@@ -119,7 +107,6 @@ const Layout = ({ usuario }) => {
             </aside>
             
             <main className="main-content">
-                {/* ✅ 2. Substituir {children} por <Outlet /> */}
                 <Outlet />
             </main>
         </div>

@@ -27,6 +27,7 @@ import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
 import PlanoAlimentarPage from './pages/PlanoAlimentarPage';
 import ConvitePage from './pages/ConvitePage';
+import ChatPage from './pages/ChatPage';
 
 // 3. Importar as páginas do app usando React.lazy
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -121,6 +122,7 @@ function App() {
                         <Route path="ganhe-renda-extra" element={<GanheRendaExtraPage />} />
                         <Route path="relatorios" element={<ReportCenterPage />} />
                         <Route path="plano-alimentar" element={<PlanoAlimentarPage />} />
+                        <Route path="chat" element={<ChatPage />} />
                         <Route path="perfil" element={<ProfilePage />} />
                     </Route>
                     

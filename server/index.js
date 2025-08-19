@@ -31,6 +31,7 @@ const mealPlanRoutes = require('./routes/mealPlanRoutes');
 const nutriAuthRoutes = require('./routes/nutriAuthRoutes');
 const nutriRoutes = require('./routes/nutriRoutes');
 const conviteRoutes = require('./routes/conviteRoutes');
+const messageRoutes = require('./routes/messageRoutes');
 
 // IMPORTAÇÃO DE MIDDLEWARES E MODELOS (APENAS O NECESSÁRIO)
 const errorHandler = require('./middlewares/errorHandler');
@@ -109,6 +110,7 @@ app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPl
 app.use('/api/nutri/auth', nutriAuthRoutes);
 app.use('/api/nutri', nutriRoutes);
 app.use('/api/convites', conviteRoutes);
+app.use('/api', messageRoutes); 
 app.use('/api/taco', tacoRoutes);
 
 // Rotas do Paciente/Utilizador

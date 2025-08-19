@@ -9,7 +9,11 @@ const { v2: cloudinary } = require('cloudinary');
 
 exports.getMe = async (req, res) => {
     try {
-        const usuario = await User.findById(req.userId).select('-password -fcmToken');
+        // CORREÇÃO: Adicionamos .populate() para buscar os dados do nutricionista
+        const usuario = await User.findById(req.userId)
+            .select('-password -fcmToken')
+            .populate('nutricionistaId', 'nome email'); // Popula com nome e email do nutri
+
         if (!usuario) {
             return res.status(404).json({ message: 'Usuário não encontrado.' });
         }

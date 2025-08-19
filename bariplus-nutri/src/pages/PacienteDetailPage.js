@@ -3,12 +3,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { format, addDays, subDays } from 'date-fns';
+// CORREÇÃO: Funções 'addDays' e 'subDays' que estavam em falta foram adicionadas
+import { format, addDays, subDays } from 'date-fns'; 
 import { ptBR } from 'date-fns/locale';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
+import Modal from '../components/Modal';
+import ChatBox from '../components/chat/ChatBox';
 import LoadingSpinner from '../components/LoadingSpinner';
 import './PacientesPage.css';
 
@@ -22,52 +25,71 @@ const PacienteDetailPage = () => {
     const [diario, setDiario] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    
+    const nutricionista = JSON.parse(localStorage.getItem('nutri_data'));
 
-    const fetchDetalhes = useCallback(async () => {
+    // Função otimizada que busca todos os dados iniciais
+    const fetchInitialDetails = useCallback(async () => {
         setLoading(true);
+        const dateString = format(selectedDate, 'yyyy-MM-dd');
         try {
-            const [pacienteData, planosData, progressoData] = await Promise.all([
+            const [pacienteData, planosData, progressoData, diarioData] = await Promise.all([
                 fetchApi(`/api/nutri/pacientes/${pacienteId}`),
                 fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`),
-                fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`)
+                fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`),
+                fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`)
             ]);
             
             setPaciente(pacienteData);
             setPlanos(planosData);
             setProgresso(progressoData);
+            setDiario(diarioData);
+
         } catch (error) {
             toast.error(error.message || "Erro ao carregar detalhes do paciente.");
         } finally {
             setLoading(false);
         }
-    }, [pacienteId]);
+    }, [pacienteId, selectedDate]);
 
+    // Função que busca apenas o diário, para quando a data muda
     const fetchDiario = useCallback(async (date) => {
         const dateString = format(date, 'yyyy-MM-dd');
         try {
-            const diarioData = await fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`);
-            setDiario(diarioData);
+             const diarioData = await fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`);
+             setDiario(diarioData);
         } catch(error) {
             toast.error("Erro ao carregar diário alimentar.");
         }
     }, [pacienteId]);
 
+    // Busca todos os dados na primeira vez que a página carrega
     useEffect(() => {
-        fetchDetalhes();
-    }, [fetchDetalhes]);
+        fetchInitialDetails();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
+    // Busca apenas o diário alimentar quando a data é alterada
     useEffect(() => {
-        if (!loading) { // Apenas busca o diário se não estiver no carregamento inicial
+        // Evita a busca inicial duplicada
+        if (!loading) { 
             fetchDiario(selectedDate);
         }
-    }, [selectedDate, fetchDiario, loading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedDate]);
 
     const changeDate = (amount) => {
         setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
     };
 
     if (loading) return <LoadingSpinner />;
-    if (!paciente) return <div className="page-container"><p>Paciente não encontrado.</p></div>;
+    if (!paciente) return (
+        <div className="page-container">
+            <Link to="/pacientes" className="back-link">‹ Voltar para a lista</Link>
+            <p>Não foi possível carregar os dados do paciente.</p>
+        </div>
+    );
     
     const pesoInicial = progresso?.detalhes?.detalhesCirurgia?.pesoInicial || 0;
     const pesoAtual = progresso?.detalhes?.detalhesCirurgia?.pesoAtual || 0;
@@ -84,7 +106,6 @@ const PacienteDetailPage = () => {
         }],
     };
     
-    // Calcula o total de calorias e proteínas do dia
     const totaisDoDia = diario?.refeicoes ? Object.values(diario.refeicoes).flat().reduce((totals, item) => {
         totals.calories += item.nutrients.calories || 0;
         totals.proteins += item.nutrients.proteins || 0;
@@ -94,9 +115,12 @@ const PacienteDetailPage = () => {
     return (
         <div className="page-container">
             <Link to="/pacientes" className="back-link">‹ Voltar para a lista</Link>
-            <div className="page-header">
-                <h1>{paciente.nome} {paciente.sobrenome}</h1>
-                <p>Acompanhe e gira os planos alimentares e o progresso deste paciente.</p>
+            <div className="page-header-action">
+                <div className="page-header">
+                    <h1>{paciente.nome} {paciente.sobrenome}</h1>
+                    <p>Acompanhe e gira os planos alimentares e o progresso deste paciente.</p>
+                </div>
+                <button className="chat-btn" onClick={() => setIsChatOpen(true)}>💬 Enviar Mensagem</button>
             </div>
             
             <div className="paciente-dashboard-grid">
@@ -163,11 +187,10 @@ const PacienteDetailPage = () => {
                             <ul className="planos-list">
                                 {planos.map(plano => (
                                     <li key={plano._id} className={`plano-item ${plano.ativo ? 'ativo' : 'inativo'}`}>
-                                        {/* O item da lista agora é um Link */}
                                         <Link to={`/paciente/${pacienteId}/plano/${plano._id}`} className="plano-link">
                                             <div className="plano-info">
                                                 <strong>{plano.titulo}</strong>
-                                                <span>Criado em: {format(new Date(plano.createdAt), 'dd/MM/yy', { locale: ptBR })}</span>
+                                                <span>{format(new Date(plano.createdAt), 'dd/MM/yy', { locale: ptBR })}</span>
                                             </div>
                                             <span className="plano-status">{plano.ativo ? 'Ativo' : 'Arquivado'}</span>
                                         </Link>
@@ -180,6 +203,11 @@ const PacienteDetailPage = () => {
                     </Card>
                 </div>
             </div>
+
+            <Modal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)}>
+                <h2>Conversa com {paciente.nome}</h2>
+                <ChatBox currentUser={nutricionista} receiver={paciente} />
+            </Modal>
         </div>
     );
 };
