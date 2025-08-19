@@ -1,4 +1,4 @@
-// src/components/chat/ChatBox.js (NA APLICAÇÃO DO PACIENTE)
+// src/components/chat/ChatBox.js (na aplicação do PACIENTE)
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchApi } from '../../utils/api';
 import { toast } from 'react-toastify';

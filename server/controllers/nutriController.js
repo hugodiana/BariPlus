@@ -1,8 +1,6 @@
 // server/controllers/nutriController.js
 
 const Nutricionista = require('../models/Nutricionista');
-// --- CORREÇÃO ADICIONADA AQUI ---
-// Importa o modelo 'User' para que possamos procurar os pacientes.
 const User = require('../models/userModel');
 
 // @desc    Obter dados do dashboard do nutricionista
@@ -10,13 +8,23 @@ const User = require('../models/userModel');
 // @access  Private (só para nutricionistas logados)
 exports.getDashboardData = async (req, res) => {
   try {
-    const nutricionista = await Nutricionista.findById(req.nutricionista.id).populate('pacientes', 'nome sobrenome');
+    const nutricionista = await Nutricionista.findById(req.nutricionista.id)
+      // --- CORREÇÃO APLICADA AQUI ---
+      // Populamos as duas listas de pacientes separadamente
+      .populate('pacientesBariplus', 'nome sobrenome')
+      .populate('pacientesLocais', 'nomeCompleto');
 
     if (!nutricionista) {
       return res.status(404).json({ message: 'Nutricionista não encontrado.' });
     }
 
-    const totalPacientes = nutricionista.pacientes.length;
+    // Combina as duas listas numa só para o frontend
+    const todosPacientes = [
+        ...nutricionista.pacientesBariplus.map(p => ({_id: p._id, nome: p.nome, sobrenome: p.sobrenome})),
+        ...nutricionista.pacientesLocais.map(p => ({_id: p._id, nome: p.nomeCompleto, sobrenome: ''}))
+    ];
+
+    const totalPacientes = todosPacientes.length;
     const vagasGratisRestantes = Math.max(0, nutricionista.limiteGratis - totalPacientes);
     const pacientesExtrasPagos = Math.max(0, totalPacientes - nutricionista.limiteGratis);
 
@@ -24,7 +32,7 @@ exports.getDashboardData = async (req, res) => {
       totalPacientes,
       vagasGratisRestantes,
       pacientesExtrasPagos,
-      pacientes: nutricionista.pacientes
+      pacientes: todosPacientes // Envia a lista combinada
     });
 
   } catch (error) {
@@ -33,7 +41,7 @@ exports.getDashboardData = async (req, res) => {
   }
 };
 
-// @desc    Nutricionista busca os detalhes de um paciente específico
+// @desc    Nutricionista busca os detalhes de um paciente específico (BariPlus)
 // @route   GET /api/nutri/pacientes/:pacienteId
 // @access  Private (Nutricionista)
 exports.getPacienteDetails = async (req, res) => {
@@ -43,17 +51,13 @@ exports.getPacienteDetails = async (req, res) => {
 
         const nutricionista = await Nutricionista.findById(nutricionistaId);
         
-        if (!nutricionista) {
-            return res.status(404).json({ message: 'Nutricionista não encontrado.' });
-        }
-
-        const isMyPatient = nutricionista.pacientes.some(pId => pId.toString() === pacienteId);
+        // Verifica se o ID do paciente está na lista de pacientes do nutricionista
+        const isMyPatient = nutricionista.pacientesBariplus.some(pId => pId.toString() === pacienteId);
 
         if (!isMyPatient) {
             return res.status(403).json({ message: 'Acesso negado. Este paciente não está na sua lista.' });
         }
 
-        // Esta linha agora funciona porque o 'User' foi importado
         const paciente = await User.findById(pacienteId).select('-password');
         if (!paciente) {
             return res.status(404).json({ message: 'Paciente não encontrado.' });
