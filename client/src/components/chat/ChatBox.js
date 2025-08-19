@@ -1,4 +1,4 @@
-// src/components/chat/ChatBox.js
+// src/components/chat/ChatBox.js (na aplicação do PACIENTE)
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchApi } from '../../utils/api';
 import './ChatBox.css';
@@ -12,11 +12,8 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
     useEffect(() => {
         const fetchConversation = async () => {
             try {
-                // A rota para o nutri buscar a conversa é diferente da do paciente
-                const endpoint = currentUser.crn 
-                    ? `/api/nutri/pacientes/${receiver._id}/conversation` 
-                    : `/api/pacientes/${receiver._id}/conversation`; // Assumindo que esta rota existirá para o paciente
-
+                // CORREÇÃO: A rota para o paciente buscar a conversa é a que criámos agora.
+                const endpoint = '/api/conversation'; 
                 const conversation = await fetchApi(endpoint);
                 setMessages(conversation.messages || []);
             } catch (error) {
@@ -26,7 +23,7 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
             }
         };
         fetchConversation();
-    }, [currentUser.crn, receiver._id]);
+    }, [receiver._id]);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,7 +36,7 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
         const tempId = Date.now();
         const sentMessage = {
             _id: tempId,
-            senderId: currentUser.id,
+            senderId: currentUser._id, // Usa _id em vez de id para consistência
             content: newMessage,
             createdAt: new Date().toISOString()
         };
@@ -51,7 +48,6 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
                 method: 'POST',
                 body: JSON.stringify({ content: newMessage })
             });
-            // Atualiza a mensagem temporária com os dados reais do servidor
             setMessages(prev => prev.map(msg => msg._id === tempId ? data : msg));
             if(onNewMessage) onNewMessage(data);
         } catch (error) {
@@ -65,7 +61,7 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
         <div className="chat-box">
             <div className="messages-container">
                 {messages.map((msg) => (
-                    <div key={msg._id} className={`message ${msg.senderId === currentUser.id ? 'sent' : 'received'}`}>
+                    <div key={msg._id} className={`message ${msg.senderId === currentUser._id ? 'sent' : 'received'}`}>
                         <p>{msg.content}</p>
                     </div>
                 ))}

@@ -66,3 +66,24 @@ exports.sendMessage = async (req, res) => {
         res.status(500).json({ message: "Erro ao enviar mensagem." });
     }
 };
+
+// @desc    Obter a conversa entre o paciente e o seu nutricionista
+// @route   GET /api/conversation
+exports.getConversationForPatient = async (req, res) => {
+    try {
+        const pacienteId = req.userId;
+        const paciente = await User.findById(pacienteId);
+
+        if (!paciente.nutricionistaId) {
+            return res.status(404).json({ message: 'Você não está vinculado a um nutricionista.' });
+        }
+
+        let conversation = await Conversation.findOne({
+            'participants.userId': { $all: [pacienteId, paciente.nutricionistaId] }
+        });
+        
+        res.json(conversation || { messages: [] });
+    } catch (error) {
+        res.status(500).json({ message: "Erro ao buscar conversa." });
+    }
+};
