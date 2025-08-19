@@ -1,5 +1,7 @@
 // server/controllers/messageController.js
 const Conversation = require('../models/ConversationModel');
+const User = require('../models/userModel');
+const Nutricionista = require('../models/Nutricionista');
 
 // @desc    Obter a conversa entre o profissional e um paciente específico
 // @route   GET /api/nutri/pacientes/:pacienteId/conversation
@@ -12,10 +14,7 @@ exports.getConversationForNutri = async (req, res) => {
             'participants.userId': { $all: [nutricionistaId, pacienteId] }
         });
 
-        if (!conversation) {
-            return res.json({ messages: [] }); // Retorna vazio se não houver conversa
-        }
-        res.json(conversation);
+        res.json(conversation || { messages: [] });
     } catch (error) {
         res.status(500).json({ message: "Erro ao buscar conversa." });
     }
@@ -27,10 +26,19 @@ exports.sendMessage = async (req, res) => {
     try {
         const { receiverId } = req.params;
         const { content } = req.body;
-        const senderId = req.user ? req.userId : req.nutricionista.id; // Funciona para ambos
-        const senderModel = req.user ? 'User' : 'Nutricionista';
+
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Identifica o remetente com base no que o middleware de autenticação forneceu
+        const senderId = req.userId || req.nutricionista?.id;
+        const senderModel = req.userId ? 'User' : 'Nutricionista';
         
-        const receiverModel = await User.exists({_id: receiverId}) ? 'User' : 'Nutricionista';
+        if (!senderId) {
+            return res.status(401).json({ message: 'Remetente não autenticado.' });
+        }
+        
+        // Descobre se o destinatário é um User ou Nutricionista
+        const receiverIsUser = await User.exists({ _id: receiverId });
+        const receiverModel = receiverIsUser ? 'User' : 'Nutricionista';
 
         let conversation = await Conversation.findOne({
             'participants.userId': { $all: [senderId, receiverId] }
@@ -51,8 +59,10 @@ exports.sendMessage = async (req, res) => {
             await conversation.save();
         }
 
-        res.status(201).json(newMessage);
+        // Devolve a última mensagem adicionada com todos os dados
+        res.status(201).json(conversation.messages[conversation.messages.length - 1]);
     } catch (error) {
+        console.error("Erro ao enviar mensagem:", error);
         res.status(500).json({ message: "Erro ao enviar mensagem." });
     }
 };

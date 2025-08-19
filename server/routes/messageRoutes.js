@@ -2,6 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { sendMessage } = require('../controllers/messageController');
+const authenticateAny = require('../middlewares/authenticateAny');
 
 // Middlewares de autenticação
 const autenticar = require('../middlewares/autenticar');
@@ -16,6 +17,6 @@ const allowUserOrNutri = (req, res, next) => {
 };
 
 // Rota para enviar mensagem (pode ser usada por ambos)
-router.post('/messages/send/:receiverId', autenticar, protectNutri, allowUserOrNutri, sendMessage);
+router.post('/messages/send/:receiverId', authenticateAny, sendMessage);
 
 module.exports = router;
