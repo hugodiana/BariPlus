@@ -45,7 +45,6 @@ exports.getConviteInfo = async (req, res) => {
 // @access  Private (Paciente)
 exports.aceitarConvite = async (req, res) => {
     const { codigo } = req.body;
-    // CORREÇÃO: Usando req.userId que é fornecido pelo middleware 'autenticar'
     const pacienteId = req.userId;
 
     try {
@@ -54,10 +53,10 @@ exports.aceitarConvite = async (req, res) => {
             return res.status(404).json({ message: 'Convite inválido ou já aceito.' });
         }
 
-        const nutricionista = await Nutricionista.findById(convite.nutricionistaId);
+        const nutricionistaId = convite.nutricionistaId;
         const paciente = await User.findById(pacienteId);
 
-        if (!nutricionista || !paciente) {
+        if (!nutricionistaId || !paciente) {
             return res.status(404).json({ message: 'Nutricionista ou Paciente não encontrado.' });
         }
         
@@ -65,15 +64,23 @@ exports.aceitarConvite = async (req, res) => {
             return res.status(400).json({ message: 'Você já está vinculado a um nutricionista.' });
         }
 
-        const totalPacientes = nutricionista.pacientes.length;
-        if (totalPacientes >= nutricionista.limiteGratis) {
+        // --- CORREÇÃO APLICADA AQUI ---
+        // Usamos o operador $addToSet do MongoDB, que só adiciona o ID se ele ainda não existir na lista.
+        // Isto previne a duplicação de forma atómica e segura.
+        const nutriAtualizado = await Nutricionista.findByIdAndUpdate(
+            nutricionistaId,
+            { $addToSet: { pacientes: pacienteId } },
+            { new: true }
+        );
+
+        const totalPacientes = nutriAtualizado.pacientes.length;
+        if (totalPacientes > nutriAtualizado.limiteGratis) {
+            // Se o limite foi ultrapassado, revertemos a operação
+            await Nutricionista.findByIdAndUpdate(nutricionistaId, { $pull: { pacientes: pacienteId } });
             return res.status(403).json({ message: 'O nutricionista atingiu o limite de pacientes.' });
         }
 
-        nutricionista.pacientes.push(pacienteId);
-        await nutricionista.save();
-
-        paciente.nutricionistaId = nutricionista._id;
+        paciente.nutricionistaId = nutricionistaId;
         await paciente.save();
 
         convite.status = 'aceito';
@@ -81,6 +88,7 @@ exports.aceitarConvite = async (req, res) => {
         
         res.status(200).json({ message: 'Convite aceito com sucesso! Você foi vinculado ao seu nutricionista.' });
     } catch (error) {
+        console.error("Erro ao aceitar convite:", error);
         res.status(500).json({ message: 'Erro no servidor ao aceitar convite.', error: error.message });
     }
 };

@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 
 // Importe os controllers
-const { getDashboardData } = require('../controllers/nutriController');
+const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController'); // Adicione getPacienteDetails
 const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente } = require('../controllers/planoAlimentarController');
 
@@ -13,6 +13,9 @@ const { protectNutri } = require('../middlewares/authNutri');
 
 // --- Rota do Dashboard ---
 router.get('/dashboard', protectNutri, getDashboardData);
+
+// --- NOVA ROTA DE DETALHES DO PACIENTE ---
+router.get('/pacientes/:pacienteId', protectNutri, getPacienteDetails);
 
 // --- Rotas de Convites ---
 router.post('/convites/gerar', protectNutri, gerarConvite);

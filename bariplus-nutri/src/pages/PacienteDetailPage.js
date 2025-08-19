@@ -7,7 +7,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
-import './PacientesPage.css'; // Reutilizaremos os estilos
+import LoadingSpinner from '../components/LoadingSpinner';
+import './PacientesPage.css';
 
 const PacienteDetailPage = () => {
     const { pacienteId } = useParams();
@@ -17,21 +18,17 @@ const PacienteDetailPage = () => {
 
     const fetchDetalhes = useCallback(async () => {
         try {
-            // Usamos a rota do dashboard do nutri, que já nos dá os detalhes do paciente
-            const dashboardData = await fetchApi('/api/nutri/dashboard');
-            const pacienteAtual = dashboardData.pacientes.find(p => p._id === pacienteId);
+            // CORREÇÃO: Agora buscamos os dados de duas rotas diferentes e dedicadas
+            const [pacienteData, planosData] = await Promise.all([
+                fetchApi(`/api/nutri/pacientes/${pacienteId}`), // Nova rota para detalhes
+                fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`) // Rota para os planos
+            ]);
             
-            if (!pacienteAtual) {
-                toast.error("Paciente não encontrado.");
-                return;
-            }
-            setPaciente(pacienteAtual);
-
-            const planosData = await fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`);
+            setPaciente(pacienteData);
             setPlanos(planosData);
 
         } catch (error) {
-            toast.error("Erro ao carregar detalhes do paciente.");
+            toast.error(error.message || "Erro ao carregar detalhes do paciente.");
         } finally {
             setLoading(false);
         }
@@ -41,9 +38,14 @@ const PacienteDetailPage = () => {
         fetchDetalhes();
     }, [fetchDetalhes]);
 
-    if (loading) return <p>A carregar detalhes do paciente...</p>;
+    if (loading) return <LoadingSpinner />;
 
-    if (!paciente) return <p>Paciente não encontrado.</p>;
+    if (!paciente) return (
+        <div className="page-container">
+            <Link to="/pacientes" className="back-link">‹ Voltar para a lista</Link>
+            <p>Não foi possível carregar os dados do paciente.</p>
+        </div>
+    );
 
     return (
         <div className="page-container">

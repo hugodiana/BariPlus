@@ -32,3 +32,32 @@ exports.getDashboardData = async (req, res) => {
     res.status(500).json({ message: 'Erro no servidor ao buscar dados do dashboard.', error: error.message });
   }
 };
+
+// @desc    Nutricionista busca os detalhes de um paciente específico
+// @route   GET /api/nutri/pacientes/:pacienteId
+// @access  Private (Nutricionista)
+exports.getPacienteDetails = async (req, res) => {
+    try {
+        const nutricionistaId = req.nutricionista.id;
+        const { pacienteId } = req.params;
+
+        const nutricionista = await Nutricionista.findById(nutricionistaId);
+        
+        // Verifica se o ID do paciente está na lista de pacientes do nutricionista
+        const isMyPatient = nutricionista.pacientes.some(pId => pId.toString() === pacienteId);
+
+        if (!isMyPatient) {
+            return res.status(403).json({ message: 'Acesso negado. Este paciente não está na sua lista.' });
+        }
+
+        const paciente = await User.findById(pacienteId).select('-password');
+        if (!paciente) {
+            return res.status(404).json({ message: 'Paciente não encontrado.' });
+        }
+
+        res.status(200).json(paciente);
+    } catch (error) {
+        console.error("Erro ao buscar detalhes do paciente:", error);
+        res.status(500).json({ message: 'Erro no servidor ao buscar detalhes do paciente.' });
+    }
+};
