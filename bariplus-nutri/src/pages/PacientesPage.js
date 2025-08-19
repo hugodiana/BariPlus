@@ -5,7 +5,8 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
-import './PacientesPage.css'; // Vamos criar este ficheiro a seguir
+import LoadingSpinner from '../components/LoadingSpinner'; // Adicionando o import que faltava
+import './PacientesPage.css';
 
 const PacientesPage = () => {
     const [pacientes, setPacientes] = useState([]);
@@ -14,10 +15,12 @@ const PacientesPage = () => {
     const [isGenerating, setIsGenerating] = useState(false);
 
     const fetchPacientes = useCallback(async () => {
+        setLoading(true); // Garante que o loading é ativado
         try {
-            // A rota do dashboard já nos dá a lista de pacientes
             const data = await fetchApi('/api/nutri/dashboard');
-            setPacientes(data.pacientesRecentes || []);
+            // --- CORREÇÃO APLICADA AQUI ---
+            // A API envia a lista na propriedade 'pacientes', não 'pacientesRecentes'.
+            setPacientes(data.pacientes || []);
         } catch (error) {
             toast.error('Erro ao carregar a lista de pacientes.');
         } finally {
@@ -49,7 +52,7 @@ const PacientesPage = () => {
         toast.info('Link copiado para a área de transferência!');
     };
 
-    if (loading) return <p>A carregar pacientes...</p>;
+    if (loading) return <LoadingSpinner />; // Usando o componente de loading
 
     return (
         <div className="page-container">
@@ -65,7 +68,7 @@ const PacientesPage = () => {
                             {pacientes.map(paciente => (
                                 <li key={paciente._id} className="paciente-item">
                                     <span className="paciente-avatar">
-                                        {paciente.nome.charAt(0)}{paciente.sobrenome?.charAt(0)}
+                                        {(paciente.nome?.charAt(0) || '')}{(paciente.sobrenome?.charAt(0) || '')}
                                     </span>
                                     <span className="paciente-name">{paciente.nome} {paciente.sobrenome}</span>
                                     <Link to={`/paciente/${paciente._id}`} className="paciente-action-btn">
