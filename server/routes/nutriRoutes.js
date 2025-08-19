@@ -6,7 +6,7 @@ const router = express.Router();
 const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController');
 const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById } = require('../controllers/planoAlimentarController');
-const { getProgressoPaciente, getDiarioAlimentarPaciente } = require('../controllers/pacienteDataController');
+const { getProgressoPaciente, getDiarioAlimentarPaciente, getHidratacaoPaciente, getMedicacaoPaciente } = require('../controllers/pacienteDataController');
 // CORREÇÃO: Importa a função do controlador correto
 const { getConversationForNutri } = require('../controllers/messageController'); 
 const { protectNutri } = require('../middlewares/authNutri');
@@ -25,6 +25,8 @@ router.get('/planos/:planoId', protectNutri, getPlanoById);
 router.get('/paciente/:pacienteId/progresso', protectNutri, getProgressoPaciente);
 router.get('/paciente/:pacienteId/diario/:date', protectNutri, getDiarioAlimentarPaciente);
 router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationForNutri); 
+router.get('/paciente/:pacienteId/hidratacao/:date', protectNutri, getHidratacaoPaciente);
+router.get('/paciente/:pacienteId/medicacao/:date', protectNutri, getMedicacaoPaciente);
 
 // Rota para o nutri buscar a conversa (agora está correta)
 router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationForNutri); 
