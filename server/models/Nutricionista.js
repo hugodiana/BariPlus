@@ -1,5 +1,4 @@
 // server/models/Nutricionista.js
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -10,12 +9,18 @@ const nutricionistaSchema = new mongoose.Schema({
   crn: { type: String, required: true, unique: true },
   especializacao: { type: String },
   clinica: { type: String },
-  pacientes: [{
+  
+  // --- CAMPOS DE PACIENTES ATUALIZADOS ---
+  pacientesBariplus: [{
     type: mongoose.Schema.Types.ObjectId,
-    // CORREÇÃO APLICADA AQUI: O modelo correto é 'User'
-    ref: 'User'
+    ref: 'User' // Pacientes que usam o app BariPlus
   }],
-  limiteGratis: { type: Number, default: 10 },
+  pacientesLocais: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PacienteNutri' // Pacientes do prontuário do nutri
+  }],
+
+  limiteGratis: { type: Number, default: 10 }, // Limite total de pacientes
   assinatura: {
       id: String,
       status: { type: String, default: 'inativa' }
@@ -23,7 +28,6 @@ const nutricionistaSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Criptografar a senha antes de salvar o nutricionista
 nutricionistaSchema.pre('save', async function(next) {
   if (!this.isModified('senha')) return next();
   const hash = await bcrypt.hash(this.senha, 12);

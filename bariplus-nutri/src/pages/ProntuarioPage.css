@@ -1,0 +1,53 @@
+/* src/pages/ProntuarioPage.css */
+
+.tab-buttons {
+    display: flex;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: var(--space-lg);
+}
+.tab-btn {
+    padding: var(--space-md);
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+}
+.tab-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.form-group {
+    margin-bottom: var(--space-lg);
+}
+.form-group label {
+    display: block;
+    margin-bottom: var(--space-sm);
+    font-weight: 500;
+}
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+.form-group textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.submit-btn {
+    padding: 14px 28px;
+    border: none;
+    border-radius: var(--border-radius);
+    background-color: var(--color-primary);
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+}

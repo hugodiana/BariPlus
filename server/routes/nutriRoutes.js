@@ -6,15 +6,24 @@ const router = express.Router();
 const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController');
 const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById, saveAsTemplate, getTemplates } = require('../controllers/planoAlimentarController');
-// CORREÇÃO: Importa a função que faltava
+const { createPacienteLocal, getPacientesLocais } = require('../controllers/pacienteLocalController');
+const { getProntuario, updateAnamnese, addAvaliacao } = require('../controllers/prontuarioController');
 const { getProgressoPaciente, getDiarioAlimentarPaciente, getHidratacaoPaciente, getMedicacaoPaciente, addDiaryComment, getExamesPaciente } = require('../controllers/pacienteDataController');
 const { getConversationForNutri } = require('../controllers/messageController');
 const { protectNutri } = require('../middlewares/authNutri');
+const { getAgendamentos, createAgendamento, updateAgendamento } = require('../controllers/agendaController');
 
-// Rotas de Gestão
+// --- Rotas de Gestão ---
 router.get('/dashboard', protectNutri, getDashboardData);
 router.get('/pacientes/:pacienteId', protectNutri, getPacienteDetails);
 router.post('/convites/gerar', protectNutri, gerarConvite);
+
+// --- NOVAS ROTAS PARA PACIENTES LOCAIS ---
+router.post('/pacientes-locais', protectNutri, createPacienteLocal);
+router.get('/pacientes-locais', protectNutri, getPacientesLocais);
+router.get('/prontuario/:pacienteId', protectNutri, getProntuario);
+router.put('/prontuario/:pacienteId/anamnese', protectNutri, updateAnamnese);
+router.post('/prontuario/:pacienteId/avaliacoes', protectNutri, addAvaliacao);
 
 // Rotas de Planos Alimentares
 router.get('/planos/templates', protectNutri, getTemplates); 
@@ -32,5 +41,10 @@ router.get('/paciente/:pacienteId/medicacao/:date', protectNutri, getMedicacaoPa
 // CORREÇÃO: A rota em falta foi adicionada aqui
 router.get('/paciente/:pacienteId/exames', protectNutri, getExamesPaciente);
 router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationForNutri); 
+
+// --- ROTAS DA AGENDA ---
+router.get('/agenda', protectNutri, getAgendamentos);
+router.post('/agenda', protectNutri, createAgendamento);
+router.put('/agenda/:id', protectNutri, updateAgendamento);
 
 module.exports = router;

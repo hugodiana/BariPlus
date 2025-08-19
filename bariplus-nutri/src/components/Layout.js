@@ -42,6 +42,7 @@ const Layout = ({ nutricionista }) => {
                 <nav className="sidebar-nav">
                     <NavLink to="/" end onClick={handleLinkClick}>Dashboard</NavLink>
                     <NavLink to="/pacientes" onClick={handleLinkClick}>Meus Pacientes</NavLink>
+                    <NavLink to="/agenda" onClick={handleLinkClick}>Agenda</NavLink>
                 </nav>
                 <div className="sidebar-footer">
                     <div className="user-info">
