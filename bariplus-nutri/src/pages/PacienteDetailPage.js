@@ -14,18 +14,20 @@ const PacienteDetailPage = () => {
     const { pacienteId } = useParams();
     const [paciente, setPaciente] = useState(null);
     const [planos, setPlanos] = useState([]);
+    const [progresso, setProgresso] = useState(null); // NOVO ESTADO
     const [loading, setLoading] = useState(true);
 
     const fetchDetalhes = useCallback(async () => {
         try {
-            // CORREÇÃO: Agora buscamos os dados de duas rotas diferentes e dedicadas
-            const [pacienteData, planosData] = await Promise.all([
-                fetchApi(`/api/nutri/pacientes/${pacienteId}`), // Nova rota para detalhes
-                fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`) // Rota para os planos
+            const [pacienteData, planosData, progressoData] = await Promise.all([
+                fetchApi(`/api/nutri/pacientes/${pacienteId}`),
+                fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`),
+                fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`) // NOVA CHAMADA
             ]);
             
             setPaciente(pacienteData);
             setPlanos(planosData);
+            setProgresso(progressoData); // ARMAZENA OS DADOS DE PROGRESSO
 
         } catch (error) {
             toast.error(error.message || "Erro ao carregar detalhes do paciente.");
@@ -39,21 +41,26 @@ const PacienteDetailPage = () => {
     }, [fetchDetalhes]);
 
     if (loading) return <LoadingSpinner />;
+    if (!paciente) return <div className="page-container"><p>Paciente não encontrado.</p></div>;
 
-    if (!paciente) return (
-        <div className="page-container">
-            <Link to="/pacientes" className="back-link">‹ Voltar para a lista</Link>
-            <p>Não foi possível carregar os dados do paciente.</p>
-        </div>
-    );
+    const pesoInicial = progresso?.detalhes?.detalhesCirurgia?.pesoInicial || 0;
+    const pesoAtual = progresso?.detalhes?.detalhesCirurgia?.pesoAtual || 0;
+    const pesoPerdido = pesoInicial - pesoAtual;
 
     return (
         <div className="page-container">
             <Link to="/pacientes" className="back-link">‹ Voltar para a lista</Link>
             <div className="page-header">
                 <h1>{paciente.nome} {paciente.sobrenome}</h1>
-                <p>Acompanhe e gira os planos alimentares deste paciente.</p>
+                <p>Acompanhe e gira os planos alimentares e o progresso deste paciente.</p>
             </div>
+
+            {/* NOVO CARD DE RESUMO DE PROGRESSO */}
+            <Card className="progresso-summary">
+                <div><span>Peso Inicial</span><strong>{pesoInicial.toFixed(1)} kg</strong></div>
+                <div><span>Peso Atual</span><strong>{pesoAtual.toFixed(1)} kg</strong></div>
+                <div><span>Total Perdido</span><strong className="perdido">{pesoPerdido.toFixed(1)} kg</strong></div>
+            </Card>
 
             <Card>
                 <div className="card-header-action">

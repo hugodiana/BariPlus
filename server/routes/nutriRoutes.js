@@ -4,24 +4,25 @@ const express = require('express');
 const router = express.Router();
 
 // Importe os controllers
-const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController'); // Adicione getPacienteDetails
+const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController');
 const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente } = require('../controllers/planoAlimentarController');
+// NOVA IMPORTAÇÃO
+const { getProgressoPaciente, getDiarioAlimentarPaciente } = require('../controllers/pacienteDataController');
 
 // Importe o middleware de proteção
 const { protectNutri } = require('../middlewares/authNutri');
 
-// --- Rota do Dashboard ---
+// --- Rotas de Gestão ---
 router.get('/dashboard', protectNutri, getDashboardData);
-
-// --- NOVA ROTA DE DETALHES DO PACIENTE ---
 router.get('/pacientes/:pacienteId', protectNutri, getPacienteDetails);
-
-// --- Rotas de Convites ---
 router.post('/convites/gerar', protectNutri, gerarConvite);
-
-// --- Rotas de Planos Alimentares ---
 router.post('/planos/criar', protectNutri, criarPlanoAlimentar);
 router.get('/pacientes/:pacienteId/planos', protectNutri, getPlanosPorPaciente);
+
+// --- NOVAS ROTAS DE ACESSO A DADOS ---
+router.get('/paciente/:pacienteId/progresso', protectNutri, getProgressoPaciente);
+router.get('/paciente/:pacienteId/diario/:date', protectNutri, getDiarioAlimentarPaciente);
+
 
 module.exports = router;
