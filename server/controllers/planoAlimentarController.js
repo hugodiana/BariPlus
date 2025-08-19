@@ -1,11 +1,7 @@
 // server/controllers/planoAlimentarController.js
-
 const PlanoAlimentar = require('../models/PlanoAlimentar');
 const Nutricionista = require('../models/Nutricionista');
 
-// @desc    Nutricionista cria um novo plano alimentar para um paciente
-// @route   POST /api/nutri/planos/criar
-// @access  Private (Nutricionista)
 exports.criarPlanoAlimentar = async (req, res) => {
   const nutricionistaId = req.nutricionista.id;
   const { pacienteId, titulo, refeicoes, observacoesGerais } = req.body;
@@ -13,30 +9,16 @@ exports.criarPlanoAlimentar = async (req, res) => {
   if (!pacienteId || !titulo || !refeicoes || refeicoes.length === 0) {
     return res.status(400).json({ message: 'Dados insuficientes para criar o plano.' });
   }
-
   try {
     const nutri = await Nutricionista.findById(nutricionistaId);
-    const isMyPatient = nutri.pacientes.some(pId => pId.toString() === pacienteId);
-
+    // Verifica se o paciente (que é um User do BariPlus) pertence ao nutricionista
+    const isMyPatient = nutri.pacientesBariplus.some(pId => pId.toString() === pacienteId);
     if (!isMyPatient) {
       return res.status(403).json({ message: 'Acesso negado. Este paciente não está vinculado a você.' });
     }
-
-    await PlanoAlimentar.updateMany(
-      { pacienteId: pacienteId },
-      { $set: { ativo: false } }
-    );
-
-    const novoPlano = await PlanoAlimentar.create({
-      nutricionistaId,
-      pacienteId,
-      titulo,
-      refeicoes,
-      observacoesGerais
-    });
-
+    await PlanoAlimentar.updateMany({ pacienteId: pacienteId }, { $set: { ativo: false } });
+    const novoPlano = await PlanoAlimentar.create({ nutricionistaId, pacienteId, titulo, refeicoes, observacoesGerais });
     res.status(201).json({ message: 'Plano alimentar criado com sucesso!', plano: novoPlano });
-
   } catch (error) {
     res.status(500).json({ message: 'Erro no servidor ao criar plano alimentar.', error: error.message });
   }

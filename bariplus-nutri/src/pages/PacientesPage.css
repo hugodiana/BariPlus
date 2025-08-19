@@ -1,16 +1,26 @@
 /* src/pages/PacientesPage.css */
-.page-header {
-    margin-bottom: var(--space-lg);
-}
-.page-header h1 {
-    font-size: 2rem;
-    color: var(--color-text-strong);
-}
+.page-header { flex-grow: 1; }
+.page-header h1 { font-size: 2rem; color: var(--color-text-strong); margin: 0 0 5px 0; }
+.page-header p { margin: 0; }
 
 .pacientes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    grid-template-columns: 2fr 1fr; /* Coluna das listas 2x maior */
     gap: var(--space-xl);
+}
+
+.pacientes-coluna, .convites-coluna {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+.pacientes-list-card h3, .convite-card h3 {
+    margin-top: 0;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-md);
+    margin-bottom: var(--space-md);
 }
 
 .pacientes-list-card, .convite-card {
@@ -131,10 +141,9 @@
 
 @media (max-width: 992px) {
     .pacientes-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr; /* Volta a ter uma coluna em ecrãs menores */
     }
 }
-
 .card-header-action {
     display: flex;
     justify-content: space-between;
@@ -151,10 +160,11 @@
 .action-btn-positive {
     background-color: var(--color-primary);
     color: white;
-    padding: 8px 16px;
+    padding: 12px 18px;
     border-radius: var(--border-radius);
     text-decoration: none;
     font-weight: 500;
+    white-space: nowrap;
 }
 
 .planos-list {
@@ -390,6 +400,8 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: var(--space-lg);
+    flex-wrap: wrap; /* Para ecrãs pequenos */
+    gap: var(--space-md);
 }
 
 .chat-btn {
@@ -521,3 +533,4 @@
 .exame-item-viewer li strong {
     color: var(--color-text-strong);
 }
+

@@ -12,19 +12,15 @@ const PacientesPage = () => {
     const [pacientesBariplus, setPacientesBariplus] = useState([]);
     const [pacientesLocais, setPacientesLocais] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('bariplus'); // 'bariplus' ou 'locais'
+    const [generatedLink, setGeneratedLink] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            // Buscamos os dois tipos de pacientes em paralelo
-            const [dataDashboard, dataLocais] = await Promise.all([
-                fetchApi('/api/nutri/dashboard'), // Pacientes BariPlus
-                fetchApi('/api/nutri/pacientes-locais') // Pacientes Locais
-            ]);
-            
-            setPacientesBariplus(dataDashboard.pacientes || []);
-            setPacientesLocais(dataLocais || []);
+            const data = await fetchApi('/api/nutri/dashboard');
+            setPacientesBariplus(data.pacientesBariplus || []);
+            setPacientesLocais(data.pacientesLocais || []);
         } catch (error) {
             toast.error('Erro ao carregar a lista de pacientes.');
         } finally {
@@ -36,6 +32,26 @@ const PacientesPage = () => {
         fetchData();
     }, [fetchData]);
 
+    const handleGenerateInvite = async () => {
+        setIsGenerating(true);
+        try {
+            const data = await fetchApi('/api/nutri/convites/gerar', {
+                method: 'POST'
+            });
+            setGeneratedLink(data.url);
+            toast.success('Link de convite gerado com sucesso!');
+        } catch (error) {
+            toast.error(error.message || 'Não foi possível gerar o convite.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(generatedLink);
+        toast.info('Link copiado para a área de transferência!');
+    };
+
     if (loading) return <LoadingSpinner />;
 
     return (
@@ -43,46 +59,60 @@ const PacientesPage = () => {
             <div className="page-header-action">
                 <div className="page-header">
                     <h1>Meus Pacientes</h1>
-                    <p>Gira os seus pacientes vinculados ao BariPlus e os seus prontuários particulares.</p>
+                    <p>Gira os seus pacientes e convide novos utilizadores para o BariPlus.</p>
                 </div>
                 <Link to="/pacientes/criar" className="action-btn-positive">
-                    + Adicionar Paciente
+                    + Adicionar Paciente ao Prontuário
                 </Link>
             </div>
 
-            <Card>
-                <div className="tab-buttons">
-                    <button 
-                        className={`tab-btn ${activeTab === 'bariplus' ? 'active' : ''}`} 
-                        onClick={() => setActiveTab('bariplus')}
-                    >
-                        Pacientes BariPlus ({pacientesBariplus.length})
-                    </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'locais' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('locais')}
-                    >
-                        Meus Pacientes ({pacientesLocais.length})
-                    </button>
+            <div className="pacientes-grid">
+                {/* Coluna da Esquerda: Listas de Pacientes */}
+                <div className="pacientes-coluna">
+                    <Card>
+                        <h3>Pacientes Vinculados ao BariPlus ({pacientesBariplus.length})</h3>
+                        <ListaPacientesBariplus pacientes={pacientesBariplus} />
+                    </Card>
+                    <Card>
+                        <h3>Pacientes do Prontuário ({pacientesLocais.length})</h3>
+                        <ListaPacientesLocais pacientes={pacientesLocais} />
+                    </Card>
                 </div>
 
-                <div className="tab-content">
-                    {activeTab === 'bariplus' && (
-                        <ListaPacientesBariplus pacientes={pacientesBariplus} />
-                    )}
-                    {activeTab === 'locais' && (
-                        <ListaPacientesLocais pacientes={pacientesLocais} />
-                    )}
+                {/* Coluna da Direita: Convites */}
+                <div className="convites-coluna">
+                    <Card>
+                        <h3>Convidar Paciente para o BariPlus</h3>
+                        <p>
+                            Gere um link de convite único para que um paciente possa criar uma conta gratuita no BariPlus e vinculá-la a si.
+                        </p>
+                        <button 
+                            className="generate-btn" 
+                            onClick={handleGenerateInvite} 
+                            disabled={isGenerating}
+                        >
+                            {isGenerating ? 'A gerar...' : 'Gerar Novo Convite'}
+                        </button>
+
+                        {generatedLink && (
+                            <div className="generated-link-container">
+                                <p><strong>Link gerado!</strong> Envie para o seu paciente:</p>
+                                <div className="link-input-group">
+                                    <input type="text" value={generatedLink} readOnly />
+                                    <button onClick={copyToClipboard}>Copiar</button>
+                                </div>
+                            </div>
+                        )}
+                    </Card>
                 </div>
-            </Card>
+            </div>
         </div>
     );
 };
 
-// Componente para a lista de pacientes do BariPlus
 const ListaPacientesBariplus = ({ pacientes }) => {
     if (pacientes.length === 0) {
-        return <p>Nenhum paciente do BariPlus vinculado. Gere e envie um link de convite.</p>;
+        return <p>Nenhum paciente do BariPlus vinculado. Gere um link de convite para começar.</p>;
     }
     return (
         <ul className="pacientes-list">
@@ -101,10 +131,9 @@ const ListaPacientesBariplus = ({ pacientes }) => {
     );
 };
 
-// Componente para a lista de pacientes locais
 const ListaPacientesLocais = ({ pacientes }) => {
     if (pacientes.length === 0) {
-        return <p>Nenhum paciente particular adicionado. Clique em "Adicionar Paciente" para começar.</p>;
+        return <p>Nenhum paciente particular adicionado. Clique em "Adicionar Paciente ao Prontuário" para começar.</p>;
     }
     return (
         <ul className="pacientes-list">
@@ -114,13 +143,11 @@ const ListaPacientesLocais = ({ pacientes }) => {
                         {paciente.nomeCompleto?.charAt(0)}
                     </span>
                     <span className="paciente-name">{paciente.nomeCompleto}</span>
-                    {/* No futuro, este link levará ao prontuário completo */}
                     <Link to={`/prontuario/${paciente._id}`} className="paciente-action-btn">Ver Prontuário</Link>
                 </li>
             ))}
         </ul>
     );
 };
-
 
 export default PacientesPage;

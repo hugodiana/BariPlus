@@ -10,7 +10,7 @@ exports.getDashboardData = async (req, res) => {
   try {
     const nutricionista = await Nutricionista.findById(req.nutricionista.id)
       // --- CORREÇÃO APLICADA AQUI ---
-      // Populamos as duas listas de pacientes separadamente
+      // Populamos as duas listas de pacientes separadamente para buscar os seus detalhes
       .populate('pacientesBariplus', 'nome sobrenome')
       .populate('pacientesLocais', 'nomeCompleto');
 
@@ -18,13 +18,7 @@ exports.getDashboardData = async (req, res) => {
       return res.status(404).json({ message: 'Nutricionista não encontrado.' });
     }
 
-    // Combina as duas listas numa só para o frontend
-    const todosPacientes = [
-        ...nutricionista.pacientesBariplus.map(p => ({_id: p._id, nome: p.nome, sobrenome: p.sobrenome})),
-        ...nutricionista.pacientesLocais.map(p => ({_id: p._id, nome: p.nomeCompleto, sobrenome: ''}))
-    ];
-
-    const totalPacientes = todosPacientes.length;
+    const totalPacientes = (nutricionista.pacientesBariplus?.length || 0) + (nutricionista.pacientesLocais?.length || 0);
     const vagasGratisRestantes = Math.max(0, nutricionista.limiteGratis - totalPacientes);
     const pacientesExtrasPagos = Math.max(0, totalPacientes - nutricionista.limiteGratis);
 
@@ -32,7 +26,9 @@ exports.getDashboardData = async (req, res) => {
       totalPacientes,
       vagasGratisRestantes,
       pacientesExtrasPagos,
-      pacientes: todosPacientes // Envia a lista combinada
+      // Enviamos as duas listas separadamente e já preenchidas
+      pacientesBariplus: nutricionista.pacientesBariplus || [],
+      pacientesLocais: nutricionista.pacientesLocais || []
     });
 
   } catch (error) {
@@ -51,7 +47,6 @@ exports.getPacienteDetails = async (req, res) => {
 
         const nutricionista = await Nutricionista.findById(nutricionistaId);
         
-        // Verifica se o ID do paciente está na lista de pacientes do nutricionista
         const isMyPatient = nutricionista.pacientesBariplus.some(pId => pId.toString() === pacienteId);
 
         if (!isMyPatient) {

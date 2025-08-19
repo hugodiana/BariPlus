@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
 import Modal from '../components/Modal';
-import LoadingSpinner from '../components/LoadingSpinner';
+// A importação do LoadingSpinner foi removida
 import './PlanoAlimentarPage.css';
 
 const PlanoAlimentarPage = () => {
@@ -18,7 +18,7 @@ const PlanoAlimentarPage = () => {
         titulo: '',
         observacoesGerais: '',
         refeicoes: [
-            { nome: 'Café da Manhã', horario: '08:00', itens: [{ alimento: '', quantidade: '' }] }
+            { nome: 'Pequeno-almoço', horario: '08:00', itens: [{ alimento: '', quantidade: '' }] }
         ]
     });
 
@@ -41,7 +41,7 @@ const PlanoAlimentarPage = () => {
             observacoesGerais: template.observacoesGerais,
             refeicoes: template.refeicoes.map(r => ({
                 ...r,
-                itens: r.itens.map(i => ({...i})) // Garante cópias profundas
+                itens: r.itens.map(i => ({...i}))
             }))
         });
         setIsTemplateModalOpen(false);
@@ -120,7 +120,6 @@ const PlanoAlimentarPage = () => {
             </div>
             <form onSubmit={handleSubmit}>
                 <Card className="plano-card">
-                    {/* ... O resto do seu formulário permanece igual ... */}
                     <div className="form-group">
                         <label>Título do Plano</label>
                         <input type="text" name="titulo" value={plano.titulo} onChange={handlePlanoChange} placeholder="Ex: Plano de Adaptação - Semana 1" required />

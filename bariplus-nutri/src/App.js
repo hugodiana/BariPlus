@@ -19,6 +19,7 @@ const PlanoDetailPage = lazy(() => import('./pages/PlanoDetailPage'));
 const CriarPacientePage = lazy(() => import('./pages/CriarPacientePage'));
 const ProntuarioPage = lazy(() => import('./pages/ProntuarioPage'));
 const AgendaPage = lazy(() => import('./pages/AgendaPage'));
+const AssinaturaPage = lazy(() => import('./pages/AssinaturaPage'));
 
 function App() {
     const [nutricionista, setNutricionista] = useState(null);
@@ -75,6 +76,7 @@ function App() {
                         <Route path="paciente/:pacienteId/plano/criar" element={<PlanoAlimentarPage />} />
                         <Route path="pacientes/criar" element={<CriarPacientePage />} />
                         <Route path="agenda" element={<AgendaPage />} />
+                        <Route path="assinatura" element={<AssinaturaPage />} />
                         <Route path="paciente/:pacienteId/plano/:planoId" element={<PlanoDetailPage />} />
                     </Route>
                 </Routes>

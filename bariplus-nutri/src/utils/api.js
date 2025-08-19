@@ -1,17 +1,15 @@
 // src/utils/api.js
 import { toast } from 'react-toastify';
 
-// IMPORTANTE: Aponte para a mesma URL de API do seu backend
-const API_URL = process.env.REACT_APP_API_URL || 'https://bariplus-api-vzk6.onrender.com';
-
-let accessToken = localStorage.getItem('nutri_token');
+const API_URL = process.env.REACT_APP_API_URL;
+let accessToken = localStorage.getItem('bariplus_token');
 
 export const setAuthToken = (token) => {
     if (token) {
-        localStorage.setItem('nutri_token', token);
+        localStorage.setItem('bariplus_token', token);
         accessToken = token;
     } else {
-        localStorage.removeItem('nutri_token');
+        localStorage.removeItem('bariplus_token');
         accessToken = null;
     }
 };
@@ -37,16 +35,17 @@ export const fetchApi = async (endpoint, options = {}) => {
         }
 
         if (response.status === 204) {
-            return;
+            return; // Retorna undefined para respostas sem conteúdo (ex: DELETE)
         }
         
         const data = await response.json();
 
         if (!response.ok) {
+            // Se a API enviar um objeto de erro com uma mensagem, use-a. Senão, use o status.
             throw new Error(data.message || `Erro: ${response.statusText}`);
         }
 
-        return data;
+        return data; // Retorna os dados JSON diretamente em caso de sucesso
 
     } catch (error) {
         return Promise.reject(error);
