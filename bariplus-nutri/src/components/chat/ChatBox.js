@@ -1,7 +1,7 @@
-// src/components/chat/ChatBox.js
+// src/components/chat/ChatBox.js (NO PORTAL DO NUTRICIONISTA)
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchApi } from '../../utils/api';
-import { toast } from 'react-toastify'; // --- CORREÇÃO: A importação que faltava foi adicionada aqui ---
+import { toast } from 'react-toastify';
 import './ChatBox.css';
 
 const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
@@ -12,10 +12,11 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
 
     useEffect(() => {
         const fetchConversation = async () => {
+            setLoading(true);
             try {
-                const endpoint = currentUser.crn 
-                    ? `/api/nutri/pacientes/${receiver._id}/conversation` 
-                    : `/api/conversation`;
+                // --- CORREÇÃO APLICADA AQUI ---
+                // A rota para o nutricionista buscar a conversa precisa do prefixo /nutri/
+                const endpoint = `/api/nutri/pacientes/${receiver._id}/conversation`;
 
                 const conversation = await fetchApi(endpoint);
                 setMessages(conversation.messages || []);

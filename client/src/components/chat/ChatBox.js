@@ -1,6 +1,7 @@
-// src/components/chat/ChatBox.js (na aplicação do PACIENTE)
+// src/components/chat/ChatBox.js (NA APLICAÇÃO DO PACIENTE)
 import React, { useState, useEffect, useRef } from 'react';
 import { fetchApi } from '../../utils/api';
+import { toast } from 'react-toastify';
 import './ChatBox.css';
 
 const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
@@ -14,13 +15,12 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
             setLoading(true);
             try {
                 // --- CORREÇÃO APLICADA AQUI ---
-                // A rota para o paciente buscar a conversa é a que acabámos de criar no backend.
+                // A rota para o paciente buscar a conversa é a rota simples '/api/conversation'.
                 const endpoint = '/api/conversation'; 
                 const conversation = await fetchApi(endpoint);
                 setMessages(conversation.messages || []);
             } catch (error) {
                 console.error("Erro ao carregar mensagens:", error);
-                // Não mostra toast para 404, pois significa apenas que não há conversa ainda.
                 if (!error.message.includes('404')) {
                     toast.error("Não foi possível carregar o chat.");
                 }
@@ -59,6 +59,7 @@ const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
             setMessages(prev => prev.map(msg => msg._id === tempId ? data : msg));
             if(onNewMessage) onNewMessage(data);
         } catch (error) {
+            toast.error("Não foi possível enviar a mensagem.");
             setMessages(prev => prev.filter(msg => msg._id !== tempId));
         }
     };
