@@ -15,17 +15,17 @@ const authenticateAny = async (req, res, next) => {
             if (user) {
                 req.userId = user._id;
                 req.user = user;
-                return next();
+                return next(); // Encontrou um paciente, avança
             }
             
             // Se não for User, tenta encontrar como Nutricionista
             const nutricionista = await Nutricionista.findById(decoded.id).select('-senha');
             if (nutricionista) {
                 req.nutricionista = nutricionista;
-                return next();
+                return next(); // Encontrou um nutricionista, avança
             }
 
-            // Se não encontrou nenhum dos dois
+            // Se o token for válido mas o ID não corresponder a ninguém
             return res.status(401).json({ message: 'Não autorizado, utilizador não encontrado.' });
 
         } catch (error) {

@@ -1,31 +1,40 @@
+// src/App.js
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { setAuthToken } from './utils/api';
-import ProtectedRoute from './components/ProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute'; // Corrigido
+import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
-import DashboardNutriPage from './pages/DashboardNutriPage';
-import PatientDetailPage from './pages/PatientDetailPage';
+import LoadingSpinner from './components/LoadingSpinner'; // Adicionado para fallback
+
+// Corrigido para usar os nomes de ficheiro corretos e lazy loading
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const PacientesPage = lazy(() => import('./pages/PacientesPage'));
 const PacienteDetailPage = lazy(() => import('./pages/PacienteDetailPage'));
-const PlanoDetailPage = lazy(() => import('./pages/PlanoDetailPage'));
-// CORREÇÃO: Importação do PlanoAlimentarPage que estava em falta
 const PlanoAlimentarPage = lazy(() => import('./pages/PlanoAlimentarPage'));
+const PlanoDetailPage = lazy(() => import('./pages/PlanoDetailPage'));
+
 
 function App() {
     const [nutricionista, setNutricionista] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const checkUser = async () => {
+        const checkUser = () => {
             const token = localStorage.getItem('nutri_token');
             if (token) {
                 setAuthToken(token);
                 try {
                     const savedNutri = localStorage.getItem('nutri_data');
-                    if (savedNutri) setNutricionista(JSON.parse(savedNutri));
+                    if (savedNutri) {
+                        setNutricionista(JSON.parse(savedNutri));
+                    } else {
+                        // Se não houver dados, limpa o token para forçar o login
+                        setAuthToken(null);
+                    }
                 } catch (error) {
                     setAuthToken(null);
                 }
@@ -40,16 +49,23 @@ function App() {
         localStorage.setItem('nutri_data', JSON.stringify(nutriData));
     };
 
-    if (loading) return <div>A carregar...</div>;
-
+    if (loading) return <LoadingSpinner fullPage />;
 
     return (
         <Router>
             <ToastContainer position="bottom-right" />
-            <Suspense fallback={<div>A carregar página...</div>}>
+            <Suspense fallback={<LoadingSpinner fullPage />}>
                 <Routes>
                     <Route path="/login" element={!nutricionista ? <LoginPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
-                    <Route path="/" element={nutricionista ? <Layout nutricionista={nutricionista} /> : <Navigate to="/login" />}>
+                    
+                    <Route 
+                        path="/" 
+                        element={
+                            <ProtectedRoute nutricionista={nutricionista}>
+                                <Layout nutricionista={nutricionista} />
+                            </ProtectedRoute>
+                        }
+                    >
                         <Route index element={<DashboardPage />} />
                         <Route path="pacientes" element={<PacientesPage />} />
                         <Route path="paciente/:pacienteId" element={<PacienteDetailPage />} />
