@@ -22,7 +22,6 @@ exports.criarPlanoAlimentar = async (req, res) => {
       return res.status(403).json({ message: 'Acesso negado. Este paciente não está vinculado a você.' });
     }
 
-    // Desativa planos antigos do mesmo paciente
     await PlanoAlimentar.updateMany(
       { pacienteId: pacienteId },
       { $set: { ativo: false } }
@@ -78,7 +77,6 @@ exports.getPlanoById = async (req, res) => {
             return res.status(404).json({ message: 'Plano alimentar não encontrado.' });
         }
 
-        // Medida de segurança: Garante que o nutricionista só pode ver os seus próprios planos
         if (plano.nutricionistaId.toString() !== nutricionistaId) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
@@ -88,6 +86,8 @@ exports.getPlanoById = async (req, res) => {
         res.status(500).json({ message: 'Erro no servidor ao buscar o plano alimentar.' });
     }
 };
+
+// --- FUNÇÕES DE TEMPLATE QUE ESTAVAM EM FALTA ---
 
 // @desc    Salvar um plano como um template
 // @route   POST /api/nutri/planos/:planoId/salvar-como-template
@@ -113,7 +113,7 @@ exports.saveAsTemplate = async (req, res) => {
             observacoesGerais: planoOriginal.observacoesGerais,
             isTemplate: true,
             templateName: templateName,
-            pacienteId: null, // Templates não têm paciente associado
+            pacienteId: null,
             ativo: false,
         });
 

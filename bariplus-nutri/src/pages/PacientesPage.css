@@ -9,13 +9,14 @@
 
 .pacientes-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: var(--space-xl);
 }
 
 .pacientes-list-card, .convite-card {
     display: flex;
     flex-direction: column;
+    padding: var(--space-lg) !important;
 }
 
 .pacientes-list-card h3, .convite-card h3 {
@@ -23,6 +24,7 @@
     color: var(--color-primary);
     border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--space-md);
+    margin-bottom: var(--space-md);
 }
 
 .pacientes-list {
@@ -35,12 +37,12 @@
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    padding: var(--space-md) 0;
-    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-md);
+    border-radius: var(--border-radius);
+    transition: var(--transition);
 }
-
-.paciente-item:last-child {
-    border-bottom: none;
+.paciente-item:hover {
+    background-color: var(--color-background);
 }
 
 .paciente-avatar {
@@ -59,16 +61,19 @@
 .paciente-name {
     flex-grow: 1;
     font-weight: 500;
+    color: var(--color-text-strong);
 }
 
 .paciente-action-btn {
     background-color: transparent;
     border: 1px solid var(--color-border);
     color: var(--color-text-secondary);
-    padding: 8px 12px;
+    padding: 8px 16px;
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: var(--transition);
+    text-decoration: none;
+    font-weight: 500;
 }
 
 .paciente-action-btn:hover {
@@ -80,11 +85,13 @@
 .convite-card p {
     color: var(--color-text-secondary);
     flex-grow: 1;
+    line-height: 1.6;
 }
 
 .generate-btn {
     width: 100%;
     padding: 14px;
+    margin-top: var(--space-md);
     font-size: 1rem;
     font-weight: bold;
     color: white;
@@ -479,4 +486,38 @@
     padding: 0 15px;
     border-radius: 0 var(--border-radius) var(--border-radius) 0;
     cursor: pointer;
+}
+
+.exames-viewer-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-lg);
+    margin-top: var(--space-md);
+}
+
+.exame-item-viewer h4 {
+    margin: 0 0 var(--space-sm) 0;
+    font-size: 1rem;
+    color: var(--color-primary);
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.exame-item-viewer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.exame-item-viewer li {
+    display: flex;
+    justify-content: space-between;
+}
+
+.exame-item-viewer li span {
+    color: var(--color-text-secondary);
+}
+.exame-item-viewer li strong {
+    color: var(--color-text-strong);
 }

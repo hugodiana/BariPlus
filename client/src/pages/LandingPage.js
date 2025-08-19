@@ -1,5 +1,5 @@
 // src/pages/LandingPage.js
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import './LandingPage.css';
 
@@ -67,15 +67,17 @@ const LandingPage = () => {
                 }
             });
         }, {
-            threshold: 0.1 // A animação começa quando 10% do elemento está visível
+            threshold: 0.1
         });
 
-        sectionsRef.current.forEach(section => {
+        // Cria uma cópia da referência para usar na função de limpeza
+        const currentSections = sectionsRef.current;
+        currentSections.forEach(section => {
             if (section) observer.observe(section);
         });
 
         return () => {
-            sectionsRef.current.forEach(section => {
+            currentSections.forEach(section => {
                 if (section) observer.unobserve(section);
             });
         };

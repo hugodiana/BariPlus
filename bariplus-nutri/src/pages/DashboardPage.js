@@ -1,6 +1,8 @@
+// src/pages/DashboardPage.js
 import React, { useState, useEffect } from 'react';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
+import './DashboardPage.css'; // Novo ficheiro de estilos
 
 const DashboardPage = () => {
     const [stats, setStats] = useState(null);
@@ -23,20 +25,22 @@ const DashboardPage = () => {
     if (loading) return <p>A carregar dashboard...</p>;
 
     return (
-        <div>
-            <h1>Dashboard</h1>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-                <Card>
-                    <h3>Total de Pacientes</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats?.totalPacientes}</p>
+        <div className="page-container">
+            <div className="page-header">
+                <h1>Dashboard</h1>
+            </div>
+            <div className="dashboard-stats-grid">
+                <Card className="stat-card">
+                    <span className="stat-label">Total de Pacientes</span>
+                    <span className="stat-value">{stats?.totalPacientes}</span>
                 </Card>
-                <Card>
-                    <h3>Vagas Gratuitas Restantes</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats?.vagasGratisRestantes}</p>
+                <Card className="stat-card">
+                    <span className="stat-label">Vagas Gratuitas Restantes</span>
+                    <span className="stat-value">{stats?.vagasGratisRestantes}</span>
                 </Card>
-                <Card>
-                    <h3>Pacientes Extras</h3>
-                    <p style={{ fontSize: '2rem', fontWeight: 'bold' }}>{stats?.pacientesExtrasPagos}</p>
+                <Card className="stat-card">
+                    <span className="stat-label">Pacientes Extras</span>
+                    <span className="stat-value">{stats?.pacientesExtrasPagos}</span>
                 </Card>
             </div>
         </div>

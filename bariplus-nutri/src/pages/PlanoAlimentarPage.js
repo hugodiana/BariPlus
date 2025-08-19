@@ -18,7 +18,7 @@ const PlanoAlimentarPage = () => {
         titulo: '',
         observacoesGerais: '',
         refeicoes: [
-            { nome: 'Pequeno-almoço', horario: '08:00', itens: [{ alimento: '', quantidade: '' }] }
+            { nome: 'Café da Manhã', horario: '08:00', itens: [{ alimento: '', quantidade: '' }] }
         ]
     });
 

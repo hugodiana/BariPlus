@@ -1,9 +1,9 @@
-// src/pages/PacienteDetailPage.js
+// bariplus-nutri/src/pages/PacienteDetailPage.js
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { format, addDays, subDays } from 'date-fns';
+import { format, parseISO, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
@@ -16,10 +16,8 @@ import './PacientesPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// NOVO: Componente para o formulário de comentário
 const CommentForm = ({ pacienteId, date, mealType, itemId, onCommentAdded }) => {
     const [text, setText] = useState('');
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!text.trim()) return;
@@ -35,20 +33,13 @@ const CommentForm = ({ pacienteId, date, mealType, itemId, onCommentAdded }) => 
             toast.error('Erro ao adicionar comentário.');
         }
     };
-
     return (
         <form onSubmit={handleSubmit} className="comment-form">
-            <input 
-                type="text" 
-                value={text} 
-                onChange={(e) => setText(e.target.value)} 
-                placeholder="Adicionar um comentário..." 
-            />
+            <input type="text" value={text} onChange={(e) => setText(e.target.value)} placeholder="Adicionar um comentário..." />
             <button type="submit">Enviar</button>
         </form>
     );
 };
-
 
 const PacienteDetailPage = () => {
     const { pacienteId } = useParams();
@@ -56,6 +47,9 @@ const PacienteDetailPage = () => {
     const [planos, setPlanos] = useState([]);
     const [progresso, setProgresso] = useState(null);
     const [diario, setDiario] = useState(null);
+    const [hidratacao, setHidratacao] = useState(null);
+    const [medicacao, setMedicacao] = useState(null);
+    const [exames, setExames] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -65,8 +59,14 @@ const PacienteDetailPage = () => {
     const fetchDataForDate = useCallback(async (date) => {
         const dateString = format(date, 'yyyy-MM-dd');
         try {
-            const diarioData = await fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`);
+            const [diarioData, hidratacaoData, medicacaoData] = await Promise.all([
+                fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`),
+                fetchApi(`/api/nutri/paciente/${pacienteId}/hidratacao/${dateString}`),
+                fetchApi(`/api/nutri/paciente/${pacienteId}/medicacao/${dateString}`)
+            ]);
             setDiario(diarioData);
+            setHidratacao(hidratacaoData);
+            setMedicacao(medicacaoData);
         } catch (error) {
             toast.error("Erro ao carregar dados do dia.");
         }
@@ -76,14 +76,16 @@ const PacienteDetailPage = () => {
         const fetchInitialDetails = async () => {
             setLoading(true);
             try {
-                const [pacienteData, planosData, progressoData] = await Promise.all([
+                const [pacienteData, planosData, progressoData, examesData] = await Promise.all([
                     fetchApi(`/api/nutri/pacientes/${pacienteId}`),
                     fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`),
-                    fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`)
+                    fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`),
+                    fetchApi(`/api/nutri/paciente/${pacienteId}/exames`)
                 ]);
                 setPaciente(pacienteData);
                 setPlanos(planosData);
                 setProgresso(progressoData);
+                setExames(examesData);
                 await fetchDataForDate(selectedDate);
             } catch (error) {
                 toast.error(error.message || "Erro ao carregar detalhes do paciente.");
@@ -160,7 +162,7 @@ const PacienteDetailPage = () => {
 
                     <Card>
                          <div className="card-header-action">
-                             <h3>Diário Alimentar do Dia</h3>
+                             <h3>Registos do Dia</h3>
                              <div className="date-selector-diario">
                                 <button onClick={() => changeDate(-1)}>‹</button>
                                 <span>{format(selectedDate, 'dd/MM/yyyy')}</span>
@@ -204,8 +206,45 @@ const PacienteDetailPage = () => {
                                 <p className="no-data-message">Nenhum registo alimentar para este dia.</p>
                             )}
                         </div>
+                        
+                        <div className="additional-logs">
+                            <div className="log-section">
+                                <h3>Hidratação</h3>
+                                {hidratacao?.entries?.length > 0 ? (
+                                    <ul>{hidratacao.entries.map(h => <li key={h._id}><span>{h.type}</span><span>{h.amount} ml</span></li>)}</ul>
+                                ) : <p>Nenhum registo.</p>}
+                            </div>
+                            <div className="log-section">
+                                <h3>Medicação</h3>
+                                {medicacao?.dosesTomadas?.length > 0 ? (
+                                    <ul>{medicacao.dosesTomadas.map(m => <li key={m._id || m.horario}><span>{m.nome}</span><span>{m.horario}</span></li>)}</ul>
+                                ) : <p>Nenhuma dose marcada.</p>}
+                            </div>
+                        </div>
                     </Card>
+                    
+                    {exames && exames.examEntries.length > 0 && (
+                        <Card>
+                            <h3>Histórico de Exames</h3>
+                            <div className="exames-viewer-list">
+                                {exames.examEntries.map(exam => (
+                                    <div key={exam._id} className="exame-item-viewer">
+                                        <h4>{exam.name} ({exam.unit})</h4>
+                                        <ul>
+                                            {exam.history.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3).map(h => (
+                                                <li key={h._id}>
+                                                    <span>{format(parseISO(h.date), 'dd/MM/yy')}</span>
+                                                    <strong>{h.value}</strong>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    )}
                 </div>
+
                 <div className="side-column">
                     <Card>
                         <div className="card-header-action">

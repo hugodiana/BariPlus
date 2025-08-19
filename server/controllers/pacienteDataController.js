@@ -6,6 +6,7 @@ const FoodLog = require('../models/foodLogModel');
 const Nutricionista = require('../models/Nutricionista');
 const HydrationLog = require('../models/hydrationLogModel');
 const MedicationLog = require('../models/medicationLogModel');
+const Exams = require('../models/examsModel');
 
 // Função auxiliar para verificar se o paciente pertence ao nutricionista
 const checkOwnership = async (nutricionistaId, pacienteId) => {
@@ -118,5 +119,21 @@ exports.addDiaryComment = async (req, res) => {
         res.status(201).json(foodLog);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao adicionar comentário.' });
+    }
+};
+
+// @desc    Obter os dados de exames de um paciente
+// @route   GET /api/nutri/paciente/:pacienteId/exames
+exports.getExamesPaciente = async (req, res) => {
+    try {
+        const { pacienteId } = req.params;
+        if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        const examsDoc = await Exams.findOne({ userId: pacienteId });
+        res.json(examsDoc || { examEntries: [] }); // Retorna um objeto vazio se não houver registos
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar exames do paciente.' });
     }
 };
