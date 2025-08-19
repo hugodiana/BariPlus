@@ -16,14 +16,46 @@ import './PacientesPage.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
+// NOVO: Componente para o formulário de comentário
+const CommentForm = ({ pacienteId, date, mealType, itemId, onCommentAdded }) => {
+    const [text, setText] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!text.trim()) return;
+        try {
+            const updatedDiary = await fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${date}/comment`, {
+                method: 'POST',
+                body: JSON.stringify({ mealType, itemId, text })
+            });
+            onCommentAdded(updatedDiary);
+            setText('');
+            toast.success('Comentário adicionado!');
+        } catch (error) {
+            toast.error('Erro ao adicionar comentário.');
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="comment-form">
+            <input 
+                type="text" 
+                value={text} 
+                onChange={(e) => setText(e.target.value)} 
+                placeholder="Adicionar um comentário..." 
+            />
+            <button type="submit">Enviar</button>
+        </form>
+    );
+};
+
+
 const PacienteDetailPage = () => {
     const { pacienteId } = useParams();
     const [paciente, setPaciente] = useState(null);
     const [planos, setPlanos] = useState([]);
     const [progresso, setProgresso] = useState(null);
     const [diario, setDiario] = useState(null);
-    const [hidratacao, setHidratacao] = useState(null); // NOVO ESTADO
-    const [medicacao, setMedicacao] = useState(null); // NOVO ESTADO
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
     const [isChatOpen, setIsChatOpen] = useState(false);
@@ -33,14 +65,8 @@ const PacienteDetailPage = () => {
     const fetchDataForDate = useCallback(async (date) => {
         const dateString = format(date, 'yyyy-MM-dd');
         try {
-            const [diarioData, hidratacaoData, medicacaoData] = await Promise.all([
-                fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`),
-                fetchApi(`/api/nutri/paciente/${pacienteId}/hidratacao/${dateString}`),
-                fetchApi(`/api/nutri/paciente/${pacienteId}/medicacao/${dateString}`)
-            ]);
+            const diarioData = await fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`);
             setDiario(diarioData);
-            setHidratacao(hidratacaoData);
-            setMedicacao(medicacaoData);
         } catch (error) {
             toast.error("Erro ao carregar dados do dia.");
         }
@@ -66,15 +92,15 @@ const PacienteDetailPage = () => {
             }
         };
         fetchInitialDetails();
-    }, [pacienteId, fetchDataForDate, selectedDate]);
-
-    // O useEffect abaixo foi otimizado para chamar apenas quando a data muda
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pacienteId]);
+    
     useEffect(() => {
         if (!loading) {
             fetchDataForDate(selectedDate);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDate, loading]);
+    }, [selectedDate]);
 
     const changeDate = (amount) => {
         setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
@@ -134,7 +160,7 @@ const PacienteDetailPage = () => {
 
                     <Card>
                          <div className="card-header-action">
-                             <h3>Registos do Dia</h3>
+                             <h3>Diário Alimentar do Dia</h3>
                              <div className="date-selector-diario">
                                 <button onClick={() => changeDate(-1)}>‹</button>
                                 <span>{format(selectedDate, 'dd/MM/yyyy')}</span>
@@ -152,9 +178,23 @@ const PacienteDetailPage = () => {
                                         <h4>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</h4>
                                         <ul>
                                             {value.map(item => (
-                                                <li key={item._id}>
-                                                    <span>{item.name} ({item.portion}g)</span>
-                                                    <span>{item.nutrients.calories.toFixed(0)} kcal</span>
+                                                <li key={item._id} className="food-item-with-comments">
+                                                    <div className="food-item-details">
+                                                        <span>{item.name} ({item.portion}g)</span>
+                                                        <span>{item.nutrients.calories.toFixed(0)} kcal</span>
+                                                    </div>
+                                                    {item.comments && item.comments.length > 0 && (
+                                                        <div className="comments-section">
+                                                            {item.comments.map(c => <p key={c._id} className="comment"><strong>Nutri:</strong> {c.text}</p>)}
+                                                        </div>
+                                                    )}
+                                                    <CommentForm 
+                                                        pacienteId={pacienteId} 
+                                                        date={format(selectedDate, 'yyyy-MM-dd')}
+                                                        mealType={key}
+                                                        itemId={item._id}
+                                                        onCommentAdded={setDiario}
+                                                    />
                                                 </li>
                                             ))}
                                         </ul>
@@ -164,24 +204,8 @@ const PacienteDetailPage = () => {
                                 <p className="no-data-message">Nenhum registo alimentar para este dia.</p>
                             )}
                         </div>
-                        
-                        <div className="additional-logs">
-                            <div className="log-section">
-                                <h3>Hidratação</h3>
-                                {hidratacao?.entries?.length > 0 ? (
-                                    <ul>{hidratacao.entries.map(h => <li key={h._id}><span>{h.type}</span><span>{h.amount} ml</span></li>)}</ul>
-                                ) : <p>Nenhum registo.</p>}
-                            </div>
-                            <div className="log-section">
-                                <h3>Medicação</h3>
-                                {medicacao?.dosesTomadas?.length > 0 ? (
-                                    <ul>{medicacao.dosesTomadas.map(m => <li key={m._id || m.horario}><span>{m.nome}</span><span>{m.horario}</span></li>)}</ul>
-                                ) : <p>Nenhuma dose marcada.</p>}
-                            </div>
-                        </div>
                     </Card>
                 </div>
-
                 <div className="side-column">
                     <Card>
                         <div className="card-header-action">

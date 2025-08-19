@@ -81,3 +81,42 @@ exports.getMedicacaoPaciente = async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar log de medicação.' });
     }
 };
+
+// @desc    Nutricionista adiciona um comentário a um item do diário
+// @route   POST /api/nutri/paciente/:pacienteId/diario/:date/comment
+exports.addDiaryComment = async (req, res) => {
+    try {
+        const { pacienteId, date } = req.params;
+        const { mealType, itemId, text } = req.body;
+        const nutricionistaId = req.nutricionista.id;
+        const nutricionistaName = req.nutricionista.nome;
+
+        if (!await checkOwnership(nutricionistaId, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        const foodLog = await FoodLog.findOne({ userId: pacienteId, date: date });
+        if (!foodLog) {
+            return res.status(404).json({ message: 'Diário alimentar para esta data não encontrado.' });
+        }
+
+        // Encontra o item específico dentro da refeição
+        const meal = foodLog.refeicoes[mealType];
+        const item = meal ? meal.id(itemId) : null;
+        if (!item) {
+            return res.status(404).json({ message: 'Item da refeição não encontrado.' });
+        }
+
+        const newComment = {
+            authorId: nutricionistaId,
+            authorName: nutricionistaName,
+            text: text
+        };
+        item.comments.push(newComment);
+        await foodLog.save();
+
+        res.status(201).json(foodLog);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao adicionar comentário.' });
+    }
+};

@@ -1,15 +1,22 @@
 const mongoose = require('mongoose');
 
+const commentSchema = new mongoose.Schema({
+    authorId: { type: mongoose.Schema.Types.ObjectId, required: true },
+    authorName: { type: String, required: true },
+    text: { type: String, required: true },
+}, { timestamps: true });
+
 const foodItemSchema = new mongoose.Schema({
-    name: String,
-    brand: String,
-    portion: Number,
+    name: { type: String, required: true },
+    brand: { type: String },
+    portion: { type: Number, required: true },
     nutrients: {
-        calories: Number,
-        proteins: Number,
-        carbs: Number,
-        fats: Number
-    }
+        calories: { type: Number, default: 0 },
+        proteins: { type: Number, default: 0 },
+        carbs: { type: Number, default: 0 },
+        fats: { type: Number, default: 0 }
+    },
+    comments: [commentSchema] 
 });
 
 const FoodLogSchema = new mongoose.Schema({

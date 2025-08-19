@@ -119,3 +119,36 @@
 .delete-food-btn { background: transparent; border: none; color: var(--color-danger); font-size: 1.5rem; cursor: pointer; opacity: 0.5; }
 .delete-food-btn:hover { opacity: 1; }
 .empty-meal { text-align: center; padding: 20px; color: var(--color-text-secondary); }
+
+.logged-food-list .food-item-container {
+    display: flex;
+    flex-direction: column; /* Organiza os detalhes e os comentários verticalmente */
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.logged-food-list .food-item-details {
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.comments-section-paciente {
+    background-color: var(--color-primary-light);
+    border-left: 3px solid var(--color-primary);
+    padding: var(--space-sm) var(--space-md);
+    margin-top: var(--space-sm);
+    border-radius: 4px;
+}
+
+.comments-section-paciente .comment {
+    margin: 0;
+    padding: 0;
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+}
+
+.comments-section-paciente .comment strong {
+    color: var(--color-primary);
+    font-weight: bold;
+}

@@ -88,3 +88,51 @@ exports.getPlanoById = async (req, res) => {
         res.status(500).json({ message: 'Erro no servidor ao buscar o plano alimentar.' });
     }
 };
+
+// @desc    Salvar um plano como um template
+// @route   POST /api/nutri/planos/:planoId/salvar-como-template
+exports.saveAsTemplate = async (req, res) => {
+    try {
+        const { planoId } = req.params;
+        const { templateName } = req.body;
+        const nutricionistaId = req.nutricionista.id;
+
+        if (!templateName) {
+            return res.status(400).json({ message: 'O nome do template é obrigatório.' });
+        }
+
+        const planoOriginal = await PlanoAlimentar.findById(planoId);
+        if (!planoOriginal || planoOriginal.nutricionistaId.toString() !== nutricionistaId) {
+            return res.status(404).json({ message: 'Plano original não encontrado ou acesso negado.' });
+        }
+
+        const novoTemplate = new PlanoAlimentar({
+            nutricionistaId,
+            titulo: planoOriginal.titulo,
+            refeicoes: planoOriginal.refeicoes,
+            observacoesGerais: planoOriginal.observacoesGerais,
+            isTemplate: true,
+            templateName: templateName,
+            pacienteId: null, // Templates não têm paciente associado
+            ativo: false,
+        });
+
+        await novoTemplate.save();
+        res.status(201).json({ message: 'Plano salvo como template com sucesso!', template: novoTemplate });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao salvar o template.' });
+    }
+};
+
+// @desc    Listar todos os templates de um nutricionista
+// @route   GET /api/nutri/planos/templates
+exports.getTemplates = async (req, res) => {
+    try {
+        const nutricionistaId = req.nutricionista.id;
+        const templates = await PlanoAlimentar.find({ nutricionistaId, isTemplate: true });
+        res.json(templates);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar os templates.' });
+    }
+};

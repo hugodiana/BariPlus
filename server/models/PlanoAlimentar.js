@@ -19,7 +19,9 @@ const PlanoAlimentarSchema = new mongoose.Schema({
     titulo: { type: String, required: true }, // Ex: "Plano de Ganho de Massa - Semana 1"
     refeicoes: [refeicaoSchema],
     observacoesGerais: String,
-    ativo: { type: Boolean, default: true } // Para marcar se este é o plano atual do paciente
+    ativo: { type: Boolean, default: true }, // Para marcar se este é o plano atual do paciente
+    isTemplate: { type: Boolean, default: false }, 
+    templateName: { type: String, trim: true } 
 }, { timestamps: true });
 
 const PlanoAlimentar = mongoose.model('PlanoAlimentar', PlanoAlimentarSchema);

@@ -84,13 +84,10 @@ const FoodDiaryPage = () => {
         
         try {
             const dateString = format(selectedDate, 'yyyy-MM-dd');
-            // --- CORREÇÃO APLICADA AQUI ---
-            // A função fetchApi já retorna o JSON diretamente.
             const updatedDiary = await fetchApi(`/api/food-diary/log`, {
                 method: 'POST',
                 body: JSON.stringify({ food: foodDataToSave, mealType: mealTypeToLog, date: dateString })
             });
-
             setDiary(updatedDiary);
             setIsModalOpen(false);
             toast.success(`${foodDataToSave.name} adicionado com sucesso!`);
@@ -103,12 +100,10 @@ const FoodDiaryPage = () => {
         if (!window.confirm("Tem certeza que quer apagar este item?")) return;
         try {
             const dateString = format(selectedDate, 'yyyy-MM-dd');
-            // --- CORREÇÃO APLICADA AQUI ---
-            // A função fetchApi já trata a resposta.
             await fetchApi(`/api/food-diary/log/${dateString}/${mealType}/${itemId}`, {
                 method: 'DELETE'
             });
-            fetchDiaryAndUser(selectedDate); // Re-busca os dados para atualizar a UI
+            fetchDiaryAndUser(selectedDate);
             toast.info("Item removido do diário.");
         } catch (error) {
             toast.error(error.message || "Erro ao apagar item.");
@@ -149,14 +144,26 @@ const FoodDiaryPage = () => {
                 {mealArray && mealArray.length > 0 ? (
                     <ul className="logged-food-list">
                         {mealArray.map((item) => (
-                            <li key={item._id}>
-                                <div className="item-info">
-                                    <span>{item.name} <small>({item.portion}g)</small></span>
-                                    <small className="item-nutrients">
-                                        Kcal: {item.nutrients.calories.toFixed(0)} | P: {item.nutrients.proteins.toFixed(1)}g
-                                    </small>
+                            <li key={item._id} className="food-item-container">
+                                <div className="food-item-details">
+                                    <div className="item-info">
+                                        <span>{item.name} <small>({item.portion}g)</small></span>
+                                        <small className="item-nutrients">
+                                            Kcal: {item.nutrients.calories.toFixed(0)} | P: {item.nutrients.proteins.toFixed(1)}g
+                                        </small>
+                                    </div>
+                                    <button onClick={() => handleDeleteFood(mealKey, item._id)} className="delete-food-btn">×</button>
                                 </div>
-                                <button onClick={() => handleDeleteFood(mealKey, item._id)} className="delete-food-btn">×</button>
+                                {/* ÁREA DE COMENTÁRIOS ADICIONADA AQUI */}
+                                {item.comments && item.comments.length > 0 && (
+                                    <div className="comments-section-paciente">
+                                        {item.comments.map(c => (
+                                            <p key={c._id} className="comment">
+                                                <strong>💬 {c.authorName}:</strong> {c.text}
+                                            </p>
+                                        ))}
+                                    </div>
+                                )}
                             </li>
                         ))}
                     </ul>

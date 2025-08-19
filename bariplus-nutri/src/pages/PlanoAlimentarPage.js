@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+// src/pages/PlanoAlimentarPage.js
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
+import Modal from '../components/Modal';
+import LoadingSpinner from '../components/LoadingSpinner';
 import './PlanoAlimentarPage.css';
 
 const PlanoAlimentarPage = () => {
     const { pacienteId } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    const [templates, setTemplates] = useState([]);
+    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const [plano, setPlano] = useState({
         titulo: '',
         observacoesGerais: '',
@@ -16,6 +21,32 @@ const PlanoAlimentarPage = () => {
             { nome: 'Pequeno-almoço', horario: '08:00', itens: [{ alimento: '', quantidade: '' }] }
         ]
     });
+
+    const fetchTemplates = useCallback(async () => {
+        try {
+            const data = await fetchApi('/api/nutri/planos/templates');
+            setTemplates(data);
+        } catch (error) {
+            toast.error("Erro ao carregar os templates.");
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchTemplates();
+    }, [fetchTemplates]);
+
+    const handleUseTemplate = (template) => {
+        setPlano({
+            titulo: template.titulo,
+            observacoesGerais: template.observacoesGerais,
+            refeicoes: template.refeicoes.map(r => ({
+                ...r,
+                itens: r.itens.map(i => ({...i})) // Garante cópias profundas
+            }))
+        });
+        setIsTemplateModalOpen(false);
+        toast.info(`Template "${template.templateName}" carregado!`);
+    };
 
     const handlePlanoChange = (e) => {
         const { name, value } = e.target;
@@ -70,7 +101,7 @@ const PlanoAlimentarPage = () => {
                 body: JSON.stringify(planoData)
             });
             toast.success('Plano alimentar criado com sucesso!');
-            navigate('/pacientes');
+            navigate(`/paciente/${pacienteId}`);
         } catch (error) {
             toast.error(error.message || 'Erro ao criar o plano.');
         } finally {
@@ -80,12 +111,16 @@ const PlanoAlimentarPage = () => {
 
     return (
         <div className="page-container">
-            <Link to="/pacientes" className="back-link">‹ Voltar para Pacientes</Link>
-            <div className="page-header">
+            <Link to={`/paciente/${pacienteId}`} className="back-link">‹ Voltar para o Paciente</Link>
+            <div className="page-header-action">
                 <h1>Criar Novo Plano Alimentar</h1>
+                <button type="button" className="template-btn" onClick={() => setIsTemplateModalOpen(true)}>
+                    Usar Template
+                </button>
             </div>
             <form onSubmit={handleSubmit}>
                 <Card className="plano-card">
+                    {/* ... O resto do seu formulário permanece igual ... */}
                     <div className="form-group">
                         <label>Título do Plano</label>
                         <input type="text" name="titulo" value={plano.titulo} onChange={handlePlanoChange} placeholder="Ex: Plano de Adaptação - Semana 1" required />
@@ -121,6 +156,21 @@ const PlanoAlimentarPage = () => {
                     </button>
                 </Card>
             </form>
+
+            <Modal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)}>
+                <h2>Escolher um Template</h2>
+                {templates.length > 0 ? (
+                    <ul className="template-list">
+                        {templates.map(template => (
+                            <li key={template._id} onClick={() => handleUseTemplate(template)}>
+                                {template.templateName}
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p>Você ainda não tem nenhum template guardado.</p>
+                )}
+            </Modal>
         </div>
     );
 };
