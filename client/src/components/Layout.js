@@ -81,6 +81,7 @@ const Layout = ({ usuario }) => {
                 <nav className="sidebar-nav">
                     <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} />
                     <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
+                    <NavItem to="/plano-alimentar" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
                     <NavItem to="/diario-alimentar" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
                     <NavItem to="/hidratacao" icon="💧" text="Hidratação" onClick={handleLinkClick} />
                     <NavItem to="/checklist" icon="✅" text="Checklist" onClick={handleLinkClick} />

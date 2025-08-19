@@ -1,0 +1,89 @@
+/* src/pages/PlanoAlimentarPage.css */
+
+.plano-container {
+    padding: var(--space-xl) !important;
+}
+
+.plano-header {
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.plano-header h2 {
+    font-size: 1.8rem;
+    color: var(--color-primary);
+    margin: 0 0 var(--space-sm) 0;
+}
+
+.plano-meta {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-lg);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}
+
+.refeicoes-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+}
+
+.refeicao-item-paciente {
+    background-color: var(--color-background);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--color-border);
+}
+
+.refeicao-item-paciente h3 {
+    margin: 0 0 var(--space-md) 0;
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text-strong);
+}
+
+.refeicao-item-paciente h3 span {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+}
+
+.refeicao-item-paciente ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.refeicao-item-paciente li {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-sm) 0;
+}
+
+.refeicao-item-paciente .alimento {
+    font-weight: 500;
+}
+
+.refeicao-item-paciente .quantidade {
+    color: var(--color-text-secondary);
+}
+
+.observacoes-gerais {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
+    margin-top: var(--space-lg);
+}
+
+.observacoes-gerais h4 {
+    margin: 0 0 var(--space-sm) 0;
+    color: var(--color-text-strong);
+}
+
+.observacoes-gerais p {
+    white-space: pre-wrap; /* Preserva as quebras de linha inseridas pelo nutri */
+    color: var(--color-text-secondary);
+}

@@ -1,6 +1,7 @@
 // src/pages/PacientesPage.js
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
@@ -67,8 +68,9 @@ const PacientesPage = () => {
                                         {paciente.nome.charAt(0)}{paciente.sobrenome?.charAt(0)}
                                     </span>
                                     <span className="paciente-name">{paciente.nome} {paciente.sobrenome}</span>
-                                    {/* No futuro, este botão levará ao perfil detalhado do paciente */}
-                                    <button className="paciente-action-btn">Ver Detalhes</button>
+                                    <Link to={`/paciente/${paciente._id}`} className="paciente-action-btn">
+                                        Ver Detalhes
+                                    </Link>
                                 </li>
                             ))}
                         </ul>

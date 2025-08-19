@@ -25,6 +25,8 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import PublicReportPage from './pages/PublicReportPage';
 import PaymentSuccessPage from './pages/PaymentSuccessPage';
 import PaymentCancelPage from './pages/PaymentCancelPage';
+import PlanoAlimentarPage from './pages/PlanoAlimentarPage';
+import ConvitePage from './pages/ConvitePage';
 
 // 3. Importar as páginas do app usando React.lazy
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
@@ -93,6 +95,7 @@ function App() {
                     <Route path="/payment/success" element={<PaymentSuccessPage />} />
                     <Route path="/payment/cancel" element={<PaymentCancelPage />} />
                     <Route path="/relatorio/:token" element={<PublicReportPage />} />
+                    <Route path="/convite/:codigo" element={<ConvitePage />} />
 
                     {/* --- Grupo 2: Rotas Principais da Aplicação (protegidas) --- */}
                     <Route
@@ -117,6 +120,7 @@ function App() {
                         <Route path="artigos/:id" element={<ArtigoPage />} />
                         <Route path="ganhe-renda-extra" element={<GanheRendaExtraPage />} />
                         <Route path="relatorios" element={<ReportCenterPage />} />
+                        <Route path="plano-alimentar" element={<PlanoAlimentarPage />} />
                         <Route path="perfil" element={<ProfilePage />} />
                     </Route>
                     

@@ -3,12 +3,16 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import { setAuthToken, fetchApi } from './utils/api';
+// CORREÇÃO: 'fetchApi' foi removido daqui pois não é usado
+import { setAuthToken } from './utils/api';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const PacientesPage = lazy(() => import('./pages/PacientesPage'));
+const PacienteDetailPage = lazy(() => import('./pages/PacienteDetailPage'));
+// CORREÇÃO: Importação do PlanoAlimentarPage que estava em falta
+const PlanoAlimentarPage = lazy(() => import('./pages/PlanoAlimentarPage'));
 
 function App() {
     const [nutricionista, setNutricionista] = useState(null);
@@ -20,11 +24,8 @@ function App() {
             if (token) {
                 setAuthToken(token);
                 try {
-                    // Precisamos de uma rota no backend que retorne os dados do nutri logado
-                    // Por agora, vamos assumir que o login guarda os dados no localStorage
                     const savedNutri = localStorage.getItem('nutri_data');
                     if (savedNutri) setNutricionista(JSON.parse(savedNutri));
-
                 } catch (error) {
                     setAuthToken(null);
                 }
@@ -50,6 +51,8 @@ function App() {
                     <Route path="/" element={nutricionista ? <Layout nutricionista={nutricionista} /> : <Navigate to="/login" />}>
                         <Route index element={<DashboardPage />} />
                         <Route path="pacientes" element={<PacientesPage />} />
+                        <Route path="paciente/:pacienteId" element={<PacienteDetailPage />} />
+                        <Route path="paciente/:pacienteId/plano/criar" element={<PlanoAlimentarPage />} />
                     </Route>
                 </Routes>
             </Suspense>

@@ -1,0 +1,61 @@
+/* src/pages/ConvitePage.css */
+
+.convite-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: var(--space-lg);
+    background-color: var(--color-background);
+}
+
+.convite-card {
+    width: 100%;
+    max-width: 450px;
+    text-align: center;
+    padding: var(--space-xl) !important;
+}
+
+.convite-logo {
+    height: 50px;
+    margin-bottom: var(--space-lg);
+}
+
+.convite-card h2 {
+    color: var(--color-text-strong);
+    margin-bottom: var(--space-sm);
+}
+
+.nutri-name {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--color-primary);
+    margin: var(--space-md) 0;
+}
+
+.info {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    background-color: var(--color-primary-light);
+    padding: var(--space-md);
+    border-radius: var(--border-radius);
+}
+
+.accept-btn {
+    width: 100%;
+    padding: 14px;
+    margin-top: var(--space-lg);
+    border: none;
+    border-radius: var(--border-radius);
+    background-color: var(--color-success);
+    color: white;
+    font-size: 1rem;
+    font-weight: var(--font-weight-bold);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.accept-btn:hover {
+    opacity: 0.9;
+}
