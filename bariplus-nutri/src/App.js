@@ -3,12 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// CORREÇÃO: 'fetchApi' foi removido daqui pois não é usado
 import { setAuthToken } from './utils/api';
-import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
-
-const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+import DashboardNutriPage from './pages/DashboardNutriPage';
+import PatientDetailPage from './pages/PatientDetailPage';
 const PacientesPage = lazy(() => import('./pages/PacientesPage'));
 const PacienteDetailPage = lazy(() => import('./pages/PacienteDetailPage'));
 const PlanoDetailPage = lazy(() => import('./pages/PlanoDetailPage'));
@@ -42,6 +41,7 @@ function App() {
     };
 
     if (loading) return <div>A carregar...</div>;
+
 
     return (
         <Router>
