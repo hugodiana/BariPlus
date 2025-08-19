@@ -1,13 +1,15 @@
 // server/controllers/nutriController.js
 
 const Nutricionista = require('../models/Nutricionista');
+// --- CORREÇÃO ADICIONADA AQUI ---
+// Importa o modelo 'User' para que possamos procurar os pacientes.
+const User = require('../models/userModel');
 
 // @desc    Obter dados do dashboard do nutricionista
 // @route   GET /api/nutri/dashboard
-// @access  Private (só для nutricionistas logados)
+// @access  Private (só para nutricionistas logados)
 exports.getDashboardData = async (req, res) => {
   try {
-    // O ID do nutricionista logado é adicionado ao `req` pelo middleware `protectNutri`
     const nutricionista = await Nutricionista.findById(req.nutricionista.id).populate('pacientes', 'nome sobrenome');
 
     if (!nutricionista) {
@@ -15,7 +17,6 @@ exports.getDashboardData = async (req, res) => {
     }
 
     const totalPacientes = nutricionista.pacientes.length;
-    // Lógica de vagas (pode ser expandida no futuro)
     const vagasGratisRestantes = Math.max(0, nutricionista.limiteGratis - totalPacientes);
     const pacientesExtrasPagos = Math.max(0, totalPacientes - nutricionista.limiteGratis);
 
@@ -23,13 +24,12 @@ exports.getDashboardData = async (req, res) => {
       totalPacientes,
       vagasGratisRestantes,
       pacientesExtrasPagos,
-      // Futuramente, podemos adicionar mais dados aqui, como alertas ou pacientes recentes
-      pacientesRecentes: nutricionista.pacientes.slice(-5).reverse() // Exemplo: 5 pacientes mais recentes
+      pacientes: nutricionista.pacientes
     });
 
   } catch (error) {
     console.error("Erro ao buscar dados do dashboard do nutricionista:", error);
-    res.status(500).json({ message: 'Erro no servidor ao buscar dados do dashboard.', error: error.message });
+    res.status(500).json({ message: 'Erro no servidor ao buscar dados do dashboard.' });
   }
 };
 
@@ -43,13 +43,17 @@ exports.getPacienteDetails = async (req, res) => {
 
         const nutricionista = await Nutricionista.findById(nutricionistaId);
         
-        // Verifica se o ID do paciente está na lista de pacientes do nutricionista
+        if (!nutricionista) {
+            return res.status(404).json({ message: 'Nutricionista não encontrado.' });
+        }
+
         const isMyPatient = nutricionista.pacientes.some(pId => pId.toString() === pacienteId);
 
         if (!isMyPatient) {
             return res.status(403).json({ message: 'Acesso negado. Este paciente não está na sua lista.' });
         }
 
+        // Esta linha agora funciona porque o 'User' foi importado
         const paciente = await User.findById(pacienteId).select('-password');
         if (!paciente) {
             return res.status(404).json({ message: 'Paciente não encontrado.' });
