@@ -6,7 +6,7 @@ const router = express.Router();
 // Importe os controllers
 const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController');
 const { gerarConvite } = require('../controllers/conviteController');
-const { criarPlanoAlimentar, getPlanosPorPaciente } = require('../controllers/planoAlimentarController');
+const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById } = require('../controllers/planoAlimentarController');
 // NOVA IMPORTAÇÃO
 const { getProgressoPaciente, getDiarioAlimentarPaciente } = require('../controllers/pacienteDataController');
 
@@ -19,6 +19,7 @@ router.get('/pacientes/:pacienteId', protectNutri, getPacienteDetails);
 router.post('/convites/gerar', protectNutri, gerarConvite);
 router.post('/planos/criar', protectNutri, criarPlanoAlimentar);
 router.get('/pacientes/:pacienteId/planos', protectNutri, getPlanosPorPaciente);
+router.get('/planos/:planoId', protectNutri, getPlanoById);
 
 // --- NOVAS ROTAS DE ACESSO A DADOS ---
 router.get('/paciente/:pacienteId/progresso', protectNutri, getProgressoPaciente);

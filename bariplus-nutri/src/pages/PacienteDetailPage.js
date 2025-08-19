@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { format, parseISO, addDays, subDays } from 'date-fns';
+import { format, addDays, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
@@ -23,22 +23,18 @@ const PacienteDetailPage = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
 
-    const fetchDetalhes = useCallback(async (date) => {
+    const fetchDetalhes = useCallback(async () => {
         setLoading(true);
-        const dateString = format(date, 'yyyy-MM-dd');
         try {
-            const [pacienteData, planosData, progressoData, diarioData] = await Promise.all([
+            const [pacienteData, planosData, progressoData] = await Promise.all([
                 fetchApi(`/api/nutri/pacientes/${pacienteId}`),
                 fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`),
-                fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`),
-                fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`)
+                fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`)
             ]);
             
             setPaciente(pacienteData);
             setPlanos(planosData);
             setProgresso(progressoData);
-            setDiario(diarioData);
-
         } catch (error) {
             toast.error(error.message || "Erro ao carregar detalhes do paciente.");
         } finally {
@@ -46,9 +42,25 @@ const PacienteDetailPage = () => {
         }
     }, [pacienteId]);
 
+    const fetchDiario = useCallback(async (date) => {
+        const dateString = format(date, 'yyyy-MM-dd');
+        try {
+            const diarioData = await fetchApi(`/api/nutri/paciente/${pacienteId}/diario/${dateString}`);
+            setDiario(diarioData);
+        } catch(error) {
+            toast.error("Erro ao carregar diário alimentar.");
+        }
+    }, [pacienteId]);
+
     useEffect(() => {
-        fetchDetalhes(selectedDate);
-    }, [selectedDate, fetchDetalhes]);
+        fetchDetalhes();
+    }, [fetchDetalhes]);
+
+    useEffect(() => {
+        if (!loading) { // Apenas busca o diário se não estiver no carregamento inicial
+            fetchDiario(selectedDate);
+        }
+    }, [selectedDate, fetchDiario, loading]);
 
     const changeDate = (amount) => {
         setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
@@ -71,6 +83,13 @@ const PacienteDetailPage = () => {
             fill: true,
         }],
     };
+    
+    // Calcula o total de calorias e proteínas do dia
+    const totaisDoDia = diario?.refeicoes ? Object.values(diario.refeicoes).flat().reduce((totals, item) => {
+        totals.calories += item.nutrients.calories || 0;
+        totals.proteins += item.nutrients.proteins || 0;
+        return totals;
+    }, { calories: 0, proteins: 0 }) : { calories: 0, proteins: 0 };
 
     return (
         <div className="page-container">
@@ -98,7 +117,7 @@ const PacienteDetailPage = () => {
                     )}
 
                     <Card>
-                        <div className="card-header-action">
+                         <div className="card-header-action">
                              <h3>Diário Alimentar do Dia</h3>
                              <div className="date-selector-diario">
                                 <button onClick={() => changeDate(-1)}>‹</button>
@@ -106,8 +125,12 @@ const PacienteDetailPage = () => {
                                 <button onClick={() => changeDate(1)}>›</button>
                              </div>
                         </div>
+                        <div className="diario-header-totals">
+                            <span>Total de Calorias: <strong>{totaisDoDia.calories.toFixed(0)} kcal</strong></span>
+                            <span>Total de Proteínas: <strong>{totaisDoDia.proteins.toFixed(1)} g</strong></span>
+                        </div>
                         <div className="diario-grid">
-                            {diario && Object.keys(diario.refeicoes).length > 0 ? (
+                            {diario && Object.keys(diario.refeicoes).length > 0 && Object.values(diario.refeicoes).some(arr => arr.length > 0) ? (
                                 Object.entries(diario.refeicoes).map(([key, value]) => value.length > 0 && (
                                     <div key={key} className="refeicao-viewer">
                                         <h4>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</h4>
@@ -122,7 +145,7 @@ const PacienteDetailPage = () => {
                                     </div>
                                 ))
                             ) : (
-                                <p>Nenhum registo alimentar para este dia.</p>
+                                <p className="no-data-message">Nenhum registo alimentar para este dia.</p>
                             )}
                         </div>
                     </Card>
@@ -140,11 +163,14 @@ const PacienteDetailPage = () => {
                             <ul className="planos-list">
                                 {planos.map(plano => (
                                     <li key={plano._id} className={`plano-item ${plano.ativo ? 'ativo' : 'inativo'}`}>
-                                        <div className="plano-info">
-                                            <strong>{plano.titulo}</strong>
-                                            <span>{format(new Date(plano.createdAt), 'dd/MM/yy')}</span>
-                                        </div>
-                                        <span className="plano-status">{plano.ativo ? 'Ativo' : ''}</span>
+                                        {/* O item da lista agora é um Link */}
+                                        <Link to={`/paciente/${pacienteId}/plano/${plano._id}`} className="plano-link">
+                                            <div className="plano-info">
+                                                <strong>{plano.titulo}</strong>
+                                                <span>Criado em: {format(new Date(plano.createdAt), 'dd/MM/yy', { locale: ptBR })}</span>
+                                            </div>
+                                            <span className="plano-status">{plano.ativo ? 'Ativo' : 'Arquivado'}</span>
+                                        </Link>
                                     </li>
                                 ))}
                             </ul>

@@ -1,3 +1,5 @@
+// src/pages/FoodDiaryPage.js
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'react-toastify';
 import { format, parseISO, addDays, subDays } from 'date-fns';
@@ -8,7 +10,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import BuscaAlimentos from '../components/BuscaAlimentos';
 import './FoodDiaryPage.css';
 
-// Componente para o item de resumo de macro
 const MacroSummaryItem = ({ label, consumed, goal }) => {
     const progress = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
 
@@ -34,15 +35,15 @@ const FoodDiaryPage = () => {
     const [foodToLog, setFoodToLog] = useState(null);
     const [portion, setPortion] = useState(100);
 
-     const fetchDiaryAndUser = useCallback(async (date) => {
+    const fetchDiaryAndUser = useCallback(async (date) => {
         setLoading(true);
         try {
             const dateString = format(date, 'yyyy-MM-dd');
-            // CORREÇÃO: Promise.all agora retorna os dados diretamente
             const [dataDiary, dataUser] = await Promise.all([
                 fetchApi(`/api/food-diary/${dateString}`),
                 fetchApi('/api/me')
             ]);
+            
             setDiary(dataDiary);
             setUsuario(dataUser);
         } catch (error) {
@@ -83,18 +84,18 @@ const FoodDiaryPage = () => {
         
         try {
             const dateString = format(selectedDate, 'yyyy-MM-dd');
-            const res = await fetchApi(`/api/food-diary/log`, {
+            // --- CORREÇÃO APLICADA AQUI ---
+            // A função fetchApi já retorna o JSON diretamente.
+            const updatedDiary = await fetchApi(`/api/food-diary/log`, {
                 method: 'POST',
                 body: JSON.stringify({ food: foodDataToSave, mealType: mealTypeToLog, date: dateString })
             });
-            if (!res.ok) throw new Error("Falha ao registrar alimento.");
-            
-            const updatedDiary = await res.json();
+
             setDiary(updatedDiary);
             setIsModalOpen(false);
             toast.success(`${foodDataToSave.name} adicionado com sucesso!`);
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error.message || "Falha ao registrar alimento.");
         }
     };
 
@@ -102,13 +103,15 @@ const FoodDiaryPage = () => {
         if (!window.confirm("Tem certeza que quer apagar este item?")) return;
         try {
             const dateString = format(selectedDate, 'yyyy-MM-dd');
+            // --- CORREÇÃO APLICADA AQUI ---
+            // A função fetchApi já trata a resposta.
             await fetchApi(`/api/food-diary/log/${dateString}/${mealType}/${itemId}`, {
                 method: 'DELETE'
             });
-            fetchDiaryAndUser(selectedDate);
+            fetchDiaryAndUser(selectedDate); // Re-busca os dados para atualizar a UI
             toast.info("Item removido do diário.");
         } catch (error) {
-            toast.error("Erro ao apagar item.");
+            toast.error(error.message || "Erro ao apagar item.");
         }
     };
 
@@ -127,7 +130,6 @@ const FoodDiaryPage = () => {
         }, { calories: 0, proteins: 0, carbs: 0, fats: 0 });
     }, [diary]);
 
-    // ✅ CORREÇÃO: A função renderMealSection foi movida para aqui, antes do return principal.
     const renderMealSection = (title, mealKey, mealArray) => {
         const mealTotals = mealArray?.reduce((totals, item) => {
             totals.calories += item.nutrients.calories || 0;

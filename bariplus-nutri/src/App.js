@@ -11,6 +11,7 @@ import LoginPage from './pages/LoginPage';
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const PacientesPage = lazy(() => import('./pages/PacientesPage'));
 const PacienteDetailPage = lazy(() => import('./pages/PacienteDetailPage'));
+const PlanoDetailPage = lazy(() => import('./pages/PlanoDetailPage'));
 // CORREÇÃO: Importação do PlanoAlimentarPage que estava em falta
 const PlanoAlimentarPage = lazy(() => import('./pages/PlanoAlimentarPage'));
 
@@ -53,6 +54,7 @@ function App() {
                         <Route path="pacientes" element={<PacientesPage />} />
                         <Route path="paciente/:pacienteId" element={<PacienteDetailPage />} />
                         <Route path="paciente/:pacienteId/plano/criar" element={<PlanoAlimentarPage />} />
+                        <Route path="paciente/:pacienteId/plano/:planoId" element={<PlanoDetailPage />} />
                     </Route>
                 </Routes>
             </Suspense>

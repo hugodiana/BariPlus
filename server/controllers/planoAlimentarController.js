@@ -63,3 +63,28 @@ exports.getPlanosPorPaciente = async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar planos do paciente.', error: error.message });
     }
 };
+
+// @desc    Nutricionista busca um plano alimentar específico pelo ID
+// @route   GET /api/nutri/planos/:planoId
+// @access  Private (Nutricionista)
+exports.getPlanoById = async (req, res) => {
+    try {
+        const { planoId } = req.params;
+        const nutricionistaId = req.nutricionista.id;
+
+        const plano = await PlanoAlimentar.findById(planoId);
+
+        if (!plano) {
+            return res.status(404).json({ message: 'Plano alimentar não encontrado.' });
+        }
+
+        // Medida de segurança: Garante que o nutricionista só pode ver os seus próprios planos
+        if (plano.nutricionistaId.toString() !== nutricionistaId) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        res.status(200).json(plano);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro no servidor ao buscar o plano alimentar.' });
+    }
+};

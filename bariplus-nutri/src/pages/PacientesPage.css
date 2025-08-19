@@ -286,3 +286,94 @@
 .progresso-summary .perdido {
     color: var(--color-success);
 }
+
+.paciente-dashboard-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-xl);
+}
+
+.main-column, .side-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+.chart-container {
+    height: 300px;
+    margin-top: var(--space-md);
+}
+
+.date-selector-diario {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+.date-selector-diario button {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+}
+
+.diario-header-totals {
+    display: flex;
+    gap: var(--space-lg);
+    background-color: var(--color-background);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--border-radius);
+    margin-top: var(--space-md);
+    font-size: 0.9rem;
+}
+
+.diario-grid {
+    margin-top: var(--space-md);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+}
+
+.refeicao-viewer h4 {
+    margin: 0 0 var(--space-sm) 0;
+    color: var(--color-primary);
+}
+
+.refeicao-viewer ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.refeicao-viewer li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    padding: var(--space-xs) 0;
+}
+
+.no-data-message {
+    grid-column: 1 / -1; /* Ocupa todas as colunas do grid */
+    text-align: center;
+    padding: var(--space-lg) 0;
+    color: var(--color-text-secondary);
+}
+
+@media (max-width: 1200px) {
+    .paciente-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .diario-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.plano-link {
+    display: contents; /* Faz o link comportar-se como o conteúdo dentro dele */
+    text-decoration: none;
+    color: inherit;
+}
