@@ -1,7 +1,6 @@
 // server/controllers/pacienteLocalController.js
 const PacienteNutri = require('../models/PacienteNutri');
 const Nutricionista = require('../models/Nutricionista');
-// --- IMPORTAÇÕES QUE FALTAVAM, ADICIONADAS AQUI ---
 const User = require('../models/userModel');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
@@ -64,11 +63,22 @@ exports.concederAcessoBariplus = async (req, res) => {
             return res.status(400).json({ message: 'O paciente precisa de ter um e-mail registado para receber o convite.' });
         }
 
+        // Verifica se já existe um utilizador com este e-mail
+        const userExists = await User.findOne({ email: pacienteLocal.email });
+        if (userExists) {
+            return res.status(400).json({ message: 'Já existe uma conta BariPlus com este e-mail.' });
+        }
+
         const totalPacientesBariplus = nutricionista.pacientesBariplus.length;
-        const vagasDisponiveis = 5; // Lógica de vagas de exemplo. Pode ser expandida com base no plano.
+        const vagasDisponiveis = 5; 
         if (totalPacientesBariplus >= vagasDisponiveis) {
             return res.status(403).json({ message: 'Você atingiu o limite de vagas gratuitas do BariPlus.' });
         }
+        
+        // --- CORREÇÃO APLICADA AQUI: Gerar um username único ---
+        const emailUsername = pacienteLocal.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
+        const randomSuffix = crypto.randomBytes(4).toString('hex');
+        const username = `${emailUsername}_${randomSuffix}`;
 
         const temporaryPassword = crypto.randomBytes(16).toString('hex');
         const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
@@ -77,6 +87,7 @@ exports.concederAcessoBariplus = async (req, res) => {
             nome: pacienteLocal.nomeCompleto.split(' ')[0],
             sobrenome: pacienteLocal.nomeCompleto.split(' ').slice(1).join(' '),
             email: pacienteLocal.email,
+            username: username, // Username único adicionado
             password: hashedPassword,
             isEmailVerified: true,
             pagamentoEfetuado: true,
@@ -104,8 +115,9 @@ exports.concederAcessoBariplus = async (req, res) => {
             setupPasswordLink
         );
 
+        // --- CORREÇÃO APLICADA AQUI: Usa o seu e-mail profissional ---
         await resend.emails.send({
-            from: `BariPlus <onboarding@resend.dev>`,
+            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
             to: [novoUsuarioBariplus.email],
             subject: 'Convite para o BariPlus',
             html: emailHtml
