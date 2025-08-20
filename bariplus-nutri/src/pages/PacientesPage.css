@@ -534,3 +534,27 @@
     color: var(--color-text-strong);
 }
 
+.metas-list {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--space-md);
+}
+
+.metas-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md);
+    background-color: var(--color-background);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--space-md);
+}
+
+.meta-descricao {
+    font-weight: 500;
+}
+
+.meta-prazo {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}

@@ -1,23 +1,16 @@
-// bariplus-nutri/src/pages/PacienteDetailPage.js
-
+// src/components/paciente/AcompanhamentoTab.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { format, parseISO, addDays, subDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR } from 'date-fns/locale'; // ✅ IMPORTAÇÃO CORRIGIDA
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { fetchApi } from '../utils/api';
-import Card from '../components/ui/Card';
-import Modal from '../components/Modal';
-import ChatBox from '../components/chat/ChatBox';
-import LoadingSpinner from '../components/LoadingSpinner';
-import AcompanhamentoTab from '../components/paciente/AcompanhamentoTab'; 
-import MetasTab from '../components/paciente/MetasTab';
-import './PacientesPage.css';
+import { fetchApi } from '../../utils/api';
+import Card from '../ui/Card';
+import LoadingSpinner from '../LoadingSpinner';
+import '../../pages/PacientesPage.css';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
+// Componentes internos (simplificados para este exemplo)
 const CommentForm = ({ pacienteId, date, mealType, itemId, onCommentAdded }) => {
     const [text, setText] = useState('');
     const handleSubmit = async (e) => {
@@ -43,9 +36,8 @@ const CommentForm = ({ pacienteId, date, mealType, itemId, onCommentAdded }) => 
     );
 };
 
-const PacienteDetailPage = () => {
+const AcompanhamentoTab = () => {
     const { pacienteId } = useParams();
-    const [paciente, setPaciente] = useState(null);
     const [planos, setPlanos] = useState([]);
     const [progresso, setProgresso] = useState(null);
     const [diario, setDiario] = useState(null);
@@ -54,10 +46,6 @@ const PacienteDetailPage = () => {
     const [exames, setExames] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
-    const [isChatOpen, setIsChatOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('acompanhamento');
-    
-    const nutricionista = JSON.parse(localStorage.getItem('nutri_data'));
 
     const fetchDataForDate = useCallback(async (date) => {
         const dateString = format(date, 'yyyy-MM-dd');
@@ -79,13 +67,11 @@ const PacienteDetailPage = () => {
         const fetchInitialDetails = async () => {
             setLoading(true);
             try {
-                const [pacienteData, planosData, progressoData, examesData] = await Promise.all([
-                    fetchApi(`/api/nutri/pacientes/${pacienteId}`),
+                const [planosData, progressoData, examesData] = await Promise.all([
                     fetchApi(`/api/nutri/pacientes/${pacienteId}/planos`),
                     fetchApi(`/api/nutri/paciente/${pacienteId}/progresso`),
                     fetchApi(`/api/nutri/paciente/${pacienteId}/exames`)
                 ]);
-                setPaciente(pacienteData);
                 setPlanos(planosData);
                 setProgresso(progressoData);
                 setExames(examesData);
@@ -110,10 +96,9 @@ const PacienteDetailPage = () => {
     const changeDate = (amount) => {
         setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
     };
-
-    if (loading) return <LoadingSpinner />;
-    if (!paciente) return <div className="page-container"><p>Paciente não encontrado.</p></div>;
     
+    if (loading) return <LoadingSpinner />;
+
     const pesoInicial = progresso?.detalhes?.detalhesCirurgia?.pesoInicial || 0;
     const pesoAtual = progresso?.detalhes?.detalhesCirurgia?.pesoAtual || 0;
     const pesoPerdido = pesoInicial - pesoAtual;
@@ -134,59 +119,27 @@ const PacienteDetailPage = () => {
         totals.proteins += item.nutrients.proteins || 0;
         return totals;
     }, { calories: 0, proteins: 0 }) : { calories: 0, proteins: 0 };
-    
+
+
     return (
-        <div className="page-container">
-            <Link to="/pacientes" className="back-link">‹ Voltar para a lista</Link>
-            <div className="page-header-action">
-                <div className="page-header">
-                    <h1>{paciente.nome} {paciente.sobrenome}</h1>
-                    <p>Acompanhe e gira os planos alimentares e o progresso deste paciente.</p>
-                </div>
-                <button className="chat-btn" onClick={() => setIsChatOpen(true)}>💬 Enviar Mensagem</button>
-            </div>
+        <div className="paciente-dashboard-grid">
+            <div className="main-column">
+                <Card className="progresso-summary">
+                    <div><span>Peso Inicial</span><strong>{pesoInicial.toFixed(1)} kg</strong></div>
+                    <div><span>Peso Atual</span><strong>{pesoAtual.toFixed(1)} kg</strong></div>
+                    <div><span>Total Perdido</span><strong className="perdido">{pesoPerdido.toFixed(1)} kg</strong></div>
+                </Card>
 
-            <Card>
-                <div className="tab-buttons">
-                    <button 
-                        className={`tab-btn ${activeTab === 'acompanhamento' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('acompanhamento')}>
-                        Acompanhamento
-                    </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'metas' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('metas')}>
-                        Metas
-                    </button>
-                </div>
-                <div className="tab-content">
-                    {activeTab === 'acompanhamento' && <AcompanhamentoTab />}
-                    {activeTab === 'metas' && <MetasTab />}
-                </div>
-            </Card>
-             <Modal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)}>
-                <h2>Conversa com {paciente.nome}</h2>
-                <ChatBox currentUser={nutricionista} receiver={paciente} />
-            </Modal>
-                    
-            <div className="paciente-dashboard-grid">
-                <div className="main-column">
-                    <Card className="progresso-summary">
-                        <div><span>Peso Inicial</span><strong>{pesoInicial.toFixed(1)} kg</strong></div>
-                        <div><span>Peso Atual</span><strong>{pesoAtual.toFixed(1)} kg</strong></div>
-                        <div><span>Total Perdido</span><strong className="perdido">{pesoPerdido.toFixed(1)} kg</strong></div>
-                    </Card>
-
-                    {progresso?.historico && progresso.historico.length > 1 && (
-                        <Card>
-                            <h3>Evolução do Peso</h3>
-                            <div className="chart-container">
-                                <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
-                            </div>
-                        </Card>
-                    )}
-
+                {progresso?.historico && progresso.historico.length > 1 && (
                     <Card>
+                        <h3>Evolução do Peso</h3>
+                        <div className="chart-container">
+                            <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                        </div>
+                    </Card>
+                )}
+                
+                <Card>
                          <div className="card-header-action">
                              <h3>Registos do Dia</h3>
                              <div className="date-selector-diario">
@@ -248,64 +201,58 @@ const PacienteDetailPage = () => {
                             </div>
                         </div>
                     </Card>
-                    
-                    {exames && exames.examEntries.length > 0 && (
-                        <Card>
-                            <h3>Histórico de Exames</h3>
-                            <div className="exames-viewer-list">
-                                {exames.examEntries.map(exam => (
-                                    <div key={exam._id} className="exame-item-viewer">
-                                        <h4>{exam.name} ({exam.unit})</h4>
-                                        <ul>
-                                            {exam.history.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3).map(h => (
-                                                <li key={h._id}>
-                                                    <span>{format(parseISO(h.date), 'dd/MM/yy')}</span>
-                                                    <strong>{h.value}</strong>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        </Card>
-                    )}
-                </div>
 
-                <div className="side-column">
+                {exames && exames.examEntries.length > 0 && (
                     <Card>
-                        <div className="card-header-action">
-                            <h3>Planos Alimentares</h3>
-                            <Link to={`/paciente/${pacienteId}/plano/criar`} className="action-btn-positive">
-                                + Criar
-                            </Link>
+                        <h3>Histórico de Exames</h3>
+                        <div className="exames-viewer-list">
+                            {exames.examEntries.map(exam => (
+                                <div key={exam._id} className="exame-item-viewer">
+                                    <h4>{exam.name} ({exam.unit})</h4>
+                                    <ul>
+                                        {exam.history.sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 3).map(h => (
+                                            <li key={h._id}>
+                                                <span>{format(parseISO(h.date), 'dd/MM/yy')}</span>
+                                                <strong>{h.value}</strong>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
                         </div>
-                        {planos.length > 0 ? (
-                            <ul className="planos-list">
-                                {planos.map(plano => (
-                                    <li key={plano._id} className={`plano-item ${plano.ativo ? 'ativo' : 'inativo'}`}>
-                                        <Link to={`/paciente/${pacienteId}/plano/${plano._id}`} className="plano-link">
-                                            <div className="plano-info">
-                                                <strong>{plano.titulo}</strong>
-                                                <span>{format(new Date(plano.createdAt), 'dd/MM/yy', { locale: ptBR })}</span>
-                                            </div>
-                                            <span className="plano-status">{plano.ativo ? 'Ativo' : 'Arquivado'}</span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p>Nenhum plano alimentar criado.</p>
-                        )}
                     </Card>
-                </div>
+                )}
             </div>
 
-            <Modal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)}>
-                <h2>Conversa com {paciente.nome}</h2>
-                <ChatBox currentUser={nutricionista} receiver={paciente} />
-            </Modal>
+            <div className="side-column">
+                <Card>
+                    <div className="card-header-action">
+                        <h3>Planos Alimentares</h3>
+                        <Link to={`/paciente/${pacienteId}/plano/criar`} className="action-btn-positive">
+                            + Criar
+                        </Link>
+                    </div>
+                    {planos.length > 0 ? (
+                        <ul className="planos-list">
+                            {planos.map(plano => (
+                                <li key={plano._id} className={`plano-item ${plano.ativo ? 'ativo' : 'inativo'}`}>
+                                    <Link to={`/paciente/${pacienteId}/plano/${plano._id}`} className="plano-link">
+                                        <div className="plano-info">
+                                            <strong>{plano.titulo}</strong>
+                                            <span>{format(new Date(plano.createdAt), 'dd/MM/yy', { locale: ptBR })}</span>
+                                        </div>
+                                        <span className="plano-status">{plano.ativo ? 'Ativo' : 'Arquivado'}</span>
+                                    </Link>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p>Nenhum plano alimentar criado.</p>
+                    )}
+                </Card>
+            </div>
         </div>
     );
 };
 
-export default PacienteDetailPage;
+export default AcompanhamentoTab;

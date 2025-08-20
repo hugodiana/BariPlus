@@ -1,3 +1,4 @@
+// client/src/pages/DashboardPage.js
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format, parseISO, isToday } from 'date-fns';
@@ -8,19 +9,20 @@ import { fetchApi } from '../utils/api';
 import WeightProgressCard from '../components/dashboard/WeightProgressCard';
 import DailyGoalsCard from '../components/dashboard/DailyGoalsCard';
 import DailyMedicationCard from '../components/dashboard/DailyMedicationCard';
+import MetasCard from '../components/dashboard/MetasCard';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Card from '../components/ui/Card';
 import ConteudoRecenteCard from '../components/dashboard/ConteudoRecenteCard';
 import './DashboardPage.css';
-import { messaging } from '../firebase'; // Importe o messaging do firebase
+import { messaging } from '../firebase';
 import { getToken } from 'firebase/messaging';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
 const DashboardPage = () => {
     const [usuario, setUsuario] = useState(null);
-    const [pesos, setPesos] = useState([]); // Adicionado para guardar o histórico de peso
+    const [pesos, setPesos] = useState([]);
     const [dailyLog, setDailyLog] = useState(null);
     const [checklist, setChecklist] = useState({ preOp: [], posOp: [] });
     const [consultas, setConsultas] = useState([]);
@@ -30,6 +32,7 @@ const DashboardPage = () => {
     const [isDateModalOpen, setIsDateModalOpen] = useState(false);
     const [novaDataCirurgia, setNovaDataCirurgia] = useState('');
     const [showNotificationModal, setShowNotificationModal] = useState(false);
+    const [metas, setMetas] = useState([]);
 
     const handleEnableNotifications = async () => {
         try {
@@ -37,7 +40,6 @@ const DashboardPage = () => {
             if (permission === 'granted') {
                 const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
                 if (!vapidKey) return toast.error("Configuração de notificações em falta.");
-                
                 const fcmToken = await getToken(messaging, { vapidKey });
                 if (fcmToken) {
                     await fetchApi('/api/user/save-fcm-token', {
@@ -52,19 +54,17 @@ const DashboardPage = () => {
         } catch (error) {
             toast.error("Ocorreu um erro ao ativar as notificações.");
         } finally {
-            setShowNotificationModal(false); // Fecha o modal independentemente do resultado
+            setShowNotificationModal(false);
         }
     };
 
     useEffect(() => {
-        // Lógica para mostrar o modal apenas uma vez
         const hasAskedForNotifications = localStorage.getItem('notification_prompted');
         if (usuario && !hasAskedForNotifications) {
-            // Espera um pouco para não ser a primeira coisa que o utilizador vê
             setTimeout(() => {
                 setShowNotificationModal(true);
                 localStorage.setItem('notification_prompted', 'true');
-            }, 3000); // 3 segundos após o carregamento da dashboard
+            }, 3000);
         }
     }, [usuario]);
 
@@ -73,10 +73,10 @@ const DashboardPage = () => {
         try {
             const today = new Date().toISOString().split('T')[0];
             
-            // Usando Promise.all para chamadas paralelas
+            // ✅ CORREÇÃO APLICADA AQUI: Adicionamos 'dadosMetas' à lista de desestruturação.
             const [
                 dadosUsuario, dadosPesos, dadosChecklist, dadosConsultas, 
-                dadosMedicationList, dadosLog, dadosConteudos, dadosMedicationLog
+                dadosMedicationList, dadosLog, dadosConteudos, dadosMedicationLog, dadosMetas
             ] = await Promise.all([
                 fetchApi('/api/me'),
                 fetchApi('/api/pesos'),
@@ -85,7 +85,8 @@ const DashboardPage = () => {
                 fetchApi('/api/medication/list'),
                 fetchApi('/api/dailylog/today'),
                 fetchApi('/api/conteudos'),
-                fetchApi(`/api/medication/log/${today}`)
+                fetchApi(`/api/medication/log/${today}`),
+                fetchApi('/api/metas')
             ]);
 
             setUsuario(dadosUsuario);
@@ -98,6 +99,7 @@ const DashboardPage = () => {
             });
             setDailyLog(dadosLog);
             setConteudos(dadosConteudos);
+            setMetas(dadosMetas); // Agora 'dadosMetas' existe e o erro é resolvido.
 
         } catch (error) {
             if (!error.message.includes('Sessão expirada')) {
@@ -112,9 +114,12 @@ const DashboardPage = () => {
         fetchDashboardData();
     }, [fetchDashboardData]);
 
+    // O resto do seu ficheiro DashboardPage.js permanece exatamente igual...
+    // ... (handleTrack, handleSetSurgeryDate, handleToggleMedToma, etc.)
+
     const handleTrack = async (type, amount) => {
         try {
-            const data = await fetchApi('/api/dailylog/track', { // Simplificado
+            const data = await fetchApi('/api/dailylog/track', {
                 method: 'POST',
                 body: JSON.stringify({ type, amount })
             });
@@ -139,13 +144,10 @@ const DashboardPage = () => {
         if (!novaDataCirurgia) return toast.warning('Por favor, selecione uma data válida');
 
         try {
-            const response = await fetchApi('/api/user/surgery-date', {
+            const updatedUser = await fetchApi('/api/user/surgery-date', {
                 method: 'PUT',
                 body: JSON.stringify({ dataCirurgia: novaDataCirurgia })
             });
-            if (!response.ok) throw new Error('Falha ao atualizar data');
-            
-            const updatedUser = await response.json();
             setUsuario(updatedUser);
             setIsDateModalOpen(false);
             setNovaDataCirurgia('');
@@ -174,14 +176,11 @@ const DashboardPage = () => {
         });
 
         try {
-            // CORREÇÃO: `fetchApi` agora retorna os dados (updatedLog) diretamente.
             const updatedLog = await fetchApi('/api/medication/log/toggle', {
                 method: 'POST',
                 body: JSON.stringify({ date: today, doseInfo })
             });
-            
             setMedicationData(prev => ({ ...prev, logDoDia: updatedLog }));
-
         } catch (error) {
             toast.error("Erro ao registrar a toma. A reverter.");
             setMedicationData(originalState);
@@ -272,7 +271,9 @@ const DashboardPage = () => {
                         />
                     }
                     <WeightProgressCard usuario={usuario} historicoPesos={pesos} />
+                    {metas.length > 0 && <MetasCard metas={metas} />}
                 </div>
+                
                 <div className="dashboard-coluna-secundaria">
                     <Card className="dashboard-card summary-card">
                         <h3><span className="card-icon">📌</span> Próximas Tarefas</h3>

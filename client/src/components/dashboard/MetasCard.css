@@ -1,0 +1,28 @@
+/* src/components/dashboard/MetasCard.css */
+.metas-card h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+.metas-list-paciente {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.metas-list-paciente li {
+    background-color: var(--background-light);
+    border-left: 4px solid var(--action-blue);
+    padding: 1rem;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 0.75rem;
+}
+.metas-list-paciente .meta-descricao {
+    font-weight: 500;
+    color: var(--text-strong);
+    margin: 0 0 0.25rem 0;
+}
+.metas-list-paciente .meta-prazo {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}

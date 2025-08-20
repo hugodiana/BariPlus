@@ -2,7 +2,9 @@
 const express = require('express');
 const router = express.Router();
 
-const { getDashboardData, getPacienteDetails } = require('../controllers/nutriController');
+// ✅ CORREÇÃO: Unificamos todas as importações do nutriController numa só linha
+const { getDashboardData, getPacienteDetails, getRecentActivity } = require('../controllers/nutriController');
+
 const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById, saveAsTemplate, getTemplates } = require('../controllers/planoAlimentarController');
 const { getProgressoPaciente, getDiarioAlimentarPaciente, getHidratacaoPaciente, getMedicacaoPaciente, addDiaryComment, getExamesPaciente } = require('../controllers/pacienteDataController');
@@ -10,14 +12,19 @@ const { getConversationForNutri } = require('../controllers/messageController');
 const { createPacienteLocal, getPacientesLocais, concederAcessoBariplus } = require('../controllers/pacienteLocalController');
 const { getAgendamentos, createAgendamento, updateAgendamento } = require('../controllers/agendaController');
 const { getProntuario, updateAnamnese, addAvaliacao } = require('../controllers/prontuarioController');
-const { getRecentActivity } = require('../controllers/nutriController');
+const { criarMeta, listarMetasPorPaciente } = require('../controllers/metaController');
 const { protectNutri } = require('../middlewares/authNutri');
 
 // Rotas de Gestão
 router.get('/dashboard', protectNutri, getDashboardData);
+router.get('/recent-activity', protectNutri, getRecentActivity);
 router.get('/pacientes/:pacienteId', protectNutri, getPacienteDetails);
 router.post('/convites/gerar', protectNutri, gerarConvite);
-router.get('/recent-activity', protectNutri, getRecentActivity);
+
+// Rotas de Metas
+router.route('/pacientes/:pacienteId/metas')
+    .post(protectNutri, criarMeta)
+    .get(protectNutri, listarMetasPorPaciente);
 
 // Rotas de Planos Alimentares
 router.get('/planos/templates', protectNutri, getTemplates); 
