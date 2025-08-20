@@ -1,10 +1,16 @@
 // server/controllers/nutriController.js
+
 const Nutricionista = require('../models/Nutricionista');
 const User = require('../models/userModel');
 
+// @desc    Obter dados do dashboard do nutricionista
+// @route   GET /api/nutri/dashboard
+// @access  Private (só para nutricionistas logados)
 exports.getDashboardData = async (req, res) => {
   try {
     const nutricionista = await Nutricionista.findById(req.nutricionista.id)
+      // --- CORREÇÃO APLICADA AQUI ---
+      // Populamos as duas listas de pacientes separadamente para buscar os seus detalhes
       .populate('pacientesBariplus', 'nome sobrenome')
       .populate('pacientesLocais', 'nomeCompleto');
 
@@ -20,7 +26,8 @@ exports.getDashboardData = async (req, res) => {
       totalPacientes,
       vagasGratisRestantes,
       pacientesExtrasPagos,
-      pacientes: nutricionista.pacientesBariplus || [],
+      // Enviamos as duas listas separadamente e já preenchidas
+      pacientesBariplus: nutricionista.pacientesBariplus || [],
       pacientesLocais: nutricionista.pacientesLocais || []
     });
 
@@ -30,6 +37,9 @@ exports.getDashboardData = async (req, res) => {
   }
 };
 
+// @desc    Nutricionista busca os detalhes de um paciente específico (BariPlus)
+// @route   GET /api/nutri/pacientes/:pacienteId
+// @access  Private (Nutricionista)
 exports.getPacienteDetails = async (req, res) => {
     try {
         const nutricionistaId = req.nutricionista.id;

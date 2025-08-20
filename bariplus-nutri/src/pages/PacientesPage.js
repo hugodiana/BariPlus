@@ -18,6 +18,7 @@ const PacientesPage = () => {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
+            // A rota do dashboard agora envia as duas listas de pacientes
             const data = await fetchApi('/api/nutri/dashboard');
             setPacientesBariplus(data.pacientesBariplus || []);
             setPacientesLocais(data.pacientesLocais || []);

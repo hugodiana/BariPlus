@@ -52,3 +52,36 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Ajusta o grid para duas colunas verticais */
+.assinatura-main-col, .assinatura-side-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+/* Estilos para o novo card de compra */
+.buy-slot-card p {
+    flex-grow: 1;
+    color: var(--color-text-secondary);
+}
+
+.buy-slot-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+}
+
+.price-tag-single {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.action-btn-positive:disabled {
+    background-color: var(--color-text-faint);
+    cursor: not-allowed;
+}

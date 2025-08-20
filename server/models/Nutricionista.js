@@ -10,7 +10,7 @@ const nutricionistaSchema = new mongoose.Schema({
   especializacao: { type: String },
   clinica: { type: String },
   
-  // CORREÇÃO: As referências foram atualizadas para os modelos corretos
+  // --- CAMPOS DE PACIENTES ATUALIZADOS ---
   pacientesBariplus: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User' // Pacientes que usam o app BariPlus
@@ -20,11 +20,10 @@ const nutricionistaSchema = new mongoose.Schema({
     ref: 'PacienteNutri' // Pacientes do prontuário do nutri
   }],
 
-  limiteGratis: { type: Number, default: 10 },
+  limiteGratis: { type: Number, default: 10 }, // Limite total de pacientes
   assinatura: {
       id: String,
-      status: { type: String, default: 'inativa' },
-      plano: { type: String }
+      status: { type: String, default: 'inativa' }
   },
   createdAt: { type: Date, default: Date.now }
 });

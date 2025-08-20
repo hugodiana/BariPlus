@@ -32,6 +32,7 @@ const nutriAuthRoutes = require('./routes/nutriAuthRoutes');
 const nutriRoutes = require('./routes/nutriRoutes');
 const conviteRoutes = require('./routes/conviteRoutes');
 const messageRoutes = require('./routes/messageRoutes');
+const pagamentoRoutes = require('./routes/pagamentoRoutes'); 
 
 // IMPORTAÇÃO DE MIDDLEWARES E MODELOS (APENAS O NECESSÁRIO)
 const errorHandler = require('./middlewares/errorHandler');
@@ -129,6 +130,7 @@ app.use('/api', conquistasRoutes);
 app.use('/api', hydrationRoutes);
 app.use('/api', reportRoutes);
 app.use('/api', mealPlanRoutes);
+app.use('/api', pagamentoRoutes);
 
 // Rota de Admin (geralmente por último antes do errorHandler)
 app.use('/api', adminRoutes);
