@@ -13,6 +13,8 @@
   --color-warning: #f39c12;       /* Laranja para avisos */
   --color-danger: #e74c3c;        /* Vermelho para erros e exclusão */
 
+  --color-background-alt: #f8f9fa; /* Um cinza muito claro */
+
   /* Escala de Cinzas (Neutros) */
   --color-text-strong: #2c3e50;    /* Para títulos importantes */
   --color-text-primary: #334e68;  /* Cor de texto principal */

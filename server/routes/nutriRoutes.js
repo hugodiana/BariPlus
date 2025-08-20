@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { getDashboardData, getPacienteDetails, getRecentActivity } = require('../controllers/nutriController');
 const { gerarConvite } = require('../controllers/conviteController');
-const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById, saveAsTemplate, getTemplates } = require('../controllers/planoAlimentarController');
+const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById, saveAsTemplate, getTemplates, enviarPlanoPorEmail } = require('../controllers/planoAlimentarController');
 const { getProgressoPaciente, getDiarioAlimentarPaciente, getHidratacaoPaciente, getMedicacaoPaciente, addDiaryComment, getExamesPaciente } = require('../controllers/pacienteDataController');
 const { getConversationForNutri } = require('../controllers/messageController');
 const { createPacienteProntuario, convidarPacienteParaApp } = require('../controllers/pacienteLocalController'); 
@@ -33,6 +33,7 @@ router.post('/planos/criar', protectNutri, criarPlanoAlimentar);
 router.get('/pacientes/:pacienteId/planos', protectNutri, getPlanosPorPaciente);
 router.get('/planos/:planoId', protectNutri, getPlanoById);
 router.post('/planos/:planoId/salvar-como-template', protectNutri, saveAsTemplate);
+router.post('/planos/:planoId/enviar-email', protectNutri, enviarPlanoPorEmail);
 
 // --- Rotas de Acompanhamento (Dados do App do Paciente) ---
 router.get('/paciente/:pacienteId/progresso', protectNutri, getProgressoPaciente);

@@ -1,3 +1,42 @@
+/* src/pages/PlanoAlimentarPage.css */
+
+/* ✅ NOVO: Layout principal da página com 2 colunas */
+.plano-alimentar-layout {
+    display: grid;
+    grid-template-columns: 2fr 1fr; /* Coluna do formulário é 2x maior que a do resumo */
+    gap: var(--space-xl);
+    align-items: flex-start; /* Alinha os itens no topo */
+}
+
+/* Coluna para o resumo flutuante */
+.plano-resumo-coluna {
+    position: sticky;
+    top: var(--space-xl); /* Mantém o resumo fixo ao rolar a página */
+}
+
+/* ✅ NOVO: Estilos para os campos de item de alimento */
+.item-fields-nutri {
+    display: grid;
+    /* Layout: Nome (ocupa espaço extra) | Porção | "g" | Medida Caseira | Botão Apagar */
+    grid-template-columns: 1fr auto auto auto auto;
+    gap: var(--space-sm);
+    align-items: center;
+    margin-bottom: var(--space-sm);
+}
+.item-fields-nutri span {
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+.item-fields-nutri .alimento-porcao {
+    width: 80px; /* Largura fixa para o campo de gramas */
+}
+.item-fields-nutri .alimento-quantidade {
+    width: 150px; /* Largura para a medida caseira */
+}
+
+
+/* --- Estilos que você já tinha (mantidos e organizados) --- */
+
 .back-link {
     display: inline-block;
     margin-bottom: var(--space-md);
@@ -55,26 +94,6 @@
     background: transparent;
 }
 
-.item-fields {
-    display: flex;
-    gap: var(--space-md);
-    margin-bottom: var(--space-sm);
-}
-
-.item-fields input {
-    padding: 10px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-}
-
-.item-fields input[name="alimento"] {
-    flex-grow: 1;
-}
-.item-fields input[name="quantidade"] {
-    width: 200px;
-}
-
 .remove-btn {
     background: transparent;
     border: none;
@@ -111,6 +130,10 @@
     align-items: center;
     margin-bottom: var(--space-lg);
 }
+.page-header-action .header-buttons {
+    display: flex;
+    gap: var(--space-md);
+}
 
 .template-btn {
     background-color: var(--color-accent);
@@ -120,6 +143,11 @@
     border-radius: var(--border-radius);
     font-weight: bold;
     cursor: pointer;
+}
+.template-btn.secondary {
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
 }
 
 .template-list {
@@ -142,14 +170,6 @@
     border-color: var(--color-primary);
 }
 
-.template-save-form {
-    margin-top: var(--space-md);
-}
-
-.template-save-form .form-group {
-    margin-bottom: var(--space-lg);
-}
-
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -166,127 +186,23 @@
     cursor: pointer;
 }
 
-.plano-container-view {
-    padding: var(--space-xl) !important;
-}
-
-.plano-header-view {
-    text-align: center;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-lg);
-    margin-bottom: var(--space-lg);
-}
-
-.plano-header-view h2 {
-    font-size: 1.8rem;
-    color: var(--color-primary);
-    margin: 0 0 var(--space-md) 0;
-}
-
-.plano-meta-view {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: var(--space-lg);
-    font-size: var(--font-size-sm);
-    color: var(--color-text-secondary);
-}
-
-.status-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-weight: bold;
-}
-
-.status-badge.ativo {
-    background-color: var(--color-success);
-    color: white;
-}
-
-.status-badge.inativo {
-    background-color: var(--color-text-faint);
-    color: white;
-}
-
-.refeicoes-container-view {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-xl);
-    margin-bottom: var(--space-xl);
-}
-
-.refeicao-item-view {
-    background-color: var(--color-background);
-    padding: var(--space-lg);
-    border-radius: var(--border-radius);
-    border-left: 4px solid var(--color-primary);
-}
-
-.refeicao-item-view h3 {
-    margin: 0 0 var(--space-md) 0;
-    color: var(--color-text-strong);
-}
-
-.refeicao-item-view h3 small {
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    font-size: 1rem;
-    margin-left: var(--space-sm);
-}
-
-.alimentos-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    padding-left: var(--space-sm);
-}
-
-.alimentos-list li {
-    display: flex;
-    justify-content: space-between;
-    padding: var(--space-sm) 0;
-    border-bottom: 1px dashed var(--color-border);
-}
-.alimentos-list li:last-child {
-    border-bottom: none;
-}
-
-.alimentos-list .alimento {
-    font-weight: 500;
-}
-
-.alimentos-list .quantidade {
-    color: var(--color-text-secondary);
-}
-
-.observacoes-gerais-view {
-    border-top: 1px solid var(--color-border);
-    padding-top: var(--space-lg);
-    margin-top: var(--space-lg);
-}
-
-.observacoes-gerais-view h4 {
-    margin: 0 0 var(--space-sm) 0;
-    color: var(--color-text-strong);
-}
-
-.observacoes-gerais-view p {
-    white-space: pre-wrap;
-    color: var(--color-text-secondary);
-    line-height: 1.6;
-}
-
-.page-header-action .header-buttons {
-    display: flex;
-    gap: var(--space-md);
-}
-
-.template-btn.secondary {
-    background-color: var(--color-surface);
-    color: var(--color-accent);
-    border: 1px solid var(--color-accent);
-}
-
-.add-refeicao-btn {
-    margin-top: var(--space-md);
-}
+.plano-container-view { padding: var(--space-xl) !important; }
+.plano-header-view { text-align: center; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-lg); margin-bottom: var(--space-lg); }
+.plano-header-view h2 { font-size: 1.8rem; color: var(--color-primary); margin: 0 0 var(--space-md) 0; }
+.plano-meta-view { display: flex; justify-content: center; align-items: center; gap: var(--space-lg); font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+.status-badge { padding: 4px 12px; border-radius: 20px; font-weight: bold; }
+.status-badge.ativo { background-color: var(--color-success); color: white; }
+.status-badge.inativo { background-color: var(--color-text-faint); color: white; }
+.refeicoes-container-view { display: flex; flex-direction: column; gap: var(--space-xl); margin-bottom: var(--space-xl); }
+.refeicao-item-view { background-color: var(--color-background); padding: var(--space-lg); border-radius: var(--border-radius); border-left: 4px solid var(--color-primary); }
+.refeicao-item-view h3 { margin: 0 0 var(--space-md) 0; color: var(--color-text-strong); }
+.refeicao-item-view h3 small { font-weight: 500; color: var(--color-text-secondary); font-size: 1rem; margin-left: var(--space-sm); }
+.alimentos-list { list-style: none; padding: 0; margin: 0; padding-left: var(--space-sm); }
+.alimentos-list li { display: flex; justify-content: space-between; padding: var(--space-sm) 0; border-bottom: 1px dashed var(--color-border); }
+.alimentos-list li:last-child { border-bottom: none; }
+.alimentos-list .alimento { font-weight: 500; }
+.alimentos-list .quantidade { color: var(--color-text-secondary); }
+.observacoes-gerais-view { border-top: 1px solid var(--color-border); padding-top: var(--space-lg); margin-top: var(--space-lg); }
+.observacoes-gerais-view h4 { margin: 0 0 var(--space-sm) 0; color: var(--color-text-strong); }
+.observacoes-gerais-view p { white-space: pre-wrap; color: var(--color-text-secondary); line-height: 1.6; }
+.add-refeicao-btn { margin-top: var(--space-md); }

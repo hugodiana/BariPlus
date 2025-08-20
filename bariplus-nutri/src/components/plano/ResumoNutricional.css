@@ -1,0 +1,14 @@
+/* src/components/plano/ResumoNutricional.css */
+.resumo-nutricional-card {
+    position: sticky;
+    top: 20px;
+    background-color: var(--color-surface);
+    padding: var(--space-lg);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-md);
+}
+.resumo-nutricional-card h4 { margin-top: 0; }
+.resumo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
+.resumo-item { text-align: center; }
+.resumo-item span { font-size: 1.5rem; font-weight: bold; color: var(--color-primary); display: block; }
+.resumo-item label { font-size: 0.8rem; color: var(--color-text-secondary); }

@@ -1,17 +1,22 @@
 // server/controllers/prontuarioController.js
 const Prontuario = require('../models/Prontuario');
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel'); // Importar o User para popular o nome
+const User = require('../models/userModel');
 
-// Função auxiliar para verificar se o paciente pertence ao nutricionista
+// ✅ 1. ADICIONE ESTA FUNÇÃO AUXILIAR NO TOPO DO FICHEIRO
+// Esta função é a chave para corrigir o problema do fuso horário.
+const fixDateTimezone = (dateString) => {
+    if (!dateString || typeof dateString !== 'string') return null;
+    // Adiciona o horário ao meio-dia em UTC para garantir que o dia não mude
+    const date = new Date(`${dateString}T12:00:00Z`);
+    return date;
+};
+
 const checkOwnership = async (nutricionistaId, pacienteId) => {
     const nutri = await Nutricionista.findById(nutricionistaId);
-    // ✅ CORREÇÃO: Verifica na lista unificada 'pacientes'
     return nutri && nutri.pacientes.some(pId => pId.toString() === pacienteId);
 };
 
-// @desc    Obter o prontuário de um paciente
-// @route   GET /api/nutri/prontuarios/:pacienteId
 exports.getProntuario = async (req, res) => {
     try {
         const { pacienteId } = req.params;
@@ -24,11 +29,9 @@ exports.getProntuario = async (req, res) => {
         let prontuario = await Prontuario.findOne({ pacienteId });
 
         if (!prontuario) {
-            // Se não existir, cria um prontuário básico ao aceder pela primeira vez
             prontuario = await Prontuario.create({ 
                 pacienteId, 
                 nutricionistaId,
-                // Inicia os objetos para evitar erros no frontend
                 dadosPessoais: {},
                 historicoClinico: { doencasPrevias: [] },
                 habitosDeVida: {},
@@ -42,8 +45,6 @@ exports.getProntuario = async (req, res) => {
     }
 };
 
-// @desc    Atualizar a anamnese de um prontuário
-// @route   PUT /api/nutri/prontuarios/:pacienteId/anamnese
 exports.updateAnamnese = async (req, res) => {
     try {
         const { pacienteId } = req.params;
@@ -51,19 +52,17 @@ exports.updateAnamnese = async (req, res) => {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
         
-        // ✅ LÓGICA ATUALIZADA para lidar com o objeto complexo
-        const { dadosPessoais, historicoClinico, habitosDeVida, historicoAlimentar, objetivo } = req.body;
+        const updateData = req.body;
+
+        // ✅ 2. APLIQUE A CORREÇÃO NA DATA DE NASCIMENTO
+        if (updateData.dadosPessoais && updateData.dadosPessoais.dataNascimento) {
+            updateData.dadosPessoais.dataNascimento = fixDateTimezone(updateData.dadosPessoais.dataNascimento);
+        }
 
         const updatedProntuario = await Prontuario.findOneAndUpdate(
             { pacienteId },
-            { $set: { 
-                dadosPessoais, 
-                historicoClinico, 
-                habitosDeVida, 
-                historicoAlimentar, 
-                objetivo 
-            }},
-            { new: true, upsert: true } // upsert: true garante que o prontuário é criado se não existir
+            { $set: updateData },
+            { new: true, upsert: true }
         );
         res.json(updatedProntuario);
     } catch (error) {
@@ -71,8 +70,6 @@ exports.updateAnamnese = async (req, res) => {
     }
 };
 
-// @desc    Adicionar uma nova avaliação física
-// @route   POST /api/nutri/prontuarios/:pacienteId/avaliacoes
 exports.addAvaliacao = async (req, res) => {
     try {
         const { pacienteId } = req.params;
@@ -85,14 +82,19 @@ exports.addAvaliacao = async (req, res) => {
             return res.status(404).json({ message: 'Prontuário não encontrado.' });
         }
         
-        // Calcula o IMC se peso e altura forem fornecidos
-        const { peso, altura } = req.body;
-        if (peso && altura) {
-            const alturaEmMetros = Number(altura) / 100;
-            req.body.imc = (Number(peso) / (alturaEmMetros * alturaEmMetros)).toFixed(2);
+        const avaliacaoData = req.body;
+        
+        // ✅ 3. APLIQUE A CORREÇÃO NA DATA DA AVALIAÇÃO
+        if (avaliacaoData.data) {
+            avaliacaoData.data = fixDateTimezone(avaliacaoData.data);
+        }
+
+        if (avaliacaoData.peso && avaliacaoData.altura) {
+            const alturaEmMetros = Number(avaliacaoData.altura) / 100;
+            avaliacaoData.imc = (Number(avaliacaoData.peso) / (alturaEmMetros * alturaEmMetros)).toFixed(2);
         }
         
-        prontuario.avaliacoes.push(req.body);
+        prontuario.avaliacoes.push(avaliacaoData);
         await prontuario.save();
         
         res.status(201).json(prontuario);
@@ -101,8 +103,6 @@ exports.addAvaliacao = async (req, res) => {
     }
 };
 
-// @desc    Adicionar uma nova nota de evolução
-// @route   POST /api/nutri/prontuarios/:pacienteId/evolucao
 exports.addEvolucao = async (req, res) => {
     try {
         const { pacienteId } = req.params;
@@ -120,7 +120,7 @@ exports.addEvolucao = async (req, res) => {
             return res.status(400).json({ message: 'A nota de evolução não pode estar vazia.' });
         }
         
-        prontuario.evolucao.push({ nota }); // Adiciona a nova nota com a data padrão (agora)
+        prontuario.evolucao.push({ nota });
         await prontuario.save();
         
         res.status(201).json(prontuario);

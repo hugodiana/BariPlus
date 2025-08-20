@@ -83,21 +83,6 @@
     text-align: right;
 }
 
-.submit-btn {
-    padding: 14px 28px;
-    border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--color-primary);
-    color: white;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-}
-.submit-btn:disabled {
-    background-color: var(--color-text-faint);
-    cursor: not-allowed;
-}
-
 .evolucao-container {
     display: grid;
     grid-template-columns: 1fr;
@@ -106,7 +91,6 @@
 
 @media (min-width: 992px) {
     .evolucao-container {
-        /* Lado a lado em ecrãs maiores */
         grid-template-columns: 1fr 1.5fr; 
     }
 }
@@ -141,6 +125,112 @@
 
 .evolucao-nota {
     margin: 0;
-    white-space: pre-wrap; /* Preserva as quebras de linha */
+    white-space: pre-wrap;
     line-height: 1.6;
+}
+
+
+/* ✅ CORREÇÃO: Estilos Unificados para Botões */
+.submit-btn, .secondary-btn, .action-btn-positive {
+    padding: 12px 24px;
+    font-weight: var(--font-weight-bold);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-size: 1rem;
+    border: none;
+    transition: var(--transition);
+}
+.submit-btn:disabled {
+    background-color: var(--color-text-faint);
+    cursor: not-allowed;
+}
+.action-btn-positive, .submit-btn {
+    background-color: var(--color-primary);
+    color: white;
+}
+.action-btn-positive:hover, .submit-btn:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+}
+.secondary-btn {
+    background-color: var(--color-background);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+.secondary-btn:hover {
+    background-color: var(--color-border);
+}
+
+/* Garante que o espaçamento entre botões do modal funcione */
+.modal-form .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: 1rem;
+}
+
+.planos-list {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--space-md);
+}
+
+.plano-item {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background-color: var(--color-background);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--space-md);
+    border-left: 4px solid var(--color-text-faint);
+}
+
+.plano-item.ativo {
+    border-left-color: var(--color-success);
+}
+
+.plano-info strong {
+    display: block;
+    font-weight: 500;
+    color: var(--color-text-strong);
+}
+
+.plano-info span {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.plano-status {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.plano-item.ativo .plano-status {
+    color: var(--color-success);
+}
+
+.plano-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+}
+
+.action-btn-view, .action-btn-email {
+    padding: 8px 16px;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+}
+
+.action-btn-email {
+    background-color: var(--color-accent);
+    color: white;
+    border: none;
 }

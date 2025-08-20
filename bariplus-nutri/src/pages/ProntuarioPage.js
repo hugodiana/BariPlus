@@ -9,6 +9,7 @@ import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AnamneseForm from '../components/paciente/AnamneseForm';
 import AddAvaliacaoModal from '../components/paciente/AddAvaliacaoModal';
+import PlanosTab from '../components/paciente/PlanosTab';
 import EvolucaoTab from '../components/paciente/EvolucaoTab'; 
 import './ProntuarioPage.css';
 
@@ -131,11 +132,13 @@ const ProntuarioPage = () => {
             <Card>
                 <div className="tab-buttons">
                     <button className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`} onClick={() => setActiveTab('anamnese')}>Anamnese</button>
+                    <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos Alimentares</button>
                     <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações Físicas</button>
                     <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
                 </div>
                 <div className="tab-content">
                     {activeTab === 'anamnese' && <AnamneseForm prontuario={prontuario} onSave={setProntuario} />}
+                    {activeTab === 'planos' && <PlanosTab />}
                     {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}
                     {activeTab === 'evolucoes' && <EvolucaoTab prontuario={prontuario} onUpdate={setProntuario} />}
                 </div>
