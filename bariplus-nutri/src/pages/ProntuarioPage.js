@@ -1,15 +1,16 @@
 // src/pages/ProntuarioPage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
 import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
-import './ProntuarioPage.css'; // Vamos criar este ficheiro
+import './ProntuarioPage.css';
 
 const ProntuarioPage = () => {
     const { pacienteId } = useParams();
+    const navigate = useNavigate();
     const [paciente, setPaciente] = useState(null);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('anamnese');
@@ -31,14 +32,39 @@ const ProntuarioPage = () => {
         fetchProntuario();
     }, [fetchProntuario]);
 
+    // --- NOVA FUNÇÃO PARA CONCEDER ACESSO ---
+    const handleConcederAcesso = async () => {
+        if (!paciente.email) {
+            return toast.warn("Para conceder o acesso, o paciente precisa de ter um e-mail cadastrado no prontuário.");
+        }
+        if (window.confirm(`Tem a certeza que deseja conceder acesso gratuito ao BariPlus para ${paciente.nomeCompleto}? Um e-mail será enviado para ${paciente.email} com as instruções.`)) {
+            try {
+                const data = await fetchApi(`/api/nutri/pacientes-locais/${pacienteId}/conceder-acesso`, {
+                    method: 'POST'
+                });
+                toast.success(data.message);
+                // Redireciona para a lista de pacientes, pois este paciente agora é do tipo "BariPlus"
+                navigate('/pacientes'); 
+            } catch (error) {
+                toast.error(error.message || "Não foi possível conceder o acesso.");
+            }
+        }
+    };
+
     if (loading) return <LoadingSpinner />;
     if (!paciente) return <p>Não foi possível carregar os dados do paciente.</p>;
 
     return (
         <div className="page-container">
             <Link to="/pacientes" className="back-link">‹ Voltar para a lista de pacientes</Link>
-            <div className="page-header">
-                <h1>Prontuário de {paciente.nomeCompleto}</h1>
+            <div className="page-header-action">
+                <div className="page-header">
+                    <h1>Prontuário de {paciente.nomeCompleto}</h1>
+                </div>
+                {/* --- NOVO BOTÃO DE AÇÃO --- */}
+                <button className="action-btn-positive" onClick={handleConcederAcesso}>
+                    Convidar para o BariPlus
+                </button>
             </div>
 
             <Card>
