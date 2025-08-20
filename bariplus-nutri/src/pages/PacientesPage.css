@@ -585,3 +585,40 @@
     color: var(--color-primary);
     border-bottom-color: var(--color-primary);
 }
+
+.metas-list li {
+    position: relative;
+    padding-left: 25px; /* Espaço para o ícone de status */
+}
+
+/* Ícone de Status antes da meta */
+.metas-list li::before {
+    content: '▶'; /* Símbolo para 'ativa' */
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    color: var(--color-primary);
+}
+
+.metas-list li.status-concluida {
+    opacity: 0.7;
+    background-color: #f0fdf4; /* Verde claro */
+}
+
+.metas-list li.status-concluida::before {
+    content: '✓'; /* Símbolo para 'concluída' */
+    color: var(--color-success);
+}
+
+.metas-list li.status-nao_concluida {
+    opacity: 0.7;
+    background-color: #fff5f5; /* Vermelho claro */
+    text-decoration: line-through;
+}
+
+.metas-list li.status-nao_concluida::before {
+    content: '×'; /* Símbolo para 'não concluída' */
+    color: var(--color-danger);
+}

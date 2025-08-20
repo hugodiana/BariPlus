@@ -31,16 +31,12 @@
     font-family: inherit;
 }
 
-.form-group textarea {
-    resize: vertical;
-}
-
 .checkbox-group {
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
     gap: 0.5rem;
-    margin-top: 1.5rem; /* Alinha com os outros labels */
+    margin-top: 1.5rem;
 }
 
 .form-actions {
@@ -59,4 +55,20 @@
     border-radius: var(--border-radius);
     cursor: pointer;
     font-weight: 500;
+}
+
+/* ✅ NOVOS ESTILOS PARA O EDITOR REACT-QUILL */
+.quill-editor-container .ql-toolbar {
+    border-top-left-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+    border-color: var(--color-border);
+}
+
+.quill-editor-container .ql-container {
+    border-bottom-left-radius: var(--border-radius);
+    border-bottom-right-radius: var(--border-radius);
+    border-color: var(--color-border);
+    min-height: 200px;
+    font-family: var(--font-family);
+    font-size: 1rem;
 }

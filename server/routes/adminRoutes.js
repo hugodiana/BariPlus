@@ -13,6 +13,7 @@ router.use(autenticar, isAdmin);
 
 // Rotas de Dashboard
 router.get('/admin/stats', adminController.getStats);
+router.get('/admin/growth-stats', adminController.getGrowthStats);
 
 // Rotas de Gestão de Pacientes
 router.get('/admin/users', adminController.listUsers);

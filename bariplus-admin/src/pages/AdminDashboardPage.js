@@ -1,15 +1,38 @@
 // src/pages/AdminDashboardPage.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { fetchAdminApi } from '../utils/api';
 import Card from '../components/ui/Card';
-// CORREÇÃO: Importa o CSS unificado para as páginas de admin
+import GrowthChartCard from '../components/charts/GrowthChartCard'; // ✅ 1. IMPORTAR
+import '../components/charts/Charts.css'; // ✅ 2. IMPORTAR CSS
 import './AdminPages.css'; 
+import LoadingSpinner from '../components/LoadingSpinner';
 
 const AdminDashboardPage = () => {
     const [stats, setStats] = useState(null);
-    useEffect(() => {
-        fetchAdminApi('/api/admin/stats').then(setStats);
+    const [growthData, setGrowthData] = useState(null); // ✅ 3. NOVO ESTADO
+    const [loading, setLoading] = useState(true);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [statsData, growthStatsData] = await Promise.all([
+                fetchAdminApi('/api/admin/stats'),
+                fetchAdminApi('/api/admin/growth-stats')
+            ]);
+            setStats(statsData);
+            setGrowthData(growthStatsData);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
+    
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    if (loading) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
@@ -33,6 +56,9 @@ const AdminDashboardPage = () => {
                     <span className="stat-label">Nutricionistas Ativos</span>
                     <span className="stat-value">{stats?.activeNutris}</span>
                 </Card>
+
+                {/* ✅ 4. ADICIONAR O COMPONENTE DO GRÁFICO */}
+                {growthData && <GrowthChartCard data={growthData} />}
             </div>
         </div>
     );

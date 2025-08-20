@@ -1,0 +1,8 @@
+/* src/components/charts/Charts.css */
+.chart-card {
+    grid-column: 1 / -1; /* Faz o card ocupar a largura total do grid */
+}
+
+.chart-container {
+    height: 350px;
+}

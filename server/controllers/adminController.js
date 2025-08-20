@@ -242,3 +242,31 @@ exports.getUserById = async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar detalhes do paciente.' });
     }
 };
+
+// @desc    Obter estatísticas de crescimento
+// @route   GET /api/admin/growth-stats
+exports.getGrowthStats = async (req, res) => {
+    try {
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+        const aggregatePipeline = (model) => ([
+            { $match: { createdAt: { $gte: sixMonthsAgo } } },
+            { $group: {
+                _id: { year: { $year: "$createdAt" }, month: { $month: "$createdAt" } },
+                count: { $sum: 1 }
+            }},
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        const [userGrowth, nutriGrowth] = await Promise.all([
+            User.aggregate(aggregatePipeline(User)),
+            Nutricionista.aggregate(aggregatePipeline(Nutricionista))
+        ]);
+
+        res.json({ userGrowth, nutriGrowth });
+    } catch (error) {
+        console.error("Erro ao buscar estatísticas de crescimento:", error);
+        res.status(500).json({ message: "Erro no servidor." });
+    }
+};

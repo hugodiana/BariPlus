@@ -20,8 +20,15 @@ exports.criarMeta = async (req, res) => {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
 
+        // ✅ CORREÇÃO: Agora recebemos todos os dados necessários do formulário
+        const { descricao, tipo, valorAlvo, unidade, prazo } = req.body;
+
         const novaMeta = await Meta.create({
-            ...req.body,
+            descricao,
+            tipo,
+            valorAlvo,
+            unidade,
+            prazo,
             nutricionistaId,
             pacienteId
         });

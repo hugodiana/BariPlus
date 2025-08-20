@@ -40,6 +40,7 @@ const refeicaoTemplateRoutes = require('./routes/refeicaoTemplateRoutes');
 const errorHandler = require('./middlewares/errorHandler');
 const User = require('./models/userModel'); // Necessário para o Webhook
 const webhookController = require('./controllers/webhookController'); // Lógica do webhook movida para um controlador
+const { iniciarVerificacaoDeMetas } = require('./services/automationService');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -150,6 +151,7 @@ const PORT = process.env.PORT || 3001;
 mongoose.connect(process.env.DATABASE_URL)
     .then(() => {
         console.log('Conectado ao MongoDB!');
+        iniciarVerificacaoDeMetas();
         const server = app.listen(PORT, () => {
             console.log(`Servidor do BariPlus a correr na porta ${PORT}`);
         });
