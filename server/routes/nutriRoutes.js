@@ -7,7 +7,7 @@ const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById, saveAsTemplate, getTemplates } = require('../controllers/planoAlimentarController');
 const { getProgressoPaciente, getDiarioAlimentarPaciente, getHidratacaoPaciente, getMedicacaoPaciente, addDiaryComment, getExamesPaciente } = require('../controllers/pacienteDataController');
 const { getConversationForNutri } = require('../controllers/messageController');
-const { createPacienteLocal, getPacientesLocais } = require('../controllers/pacienteLocalController');
+const { createPacienteLocal, getPacientesLocais, concederAcessoBariplus } = require('../controllers/pacienteLocalController');
 const { getAgendamentos, createAgendamento, updateAgendamento } = require('../controllers/agendaController');
 const { getProntuario, updateAnamnese, addAvaliacao } = require('../controllers/prontuarioController');
 const { protectNutri } = require('../middlewares/authNutri');
@@ -36,6 +36,7 @@ router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationF
 // Rotas para Pacientes Locais (Prontuário)
 router.post('/pacientes-locais', protectNutri, createPacienteLocal);
 router.get('/pacientes-locais', protectNutri, getPacientesLocais);
+router.post('/pacientes-locais/:id/conceder-acesso', protectNutri, concederAcessoBariplus);
 router.get('/prontuario/:pacienteId', protectNutri, getProntuario);
 router.put('/prontuario/:pacienteId/anamnese', protectNutri, updateAnamnese);
 router.post('/prontuario/:pacienteId/avaliacoes', protectNutri, addAvaliacao);

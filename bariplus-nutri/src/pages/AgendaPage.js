@@ -1,128 +1,123 @@
-// src/pages/AgendaPage.js
+// src/pages/AssinaturaPage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast } from 'react-toastify';
-
 import { fetchApi } from '../utils/api';
+import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
-// CORREÇÃO: Importa o modal do seu novo ficheiro
-import AddAgendamentoModal from '../components/agenda/AddAgendamentoModal'; 
-import './AgendaPage.css';
+import './AssinaturaPage.css';
 
-const locales = { 'pt-BR': ptBR };
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
-
-const messages = {
-  allDay: 'Dia Inteiro',
-  previous: '‹ Anterior',
-  next: 'Próximo ›',
-  today: 'Hoje',
-  month: 'Mês',
-  week: 'Semana',
-  day: 'Dia',
-  agenda: 'Agenda',
-  date: 'Data',
-  time: 'Hora',
-  event: 'Evento',
-  noEventsInRange: 'Não há eventos neste período.',
-  showMore: total => `+ Ver mais (${total})`
+// Links de checkout dos seus produtos na Kiwify (ou outro provedor)
+const checkoutLinks = {
+    profissional: "SEU_LINK_DE_CHECKOUT_DO_PLANO_PROFISSIONAL_NA_KIWIFY",
+    clinica: "SEU_LINK_DE_CHECKOUT_DO_PLANO_CLINICA_NA_KIWIFY"
 };
 
-const AgendaPage = () => {
-    const [agendamentos, setAgendamentos] = useState([]);
+const AssinaturaPage = () => {
+    const [nutricionista, setNutricionista] = useState(null);
+    const [stats, setStats] = useState({ totalPacientes: 0 });
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedSlot, setSelectedSlot] = useState(null);
+    // NOVO ESTADO para controlar o loading do botão de compra
+    const [isCreatingPreference, setIsCreatingPreference] = useState(false);
 
-    const fetchAgendamentos = useCallback(async () => {
-        setLoading(true);
+    const fetchData = useCallback(async () => {
         try {
-            const data = await fetchApi('/api/nutri/agenda');
-            const eventosFormatados = data.map(evt => ({
-                ...evt,
-                start: new Date(evt.start),
-                end: new Date(evt.end),
-            }));
-            setAgendamentos(eventosFormatados);
+            const [nutriData, statsData] = await Promise.all([
+                fetchApi('/api/nutri/auth/me'),
+                fetchApi('/api/nutri/dashboard')
+            ]);
+            setNutricionista(nutriData);
+            setStats(statsData);
         } catch (error) {
-            toast.error("Erro ao carregar a agenda.");
+            toast.error("Erro ao carregar dados da assinatura.");
         } finally {
             setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchAgendamentos();
-    }, [fetchAgendamentos]);
-    
-    const handleSelectSlot = useCallback((slotInfo) => {
-        setSelectedSlot(slotInfo);
-        setIsModalOpen(true);
-    }, []);
+        fetchData();
+    }, [fetchData]);
 
-    const handleEventDrop = useCallback(async ({ event, start, end }) => {
+    // NOVA FUNÇÃO para lidar com a compra de vagas
+    const handleBuySlot = async () => {
+        setIsCreatingPreference(true);
         try {
-            await fetchApi(`/api/nutri/agenda/${event._id}`, {
-                method: 'PUT',
-                body: JSON.stringify({ start, end })
+            const data = await fetchApi('/api/nutri/pagamentos/criar-preferencia', {
+                method: 'POST'
             });
-            toast.success("Consulta reagendada com sucesso!");
-            fetchAgendamentos();
+            // Redireciona o utilizador para o checkout do Mercado Pago
+            window.location.href = data.checkoutUrl;
         } catch (error) {
-            toast.error("Erro ao reagendar a consulta.");
+            toast.error(error.message || "Não foi possível gerar o link de pagamento.");
+        } finally {
+            setIsCreatingPreference(false);
         }
-    }, [fetchAgendamentos]);
-    
-    if (loading) return <LoadingSpinner />;
+    };
+
+    if (loading || !nutricionista) return <LoadingSpinner />;
+
+    const planoAtual = nutricionista.assinatura;
+    const totalPacientes = stats.totalPacientes;
+    const limitePacientes = nutricionista.limiteGratis;
+    const progresso = limitePacientes > 0 ? (totalPacientes / limitePacientes) * 100 : 0;
 
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>Minha Agenda</h1>
-                <p>Gira as suas consultas e horários.</p>
+                <h1>Minha Assinatura</h1>
+                <p>Gira o seu plano, vagas de pacientes e pagamentos.</p>
             </div>
-            <div className="calendar-container">
-                <Calendar
-                    localizer={localizer}
-                    events={agendamentos}
-                    startAccessor="start"
-                    endAccessor="end"
-                    style={{ height: '70vh' }}
-                    selectable
-                    onSelectSlot={handleSelectSlot}
-                    onEventDrop={handleEventDrop}
-                    messages={messages}
-                    culture='pt-BR'
-                    formats={{
-                        timeGutterFormat: 'HH:mm',
-                        eventTimeRangeFormat: ({ start, end }, culture, local) =>
-                            `${local.format(start, 'HH:mm', culture)} - ${local.format(end, 'HH:mm', culture)}`,
-                        agendaTimeRangeFormat: ({ start, end }, culture, local) =>
-                            `${local.format(start, 'HH:mm', culture)} - ${local.format(end, 'HH:mm', culture)}`
-                    }}
-                />
+
+            <div className="assinatura-grid">
+                <div className="assinatura-main-col">
+                    <Card className="status-card">
+                        <h3>Seu Plano Atual: <span className="plano-nome">{planoAtual.plano || 'Nenhum'}</span></h3>
+                        <p>Status: <span className={`status-badge ${planoAtual.status}`}>{planoAtual.status}</span></p>
+                        
+                        <div className="usage-meter">
+                            <p>Vagas de Pacientes Utilizadas</p>
+                            <strong>{totalPacientes} / {limitePacientes}</strong>
+                            <div className="progress-bar">
+                                <div className="progress-fill" style={{ width: `${progresso}%`}}></div>
+                            </div>
+                        </div>
+
+                        <a href="https://dashboard.kiwify.com.br/purchases" target="_blank" rel="noopener noreferrer" className="manage-btn">
+                            Gerir Assinatura na Kiwify
+                        </a>
+                    </Card>
+
+                    {/* NOVO CARD PARA COMPRA DE VAGAS */}
+                    <Card className="buy-slot-card">
+                        <h3>Vagas Adicionais</h3>
+                        <p>Atingiu o limite do seu plano? Compre vagas de paciente avulsas por um pagamento único.</p>
+                        <div className="buy-slot-action">
+                            <span className="price-tag-single">R$ 10,00 / vaga</span>
+                            <button 
+                                className="action-btn-positive" 
+                                onClick={handleBuySlot} 
+                                disabled={isCreatingPreference}
+                            >
+                                {isCreatingPreference ? 'A gerar link...' : 'Comprar Vaga Adicional'}
+                            </button>
+                        </div>
+                    </Card>
+                </div>
+
+                <div className="assinatura-side-col">
+                    <Card className="upgrade-card">
+                        <h3>Mude de Plano</h3>
+                        <p>Precisa de mais vagas ou funcionalidades? Faça o upgrade.</p>
+                        <div className="plan-option">
+                            <h4>Plano Clínica</h4>
+                            <span>Pacientes ilimitados, múltiplos logins e mais.</span>
+                            <a href={checkoutLinks.clinica} className="action-btn-positive">Fazer Upgrade</a>
+                        </div>
+                    </Card>
+                </div>
             </div>
-            {isModalOpen && (
-                <AddAgendamentoModal 
-                    slot={selectedSlot}
-                    onClose={() => setIsModalOpen(false)}
-                    onSave={() => {
-                        setIsModalOpen(false);
-                        fetchAgendamentos();
-                    }}
-                />
-            )}
         </div>
     );
 };
 
-export default AgendaPage;
+export default AssinaturaPage;
