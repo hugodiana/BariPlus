@@ -6,6 +6,9 @@
 # Dependências
 /node_modules
 /server/node_modules
+/client/node_modules
+/bariplus-nutri/node_modules
+/bariplus-adm/node_modules
 
 # Logs
 npm-debug.log*
