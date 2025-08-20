@@ -16,6 +16,8 @@ const AdminLayout = ({ onLogout }) => {
                     <NavLink to="/" end>Dashboard</NavLink>
                     <NavLink to="/pacientes">Pacientes</NavLink>
                     <NavLink to="/nutricionistas">Nutricionistas</NavLink>
+                    <NavLink to="/conteudos">Conteúdo</NavLink> 
+                    <NavLink to="/notificacoes">Notificações</NavLink>
                 </nav>
                 <div className="sidebar-footer">
                     {/* O botão agora chama a função recebida por prop */}

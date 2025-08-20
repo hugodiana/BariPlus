@@ -10,6 +10,9 @@ const AdminPacientesPage = lazy(() => import('./pages/AdminPacientesPage'));
 const AdminNutricionistasPage = lazy(() => import('./pages/AdminNutricionistasPage'));
 const AdminPacienteDetailPage = lazy(() => import('./pages/AdminPacienteDetailPage'));
 const AdminNutricionistaDetailPage = lazy(() => import('./pages/AdminNutricionistaDetailPage'));
+const AdminConteudosPage = lazy(() => import('./pages/AdminConteudosPage'));
+const AdminNotificacoesPage = lazy(() => import('./pages/AdminNotificacoesPage'));
+
 function App() {
     const [isAdminAuth, setIsAdminAuth] = useState(!!localStorage.getItem('admin_token'));
 
@@ -43,6 +46,8 @@ function App() {
                         <Route path="pacientes/:id" element={<AdminPacienteDetailPage />} />
                         <Route path="nutricionistas" element={<AdminNutricionistasPage />} />
                         <Route path="nutricionistas/:id" element={<AdminNutricionistaDetailPage />} />
+                        <Route path="conteudos" element={<AdminConteudosPage />} />
+                        <Route path="notificacoes" element={<AdminNotificacoesPage />} />
                     </Route>
                 </Routes>
             </Suspense>
