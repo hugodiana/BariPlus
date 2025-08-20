@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const Nutricionista = require('../models/Nutricionista');
 const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const bcrypt = require('bcryptjs'); 
@@ -94,14 +95,34 @@ exports.verifyUserEmail = async (req, res) => {
 // GET /api/admin/stats - Obter estatísticas do painel
 exports.getStats = async (req, res) => {
     try {
-        const totalUsers = await User.countDocuments();
-        const paidUsers = await User.countDocuments({ pagamentoEfetuado: true });
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        const newUsersLast7Days = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
-        res.json({ totalUsers, paidUsers, newUsersLast7Days });
+
+        // Agrega os dados em paralelo para mais performance
+        const [
+            totalUsers,
+            paidUsers,
+            newUsersLast7Days,
+            totalNutris,
+            activeNutris
+        ] = await Promise.all([
+            User.countDocuments(),
+            User.countDocuments({ pagamentoEfetuado: true }),
+            User.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+            Nutricionista.countDocuments(),
+            Nutricionista.countDocuments({ 'assinatura.status': 'ativa' })
+        ]);
+
+        res.json({ 
+            totalUsers, 
+            paidUsers, 
+            newUsersLast7Days,
+            totalNutris,
+            activeNutris
+        });
     } catch (error) {
-        res.status(500).json({ message: "Erro no servidor" });
+        console.error("Erro ao buscar estatísticas:", error);
+        res.status(500).json({ message: "Erro no servidor ao buscar estatísticas." });
     }
 };
 
@@ -151,5 +172,39 @@ exports.sendBroadcastNotification = async (req, res) => {
     } catch (error) {
         console.error('Erro ao enviar notificações em massa:', error);
         res.status(500).json({ message: 'Erro no servidor ao tentar enviar notificações.' });
+    }
+};
+
+// GET /api/admin/nutricionistas - Listar todos os nutricionistas
+exports.listNutricionistas = async (req, res) => {
+    try {
+        const nutricionistas = await Nutricionista.find().sort({ createdAt: -1 });
+        res.json(nutricionistas);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar nutricionistas.' });
+    }
+};
+
+// GET /api/admin/nutricionistas/:id - Obter detalhes de um nutricionista
+exports.getNutricionistaById = async (req, res) => {
+    try {
+        const nutricionista = await Nutricionista.findById(req.params.id)
+            .populate('pacientesBariplus', 'nome sobrenome')
+            .populate('pacientesLocais', 'nomeCompleto');
+        if (!nutricionista) return res.status(404).json({ message: 'Nutricionista não encontrado.' });
+        res.json(nutricionista);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar detalhes do nutricionista.' });
+    }
+};
+
+// PUT /api/admin/nutricionistas/:id - Atualizar dados de um nutricionista (ex: bloquear)
+exports.updateNutricionista = async (req, res) => {
+    try {
+        const nutricionista = await Nutricionista.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!nutricionista) return res.status(404).json({ message: 'Nutricionista não encontrado.' });
+        res.json(nutricionista);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao atualizar nutricionista.' });
     }
 };
