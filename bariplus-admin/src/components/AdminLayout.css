@@ -1,0 +1,138 @@
+/* src/components/Layout.css */
+.layout-container {
+    display: flex;
+}
+
+.sidebar {
+    width: 260px;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+.sidebar-header {
+    margin-bottom: var(--space-xl);
+}
+
+.sidebar-logo {
+    height: 40px;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    flex-grow: 1;
+}
+
+.sidebar-nav a {
+    text-decoration: none;
+    color: var(--color-text-secondary);
+    padding: 12px var(--space-md);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.sidebar-nav a:hover {
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+.sidebar-nav a.active {
+    background-color: var(--color-primary);
+    color: white;
+    font-weight: bold;
+}
+
+.sidebar-footer {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
+}
+
+.user-info {
+    margin-bottom: 1rem;
+}
+
+.user-info .user-name {
+    font-weight: bold;
+    color: var(--color-text-strong);
+}
+.user-info .user-email {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.logout-btn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid var(--color-border);
+    color: var(--color-danger);
+    font-weight: bold;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.logout-btn:hover {
+    background-color: var(--color-danger);
+    color: white;
+}
+
+.main-content {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    padding: var(--space-xl);
+    background-color: var(--color-background);
+    min-height: 100vh;
+}
+
+
+/* --- Estilos para Mobile --- */
+
+.hamburger-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 1001;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-size: 1.5rem;
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.open {
+        transform: translateX(0);
+        box-shadow: 2px 0 15px rgba(0, 0, 0, 0.1);
+    }
+    .main-content {
+        margin-left: 0;
+        width: 100%;
+        padding-top: 80px; /* Espaço para o botão hambúrguer não sobrepor o conteúdo */
+    }
+}
