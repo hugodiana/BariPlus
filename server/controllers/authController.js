@@ -201,23 +201,33 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
     try {
+        // 1. Verifica se houve erros de validação (do express-validator)
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ message: errors.array()[0].msg }); // Envia a primeira mensagem de erro
+        }
+
         const { token } = req.params;
         const { password } = req.body;
-        if (!validatePassword(password)) {
-            return res.status(400).json({ message: "A nova senha não cumpre os requisitos de segurança." });
-        }
+        
+        // 2. A chamada antiga para 'validatePassword(password)' foi removida
+
         const usuario = await User.findOne({
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: new Date() }
         });
+
         if (!usuario) {
             return res.status(400).json({ message: "Token inválido ou expirado." });
         }
+
         usuario.password = await bcrypt.hash(password, 10);
         usuario.resetPasswordToken = undefined;
         usuario.resetPasswordExpires = undefined;
         await usuario.save();
+        
         res.json({ message: "Senha redefinida com sucesso!" });
+
     } catch (error) {
         console.error('Erro ao redefinir senha:', error);
         res.status(500).json({ message: "Erro ao redefinir senha." });

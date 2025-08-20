@@ -1,0 +1,71 @@
+/* src/components/dashboard/DashboardComponents.css */
+
+.dashboard-widget {
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-widget h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.5rem;
+    color: var(--color-text-strong);
+}
+
+.widget-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.widget-list li {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.widget-list-time {
+    font-weight: bold;
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.widget-list-title {
+    flex-grow: 1;
+    color: var(--color-text-secondary);
+}
+
+.widget-list-action {
+    font-size: 0.9rem;
+    text-decoration: none;
+    color: var(--color-accent);
+    font-weight: 500;
+}
+
+.empty-message {
+    text-align: center;
+    color: var(--color-text-faint);
+    padding: 1rem 0;
+}
+
+.widget-list-icon {
+    font-size: 1.5rem;
+}
+
+.widget-list-title {
+    display: flex;
+    flex-direction: column;
+}
+
+.activity-time {
+    font-size: 0.8rem;
+    color: var(--color-text-faint);
+    margin-top: 2px;
+}

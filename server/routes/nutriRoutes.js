@@ -10,12 +10,14 @@ const { getConversationForNutri } = require('../controllers/messageController');
 const { createPacienteLocal, getPacientesLocais, concederAcessoBariplus } = require('../controllers/pacienteLocalController');
 const { getAgendamentos, createAgendamento, updateAgendamento } = require('../controllers/agendaController');
 const { getProntuario, updateAnamnese, addAvaliacao } = require('../controllers/prontuarioController');
+const { getRecentActivity } = require('../controllers/nutriController');
 const { protectNutri } = require('../middlewares/authNutri');
 
 // Rotas de Gestão
 router.get('/dashboard', protectNutri, getDashboardData);
 router.get('/pacientes/:pacienteId', protectNutri, getPacienteDetails);
 router.post('/convites/gerar', protectNutri, gerarConvite);
+router.get('/recent-activity', protectNutri, getRecentActivity);
 
 // Rotas de Planos Alimentares
 router.get('/planos/templates', protectNutri, getTemplates); 
