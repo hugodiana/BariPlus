@@ -1,7 +1,7 @@
 // server/controllers/agendaController.js
 const Agendamento = require('../models/Agendamento');
 const User = require('../models/userModel');
-const PacienteNutri = require('../models/PacienteNutri');
+// A linha 'const PacienteNutri = require('../models/PacienteNutri');' foi REMOVIDA
 
 // @desc    Buscar todos os agendamentos de um nutricionista
 // @route   GET /api/nutri/agenda

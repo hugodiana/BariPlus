@@ -10,23 +10,18 @@ const nutricionistaSchema = new mongoose.Schema({
   especializacao: { type: String },
   clinica: { type: String },
   
-  // --- CAMPOS DE PACIENTES ATUALIZADOS ---
-  pacientesBariplus: [{
+  // ✅ LISTA DE PACIENTES UNIFICADA
+  pacientes: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' // Pacientes que usam o app BariPlus
-  }],
-  pacientesLocais: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'PacienteNutri' // Pacientes do prontuário do nutri
+    ref: 'User' 
   }],
 
-  limiteGratis: { type: Number, default: 10 }, // Limite total de pacientes
+  limiteGratis: { type: Number, default: 10 },
   assinatura: {
       id: String,
       status: { type: String, default: 'inativa' }
   },
-  createdAt: { type: Date, default: Date.now }
-});
+}, { timestamps: true });
 
 nutricionistaSchema.pre('save', async function(next) {
   if (!this.isModified('senha')) return next();

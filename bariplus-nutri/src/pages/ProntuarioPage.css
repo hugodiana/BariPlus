@@ -1,5 +1,4 @@
 /* src/pages/ProntuarioPage.css */
-
 .tab-buttons {
     display: flex;
     border-bottom: 2px solid var(--color-border);
@@ -21,24 +20,67 @@
     border-bottom-color: var(--color-primary);
 }
 
+.anamnese-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+}
+
+.form-section h4 {
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+    margin-top: 0;
+    margin-bottom: var(--space-md);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-lg);
+}
+
 .form-group {
-    margin-bottom: var(--space-lg);
+    display: flex;
+    flex-direction: column;
 }
 .form-group label {
-    display: block;
     margin-bottom: var(--space-sm);
     font-weight: 500;
 }
-.form-group input, .form-group textarea {
+.form-group input, .form-group textarea, .form-group select {
     width: 100%;
     padding: 12px;
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
     font-size: 1rem;
+    background-color: var(--color-background);
 }
 .form-group textarea {
-    min-height: 100px;
+    min-height: 80px;
     resize: vertical;
+}
+
+.checkbox-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-md);
+}
+.checkbox-item label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-weight: normal;
+}
+.checkbox-item input {
+    width: auto;
+}
+
+.form-actions-footer {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+    text-align: right;
 }
 
 .submit-btn {
@@ -50,4 +92,55 @@
     font-size: 1rem;
     font-weight: bold;
     cursor: pointer;
+}
+.submit-btn:disabled {
+    background-color: var(--color-text-faint);
+    cursor: not-allowed;
+}
+
+.evolucao-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-xl);
+}
+
+@media (min-width: 992px) {
+    .evolucao-container {
+        /* Lado a lado em ecrãs maiores */
+        grid-template-columns: 1fr 1.5fr; 
+    }
+}
+
+.evolucao-form h4, .evolucao-historico h4 {
+    margin-top: 0;
+    color: var(--color-primary);
+}
+
+.evolucao-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.evolucao-item {
+    padding: var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    margin-bottom: var(--space-md);
+}
+
+.evolucao-data {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--space-sm);
+}
+
+.evolucao-nota {
+    margin: 0;
+    white-space: pre-wrap; /* Preserva as quebras de linha */
+    line-height: 1.6;
 }

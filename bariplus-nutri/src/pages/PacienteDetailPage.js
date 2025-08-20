@@ -1,91 +1,131 @@
-// bariplus-nutri/src/pages/PacienteDetailPage.js
-
+// src/pages/PacientesPage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
-import Modal from '../components/Modal';
-import ChatBox from '../components/chat/ChatBox';
 import LoadingSpinner from '../components/LoadingSpinner';
-import AcompanhamentoTab from '../components/paciente/AcompanhamentoTab';
-import MetasTab from '../components/paciente/MetasTab';
 import './PacientesPage.css';
 
-const PacienteDetailPage = () => {
-    const { pacienteId } = useParams();
-    const [paciente, setPaciente] = useState(null);
+const PacientesPage = () => {
+    const [pacientes, setPacientes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isChatOpen, setIsChatOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState('acompanhamento');
-    
-    // ✅ CORREÇÃO: Buscamos os dados do nutricionista logado uma vez
-    const [nutricionista, setNutricionista] = useState(null);
+    const [generatedLink, setGeneratedLink] = useState('');
+    const [isGenerating, setIsGenerating] = useState(false);
 
-    const fetchPageData = useCallback(async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            // Buscamos os dados do paciente e do nutri em paralelo
-            const [pacienteData, nutriData] = await Promise.all([
-                fetchApi(`/api/nutri/pacientes/${pacienteId}`),
-                fetchApi('/api/nutri/auth/me')
-            ]);
-            setPaciente(pacienteData);
-            setNutricionista(nutriData);
+            // A rota do dashboard agora envia a lista unificada 'pacientes'
+            const data = await fetchApi('/api/nutri/dashboard');
+            // Usamos a lista unificada 'pacientes' do modelo Nutricionista
+            const allPacientes = data.pacientesBariplus.concat(data.pacientesLocais);
+            setPacientes(allPacientes || []);
         } catch (error) {
-            toast.error(error.message || "Erro ao carregar detalhes do paciente.");
-            // Adicione um redirecionamento ou mensagem de erro mais robusta se desejar
+            toast.error('Erro ao carregar a lista de pacientes.');
         } finally {
             setLoading(false);
         }
-    }, [pacienteId]);
+    }, []);
 
     useEffect(() => {
-        fetchPageData();
-    }, [fetchPageData]);
+        fetchData();
+    }, [fetchData]);
+
+    const handleGenerateInvite = async () => {
+        setIsGenerating(true);
+        try {
+            const data = await fetchApi('/api/nutri/convites/gerar', {
+                method: 'POST'
+            });
+            setGeneratedLink(data.url);
+            toast.success('Link de convite gerado com sucesso!');
+        } catch (error) {
+            toast.error(error.message || 'Não foi possível gerar o convite.');
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const copyToClipboard = () => {
+        navigator.clipboard.writeText(generatedLink);
+        toast.info('Link copiado para a área de transferência!');
+    };
 
     if (loading) return <LoadingSpinner />;
-    if (!paciente) return <div className="page-container"><p>Paciente não encontrado.</p></div>;
-    
+
     return (
         <div className="page-container">
-            <Link to="/pacientes" className="back-link">‹ Voltar para a lista</Link>
             <div className="page-header-action">
                 <div className="page-header">
-                    <h1>{paciente.nome} {paciente.sobrenome}</h1>
-                    <p>Acompanhe e gira os planos alimentares e o progresso deste paciente.</p>
+                    <h1>Meus Pacientes</h1>
+                    <p>Gira os seus pacientes e convide novos utilizadores para o BariPlus.</p>
                 </div>
-                <button className="chat-btn" onClick={() => setIsChatOpen(true)}>💬 Enviar Mensagem</button>
+                <Link to="/pacientes/criar" className="action-btn-positive">
+                    + Adicionar Paciente
+                </Link>
             </div>
-            
-            {/* ✅ CORREÇÃO ESTRUTURAL: O Card agora envolve toda a área de abas */}
-            <Card>
-                <div className="tab-buttons">
-                    <button 
-                        className={`tab-btn ${activeTab === 'acompanhamento' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('acompanhamento')}>
-                        Acompanhamento
-                    </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'metas' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('metas')}>
-                        Metas
-                    </button>
+
+            <div className="pacientes-grid">
+                <div className="pacientes-coluna">
+                    <Card>
+                        <div className="card-header-action">
+                            <h3>Todos os Pacientes ({pacientes.length})</h3>
+                        </div>
+                        {pacientes.length > 0 ? (
+                            <ul className="pacientes-list">
+                                {pacientes.map(paciente => (
+                                    <li key={paciente._id} className="paciente-item">
+                                        <span className="paciente-avatar">
+                                            {(paciente.nome?.charAt(0) || '')}{(paciente.sobrenome?.charAt(0) || '')}
+                                        </span>
+                                        <div className="paciente-info">
+                                            <span className="paciente-name">{paciente.nome} {paciente.sobrenome}</span>
+                                            {/* Tag Visual para diferenciar o status */}
+                                            <span className={`status-tag ${paciente.statusConta === 'ativo' ? 'ativo' : 'prontuario'}`}>
+                                                {paciente.statusConta === 'ativo' ? 'App BariPlus' : 'Apenas Prontuário'}
+                                            </span>
+                                        </div>
+                                        {/* Todos os botões agora levam para o prontuário */}
+                                        <Link to={`/prontuario/${paciente._id}`} className="paciente-action-btn">
+                                            Ver Prontuário
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p>Nenhum paciente encontrado.</p>
+                        )}
+                    </Card>
                 </div>
 
-                <div className="tab-content">
-                    {/* Renderiza o conteúdo da aba ativa */}
-                    {activeTab === 'acompanhamento' && <AcompanhamentoTab paciente={paciente} nutricionista={nutricionista} />}
-                    {activeTab === 'metas' && <MetasTab />}
+                <div className="convites-coluna">
+                    <Card>
+                        <h3>Convidar Paciente para o BariPlus</h3>
+                        <p>
+                            Gere um link de convite único para que um paciente possa criar uma conta gratuita no BariPlus e vinculá-la a si.
+                        </p>
+                        <button 
+                            className="generate-btn" 
+                            onClick={handleGenerateInvite} 
+                            disabled={isGenerating}
+                        >
+                            {isGenerating ? 'A gerar...' : 'Gerar Novo Convite'}
+                        </button>
+                        {generatedLink && (
+                            <div className="generated-link-container">
+                                <p><strong>Link gerado!</strong> Envie para o seu paciente:</p>
+                                <div className="link-input-group">
+                                    <input type="text" value={generatedLink} readOnly />
+                                    <button onClick={copyToClipboard}>Copiar</button>
+                                </div>
+                            </div>
+                        )}
+                    </Card>
                 </div>
-            </Card>
-
-            <Modal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)}>
-                <h2>Conversa com {paciente.nome}</h2>
-                <ChatBox currentUser={nutricionista} receiver={paciente} />
-            </Modal>
+            </div>
         </div>
     );
 };
 
-export default PacienteDetailPage;
+export default PacientesPage;

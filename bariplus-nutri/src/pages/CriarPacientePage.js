@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
-import './PlanoAlimentarPage.css'; // Reutilizaremos alguns estilos
+import './PlanoAlimentarPage.css';
 
 const CriarPacientePage = () => {
     const navigate = useNavigate();
@@ -25,7 +25,8 @@ const CriarPacientePage = () => {
         e.preventDefault();
         setLoading(true);
         try {
-            await fetchApi('/api/nutri/pacientes-locais', {
+            // ✅ CORREÇÃO: A rota foi atualizada para a nova rota unificada de pacientes.
+            await fetchApi('/api/nutri/pacientes', {
                 method: 'POST',
                 body: JSON.stringify(formData)
             });
@@ -52,7 +53,7 @@ const CriarPacientePage = () => {
                         <input type="text" name="nomeCompleto" value={formData.nomeCompleto} onChange={handleInputChange} required />
                     </div>
                     <div className="form-group">
-                        <label>Email</label>
+                        <label>Email (Opcional - necessário para convidar para o app)</label>
                         <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
                     </div>
                     <div className="form-group">

@@ -2,38 +2,39 @@
 const express = require('express');
 const router = express.Router();
 
-// ✅ CORREÇÃO: Unificamos todas as importações do nutriController numa só linha
 const { getDashboardData, getPacienteDetails, getRecentActivity } = require('../controllers/nutriController');
-
 const { gerarConvite } = require('../controllers/conviteController');
 const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById, saveAsTemplate, getTemplates } = require('../controllers/planoAlimentarController');
 const { getProgressoPaciente, getDiarioAlimentarPaciente, getHidratacaoPaciente, getMedicacaoPaciente, addDiaryComment, getExamesPaciente } = require('../controllers/pacienteDataController');
 const { getConversationForNutri } = require('../controllers/messageController');
-const { createPacienteLocal, getPacientesLocais, concederAcessoBariplus } = require('../controllers/pacienteLocalController');
+const { createPacienteProntuario, convidarPacienteParaApp } = require('../controllers/pacienteLocalController'); 
 const { getAgendamentos, createAgendamento, updateAgendamento } = require('../controllers/agendaController');
-const { getProntuario, updateAnamnese, addAvaliacao } = require('../controllers/prontuarioController');
 const { criarMeta, listarMetasPorPaciente } = require('../controllers/metaController');
 const { protectNutri } = require('../middlewares/authNutri');
 
-// Rotas de Gestão
+// --- Rotas de Gestão Geral ---
 router.get('/dashboard', protectNutri, getDashboardData);
 router.get('/recent-activity', protectNutri, getRecentActivity);
 router.get('/pacientes/:pacienteId', protectNutri, getPacienteDetails);
 router.post('/convites/gerar', protectNutri, gerarConvite);
 
-// Rotas de Metas
+// --- Rotas de Gestão de Pacientes (Prontuário e App) ---
+router.post('/pacientes', protectNutri, createPacienteProntuario); 
+router.post('/pacientes/:id/convidar', protectNutri, convidarPacienteParaApp);
+
+// --- Rotas de Metas ---
 router.route('/pacientes/:pacienteId/metas')
     .post(protectNutri, criarMeta)
     .get(protectNutri, listarMetasPorPaciente);
 
-// Rotas de Planos Alimentares
+// --- Rotas de Planos Alimentares ---
 router.get('/planos/templates', protectNutri, getTemplates); 
 router.post('/planos/criar', protectNutri, criarPlanoAlimentar);
 router.get('/pacientes/:pacienteId/planos', protectNutri, getPlanosPorPaciente);
 router.get('/planos/:planoId', protectNutri, getPlanoById);
 router.post('/planos/:planoId/salvar-como-template', protectNutri, saveAsTemplate);
 
-// Rotas de Acesso a Dados do Paciente BariPlus
+// --- Rotas de Acompanhamento (Dados do App do Paciente) ---
 router.get('/paciente/:pacienteId/progresso', protectNutri, getProgressoPaciente);
 router.get('/paciente/:pacienteId/diario/:date', protectNutri, getDiarioAlimentarPaciente);
 router.post('/paciente/:pacienteId/diario/:date/comment', protectNutri, addDiaryComment);
@@ -42,15 +43,7 @@ router.get('/paciente/:pacienteId/medicacao/:date', protectNutri, getMedicacaoPa
 router.get('/paciente/:pacienteId/exames', protectNutri, getExamesPaciente);
 router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationForNutri); 
 
-// Rotas para Pacientes Locais (Prontuário)
-router.post('/pacientes-locais', protectNutri, createPacienteLocal);
-router.get('/pacientes-locais', protectNutri, getPacientesLocais);
-router.post('/pacientes-locais/:id/conceder-acesso', protectNutri, concederAcessoBariplus);
-router.get('/prontuario/:pacienteId', protectNutri, getProntuario);
-router.put('/prontuario/:pacienteId/anamnese', protectNutri, updateAnamnese);
-router.post('/prontuario/:pacienteId/avaliacoes', protectNutri, addAvaliacao);
-
-// Rotas da Agenda
+// --- Rotas da Agenda ---
 router.get('/agenda', protectNutri, getAgendamentos);
 router.post('/agenda', protectNutri, createAgendamento);
 router.put('/agenda/:id', protectNutri, updateAgendamento);

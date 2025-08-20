@@ -35,6 +35,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const pagamentoRoutes = require('./routes/pagamentoRoutes'); 
 const metaRoutes = require('./routes/metaRoutes');
 const refeicaoTemplateRoutes = require('./routes/refeicaoTemplateRoutes');
+const prontuarioRoutes = require('./routes/prontuarioRoutes');
 
 // IMPORTAÇÃO DE MIDDLEWARES E MODELOS (APENAS O NECESSÁRIO)
 const errorHandler = require('./middlewares/errorHandler');
@@ -116,6 +117,7 @@ app.use('/api/nutri', nutriRoutes);
 app.use('/api/convites', conviteRoutes);
 app.use('/api/nutri/refeicoes', refeicaoTemplateRoutes);
 app.use('/api', messageRoutes); 
+app.use('/api/nutri/prontuarios', prontuarioRoutes);
 app.use('/api/taco', tacoRoutes);
 
 // Rotas do Paciente/Utilizador

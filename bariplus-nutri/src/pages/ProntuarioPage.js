@@ -1,106 +1,67 @@
 // src/pages/ProntuarioPage.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
-import Modal from '../components/Modal';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AnamneseForm from '../components/paciente/AnamneseForm';
+import AddAvaliacaoModal from '../components/paciente/AddAvaliacaoModal';
+import EvolucaoTab from '../components/paciente/EvolucaoTab'; 
 import './ProntuarioPage.css';
 
-const ProntuarioPage = () => {
-    const { pacienteId } = useParams();
-    const navigate = useNavigate();
-    const [paciente, setPaciente] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('anamnese');
-    const [isAvaliacaoModalOpen, setIsAvaliacaoModalOpen] = useState(false);
-
-    const fetchProntuario = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await fetchApi(`/api/nutri/prontuario/${pacienteId}`);
-            setPaciente(data);
-        } catch (error) {
-            toast.error("Erro ao carregar o prontuário do paciente.");
-        } finally {
-            setLoading(false);
-        }
-    }, [pacienteId]);
-
-    useEffect(() => {
-        fetchProntuario();
-    }, [fetchProntuario]);
-
-    // --- NOVA FUNÇÃO PARA CONCEDER ACESSO ---
-    const handleConcederAcesso = async () => {
-        if (!paciente.email) {
-            return toast.warn("Para conceder o acesso, o paciente precisa de ter um e-mail cadastrado no prontuário.");
-        }
-        if (window.confirm(`Tem a certeza que deseja conceder acesso gratuito ao BariPlus para ${paciente.nomeCompleto}? Um e-mail será enviado para ${paciente.email} com as instruções.`)) {
-            try {
-                const data = await fetchApi(`/api/nutri/pacientes-locais/${pacienteId}/conceder-acesso`, {
-                    method: 'POST'
-                });
-                toast.success(data.message);
-                // Redireciona para a lista de pacientes, pois este paciente agora é do tipo "BariPlus"
-                navigate('/pacientes'); 
-            } catch (error) {
-                toast.error(error.message || "Não foi possível conceder o acesso.");
-            }
-        }
-    };
-
-    if (loading) return <LoadingSpinner />;
-    if (!paciente) return <p>Não foi possível carregar os dados do paciente.</p>;
+// ✅ 2. NOVO COMPONENTE INTERNO PARA A ABA DE AVALIAÇÕES
+const AvaliacoesTab = ({ prontuario, onUpdate }) => {
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const avaliacoesOrdenadas = [...prontuario.avaliacoes].sort((a, b) => new Date(b.data) - new Date(a.data));
 
     return (
-        <div className="page-container">
-            <Link to="/pacientes" className="back-link">‹ Voltar para a lista de pacientes</Link>
-            <div className="page-header-action">
-                <div className="page-header">
-                    <h1>Prontuário de {paciente.nomeCompleto}</h1>
-                </div>
-                {/* --- NOVO BOTÃO DE AÇÃO --- */}
-                <button className="action-btn-positive" onClick={handleConcederAcesso}>
-                    Convidar para o BariPlus
+        <div>
+            <div className="card-header-action">
+                <h3>Histórico de Avaliações</h3>
+                <button className="action-btn-positive" onClick={() => setIsModalOpen(true)}>
+                    + Nova Avaliação
                 </button>
             </div>
 
-            <Card>
-                <div className="tab-buttons">
-                    <button 
-                        className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('anamnese')}
-                    >
-                        Anamnese
-                    </button>
-                    <button 
-                        className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('avaliacoes')}
-                    >
-                        Avaliações Físicas
-                    </button>
+            {avaliacoesOrdenadas.length > 0 ? (
+                <div className="admin-table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Peso (kg)</th>
+                                <th>Altura (cm)</th>
+                                <th>IMC</th>
+                                <th>Cintura (cm)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {avaliacoesOrdenadas.map(av => (
+                                <tr key={av._id}>
+                                    <td>{format(new Date(av.data), 'dd/MM/yyyy', { locale: ptBR })}</td>
+                                    <td>{av.peso || '-'}</td>
+                                    <td>{av.altura || '-'}</td>
+                                    <td>{av.imc || '-'}</td>
+                                    <td>{av.circunferencias?.cintura || '-'}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
+            ) : (
+                <p>Nenhuma avaliação física registada para este paciente.</p>
+            )}
 
-                <div className="tab-content">
-                    {activeTab === 'anamnese' && <AnamneseSection paciente={paciente} onSave={setPaciente} />}
-                    {activeTab === 'avaliacoes' && (
-                        <AvaliacoesSection 
-                            avaliacoes={paciente.avaliacoes} 
-                            onAddClick={() => setIsAvaliacaoModalOpen(true)}
-                        />
-                    )}
-                </div>
-            </Card>
-
-            {isAvaliacaoModalOpen && (
+            {isModalOpen && (
                 <AddAvaliacaoModal 
-                    pacienteId={pacienteId}
-                    onClose={() => setIsAvaliacaoModalOpen(false)}
-                    onSave={(updatedPaciente) => {
-                        setPaciente(updatedPaciente);
-                        setIsAvaliacaoModalOpen(false);
+                    pacienteId={prontuario.pacienteId}
+                    onClose={() => setIsModalOpen(false)}
+                    onSave={(updatedProntuario) => {
+                        onUpdate(updatedProntuario);
+                        setIsModalOpen(false);
                     }}
                 />
             )}
@@ -108,104 +69,78 @@ const ProntuarioPage = () => {
     );
 };
 
-// Componentes internos para cada secção
-const AnamneseSection = ({ paciente, onSave }) => {
-    const [formData, setFormData] = useState({
-        objetivo: paciente.objetivo || '',
-        historicoSaude: paciente.historicoSaude || '',
-        historicoFamiliar: paciente.historicoFamiliar || '',
-        habitos: paciente.habitos || ''
-    });
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({...prev, [name]: value}));
-    };
+const ProntuarioPage = () => {
+    const { pacienteId } = useParams();
+    const [paciente, setPaciente] = useState(null);
+    const [prontuario, setProntuario] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('anamnese');
 
-    const handleSave = async () => {
+    const fetchData = useCallback(async () => {
+        setLoading(true);
         try {
-            const updatedPaciente = await fetchApi(`/api/nutri/prontuario/${paciente._id}/anamnese`, {
-                method: 'PUT',
-                body: JSON.stringify(formData)
-            });
-            onSave(updatedPaciente);
-            toast.success("Anamnese guardada com sucesso!");
+            const [pacienteData, prontuarioData] = await Promise.all([
+                fetchApi(`/api/nutri/pacientes/${pacienteId}`),
+                fetchApi(`/api/nutri/prontuarios/${pacienteId}`)
+            ]);
+            setPaciente(pacienteData);
+            setProntuario(prontuarioData);
         } catch (error) {
-            toast.error("Erro ao guardar anamnese.");
+            toast.error("Erro ao carregar os dados do paciente.");
+        } finally {
+            setLoading(false);
+        }
+    }, [pacienteId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleConvidar = async () => {
+        if (!paciente.email) {
+            return toast.warn("Para convidar, o paciente precisa de ter um e-mail cadastrado.");
+        }
+        if (window.confirm(`Tem a certeza que deseja convidar ${paciente.nome} para o app BariPlus?`)) {
+            try {
+                const data = await fetchApi(`/api/nutri/pacientes/${pacienteId}/convidar`, { method: 'POST' });
+                toast.success(data.message);
+                fetchData();
+            } catch (error) {
+                toast.error(error.message || "Não foi possível enviar o convite.");
+            }
         }
     };
     
+    if (loading) return <LoadingSpinner />;
+    if (!paciente || !prontuario) return <p>Não foi possível carregar os dados.</p>;
+
     return (
-        <div>
-            <div className="form-group">
-                <label>Objetivo Principal</label>
-                <textarea name="objetivo" value={formData.objetivo} onChange={handleChange} rows="3"></textarea>
+        <div className="page-container">
+            <Link to="/pacientes" className="back-link">‹ Voltar para a lista de pacientes</Link>
+            <div className="page-header-action">
+                <div className="page-header">
+                    <h1>Prontuário de {paciente.nome} {paciente.sobrenome}</h1>
+                    <p>Status: <span className={`status-tag ${paciente.statusConta === 'ativo' ? 'ativo' : 'prontuario'}`}>{paciente.statusConta === 'ativo' ? 'App BariPlus Ativo' : 'Apenas Prontuário'}</span></p>
+                </div>
+                {paciente.statusConta === 'pendente_prontuario' && (
+                    <button className="action-btn-positive" onClick={handleConvidar}>Convidar para o App</button>
+                )}
             </div>
-            <div className="form-group">
-                <label>Histórico de Saúde</label>
-                <textarea name="historicoSaude" value={formData.historicoSaude} onChange={handleChange} rows="5"></textarea>
-            </div>
-            <div className="form-group">
-                <label>Histórico Familiar</label>
-                <textarea name="historicoFamiliar" value={formData.historicoFamiliar} onChange={handleChange} rows="3"></textarea>
-            </div>
-             <div className="form-group">
-                <label>Hábitos (Sono, Álcool, Fumo, etc.)</label>
-                <textarea name="habitos" value={formData.habitos} onChange={handleChange} rows="3"></textarea>
-            </div>
-            <button className="submit-btn" onClick={handleSave}>Guardar Anamnese</button>
+
+            <Card>
+                <div className="tab-buttons">
+                    <button className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`} onClick={() => setActiveTab('anamnese')}>Anamnese</button>
+                    <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações Físicas</button>
+                    <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
+                </div>
+                <div className="tab-content">
+                    {activeTab === 'anamnese' && <AnamneseForm prontuario={prontuario} onSave={setProntuario} />}
+                    {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}
+                    {activeTab === 'evolucoes' && <EvolucaoTab prontuario={prontuario} onUpdate={setProntuario} />}
+                </div>
+            </Card>
         </div>
-    );
-};
-
-const AvaliacoesSection = ({ avaliacoes, onAddClick }) => (
-    <div>
-        <button className="primary-btn" onClick={onAddClick}>+ Adicionar Nova Avaliação</button>
-        {/* Aqui virá a lista de avaliações */}
-    </div>
-);
-
-const AddAvaliacaoModal = ({ pacienteId, onClose, onSave }) => {
-    // Adicione os estados para todos os campos da avaliação aqui
-    const [formData, setFormData] = useState({ peso: '', altura: '' });
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({...prev, [name]: value}));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            const updatedPaciente = await fetchApi(`/api/nutri/prontuario/${pacienteId}/avaliacoes`, {
-                method: 'POST',
-                body: JSON.stringify(formData)
-            });
-            onSave(updatedPaciente);
-        } catch (error) {
-            toast.error("Erro ao adicionar avaliação.");
-        }
-    };
-    
-    return (
-        <Modal isOpen={true} onClose={onClose}>
-            <h2>Nova Avaliação Física</h2>
-            <form onSubmit={handleSubmit}>
-                {/* Adicione os inputs para todos os campos da avaliação aqui */}
-                <div className="form-group">
-                    <label>Peso (kg)</label>
-                    <input type="number" name="peso" value={formData.peso} onChange={handleChange} />
-                </div>
-                 <div className="form-group">
-                    <label>Altura (cm)</label>
-                    <input type="number" name="altura" value={formData.altura} onChange={handleChange} />
-                </div>
-                <div className="form-actions">
-                    <button type="button" className="secondary-btn" onClick={onClose}>Cancelar</button>
-                    <button type="submit" className="submit-btn">Guardar Avaliação</button>
-                </div>
-            </form>
-        </Modal>
     );
 };
 

@@ -1,5 +1,4 @@
 // src/pages/PacientesPage.js
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -9,8 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import './PacientesPage.css';
 
 const PacientesPage = () => {
-    const [pacientesBariplus, setPacientesBariplus] = useState([]);
-    const [pacientesLocais, setPacientesLocais] = useState([]);
+    const [pacientes, setPacientes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [generatedLink, setGeneratedLink] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
@@ -18,10 +16,10 @@ const PacientesPage = () => {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            // A rota do dashboard agora envia as duas listas de pacientes
             const data = await fetchApi('/api/nutri/dashboard');
-            setPacientesBariplus(data.pacientesBariplus || []);
-            setPacientesLocais(data.pacientesLocais || []);
+            // Junta as duas listas (ativos e prontuário) numa só para exibição
+            const allPacientes = (data.pacientesBariplus || []).concat(data.pacientesLocais || []);
+            setPacientes(allPacientes.sort((a,b) => (a.nome || '').localeCompare(b.nome || ''))); // Ordena por nome
         } catch (error) {
             toast.error('Erro ao carregar a lista de pacientes.');
         } finally {
@@ -63,24 +61,41 @@ const PacientesPage = () => {
                     <p>Gira os seus pacientes e convide novos utilizadores para o BariPlus.</p>
                 </div>
                 <Link to="/pacientes/criar" className="action-btn-positive">
-                    + Adicionar Paciente ao Prontuário
+                    + Adicionar Paciente
                 </Link>
             </div>
 
             <div className="pacientes-grid">
-                {/* Coluna da Esquerda: Listas de Pacientes */}
                 <div className="pacientes-coluna">
                     <Card>
-                        <h3>Pacientes Vinculados ao BariPlus ({pacientesBariplus.length})</h3>
-                        <ListaPacientesBariplus pacientes={pacientesBariplus} />
-                    </Card>
-                    <Card>
-                        <h3>Pacientes do Prontuário ({pacientesLocais.length})</h3>
-                        <ListaPacientesLocais pacientes={pacientesLocais} />
+                        <div className="card-header-action">
+                            <h3>Todos os Pacientes ({pacientes.length})</h3>
+                        </div>
+                        {pacientes.length > 0 ? (
+                            <ul className="pacientes-list">
+                                {pacientes.map(paciente => (
+                                    <li key={paciente._id} className="paciente-item">
+                                        <span className="paciente-avatar">
+                                            {(paciente.nome?.charAt(0) || '')}{(paciente.sobrenome?.charAt(0) || '')}
+                                        </span>
+                                        <div className="paciente-info">
+                                            <span className="paciente-name">{paciente.nome || ''} {paciente.sobrenome || ''}</span>
+                                            <span className={`status-tag ${paciente.statusConta === 'ativo' ? 'ativo' : 'prontuario'}`}>
+                                                {paciente.statusConta === 'ativo' ? 'App BariPlus' : 'Apenas Prontuário'}
+                                            </span>
+                                        </div>
+                                        <Link to={`/prontuario/${paciente._id}`} className="paciente-action-btn">
+                                            Ver Prontuário
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p>Nenhum paciente encontrado.</p>
+                        )}
                     </Card>
                 </div>
 
-                {/* Coluna da Direita: Convites */}
                 <div className="convites-coluna">
                     <Card>
                         <h3>Convidar Paciente para o BariPlus</h3>
@@ -94,7 +109,6 @@ const PacientesPage = () => {
                         >
                             {isGenerating ? 'A gerar...' : 'Gerar Novo Convite'}
                         </button>
-
                         {generatedLink && (
                             <div className="generated-link-container">
                                 <p><strong>Link gerado!</strong> Envie para o seu paciente:</p>
@@ -108,46 +122,6 @@ const PacientesPage = () => {
                 </div>
             </div>
         </div>
-    );
-};
-
-const ListaPacientesBariplus = ({ pacientes }) => {
-    if (pacientes.length === 0) {
-        return <p>Nenhum paciente do BariPlus vinculado. Gere um link de convite para começar.</p>;
-    }
-    return (
-        <ul className="pacientes-list">
-            {pacientes.map(paciente => (
-                <li key={paciente._id} className="paciente-item">
-                    <span className="paciente-avatar">
-                        {(paciente.nome?.charAt(0) || '')}{(paciente.sobrenome?.charAt(0) || '')}
-                    </span>
-                    <span className="paciente-name">{paciente.nome} {paciente.sobrenome}</span>
-                    <Link to={`/paciente/${paciente._id}`} className="paciente-action-btn">
-                        Ver Acompanhamento
-                    </Link>
-                </li>
-            ))}
-        </ul>
-    );
-};
-
-const ListaPacientesLocais = ({ pacientes }) => {
-    if (pacientes.length === 0) {
-        return <p>Nenhum paciente particular adicionado. Clique em "Adicionar Paciente ao Prontuário" para começar.</p>;
-    }
-    return (
-        <ul className="pacientes-list">
-            {pacientes.map(paciente => (
-                <li key={paciente._id} className="paciente-item">
-                    <span className="paciente-avatar">
-                        {paciente.nomeCompleto?.charAt(0)}
-                    </span>
-                    <span className="paciente-name">{paciente.nomeCompleto}</span>
-                    <Link to={`/prontuario/${paciente._id}`} className="paciente-action-btn">Ver Prontuário</Link>
-                </li>
-            ))}
-        </ul>
     );
 };
 
