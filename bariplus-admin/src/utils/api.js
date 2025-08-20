@@ -1,52 +1,37 @@
 // src/utils/api.js
-import { toast } from 'react-toastify';
+// A importação do 'toast' foi removida, pois não é usada aqui.
 
-const API_URL = process.env.REACT_APP_API_URL;
-let accessToken = localStorage.getItem('bariplus_token');
+const API_URL = process.env.REACT_APP_API_URL || 'https://bariplus-api-vzk6.onrender.com';
+let adminToken = localStorage.getItem('admin_token');
 
-export const setAuthToken = (token) => {
+export const setAdminToken = (token) => {
     if (token) {
-        localStorage.setItem('bariplus_token', token);
-        accessToken = token;
+        localStorage.setItem('admin_token', token);
+        adminToken = token;
     } else {
-        localStorage.removeItem('bariplus_token');
-        accessToken = null;
+        localStorage.removeItem('admin_token');
+        adminToken = null;
     }
 };
 
-export const fetchApi = async (endpoint, options = {}) => {
-    const headers = {
-        'Content-Type': 'application/json',
-        ...options.headers,
-    };
-
-    if (accessToken) {
-        headers['Authorization'] = `Bearer ${accessToken}`;
+export const fetchAdminApi = async (endpoint, options = {}) => {
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (adminToken) {
+        headers['Authorization'] = `Bearer ${adminToken}`;
     }
 
     try {
         const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
-
         if ([401, 403].includes(response.status)) {
-            setAuthToken(null);
-            toast.error('Sessão expirada. Por favor, faça o login novamente.');
-            window.location.href = '/login'; 
-            throw new Error('Sessão expirada');
+            setAdminToken(null);
+            window.location.href = '/login';
+            throw new Error('Acesso negado ou sessão expirada.');
         }
-
-        if (response.status === 204) {
-            return; // Retorna undefined para respostas sem conteúdo (ex: DELETE)
-        }
-        
         const data = await response.json();
-
         if (!response.ok) {
-            // Se a API enviar um objeto de erro com uma mensagem, use-a. Senão, use o status.
-            throw new Error(data.message || `Erro: ${response.statusText}`);
+            throw new Error(data.message || 'Erro no servidor.');
         }
-
-        return data; // Retorna os dados JSON diretamente em caso de sucesso
-
+        return data;
     } catch (error) {
         return Promise.reject(error);
     }
