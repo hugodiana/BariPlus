@@ -3,14 +3,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { format, parseISO, addDays, subDays } from 'date-fns';
-import { ptBR } from 'date-fns/locale'; // ✅ IMPORTAÇÃO CORRIGIDA
+import { ptBR } from 'date-fns/locale';
 import { Line } from 'react-chartjs-2';
+// ✅ 1. IMPORTAR TUDO O QUE É NECESSÁRIO DO CHART.JS
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { fetchApi } from '../../utils/api';
 import Card from '../ui/Card';
 import LoadingSpinner from '../LoadingSpinner';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import html2canvas from 'html2canvas';
+import NutriReportPDF from './NutriReportPDF';
 import '../../pages/PacientesPage.css';
 
-// Componentes internos (simplificados para este exemplo)
+// ✅ 2. REGISTAR TODOS OS COMPONENTES DO GRÁFICO
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+
 const CommentForm = ({ pacienteId, date, mealType, itemId, onCommentAdded }) => {
     const [text, setText] = useState('');
     const handleSubmit = async (e) => {
@@ -36,7 +43,7 @@ const CommentForm = ({ pacienteId, date, mealType, itemId, onCommentAdded }) => 
     );
 };
 
-const AcompanhamentoTab = () => {
+const AcompanhamentoTab = ({ paciente, nutricionista }) => {
     const { pacienteId } = useParams();
     const [planos, setPlanos] = useState([]);
     const [progresso, setProgresso] = useState(null);
@@ -46,6 +53,8 @@ const AcompanhamentoTab = () => {
     const [exames, setExames] = useState(null);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
+    const [chartImage, setChartImage] = useState(null);
+    const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
     const fetchDataForDate = useCallback(async (date) => {
         const dateString = format(date, 'yyyy-MM-dd');
@@ -64,7 +73,7 @@ const AcompanhamentoTab = () => {
     }, [pacienteId]);
 
     useEffect(() => {
-        const fetchInitialDetails = async () => {
+        const fetchDependentData = async () => {
             setLoading(true);
             try {
                 const [planosData, progressoData, examesData] = await Promise.all([
@@ -82,21 +91,31 @@ const AcompanhamentoTab = () => {
                 setLoading(false);
             }
         };
-        fetchInitialDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pacienteId]);
+        fetchDependentData();
+    }, [pacienteId, fetchDataForDate, selectedDate]);
     
-    useEffect(() => {
-        if (!loading) {
-            fetchDataForDate(selectedDate);
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDate]);
-
     const changeDate = (amount) => {
         setSelectedDate(current => amount > 0 ? addDays(current, 1) : subDays(current, 1));
     };
     
+    const handlePreparePDF = async () => {
+        setIsGeneratingPDF(true);
+        toast.info("A gerar o gráfico para o relatório...");
+        try {
+            const chartElement = document.getElementById('progresso-chart');
+            if (!chartElement) {
+                throw new Error("Elemento do gráfico não encontrado.");
+            }
+            const canvas = await html2canvas(chartElement, { backgroundColor: '#ffffff' });
+            setChartImage(canvas.toDataURL('image/png', 1.0));
+            toast.success("Relatório pronto para download!");
+        } catch (error) {
+            toast.error("Não foi possível gerar a imagem do gráfico.");
+        } finally {
+            setIsGeneratingPDF(false);
+        }
+    };
+
     if (loading) return <LoadingSpinner />;
 
     const pesoInicial = progresso?.detalhes?.detalhesCirurgia?.pesoInicial || 0;
@@ -124,6 +143,22 @@ const AcompanhamentoTab = () => {
     return (
         <div className="paciente-dashboard-grid">
             <div className="main-column">
+                <div className="report-actions">
+                    {chartImage ? (
+                        <PDFDownloadLink
+                            document={<NutriReportPDF nutricionista={nutricionista} paciente={paciente} progresso={progresso} chartImage={chartImage} />}
+                            fileName={`Relatorio_${paciente?.nome}_${format(new Date(), 'yyyy-MM-dd')}.pdf`}
+                            className="action-btn-positive"
+                        >
+                            {({ loading }) => (loading ? 'A gerar PDF...' : 'Baixar PDF Agora')}
+                        </PDFDownloadLink>
+                    ) : (
+                        <button onClick={handlePreparePDF} disabled={isGeneratingPDF} className="action-btn-positive">
+                            {isGeneratingPDF ? 'A preparar...' : 'Gerar Relatório em PDF'}
+                        </button>
+                    )}
+                </div>
+
                 <Card className="progresso-summary">
                     <div><span>Peso Inicial</span><strong>{pesoInicial.toFixed(1)} kg</strong></div>
                     <div><span>Peso Atual</span><strong>{pesoAtual.toFixed(1)} kg</strong></div>
@@ -133,13 +168,13 @@ const AcompanhamentoTab = () => {
                 {progresso?.historico && progresso.historico.length > 1 && (
                     <Card>
                         <h3>Evolução do Peso</h3>
-                        <div className="chart-container">
-                            <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false }} />
+                        <div className="chart-container" id="progresso-chart">
+                            <Line data={chartData} options={{ responsive: true, maintainAspectRatio: false, animation: false }} />
                         </div>
                     </Card>
                 )}
                 
-                <Card>
+                 <Card>
                          <div className="card-header-action">
                              <h3>Registos do Dia</h3>
                              <div className="date-selector-diario">

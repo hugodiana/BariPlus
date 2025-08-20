@@ -558,3 +558,30 @@
     font-size: 0.9rem;
     color: var(--color-text-secondary);
 }
+
+.report-actions {
+    margin-bottom: var(--space-xl);
+    text-align: right;
+}
+
+/* Estilos para abas */
+.tab-buttons {
+    display: flex;
+    border-bottom: 2px solid var(--color-border);
+    margin-bottom: var(--space-lg);
+}
+.tab-btn {
+    padding: var(--space-md);
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-text-secondary);
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+}
+.tab-btn.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}

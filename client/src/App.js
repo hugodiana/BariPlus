@@ -9,7 +9,6 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
 
-// Lazy load das páginas
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
@@ -34,19 +33,19 @@ const PublicReportPage = lazy(() => import('./pages/PublicReportPage'));
 const ConvitePage = lazy(() => import('./pages/ConvitePage'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const PricingPage = lazy(() => import('./pages/PricingPage'));
-const PaymentSuccessPage = lazy(() => import('./pages/PaymentSuccessPage'));
 const PaymentCancelPage = lazy(() => import('./pages/PaymentCancelPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const GanheRendaExtraPage = lazy(() => import('./pages/GanheRendaExtraPage'));
 const PaymentStatusPage = lazy(() => import('./pages/PaymentStatusPage'));
-
+const MeuPlanoPage = lazy(() => import('./pages/MeuPlanoPage'));
 
 function App() {
+    // ... (O resto do seu App.js continua igual)
     const [auth, setAuth] = useState({
         isAuthenticated: false,
         user: null,
-        isLoading: true, // Começa a carregar para verificar o token
+        isLoading: true,
     });
 
     useEffect(() => {
@@ -86,7 +85,6 @@ function App() {
             <Suspense fallback={<LoadingSpinner fullPage />}>
                 <ToastContainer position="bottom-right" autoClose={4000} hideProgressBar={false} />
                 <Routes>
-                    {/* Rotas Públicas */}
                     <Route path="/landing" element={<LandingPage />} />
                     <Route path="/login" element={!auth.isAuthenticated ? <LoginPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
                     <Route path="/register" element={!auth.isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
@@ -101,33 +99,31 @@ function App() {
                     <Route path="/privacidade" element={<PrivacyPage />} />
                     <Route path="/ganhe-renda-extra" element={<GanheRendaExtraPage />} />
 
-                    {/* Rota Protegida de Onboarding */}
                     <Route path="/onboarding" element={
                         auth.isAuthenticated && !auth.user?.onboardingCompleto
                             ? <OnboardingPage />
                             : <Navigate to={auth.isAuthenticated ? "/" : "/login"} />
                     }/>
-
-                    {/* Rotas Protegidas do App Principal */}
-                    <Route path="/" element={<ProtectedRoute auth={auth}><Layout onLogout={handleLogout} /></ProtectedRoute>}>
+                    
+                    <Route path="/" element={<ProtectedRoute auth={auth}><Layout usuario={auth.user} onLogout={handleLogout} /></ProtectedRoute>}>
                         <Route index element={<DashboardPage />} />
+                        <Route path="meu-plano" element={<MeuPlanoPage />} />
+                        <Route path="chat" element={<ChatPage />} />
                         <Route path="progresso" element={<ProgressoPage />} />
-                        <Route path="checklist" element={<ChecklistPage />} />
-                        <Route path="consultas" element={<ConsultasPage />} />
                         <Route path="diario" element={<FoodDiaryPage />} />
+                        <Route path="hidratacao" element={<HydrationPage />} />
+                        <Route path="checklist" element={<ChecklistPage />} />
                         <Route path="medicacao" element={<MedicationPage />} />
+                        <Route path="consultas" element={<ConsultasPage />} />
                         <Route path="exames" element={<ExamsPage />} />
                         <Route path="gastos" element={<GastosPage />} />
+                        <Route path="conquistas" element={<ConquistasPage />} />
                         <Route path="artigos" element={<ConteudosPage />} />
                         <Route path="artigos/:id" element={<ArtigoPage />} />
-                        <Route path="conquistas" element={<ConquistasPage />} />
-                        <Route path="perfil" element={<ProfilePage />} />
-                        <Route path="hidratacao" element={<HydrationPage />} />
                         <Route path="relatorios" element={<ReportCenterPage />} />
-                        <Route path="chat" element={<ChatPage />} />
+                        <Route path="perfil" element={<ProfilePage />} />
                     </Route>
                     
-                    {/* Rota de fallback */}
                     <Route path="*" element={<Navigate to={auth.isAuthenticated ? "/" : "/landing"} />} />
                 </Routes>
             </Suspense>

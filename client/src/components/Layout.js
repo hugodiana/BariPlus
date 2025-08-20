@@ -1,16 +1,20 @@
+// client/src/components/Layout.js
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'; 
 import './Layout.css';
 import { toast } from 'react-toastify';
+// A importação 'setAuthToken' foi removida.
 
-const NavItem = ({ to, icon, text, onClick }) => (
-    <NavLink to={to} end onClick={onClick}>
+const NavItem = ({ to, icon, text, onClick, end = false }) => (
+    // ...código igual
+    <NavLink to={to} end={end} onClick={onClick}>
         <span className="nav-icon">{icon}</span>
         <span className="nav-text">{text}</span>
     </NavLink>
 );
 
-const Layout = ({ usuario }) => {
+const Layout = ({ usuario, onLogout }) => {
+    // ...código igual
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const navigate = useNavigate();
@@ -28,7 +32,6 @@ const Layout = ({ usuario }) => {
 
     const toggleSidebar = () => {
         setSidebarOpen(!isSidebarOpen);
-        if (document.activeElement) document.activeElement.blur();
     };
 
     const handleLinkClick = () => {
@@ -38,7 +41,7 @@ const Layout = ({ usuario }) => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('bariplus_token');
+        onLogout();
         toast.info("Sessão encerrada.");
         navigate('/landing'); 
     };
@@ -46,9 +49,7 @@ const Layout = ({ usuario }) => {
     return (
         <div className="layout-container">
             {windowWidth <= 768 && !isSidebarOpen && (
-                <button className="hamburger-btn" onClick={toggleSidebar} aria-label="Abrir menu">
-                    &#9776;
-                </button>
+                <button className="hamburger-btn" onClick={toggleSidebar} aria-label="Abrir menu">&#9776;</button>
             )}
 
             {isSidebarOpen && windowWidth <= 768 && (
@@ -59,26 +60,20 @@ const Layout = ({ usuario }) => {
                 <div className="sidebar-header">
                     <img src="/bariplus_logo.png" alt="BariPlus Logo" className="sidebar-logo" />
                     {windowWidth <= 768 && (
-                        <button className="sidebar-close-btn" onClick={toggleSidebar} aria-label="Fechar menu">
-                            &times;
-                        </button>
+                        <button className="sidebar-close-btn" onClick={toggleSidebar} aria-label="Fechar menu">&times;</button>
                     )}
                 </div>
                 
                 <nav className="sidebar-nav">
-                    <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} />
-                    <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
-                    
-                    {/* --- CORREÇÃO APLICADA AQUI --- */}
-                    {/* Agora, ambos os links só aparecem se o paciente tiver um nutricionista vinculado */}
+                    <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} end={true} />
                     {usuario?.nutricionistaId && (
                         <>
-                            <NavItem to="/plano-alimentar" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
+                            <NavItem to="/meu-plano" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
                             <NavItem to="/chat" icon="💬" text="Chat com Nutri" onClick={handleLinkClick} />
                         </>
                     )}
-                    
-                    <NavItem to="/diario-alimentar" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
+                    <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
+                    <NavItem to="/diario" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
                     <NavItem to="/hidratacao" icon="💧" text="Hidratação" onClick={handleLinkClick} />
                     <NavItem to="/checklist" icon="✅" text="Checklist" onClick={handleLinkClick} />
                     <NavItem to="/medicacao" icon="💊" text="Medicação" onClick={handleLinkClick} />
@@ -86,19 +81,19 @@ const Layout = ({ usuario }) => {
                     <NavItem to="/exames" icon="⚕️" text="Meus Exames" onClick={handleLinkClick} />
                     <NavItem to="/gastos" icon="💳" text="Meus Gastos" onClick={handleLinkClick} />
                     <NavItem to="/conquistas" icon="🏆" text="Conquistas" onClick={handleLinkClick} />
-                    <NavItem to="/artigos" icon="📚" text="Artigos e Dicas" onClick={handleLinkClick} />
-                    <NavItem to="/relatorios" icon="🔗" text="Partilhar Relatórios" onClick={handleLinkClick} />
-                    <NavItem to="/perfil" icon="👤" text="Meu Perfil" onClick={handleLinkClick} />
-                    <NavItem to="/ganhe-renda-extra" icon="💰" text="Ganhe Renda Extra" onClick={handleLinkClick} />
+                    <NavItem to="/artigos" icon="📚" text="Conteúdo" onClick={handleLinkClick} />
+                    <NavItem to="/relatorios" icon="🔗" text="Relatórios" onClick={handleLinkClick} />
+                    <NavItem to="/ganhe-renda-extra" icon="💰" text="Renda Extra" onClick={handleLinkClick} />
                 </nav>
 
                 <div className="sidebar-footer">
-                    {usuario && (
+                    <NavLink to="/perfil" className="user-profile-link" onClick={handleLinkClick}>
+                        <img src={usuario?.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt="Perfil" className="user-avatar" />
                         <div className="user-info">
-                            <span className="user-name">{usuario.nome} {usuario.sobrenome}</span>
-                            <span className="user-email">{usuario.email}</span>
+                            <span className="user-name">{usuario?.nome}</span>
+                            <span className="user-email">{usuario?.email}</span>
                         </div>
-                    )}
+                    </NavLink>
                     <button onClick={handleLogout} className="logout-btn">
                         <span className="nav-icon">🚪</span>
                         <span className="nav-text">Sair</span>
@@ -107,7 +102,7 @@ const Layout = ({ usuario }) => {
             </aside>
             
             <main className="main-content">
-                <Outlet />
+                <Outlet context={{ user: usuario }} />
             </main>
         </div>
     );
