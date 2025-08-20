@@ -275,3 +275,18 @@
     color: var(--color-text-secondary);
     line-height: 1.6;
 }
+
+.page-header-action .header-buttons {
+    display: flex;
+    gap: var(--space-md);
+}
+
+.template-btn.secondary {
+    background-color: var(--color-surface);
+    color: var(--color-accent);
+    border: 1px solid var(--color-accent);
+}
+
+.add-refeicao-btn {
+    margin-top: var(--space-md);
+}

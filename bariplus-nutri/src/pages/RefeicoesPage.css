@@ -1,0 +1,51 @@
+/* src/pages/RefeicoesPage.css */
+.refeicoes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+}
+
+.refeicao-template-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.refeicao-template-card h4 {
+    margin: 0;
+    color: var(--color-text-strong);
+}
+
+.delete-template-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--color-text-faint);
+    cursor: pointer;
+}
+.delete-template-btn:hover {
+    color: var(--color-danger);
+}
+
+.refeicao-template-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.refeicao-template-card li {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    padding: var(--space-xs) 0;
+}
+
+.refeicao-template-card li span:last-child {
+    color: var(--color-text-secondary);
+}
+
+/* Reutilizando estilos do PlanoAlimentarPage.css */
+@import url('./PlanoAlimentarPage.css');

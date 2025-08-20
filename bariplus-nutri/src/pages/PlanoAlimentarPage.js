@@ -5,15 +5,19 @@ import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
 import Modal from '../components/Modal';
-// A importação do LoadingSpinner foi removida
 import './PlanoAlimentarPage.css';
 
 const PlanoAlimentarPage = () => {
     const { pacienteId } = useParams();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [templates, setTemplates] = useState([]);
-    const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+    
+    // ✅ CORREÇÃO: Definindo todos os setters de estado corretamente.
+    const [planoTemplates, setPlanoTemplates] = useState([]);
+    const [refeicaoTemplates, setRefeicaoTemplates] = useState([]);
+    const [isPlanoTemplateModalOpen, setIsPlanoTemplateModalOpen] = useState(false);
+    const [isRefeicaoModalOpen, setIsRefeicaoModalOpen] = useState(false);
+
     const [plano, setPlano] = useState({
         titulo: '',
         observacoesGerais: '',
@@ -24,8 +28,12 @@ const PlanoAlimentarPage = () => {
 
     const fetchTemplates = useCallback(async () => {
         try {
-            const data = await fetchApi('/api/nutri/planos/templates');
-            setTemplates(data);
+            const [planoData, refeicaoData] = await Promise.all([
+                fetchApi('/api/nutri/planos/templates'),
+                fetchApi('/api/nutri/refeicoes/templates')
+            ]);
+            setPlanoTemplates(planoData);
+            setRefeicaoTemplates(refeicaoData);
         } catch (error) {
             toast.error("Erro ao carregar os templates.");
         }
@@ -35,17 +43,24 @@ const PlanoAlimentarPage = () => {
         fetchTemplates();
     }, [fetchTemplates]);
 
-    const handleUseTemplate = (template) => {
+    const handleUsePlanoTemplate = (template) => {
         setPlano({
             titulo: template.titulo,
             observacoesGerais: template.observacoesGerais,
-            refeicoes: template.refeicoes.map(r => ({
-                ...r,
-                itens: r.itens.map(i => ({...i}))
-            }))
+            refeicoes: template.refeicoes.map(r => ({ ...r, itens: r.itens.map(i => ({...i})) }))
         });
-        setIsTemplateModalOpen(false);
-        toast.info(`Template "${template.templateName}" carregado!`);
+        setIsPlanoTemplateModalOpen(false);
+        toast.info(`Template de plano "${template.templateName}" carregado!`);
+    };
+    
+    const handleAddRefeicaoTemplate = (template) => {
+        const { _id, nutricionistaId, createdAt, updatedAt, __v, ...refeicaoLimpa } = template;
+        setPlano(prev => ({
+            ...prev,
+            refeicoes: [...prev.refeicoes, refeicaoLimpa]
+        }));
+        toast.success(`Refeição "${template.nome}" adicionada ao plano!`);
+        setIsRefeicaoModalOpen(false);
     };
 
     const handlePlanoChange = (e) => {
@@ -114,9 +129,15 @@ const PlanoAlimentarPage = () => {
             <Link to={`/paciente/${pacienteId}`} className="back-link">‹ Voltar para o Paciente</Link>
             <div className="page-header-action">
                 <h1>Criar Novo Plano Alimentar</h1>
-                <button type="button" className="template-btn" onClick={() => setIsTemplateModalOpen(true)}>
-                    Usar Template
-                </button>
+                <div className="header-buttons">
+                    {/* ✅ CORREÇÃO: Usando o setter correto */}
+                    <button type="button" className="template-btn secondary" onClick={() => setIsPlanoTemplateModalOpen(true)}>
+                        Usar Plano Completo
+                    </button>
+                    <button type="button" className="template-btn" onClick={() => setIsRefeicaoModalOpen(true)}>
+                        Adicionar Bloco de Refeição
+                    </button>
+                </div>
             </div>
             <form onSubmit={handleSubmit}>
                 <Card className="plano-card">
@@ -143,7 +164,7 @@ const PlanoAlimentarPage = () => {
                         </Card>
                     ))}
                     
-                    <button type="button" onClick={adicionarRefeicao} className="add-refeicao-btn">+ Adicionar Refeição</button>
+                    <button type="button" onClick={adicionarRefeicao} className="add-refeicao-btn">+ Adicionar Refeição (Vazia)</button>
 
                     <div className="form-group">
                         <label>Observações Gerais</label>
@@ -156,19 +177,31 @@ const PlanoAlimentarPage = () => {
                 </Card>
             </form>
 
-            <Modal isOpen={isTemplateModalOpen} onClose={() => setIsTemplateModalOpen(false)}>
-                <h2>Escolher um Template</h2>
-                {templates.length > 0 ? (
+            <Modal isOpen={isPlanoTemplateModalOpen} onClose={() => setIsPlanoTemplateModalOpen(false)}>
+                <h2>Escolher um Template de Plano</h2>
+                {planoTemplates.length > 0 ? (
                     <ul className="template-list">
-                        {templates.map(template => (
-                            <li key={template._id} onClick={() => handleUseTemplate(template)}>
+                        {planoTemplates.map(template => (
+                            <li key={template._id} onClick={() => handleUsePlanoTemplate(template)}>
                                 {template.templateName}
                             </li>
                         ))}
                     </ul>
-                ) : (
-                    <p>Você ainda não tem nenhum template guardado.</p>
-                )}
+                ) : <p>Você ainda não tem nenhum template de plano guardado.</p>}
+            </Modal>
+
+            <Modal isOpen={isRefeicaoModalOpen} onClose={() => setIsRefeicaoModalOpen(false)}>
+                <h2>Adicionar um Bloco de Refeição</h2>
+                 {/* ✅ CORREÇÃO: Usando a variável de estado correta */}
+                 {refeicaoTemplates.length > 0 ? (
+                    <ul className="template-list">
+                        {refeicaoTemplates.map(template => (
+                            <li key={template._id} onClick={() => handleAddRefeicaoTemplate(template)}>
+                                {template.nome}
+                            </li>
+                        ))}
+                    </ul>
+                ) : <p>Você ainda não tem nenhum template de refeição guardado. Crie alguns na página "Minhas Refeições".</p>}
             </Modal>
         </div>
     );
