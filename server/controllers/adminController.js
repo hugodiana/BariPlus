@@ -176,10 +176,30 @@ exports.sendBroadcastNotification = async (req, res) => {
 };
 
 // GET /api/admin/nutricionistas - Listar todos os nutricionistas
+// GET /api/admin/nutricionistas - Listar todos os nutricionistas com paginação e busca
 exports.listNutricionistas = async (req, res) => {
     try {
-        const nutricionistas = await Nutricionista.find().sort({ createdAt: -1 });
-        res.json(nutricionistas);
+        const { page = 1, limit = 15, search = '' } = req.query;
+        const skip = (page - 1) * limit;
+        const query = search 
+            ? { $or: [
+                    { nome: { $regex: search, $options: 'i' } },
+                    { email: { $regex: search, $options: 'i' } },
+                    { crn: { $regex: search, $options: 'i' } }
+                ]} 
+            : {};
+
+        const [nutricionistas, total] = await Promise.all([
+            Nutricionista.find(query).skip(skip).limit(parseInt(limit)).sort({ createdAt: -1 }),
+            Nutricionista.countDocuments(query)
+        ]);
+
+        res.json({
+            nutricionistas,
+            total,
+            pages: Math.ceil(total / limit),
+            currentPage: parseInt(page)
+        });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao buscar nutricionistas.' });
     }
@@ -206,5 +226,19 @@ exports.updateNutricionista = async (req, res) => {
         res.json(nutricionista);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao atualizar nutricionista.' });
+    }
+};
+
+// GET /api/admin/users/:id - Obter detalhes de um paciente
+exports.getUserById = async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id)
+            .select('-password')
+            .populate('nutricionistaId', 'nome crn'); // Popula com os dados do nutri, se houver
+
+        if (!user) return res.status(404).json({ message: 'Paciente não encontrado.' });
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar detalhes do paciente.' });
     }
 };

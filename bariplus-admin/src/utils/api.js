@@ -1,5 +1,5 @@
 // src/utils/api.js
-// A importação do 'toast' foi removida, pois não é usada aqui.
+// A importação do 'toast' foi removida, pois não é usada neste ficheiro.
 
 const API_URL = process.env.REACT_APP_API_URL || 'https://bariplus-api-vzk6.onrender.com';
 let adminToken = localStorage.getItem('admin_token');
@@ -27,6 +27,7 @@ export const fetchAdminApi = async (endpoint, options = {}) => {
             window.location.href = '/login';
             throw new Error('Acesso negado ou sessão expirada.');
         }
+        // A verificação de !response.ok agora acontece depois de tentar ler o JSON
         const data = await response.json();
         if (!response.ok) {
             throw new Error(data.message || 'Erro no servidor.');

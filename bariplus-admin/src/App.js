@@ -8,7 +8,8 @@ import LoadingSpinner from './components/LoadingSpinner'; // Importe o LoadingSp
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 const AdminPacientesPage = lazy(() => import('./pages/AdminPacientesPage'));
 const AdminNutricionistasPage = lazy(() => import('./pages/AdminNutricionistasPage'));
-
+const AdminPacienteDetailPage = lazy(() => import('./pages/AdminPacienteDetailPage'));
+const AdminNutricionistaDetailPage = lazy(() => import('./pages/AdminNutricionistaDetailPage'));
 function App() {
     const [isAdminAuth, setIsAdminAuth] = useState(!!localStorage.getItem('admin_token'));
 
@@ -39,7 +40,9 @@ function App() {
                     >
                         <Route index element={<AdminDashboardPage />} />
                         <Route path="pacientes" element={<AdminPacientesPage />} />
+                        <Route path="pacientes/:id" element={<AdminPacienteDetailPage />} />
                         <Route path="nutricionistas" element={<AdminNutricionistasPage />} />
+                        <Route path="nutricionistas/:id" element={<AdminNutricionistaDetailPage />} />
                     </Route>
                 </Routes>
             </Suspense>

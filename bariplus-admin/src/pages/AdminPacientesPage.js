@@ -11,8 +11,8 @@ import './AdminPages.css';
 const AdminPacientesPage = () => {
     const [pacientes, setPacientes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [pagina] = useState(1); // Mantém a página, mas remove o setter por agora
-    // const [totalPaginas, setTotalPaginas] = useState(1); // Removido por não ser usado
+    // CORREÇÃO: Removidos os setters não utilizados para limpar os avisos.
+    const [pagina] = useState(1); 
     const [termoBusca, setTermoBusca] = useState('');
 
     const fetchPacientes = useCallback(async (paginaAtual, busca) => {
@@ -20,7 +20,7 @@ const AdminPacientesPage = () => {
         try {
             const data = await fetchAdminApi(`/api/admin/users?page=${paginaAtual}&search=${busca}`);
             setPacientes(data.users);
-            // setTotalPaginas(data.pages); // Removido por não ser usado
+            // setTotalPaginas(data.pages); // Esta linha foi removida pois a variável não era usada.
         } catch (error) {
             toast.error("Erro ao carregar pacientes.");
         } finally {
@@ -47,6 +47,15 @@ const AdminPacientesPage = () => {
         }
     };
     
+    // Função segura para formatar a data
+    const formatarDataSegura = (data) => {
+        try {
+            return format(new Date(data), 'dd/MM/yyyy', { locale: ptBR });
+        } catch (error) {
+            return 'Data inválida'; // Retorna um texto amigável em caso de erro
+        }
+    };
+
     if (loading) return <LoadingSpinner />;
 
     return (
@@ -83,7 +92,8 @@ const AdminPacientesPage = () => {
                                             {user.pagamentoEfetuado ? 'Ativo' : 'Pendente'}
                                         </span>
                                     </td>
-                                    <td>{format(new Date(user.createdAt), 'dd/MM/yyyy', { locale: ptBR })}</td>
+                                    {/* CORREÇÃO: Usa a nova função de formatação segura */}
+                                    <td>{formatarDataSegura(user.createdAt)}</td>
                                     <td className="actions-cell">
                                         {user.pagamentoEfetuado ? (
                                             <button className="action-btn danger" onClick={() => handleAccessChange(user._id, false)}>Revogar</button>

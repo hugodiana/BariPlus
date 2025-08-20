@@ -156,3 +156,78 @@ th {
 .progresso-summary .perdido {
     color: var(--color-success);
 }
+
+.pagination-controls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+}
+
+.pagination-controls button {
+    padding: 8px 16px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.pagination-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+    background-color: var(--color-primary-light);
+}
+
+.pagination-controls span {
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.back-link {
+    display: inline-block;
+    margin-bottom: var(--space-md);
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--space-xl);
+}
+
+.detail-item {
+    margin-bottom: var(--space-lg);
+}
+.detail-label {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+}
+.detail-value {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.patient-list {
+    list-style: none;
+    padding: 0;
+}
+.patient-list li {
+    padding: var(--space-xs) 0;
+}
+.action-btn {
+    background-color: var(--color-primary);
+    text-decoration: none;
+}
+.action-btn:hover {
+    background-color: var(--color-primary-dark);
+}

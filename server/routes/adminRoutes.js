@@ -16,6 +16,7 @@ router.get('/admin/stats', adminController.getStats);
 
 // Rotas de Gestão de Pacientes
 router.get('/admin/users', adminController.listUsers);
+router.get('/admin/users/:id', adminController.getUserById); 
 router.post('/admin/grant-access/:userId', adminController.grantAccess);
 router.post('/admin/users/:userId/revoke-access', adminController.revokeAccess);
 router.post('/admin/users/:userId/verify-email', adminController.verifyUserEmail);
