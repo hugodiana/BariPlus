@@ -12,12 +12,12 @@ import './AgendaPage.css';
 const locales = { 'pt-BR': ptBR };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
-// ✅ NOVAS CONFIGURAÇÕES DE TRADUÇÃO E FORMATO
+// ✅ NOVAS CONFIGURAÇÕES DE TRADUÇÃO
 const culture = 'pt-BR';
 const messages = {
     allDay: 'Dia Inteiro',
-    previous: '‹',
-    next: '›',
+    previous: 'Anterior',
+    next: 'Próximo',
     today: 'Hoje',
     month: 'Mês',
     week: 'Semana',
@@ -32,11 +32,9 @@ const messages = {
 
 const AgendaPage = () => {
     const [events, setEvents] = useState([]);
-    const [setLoading] = useState(true);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, slot: null, event: null });
 
     const fetchAgendamentos = useCallback(async () => {
-        setLoading(true);
         try {
             const data = await fetchApi('/api/nutri/agenda');
             const formattedEvents = data.map(ag => ({
@@ -46,7 +44,6 @@ const AgendaPage = () => {
             }));
             setEvents(formattedEvents);
         } catch (error) { toast.error("Erro ao carregar agendamentos."); } 
-        finally { setLoading(false); }
     }, []);
 
     useEffect(() => { fetchAgendamentos(); }, [fetchAgendamentos]);
@@ -59,22 +56,6 @@ const AgendaPage = () => {
         setModalInfo({ isOpen: true, slot: null, event: event });
     }, []);
 
-    // ✅ NOVA FUNÇÃO PARA LIDAR COM O "ARRASTAR E SOLTAR"
-    const handleEventDrop = useCallback(async ({ event, start, end }) => {
-        if (window.confirm(`Tem a certeza que quer mover a consulta de "${event.title}"?`)) {
-            try {
-                await fetchApi(`/api/nutri/agenda/${event._id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ start, end })
-                });
-                toast.success("Consulta reagendada com sucesso!");
-                fetchAgendamentos();
-            } catch (error) {
-                toast.error("Não foi possível reagendar a consulta.");
-            }
-        }
-    }, [fetchAgendamentos]);
-
     const eventStyleGetter = (event) => ({
         className: `status-${event.status?.toLowerCase() || 'agendado'}`
     });
@@ -85,7 +66,7 @@ const AgendaPage = () => {
         <div className="page-container">
             <div className="page-header">
                 <h1>Agenda de Consultas</h1>
-                <p>Arraste uma consulta para reagendar, clique num horário para agendar ou num evento para o editar.</p>
+                <p>Clique num horário para criar um novo agendamento ou num evento existente para o editar.</p>
             </div>
             <div className="calendar-container">
                 <Calendar
@@ -97,7 +78,6 @@ const AgendaPage = () => {
                     selectable
                     onSelectSlot={handleSelectSlot}
                     onSelectEvent={handleSelectEvent}
-                    onEventDrop={handleEventDrop} // ✅ NOVA PROP
                     eventPropGetter={eventStyleGetter}
                     culture={culture} // ✅ TRADUÇÃO
                     messages={messages} // ✅ TRADUÇÃO

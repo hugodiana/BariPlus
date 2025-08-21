@@ -26,6 +26,7 @@
     color: var(--color-text-secondary) !important;
     padding: 8px 16px !important;
     transition: var(--transition) !important;
+    border-radius: var(--border-radius) !important;
 }
 .rbc-toolbar button:hover, .rbc-toolbar button:focus {
     background-color: var(--color-background) !important;
@@ -39,15 +40,12 @@
 }
 
 /* Corpo do Calendário */
-.rbc-calendar {
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-}
 .rbc-header {
     border-bottom: 1px solid var(--color-border);
     padding: 10px 5px;
     font-weight: var(--font-weight-bold);
     color: var(--color-text-secondary);
+    text-align: center;
 }
 .rbc-day-bg.rbc-today {
     background-color: var(--color-primary-light);
@@ -58,6 +56,8 @@
     padding: 5px 8px !important;
     border-radius: 6px !important;
     font-size: 0.9rem !important;
+    border: none !important;
+    color: white !important;
 }
 
 .rbc-event.status-agendado { background-color: var(--color-accent) !important; }
