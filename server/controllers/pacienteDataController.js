@@ -1,5 +1,4 @@
 // server/controllers/pacienteDataController.js
-
 const User = require('../models/userModel');
 const Peso = require('../models/pesoModel');
 const FoodLog = require('../models/foodLogModel');
@@ -8,125 +7,89 @@ const HydrationLog = require('../models/hydrationLogModel');
 const MedicationLog = require('../models/medicationLogModel');
 const Exams = require('../models/examsModel');
 
-// Função auxiliar para verificar se o paciente (do app BariPlus) pertence ao nutricionista
+// ✅ FUNÇÃO AUXILIAR ATUALIZADA
 const checkBariplusPatientOwnership = async (nutricionistaId, pacienteId) => {
-    const nutri = await Nutricionista.findById(nutricionistaId);
-    // CORREÇÃO: Verifica na lista correta 'pacientesBariplus'
-    return nutri && nutri.pacientesBariplus.some(pId => pId.toString() === pacienteId);
+    const nutri = await Nutricionista.findById(nutricionistaId).populate('pacientes', 'statusConta');
+    if (!nutri) return false;
+    
+    const paciente = nutri.pacientes.find(p => p._id.toString() === pacienteId);
+    // Garante que o paciente pertence ao nutri E que é um utilizador ativo do app
+    return paciente && paciente.statusConta === 'ativo';
 };
 
 // @desc    Obter o histórico de peso de um paciente
-// @route   GET /api/nutri/paciente/:pacienteId/progresso
 exports.getProgressoPaciente = async (req, res) => {
     try {
-        const { pacienteId } = req.params;
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, pacienteId)) {
+        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-        
-        const pesoDoc = await Peso.findOne({ userId: pacienteId });
-        const paciente = await User.findById(pacienteId).select('detalhesCirurgia metaPeso');
-
-        res.json({
-            historico: pesoDoc ? pesoDoc.registros : [],
-            detalhes: paciente
-        });
+        const pesoDoc = await Peso.findOne({ userId: req.params.pacienteId });
+        const paciente = await User.findById(req.params.pacienteId).select('detalhesCirurgia metaPeso');
+        res.json({ historico: pesoDoc ? pesoDoc.registros : [], detalhes: paciente });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao buscar progresso do paciente.' });
     }
 };
 
 // @desc    Obter o diário alimentar de um paciente para uma data específica
-// @route   GET /api/nutri/paciente/:pacienteId/diario/:date
 exports.getDiarioAlimentarPaciente = async (req, res) => {
     try {
-        const { pacienteId, date } = req.params;
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, pacienteId)) {
+        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-
-        const foodLog = await FoodLog.findOne({ userId: pacienteId, date: date });
+        const foodLog = await FoodLog.findOne({ userId: req.params.pacienteId, date: req.params.date });
         res.json(foodLog || { refeicoes: {} });
     } catch (error) {
-        res.status(500).json({ message: 'Erro ao buscar diário alimentar do paciente.' });
+        res.status(500).json({ message: 'Erro ao buscar diário alimentar.' });
     }
 };
 
 // @desc    Adicionar um comentário a um item do diário
-// @route   POST /api/nutri/paciente/:pacienteId/diario/:date/comment
 exports.addDiaryComment = async (req, res) => {
     try {
-        const { pacienteId, date } = req.params;
-        const { mealType, itemId, text } = req.body;
-        const nutricionistaId = req.nutricionista.id;
-        const nutricionistaName = req.nutricionista.nome;
-
-        if (!await checkBariplusPatientOwnership(nutricionistaId, pacienteId)) {
+        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
+        const { mealType, itemId, text } = req.body;
+        const foodLog = await FoodLog.findOne({ userId: req.params.pacienteId, date: req.params.date });
+        if (!foodLog) return res.status(404).json({ message: 'Diário não encontrado.' });
+        
+        const item = foodLog.refeicoes[mealType]?.id(itemId);
+        if (!item) return res.status(404).json({ message: 'Item da refeição não encontrado.' });
 
-        const foodLog = await FoodLog.findOne({ userId: pacienteId, date: date });
-        if (!foodLog) {
-            return res.status(404).json({ message: 'Diário alimentar para esta data não encontrado.' });
-        }
-
-        const meal = foodLog.refeicoes[mealType];
-        const item = meal ? meal.id(itemId) : null;
-        if (!item) {
-            return res.status(404).json({ message: 'Item da refeição não encontrado.' });
-        }
-
-        const newComment = { authorId: nutricionistaId, authorName: nutricionistaName, text: text };
-        item.comments.push(newComment);
+        item.comments.push({ authorId: req.nutricionista.id, authorName: req.nutricionista.nome, text });
         await foodLog.save();
-
         res.status(201).json(foodLog);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao adicionar comentário.' });
     }
 };
 
-// @desc    Obter o diário de hidratação de um paciente
-// @route   GET /api/nutri/paciente/:pacienteId/hidratacao/:date
+// As funções restantes seguem o mesmo padrão de verificação
 exports.getHidratacaoPaciente = async (req, res) => {
     try {
-        const { pacienteId, date } = req.params;
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, pacienteId)) {
+        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-        const hydrationLog = await HydrationLog.findOne({ userId: pacienteId, date: date });
+        const hydrationLog = await HydrationLog.findOne({ userId: req.params.pacienteId, date: req.params.date });
         res.json(hydrationLog || { entries: [] });
-    } catch (error) {
-        res.status(500).json({ message: 'Erro ao buscar diário de hidratação.' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Erro ao buscar hidratação.' }); }
 };
-
-// @desc    Obter o log de medicação de um paciente
-// @route   GET /api/nutri/paciente/:pacienteId/medicacao/:date
 exports.getMedicacaoPaciente = async (req, res) => {
     try {
-        const { pacienteId, date } = req.params;
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, pacienteId)) {
+        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-        const medicationLog = await MedicationLog.findOne({ userId: pacienteId, date: date });
+        const medicationLog = await MedicationLog.findOne({ userId: req.params.pacienteId, date: req.params.date });
         res.json(medicationLog || { dosesTomadas: [] });
-    } catch (error) {
-        res.status(500).json({ message: 'Erro ao buscar log de medicação.' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Erro ao buscar medicação.' }); }
 };
-
-// @desc    Obter os dados de exames de um paciente
-// @route   GET /api/nutri/paciente/:pacienteId/exames
 exports.getExamesPaciente = async (req, res) => {
     try {
-        const { pacienteId } = req.params;
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, pacienteId)) {
+        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-        const examsDoc = await Exams.findOne({ userId: pacienteId });
+        const examsDoc = await Exams.findOne({ userId: req.params.pacienteId });
         res.json(examsDoc || { examEntries: [] });
-    } catch (error) {
-        res.status(500).json({ message: 'Erro ao buscar exames do paciente.' });
-    }
+    } catch (error) { res.status(500).json({ message: 'Erro ao buscar exames.' }); }
 };

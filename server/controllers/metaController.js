@@ -1,11 +1,16 @@
 // server/controllers/metaController.js
 const Meta = require('../models/Meta');
 const Nutricionista = require('../models/Nutricionista');
+const User = require('../models/userModel');
 
 // Função auxiliar para verificar se o paciente pertence ao nutricionista
 const checkPatientOwnership = async (nutricionistaId, pacienteId) => {
-    const nutri = await Nutricionista.findById(nutricionistaId);
-    return nutri && nutri.pacientesBariplus.some(pId => pId.toString() === pacienteId);
+    const nutri = await Nutricionista.findById(nutricionistaId).populate('pacientes', 'statusConta');
+    if (!nutri) return false;
+    
+    const paciente = nutri.pacientes.find(p => p._id.toString() === pacienteId);
+    // Garante que o paciente pertence ao nutri E que é um utilizador ativo do app
+    return paciente && paciente.statusConta === 'ativo';
 };
 
 
@@ -17,18 +22,13 @@ exports.criarMeta = async (req, res) => {
         const nutricionistaId = req.nutricionista.id;
 
         if (!await checkPatientOwnership(nutricionistaId, pacienteId)) {
-            return res.status(403).json({ message: 'Acesso negado.' });
+            return res.status(403).json({ message: 'Acesso negado. As metas só podem ser definidas para pacientes com o app BariPlus ativo.' });
         }
 
-        // ✅ CORREÇÃO: Agora recebemos todos os dados necessários do formulário
         const { descricao, tipo, valorAlvo, unidade, prazo } = req.body;
 
         const novaMeta = await Meta.create({
-            descricao,
-            tipo,
-            valorAlvo,
-            unidade,
-            prazo,
+            descricao, tipo, valorAlvo, unidade, prazo,
             nutricionistaId,
             pacienteId
         });
@@ -47,10 +47,11 @@ exports.listarMetasPorPaciente = async (req, res) => {
         const nutricionistaId = req.nutricionista.id;
 
         if (!await checkPatientOwnership(nutricionistaId, pacienteId)) {
-            return res.status(403).json({ message: 'Acesso negado.' });
+            // Se não tem acesso, simplesmente retorna uma lista vazia para não quebrar o frontend.
+            return res.status(200).json([]);
         }
 
-        const metas = await Meta.find({ pacienteId }).sort({ prazo: 1 });
+        const metas = await Meta.find({ pacienteId }).sort({ prazo: -1 }); // Ordena pelas mais recentes
         res.status(200).json(metas);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao listar as metas.' });
@@ -61,13 +62,11 @@ exports.listarMetasPorPaciente = async (req, res) => {
 // @route   GET /api/metas
 exports.listarMetasParaPaciente = async (req, res) => {
     try {
-        const pacienteId = req.userId; // Vem do middleware 'autenticar'
-
+        const pacienteId = req.userId;
         const metas = await Meta.find({ 
             pacienteId: pacienteId, 
-            status: 'ativa' // Mostra apenas as metas que ainda não foram concluídas
+            status: 'ativa'
         }).sort({ prazo: 1 });
-
         res.status(200).json(metas);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao listar as suas metas.' });

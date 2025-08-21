@@ -2,8 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const { protectNutri } = require('../middlewares/authNutri');
-// ✅ 1. IMPORTE A NOVA FUNÇÃO
-const { getProntuario, updateAnamnese, addAvaliacao, addEvolucao } = require('../controllers/prontuarioController');
+const { getProntuario, updateAnamnese, addAvaliacao, addEvolucao, enviarRelatorioAvaliacoes, updateAvaliacao, deleteAvaliacao } = require('../controllers/prontuarioController');
 
 // Todas as rotas aqui são protegidas
 router.use(protectNutri);
@@ -16,6 +15,9 @@ router.put('/:pacienteId/anamnese', updateAnamnese);
 
 // Rota para adicionar uma nova avaliação
 router.post('/:pacienteId/avaliacoes', addAvaliacao);
+router.post('/:pacienteId/avaliacoes/enviar-relatorio', enviarRelatorioAvaliacoes);
+router.put('/:pacienteId/avaliacoes/:avaliacaoId', updateAvaliacao);
+router.delete('/:pacienteId/avaliacoes/:avaliacaoId', deleteAvaliacao);
 
 // ✅ 2. ADICIONE A NOVA ROTA
 router.post('/:pacienteId/evolucao', addEvolucao);

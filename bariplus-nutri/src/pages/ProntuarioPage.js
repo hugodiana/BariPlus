@@ -1,92 +1,44 @@
 // src/pages/ProntuarioPage.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../utils/api';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import AnamneseForm from '../components/paciente/AnamneseForm';
-import AddAvaliacaoModal from '../components/paciente/AddAvaliacaoModal';
+import AvaliacoesTab from '../components/paciente/AvaliacoesTab';
 import PlanosTab from '../components/paciente/PlanosTab';
 import EvolucaoTab from '../components/paciente/EvolucaoTab'; 
+import AcompanhamentoTab from '../components/paciente/AcompanhamentoTab';
+import MetasTab from '../components/paciente/MetasTab'; // ✅ 1. IMPORTE A ABA DE METAS
+import ChatTab from '../components/paciente/ChatTab';   // ✅ 2. IMPORTE A ABA DE CHAT
 import './ProntuarioPage.css';
-
-// ✅ 2. NOVO COMPONENTE INTERNO PARA A ABA DE AVALIAÇÕES
-const AvaliacoesTab = ({ prontuario, onUpdate }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const avaliacoesOrdenadas = [...prontuario.avaliacoes].sort((a, b) => new Date(b.data) - new Date(a.data));
-
-    return (
-        <div>
-            <div className="card-header-action">
-                <h3>Histórico de Avaliações</h3>
-                <button className="action-btn-positive" onClick={() => setIsModalOpen(true)}>
-                    + Nova Avaliação
-                </button>
-            </div>
-
-            {avaliacoesOrdenadas.length > 0 ? (
-                <div className="admin-table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Peso (kg)</th>
-                                <th>Altura (cm)</th>
-                                <th>IMC</th>
-                                <th>Cintura (cm)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {avaliacoesOrdenadas.map(av => (
-                                <tr key={av._id}>
-                                    <td>{format(new Date(av.data), 'dd/MM/yyyy', { locale: ptBR })}</td>
-                                    <td>{av.peso || '-'}</td>
-                                    <td>{av.altura || '-'}</td>
-                                    <td>{av.imc || '-'}</td>
-                                    <td>{av.circunferencias?.cintura || '-'}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            ) : (
-                <p>Nenhuma avaliação física registada para este paciente.</p>
-            )}
-
-            {isModalOpen && (
-                <AddAvaliacaoModal 
-                    pacienteId={prontuario.pacienteId}
-                    onClose={() => setIsModalOpen(false)}
-                    onSave={(updatedProntuario) => {
-                        onUpdate(updatedProntuario);
-                        setIsModalOpen(false);
-                    }}
-                />
-            )}
-        </div>
-    );
-};
-
 
 const ProntuarioPage = () => {
     const { pacienteId } = useParams();
     const [paciente, setPaciente] = useState(null);
     const [prontuario, setProntuario] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState('anamnese');
+    const [activeTab, setActiveTab] = useState('');
+    const [nutricionista, setNutricionista] = useState(null);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const [pacienteData, prontuarioData] = await Promise.all([
+            const [pacienteData, prontuarioData, nutriData] = await Promise.all([
                 fetchApi(`/api/nutri/pacientes/${pacienteId}`),
-                fetchApi(`/api/nutri/prontuarios/${pacienteId}`)
+                fetchApi(`/api/nutri/prontuarios/${pacienteId}`),
+                fetchApi('/api/nutri/auth/me')
             ]);
             setPaciente(pacienteData);
             setProntuario(prontuarioData);
+            setNutricionista(nutriData);
+
+            if (pacienteData.statusConta === 'ativo') {
+                setActiveTab('acompanhamento');
+            } else {
+                setActiveTab('anamnese');
+            }
         } catch (error) {
             toast.error("Erro ao carregar os dados do paciente.");
         } finally {
@@ -131,12 +83,23 @@ const ProntuarioPage = () => {
 
             <Card>
                 <div className="tab-buttons">
+                    {/* ✅ 3. RENDERIZAÇÃO CONDICIONAL DE TODAS AS ABAS */}
+                    {paciente.statusConta === 'ativo' && (
+                        <>
+                            <button className={`tab-btn ${activeTab === 'acompanhamento' ? 'active' : ''}`} onClick={() => setActiveTab('acompanhamento')}>Acompanhamento</button>
+                            <button className={`tab-btn ${activeTab === 'metas' ? 'active' : ''}`} onClick={() => setActiveTab('metas')}>Metas</button>
+                            <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>Chat</button>
+                        </>
+                    )}
                     <button className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`} onClick={() => setActiveTab('anamnese')}>Anamnese</button>
-                    <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos Alimentares</button>
-                    <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações Físicas</button>
+                    <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos</button>
+                    <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações</button>
                     <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
                 </div>
                 <div className="tab-content">
+                    {activeTab === 'acompanhamento' && <AcompanhamentoTab paciente={paciente} nutricionista={nutricionista} />}
+                    {activeTab === 'metas' && <MetasTab />}
+                    {activeTab === 'chat' && <ChatTab paciente={paciente} nutricionista={nutricionista} />}
                     {activeTab === 'anamnese' && <AnamneseForm prontuario={prontuario} onSave={setProntuario} />}
                     {activeTab === 'planos' && <PlanosTab />}
                     {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}

@@ -21,6 +21,8 @@ const ProntuarioPage = lazy(() => import('./pages/ProntuarioPage'));
 const AgendaPage = lazy(() => import('./pages/AgendaPage'));
 const AssinaturaPage = lazy(() => import('./pages/AssinaturaPage'));
 const RefeicoesPage = lazy(() => import('./pages/RefeicoesPage'));
+const MeusAlimentosPage = lazy(() => import('./pages/MeusAlimentosPage'));
+
 function App() {
     const [nutricionista, setNutricionista] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -79,6 +81,7 @@ function App() {
                         <Route path="assinatura" element={<AssinaturaPage />} />
                         <Route path="refeicoes" element={<RefeicoesPage />} />
                         <Route path="paciente/:pacienteId/plano/:planoId" element={<PlanoDetailPage />} />
+                        <Route path="meus-alimentos" element={<MeusAlimentosPage />} />
                     </Route>
                 </Routes>
             </Suspense>

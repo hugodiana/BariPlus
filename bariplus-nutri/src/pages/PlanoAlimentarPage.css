@@ -3,7 +3,8 @@
 /* ✅ NOVO: Layout principal da página com 2 colunas */
 .plano-alimentar-layout {
     display: grid;
-    grid-template-columns: 2fr 1fr; /* Coluna do formulário é 2x maior que a do resumo */
+    /* Em ecrãs grandes, a coluna do formulário ocupa o dobro do espaço do resumo */
+    grid-template-columns: 2fr 1fr;
     gap: var(--space-xl);
     align-items: flex-start; /* Alinha os itens no topo */
 }
@@ -35,7 +36,7 @@
 }
 
 
-/* --- Estilos que você já tinha (mantidos e organizados) --- */
+/* --- Estilos unificados e corrigidos --- */
 
 .back-link {
     display: inline-block;
@@ -92,6 +93,7 @@
     font-size: 1.2rem;
     border: none;
     background: transparent;
+    padding: 0;
 }
 
 .remove-btn {
@@ -100,6 +102,8 @@
     color: var(--color-danger);
     font-size: 1.5rem;
     cursor: pointer;
+    padding: 0;
+    line-height: 1;
 }
 
 .add-item-btn, .add-refeicao-btn {
@@ -130,10 +134,6 @@
     align-items: center;
     margin-bottom: var(--space-lg);
 }
-.page-header-action .header-buttons {
-    display: flex;
-    gap: var(--space-md);
-}
 
 .template-btn {
     background-color: var(--color-accent);
@@ -143,11 +143,6 @@
     border-radius: var(--border-radius);
     font-weight: bold;
     cursor: pointer;
-}
-.template-btn.secondary {
-    background-color: var(--color-surface);
-    color: var(--color-accent);
-    border: 1px solid var(--color-accent);
 }
 
 .template-list {
@@ -186,23 +181,13 @@
     cursor: pointer;
 }
 
-.plano-container-view { padding: var(--space-xl) !important; }
-.plano-header-view { text-align: center; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-lg); margin-bottom: var(--space-lg); }
-.plano-header-view h2 { font-size: 1.8rem; color: var(--color-primary); margin: 0 0 var(--space-md) 0; }
-.plano-meta-view { display: flex; justify-content: center; align-items: center; gap: var(--space-lg); font-size: var(--font-size-sm); color: var(--color-text-secondary); }
-.status-badge { padding: 4px 12px; border-radius: 20px; font-weight: bold; }
-.status-badge.ativo { background-color: var(--color-success); color: white; }
-.status-badge.inativo { background-color: var(--color-text-faint); color: white; }
-.refeicoes-container-view { display: flex; flex-direction: column; gap: var(--space-xl); margin-bottom: var(--space-xl); }
-.refeicao-item-view { background-color: var(--color-background); padding: var(--space-lg); border-radius: var(--border-radius); border-left: 4px solid var(--color-primary); }
-.refeicao-item-view h3 { margin: 0 0 var(--space-md) 0; color: var(--color-text-strong); }
-.refeicao-item-view h3 small { font-weight: 500; color: var(--color-text-secondary); font-size: 1rem; margin-left: var(--space-sm); }
-.alimentos-list { list-style: none; padding: 0; margin: 0; padding-left: var(--space-sm); }
-.alimentos-list li { display: flex; justify-content: space-between; padding: var(--space-sm) 0; border-bottom: 1px dashed var(--color-border); }
-.alimentos-list li:last-child { border-bottom: none; }
-.alimentos-list .alimento { font-weight: 500; }
-.alimentos-list .quantidade { color: var(--color-text-secondary); }
-.observacoes-gerais-view { border-top: 1px solid var(--color-border); padding-top: var(--space-lg); margin-top: var(--space-lg); }
-.observacoes-gerais-view h4 { margin: 0 0 var(--space-sm) 0; color: var(--color-text-strong); }
-.observacoes-gerais-view p { white-space: pre-wrap; color: var(--color-text-secondary); line-height: 1.6; }
-.add-refeicao-btn { margin-top: var(--space-md); }
+.add-refeicao-btn {
+    margin-top: var(--space-md);
+}
+
+/* Media query para ecrãs pequenos */
+@media (max-width: 992px) {
+    .plano-alimentar-layout {
+        grid-template-columns: 1fr; /* As colunas ficam uma por cima da outra */
+    }
+}
