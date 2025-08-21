@@ -8,7 +8,7 @@ const { criarPlanoAlimentar, getPlanosPorPaciente, getPlanoById, saveAsTemplate,
 const { getProgressoPaciente, getDiarioAlimentarPaciente, getHidratacaoPaciente, getMedicacaoPaciente, addDiaryComment, getExamesPaciente } = require('../controllers/pacienteDataController');
 const { getConversationForNutri } = require('../controllers/messageController');
 const { createPacienteProntuario, convidarPacienteParaApp } = require('../controllers/pacienteLocalController'); 
-const { getAgendamentos, createAgendamento, updateAgendamento } = require('../controllers/agendaController');
+const { getAgendamentos, createAgendamento, updateAgendamento, deleteAgendamento } = require('../controllers/agendaController');
 const { criarMeta, listarMetasPorPaciente } = require('../controllers/metaController');
 const { protectNutri } = require('../middlewares/authNutri');
 
@@ -48,5 +48,6 @@ router.get('/pacientes/:pacienteId/conversation', protectNutri, getConversationF
 router.get('/agenda', protectNutri, getAgendamentos);
 router.post('/agenda', protectNutri, createAgendamento);
 router.put('/agenda/:id', protectNutri, updateAgendamento);
+router.delete('/agenda/:id', protectNutri, deleteAgendamento);
 
 module.exports = router;

@@ -12,6 +12,24 @@ import './AgendaPage.css';
 const locales = { 'pt-BR': ptBR };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
+// ✅ NOVAS CONFIGURAÇÕES DE TRADUÇÃO E FORMATO
+const culture = 'pt-BR';
+const messages = {
+    allDay: 'Dia Inteiro',
+    previous: '‹',
+    next: '›',
+    today: 'Hoje',
+    month: 'Mês',
+    week: 'Semana',
+    day: 'Dia',
+    agenda: 'Agenda',
+    date: 'Data',
+    time: 'Hora',
+    event: 'Evento',
+    noEventsInRange: 'Não há consultas neste período.',
+    showMore: total => `+ Ver mais (${total})`
+};
+
 const AgendaPage = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -27,16 +45,11 @@ const AgendaPage = () => {
                 end: new Date(ag.end),
             }));
             setEvents(formattedEvents);
-        } catch (error) {
-            toast.error("Erro ao carregar agendamentos.");
-        } finally {
-            setLoading(false);
-        }
+        } catch (error) { toast.error("Erro ao carregar agendamentos."); } 
+        finally { setLoading(false); }
     }, []);
 
-    useEffect(() => {
-        fetchAgendamentos();
-    }, [fetchAgendamentos]);
+    useEffect(() => { fetchAgendamentos(); }, [fetchAgendamentos]);
 
     const handleSelectSlot = useCallback((slotInfo) => {
         setModalInfo({ isOpen: true, slot: slotInfo, event: null });
@@ -46,10 +59,25 @@ const AgendaPage = () => {
         setModalInfo({ isOpen: true, slot: null, event: event });
     }, []);
 
-    const eventStyleGetter = (event) => {
-        const className = `status-${event.status?.toLowerCase() || 'agendado'}`;
-        return { className };
-    };
+    // ✅ NOVA FUNÇÃO PARA LIDAR COM O "ARRASTAR E SOLTAR"
+    const handleEventDrop = useCallback(async ({ event, start, end }) => {
+        if (window.confirm(`Tem a certeza que quer mover a consulta de "${event.title}"?`)) {
+            try {
+                await fetchApi(`/api/nutri/agenda/${event._id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ start, end })
+                });
+                toast.success("Consulta reagendada com sucesso!");
+                fetchAgendamentos();
+            } catch (error) {
+                toast.error("Não foi possível reagendar a consulta.");
+            }
+        }
+    }, [fetchAgendamentos]);
+
+    const eventStyleGetter = (event) => ({
+        className: `status-${event.status?.toLowerCase() || 'agendado'}`
+    });
 
     const closeModal = () => setModalInfo({ isOpen: false, slot: null, event: null });
 
@@ -57,7 +85,7 @@ const AgendaPage = () => {
         <div className="page-container">
             <div className="page-header">
                 <h1>Agenda de Consultas</h1>
-                <p>Clique num horário para criar um novo agendamento ou num evento existente para o editar.</p>
+                <p>Arraste uma consulta para reagendar, clique num horário para agendar ou num evento para o editar.</p>
             </div>
             <div className="calendar-container">
                 <Calendar
@@ -69,16 +97,16 @@ const AgendaPage = () => {
                     selectable
                     onSelectSlot={handleSelectSlot}
                     onSelectEvent={handleSelectEvent}
+                    onEventDrop={handleEventDrop} // ✅ NOVA PROP
                     eventPropGetter={eventStyleGetter}
-                    messages={{
-                        next: "Próximo",
-                        previous: "Anterior",
-                        today: "Hoje",
-                        month: "Mês",
-                        week: "Semana",
-                        day: "Dia",
-                        agenda: "Agenda",
-                        noEventsInRange: "Não há eventos neste período.",
+                    culture={culture} // ✅ TRADUÇÃO
+                    messages={messages} // ✅ TRADUÇÃO
+                    min={new Date(0, 0, 0, 8, 0, 0)} // ✅ HORÁRIO MÍNIMO 08:00
+                    max={new Date(0, 0, 0, 20, 0, 0)} // ✅ HORÁRIO MÁXIMO 20:00
+                    formats={{
+                        timeGutterFormat: 'HH:mm', // ✅ FORMATO 24H
+                        eventTimeRangeFormat: ({ start, end }, culture, local) =>
+                            `${local.format(start, 'HH:mm', culture)} – ${local.format(end, 'HH:mm', culture)}`,
                     }}
                 />
             </div>
@@ -90,7 +118,7 @@ const AgendaPage = () => {
                     onClose={closeModal}
                     onSave={() => {
                         closeModal();
-                        fetchAgendamentos(); // Recarrega os eventos
+                        fetchAgendamentos();
                     }}
                 />
             )}

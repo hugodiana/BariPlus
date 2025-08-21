@@ -1,135 +1,75 @@
 /* src/pages/AgendaPage.css */
+
 .calendar-container {
     background-color: var(--color-surface);
     padding: var(--space-lg);
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-sm);
+    height: 80vh; /* Garante que o calendário tenha uma boa altura */
 }
 
-/* Customização de cores do React Big Calendar */
-.rbc-event {
-    background-color: var(--color-primary) !important;
-    border: 1px solid var(--color-primary-dark) !important;
-}
+/* --- Customização do React Big Calendar --- */
 
+/* Cabeçalho (Botões de Navegação) */
+.rbc-toolbar {
+    margin-bottom: var(--space-lg);
+    font-family: var(--font-family);
+}
+.rbc-toolbar .rbc-toolbar-label {
+    font-size: 1.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-text-strong);
+}
+.rbc-toolbar button {
+    border: 1px solid var(--color-border) !important;
+    background-color: var(--color-surface) !important;
+    color: var(--color-text-secondary) !important;
+    padding: 8px 16px !important;
+    transition: var(--transition) !important;
+}
+.rbc-toolbar button:hover, .rbc-toolbar button:focus {
+    background-color: var(--color-background) !important;
+    border-color: var(--color-primary-light) !important;
+}
 .rbc-toolbar button.rbc-active {
     background-color: var(--color-primary) !important;
+    border-color: var(--color-primary) !important;
+    color: white !important;
+    box-shadow: none !important;
 }
 
-.modal-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    margin-bottom: var(--space-sm);
-    font-weight: 500;
-}
-
-.form-group input, .form-group select {
-    padding: 12px;
+/* Corpo do Calendário */
+.rbc-calendar {
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius);
-    font-size: 1rem;
 }
-
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-md);
-    margin-top: var(--space-lg);
-}
-
-.submit-btn {
-    padding: 12px 24px;
-    font-weight: bold;
-    border: none;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    background-color: var(--color-primary);
-    color: white;
-}
-
-.secondary-btn {
-    padding: 12px 24px;
-    font-weight: bold;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    background-color: transparent;
+.rbc-header {
+    border-bottom: 1px solid var(--color-border);
+    padding: 10px 5px;
+    font-weight: var(--font-weight-bold);
     color: var(--color-text-secondary);
 }
-
-.paciente-selector, .paciente-creator {
-    display: flex;
-    gap: var(--space-sm);
-}
-
-.paciente-selector select {
-    flex-grow: 1;
-}
-
-.paciente-selector button, .paciente-creator button {
-    padding: 0 1rem;
-    border: 1px solid var(--color-primary);
+.rbc-day-bg.rbc-today {
     background-color: var(--color-primary-light);
-    color: var(--color-primary);
-    font-weight: bold;
-    border-radius: var(--border-radius);
-    cursor: pointer;
 }
 
-.paciente-creator input {
-    flex-grow: 1;
+/* Eventos (Consultas) */
+.rbc-event {
+    padding: 5px 8px !important;
+    border-radius: 6px !important;
+    font-size: 0.9rem !important;
 }
 
-.paciente-creator .save-quick-btn {
-    background-color: var(--color-success);
-    border-color: var(--color-success);
-    color: white;
-}
+.rbc-event.status-agendado { background-color: var(--color-accent) !important; }
+.rbc-event.status-confirmado { background-color: var(--color-success) !important; }
+.rbc-event.status-realizado { background-color: var(--color-text-faint) !important; opacity: 0.8; }
+.rbc-event.status-cancelado { background-color: var(--color-danger) !important; text-decoration: line-through; }
 
-.paciente-creator .cancel-quick-btn {
-    background-color: transparent;
-    border-color: var(--color-border);
-    color: var(--color-text-secondary);
-}
-
-/* Cores dos Eventos com Base no Status */
-.rbc-event.status-agendado {
-    background-color: var(--color-accent) !important;
-    border-color: #0056b3 !important;
-}
-.rbc-event.status-confirmado {
-    background-color: var(--color-success) !important;
-    border-color: #218838 !important;
-}
-.rbc-event.status-realizado {
-    background-color: var(--color-text-faint) !important;
-    border-color: #6c757d !important;
-    opacity: 0.8;
-}
-.rbc-event.status-cancelado {
-    background-color: var(--color-danger) !important;
-    border-color: #a02d23 !important;
-    text-decoration: line-through;
-}
-
-.evolucao-section {
-    margin-top: var(--space-lg);
-    padding-top: var(--space-lg);
-    border-top: 2px solid var(--color-border);
-}
-.evolucao-section h4 {
-    margin-top: 0;
-    color: var(--color-primary);
-}
-.evolucao-section .form-actions {
-    margin-top: 0; /* Remove a margem extra */
-}
+/* Modal de Agendamento */
+.modal-form { display: flex; flex-direction: column; gap: var(--space-lg); }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { margin-bottom: var(--space-sm); font-weight: 500; }
+.form-group input, .form-group select { padding: 12px; border: 1px solid var(--color-border); border-radius: var(--border-radius); font-size: 1rem; }
+.form-row { display: flex; gap: var(--space-md); }
+.form-actions { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-lg); border-top: 1px solid var(--color-border); padding-top: var(--space-lg); }
+.form-actions-right { display: flex; gap: var(--space-md); }
