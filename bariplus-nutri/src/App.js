@@ -22,6 +22,7 @@ const AgendaPage = lazy(() => import('./pages/AgendaPage'));
 const AssinaturaPage = lazy(() => import('./pages/AssinaturaPage'));
 const RefeicoesPage = lazy(() => import('./pages/RefeicoesPage'));
 const MeusAlimentosPage = lazy(() => import('./pages/MeusAlimentosPage'));
+const MinhasReceitasPage = lazy(() => import('./pages/MinhasReceitasPage'));
 
 function App() {
     const [nutricionista, setNutricionista] = useState(null);
@@ -80,6 +81,7 @@ function App() {
                         <Route path="agenda" element={<AgendaPage />} />
                         <Route path="assinatura" element={<AssinaturaPage />} />
                         <Route path="refeicoes" element={<RefeicoesPage />} />
+                        <Route path="minhas-receitas" element={<MinhasReceitasPage />} />
                         <Route path="paciente/:pacienteId/plano/:planoId" element={<PlanoDetailPage />} />
                         <Route path="meus-alimentos" element={<MeusAlimentosPage />} />
                     </Route>

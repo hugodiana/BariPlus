@@ -1,0 +1,72 @@
+/* src/pages/MinhasReceitasPage.css */
+
+.receitas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-lg);
+}
+
+.receita-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.receita-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
+}
+
+.receita-card-header h4 {
+    margin: 0;
+    color: var(--color-text-strong);
+}
+
+.receita-card .resumo-grid { /* Reutilizando o estilo do resumo */
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-sm);
+    text-align: center;
+    background-color: var(--color-background);
+    padding: var(--space-sm);
+    border-radius: var(--border-radius);
+}
+.receita-card .resumo-item span {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--color-primary);
+    display: block;
+}
+.receita-card .resumo-item label {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+}
+
+/* Estilos para o formulário de ingredientes no modal */
+.ingredientes-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+.ingrediente-item-form {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: var(--space-sm);
+    align-items: center;
+}
+.ingrediente-item-form span {
+    font-weight: 500;
+}
+.ingrediente-inputs {
+    display: contents; /* Faz os inputs alinharem-se no grid pai */
+}
+.ingrediente-inputs input {
+    width: 80px;
+}
+.ingrediente-inputs input[name="medidaCaseira"] {
+    width: 120px;
+}

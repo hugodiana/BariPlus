@@ -1,8 +1,11 @@
 /* src/pages/ProntuarioPage.css */
+
+/* --- ESTRUTURA DAS ABAS --- */
 .tab-buttons {
     display: flex;
     border-bottom: 2px solid var(--color-border);
     margin-bottom: var(--space-lg);
+    flex-wrap: wrap; /* Permite que as abas quebrem a linha em ecrãs pequenos */
 }
 .tab-btn {
     padding: var(--space-md);
@@ -20,12 +23,33 @@
     border-bottom-color: var(--color-primary);
 }
 
+/* --- CABEÇALHO DAS SECÇÕES --- */
+.card-header-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-md);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-md);
+    flex-wrap: wrap;
+    gap: var(--space-md);
+}
+.card-header-action h3 {
+    margin: 0;
+    color: var(--color-text-strong);
+}
+.card-header-action .header-buttons {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+/* --- FORMULÁRIO DE ANAMNESE E MODAIS --- */
 .anamnese-form {
     display: flex;
     flex-direction: column;
     gap: var(--space-xl);
 }
-
 .form-section h4 {
     color: var(--color-primary);
     border-bottom: 1px solid var(--color-border);
@@ -33,251 +57,61 @@
     margin-top: 0;
     margin-bottom: var(--space-md);
 }
-
 .form-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: var(--space-lg);
 }
+.form-group { display: flex; flex-direction: column; }
+.form-group label { margin-bottom: var(--space-sm); font-weight: 500; }
+.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid var(--color-border); border-radius: var(--border-radius); font-size: 1rem; background-color: var(--color-background); }
+.form-group textarea { min-height: 80px; resize: vertical; }
 
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-.form-group label {
-    margin-bottom: var(--space-sm);
-    font-weight: 500;
-}
-.form-group input, .form-group textarea, .form-group select {
-    width: 100%;
-    padding: 12px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    background-color: var(--color-background);
-}
-.form-group textarea {
-    min-height: 80px;
-    resize: vertical;
-}
+.checkbox-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-md); }
+.checkbox-item label { display: flex; align-items: center; gap: var(--space-sm); font-weight: normal; }
+.checkbox-item input { width: auto; }
 
-.checkbox-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: var(--space-md);
-}
-.checkbox-item label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    font-weight: normal;
-}
-.checkbox-item input {
-    width: auto;
-}
+/* --- BOTÕES PADRONIZADOS --- */
+.submit-btn, .secondary-btn, .action-btn-positive, .action-btn-email { padding: 12px 24px; font-weight: var(--font-weight-bold); border-radius: var(--border-radius); cursor: pointer; font-size: 1rem; border: none; transition: var(--transition); }
+.submit-btn:disabled { background-color: var(--color-text-faint); cursor: not-allowed; }
+.action-btn-positive, .submit-btn { background-color: var(--color-primary); color: white; }
+.action-btn-positive:hover, .submit-btn:hover:not(:disabled) { background-color: var(--color-primary-dark); }
+.secondary-btn { background-color: var(--color-background); color: var(--color-text-secondary); border: 1px solid var(--color-border); }
+.secondary-btn:hover { background-color: var(--color-border); }
+.action-btn-email { background-color: var(--color-accent); color: white; border-color: var(--color-accent); }
+.action-btn-email:hover { background-color: #0056b3; }
 
-.form-actions-footer {
-    margin-top: var(--space-xl);
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--color-border);
-    text-align: right;
-}
+.form-actions-footer { margin-top: var(--space-xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); text-align: right; }
+.modal-form .form-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem; border-top: 1px solid var(--color-border); padding-top: 1rem; }
 
-.evolucao-container {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: var(--space-xl);
-}
-
-@media (min-width: 992px) {
-    .evolucao-container {
-        grid-template-columns: 1fr 1.5fr; 
-    }
-}
-
-.evolucao-form h4, .evolucao-historico h4 {
-    margin-top: 0;
-    color: var(--color-primary);
-}
-
-.evolucao-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 500px;
-    overflow-y: auto;
-}
-
-.evolucao-item {
-    padding: var(--space-md);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    margin-bottom: var(--space-md);
-}
-
-.evolucao-data {
-    display: block;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-sm);
-}
-
-.evolucao-nota {
-    margin: 0;
-    white-space: pre-wrap;
-    line-height: 1.6;
-}
-
-
-/* ✅ CORREÇÃO: Estilos Unificados para Botões */
-.submit-btn, .secondary-btn, .action-btn-positive {
-    padding: 12px 24px;
-    font-weight: var(--font-weight-bold);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-size: 1rem;
-    border: none;
-    transition: var(--transition);
-}
-.submit-btn:disabled {
-    background-color: var(--color-text-faint);
-    cursor: not-allowed;
-}
-.action-btn-positive, .submit-btn {
-    background-color: var(--color-primary);
-    color: white;
-}
-.action-btn-positive:hover, .submit-btn:hover:not(:disabled) {
-    background-color: var(--color-primary-dark);
-}
-.secondary-btn {
-    background-color: var(--color-background);
-    color: var(--color-text-secondary);
-    border: 1px solid var(--color-border);
-}
-.secondary-btn:hover {
-    background-color: var(--color-border);
-}
-
-/* Garante que o espaçamento entre botões do modal funcione */
-.modal-form .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    margin-top: 1rem;
-    border-top: 1px solid var(--color-border);
-    padding-top: 1rem;
-}
-
-.planos-list {
-    list-style: none;
-    padding: 0;
-    margin-top: var(--space-md);
-}
-
-.plano-item {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-md);
-    background-color: var(--color-background);
-    border-radius: var(--border-radius);
-    margin-bottom: var(--space-md);
-    border-left: 4px solid var(--color-text-faint);
-}
-
-.plano-item.ativo {
-    border-left-color: var(--color-success);
-}
-
-.plano-info strong {
-    display: block;
-    font-weight: 500;
-    color: var(--color-text-strong);
-}
-
-.plano-info span {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-}
-
-.plano-status {
-    font-weight: bold;
-    font-size: 0.9rem;
-}
-
-.plano-item.ativo .plano-status {
-    color: var(--color-success);
-}
-
-.plano-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--space-sm);
-}
-
-.action-btn-view, .action-btn-email {
-    padding: 8px 16px;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-weight: 500;
-    text-decoration: none;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    color: var(--color-text-primary);
-}
-
-.action-btn-email {
-    background-color: var(--color-accent);
-    color: white;
-    border: none;
-}
-
-.admin-table-container {
-    width: 100%;
-    overflow-x: auto; /* Permite scroll horizontal em ecrãs pequenos */
-}
-
-.admin-table-container table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: var(--space-md);
-}
-
-.admin-table-container th, .admin-table-container td {
-    padding: 12px;
-    text-align: center; /* Centraliza o conteúdo */
-    border-bottom: 1px solid var(--color-border);
-    white-space: nowrap; /* Impede que o texto quebre linha */
-}
-
-.admin-table-container th {
-    color: var(--color-text-secondary);
-    font-weight: 500;
-    background-color: var(--color-background);
-}
-
-.header-buttons { display: flex; gap: var(--space-sm); }
-.action-btn-view, .action-btn-delete {
-    padding: 6px 12px;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.9rem;
-}
-
-.card-header-action .header-buttons {
-    display: flex;
-    gap: var(--space-sm);
-    flex-wrap: wrap;
-}
-
-.action-btn-view { border: 1px solid var(--color-border); background-color: var(--color-surface); }
+/* --- TABELAS (AVALIAÇÕES, EXAMES) --- */
+.admin-table-container { width: 100%; overflow-x: auto; margin-top: var(--space-lg); }
+.admin-table-container table { width: 100%; border-collapse: collapse; }
+.admin-table-container th, .admin-table-container td { padding: 12px; text-align: center; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+.admin-table-container th { color: var(--color-text-secondary); font-weight: 500; background-color: var(--color-background); }
+.actions-cell { display: flex; gap: var(--space-sm); justify-content: center; }
+.action-btn-view, .action-btn-delete { padding: 6px 12px; border-radius: var(--border-radius); cursor: pointer; font-weight: 500; font-size: 0.9rem; }
+.action-btn-view { border: 1px solid var(--color-border); background-color: var(--color-surface); color: var(--color-text-primary); }
 .action-btn-delete { border: 1px solid var(--color-danger); background-color: transparent; color: var(--color-danger); }
+.action-btn-view:hover { background-color: var(--color-background); }
+.action-btn-delete:hover { background-color: var(--color-danger); color: white; }
 
+/* --- DETALHES NO MODAL --- */
 .avaliacao-details { display: flex; flex-direction: column; gap: var(--space-lg); }
 .detail-row { border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-md); }
 .detail-row strong { display: block; color: var(--color-primary); margin-bottom: var(--space-sm); }
 .detail-row p { margin: 0 0 5px 0; }
+
+/* --- RESPONSIVIDADE --- */
+@media (max-width: 768px) {
+    .page-header-action {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .form-grid {
+        grid-template-columns: 1fr; /* Força uma única coluna */
+    }
+    .tab-buttons {
+        justify-content: center;
+    }
+}

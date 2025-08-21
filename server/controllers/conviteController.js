@@ -1,18 +1,13 @@
 // server/controllers/conviteController.js
-
-const Convite = require('../models/conviteModel'); // CORREÇÃO: Aponta para 'conviteModel.js'
+const Convite = require('../models/conviteModel');
 const Nutricionista = require('../models/Nutricionista');
 const User = require('../models/userModel');
 
-// @desc    Nutricionista gera um novo convite
-// @route   POST /api/nutri/convites/gerar
-// @access  Private (Nutricionista)
 exports.gerarConvite = async (req, res) => {
   try {
     const nutricionistaId = req.nutricionista.id;
     const convite = await Convite.create({ nutricionistaId });
     const urlConvite = `${process.env.CLIENT_URL}/convite/${convite.codigo}`;
-
     res.status(201).json({
       message: 'Convite gerado com sucesso!',
       codigo: convite.codigo,
@@ -23,14 +18,10 @@ exports.gerarConvite = async (req, res) => {
   }
 };
 
-// @desc    Paciente obtém informações de um convite pelo código
-// @route   GET /api/convites/:codigo
-// @access  Public
 exports.getConviteInfo = async (req, res) => {
   try {
     const { codigo } = req.params;
     const convite = await Convite.findOne({ codigo, status: 'pendente' }).populate('nutricionistaId', 'nome clinica especializacao');
-
     if (!convite) {
       return res.status(404).json({ message: 'Convite não encontrado, inválido ou já utilizado.' });
     }
@@ -40,9 +31,6 @@ exports.getConviteInfo = async (req, res) => {
   }
 };
 
-// @desc    Paciente aceita um convite
-// @route   POST /api/convites/aceitar
-// @access  Private (Paciente)
 exports.aceitarConvite = async (req, res) => {
     const { codigo } = req.body;
     const pacienteId = req.userId;
@@ -64,7 +52,10 @@ exports.aceitarConvite = async (req, res) => {
             return res.status(400).json({ message: 'Você já está vinculado a um nutricionista.' });
         }
 
-        await Nutricionista.findByIdAndUpdate(nutricionista._id, { $addToSet: { pacientesBariplus: pacienteId } });
+        // ✅ CORREÇÃO: Adiciona o paciente à lista unificada 'pacientes'.
+        await Nutricionista.findByIdAndUpdate(nutricionista._id, { 
+            $addToSet: { pacientes: pacienteId } 
+        });
         
         paciente.nutricionistaId = nutricionista._id;
         await paciente.save();

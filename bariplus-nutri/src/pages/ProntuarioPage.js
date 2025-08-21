@@ -10,8 +10,9 @@ import AvaliacoesTab from '../components/paciente/AvaliacoesTab';
 import PlanosTab from '../components/paciente/PlanosTab';
 import EvolucaoTab from '../components/paciente/EvolucaoTab'; 
 import AcompanhamentoTab from '../components/paciente/AcompanhamentoTab';
-import MetasTab from '../components/paciente/MetasTab'; // ✅ 1. IMPORTE A ABA DE METAS
-import ChatTab from '../components/paciente/ChatTab';   // ✅ 2. IMPORTE A ABA DE CHAT
+import ExamesTab from '../components/paciente/ExamesTab';
+import MetasTab from '../components/paciente/MetasTab';
+import ChatTab from '../components/paciente/ChatTab';
 import './ProntuarioPage.css';
 
 const ProntuarioPage = () => {
@@ -83,11 +84,7 @@ const ProntuarioPage = () => {
 
             <Card>
                 <div className="tab-buttons">
-                    {/* ✅ 3. RENDERIZAÇÃO CONDICIONAL DE TODAS AS ABAS */}
-                    <button className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`} onClick={() => setActiveTab('anamnese')}>Anamnese</button>
-                    <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos</button>
-                    <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações</button>
-                    <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
+                    {/* ✅ CORREÇÃO: A ordem dos botões foi ajustada */}
                     {paciente.statusConta === 'ativo' && (
                         <>
                             <button className={`tab-btn ${activeTab === 'acompanhamento' ? 'active' : ''}`} onClick={() => setActiveTab('acompanhamento')}>Acompanhamento</button>
@@ -95,16 +92,21 @@ const ProntuarioPage = () => {
                             <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>Chat</button>
                         </>
                     )}
-                    
+                    <button className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`} onClick={() => setActiveTab('anamnese')}>Anamnese</button>
+                    <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos</button>
+                    <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações</button>
+                    <button className={`tab-btn ${activeTab === 'exames' ? 'active' : ''}`} onClick={() => setActiveTab('exames')}>Exames</button>
+                    <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
                 </div>
                 <div className="tab-content">
-                    {activeTab === 'anamnese' && <AnamneseForm prontuario={prontuario} onSave={setProntuario} />}
-                    {activeTab === 'planos' && <PlanosTab />}
-                    {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}
-                    {activeTab === 'evolucoes' && <EvolucaoTab prontuario={prontuario} onUpdate={setProntuario} />}
                     {activeTab === 'acompanhamento' && <AcompanhamentoTab paciente={paciente} nutricionista={nutricionista} />}
                     {activeTab === 'metas' && <MetasTab />}
                     {activeTab === 'chat' && <ChatTab paciente={paciente} nutricionista={nutricionista} />}
+                    {activeTab === 'anamnese' && <AnamneseForm prontuario={prontuario} onSave={setProntuario} />}
+                    {activeTab === 'planos' && <PlanosTab />}
+                    {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}
+                    {activeTab === 'exames' && <ExamesTab prontuario={prontuario} onUpdate={setProntuario} />}
+                    {activeTab === 'evolucoes' && <EvolucaoTab prontuario={prontuario} onUpdate={setProntuario} />}
                 </div>
             </Card>
         </div>

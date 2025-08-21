@@ -1,0 +1,19 @@
+/* src/components/plano/AnalisePlanoTab.css */
+.analise-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+}
+.analise-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--space-lg);
+}
+.analise-card h4 {
+    text-align: center;
+    margin-top: 0;
+    color: var(--color-text-strong);
+}
+.chart-wrapper {
+    height: 300px;
+}

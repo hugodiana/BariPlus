@@ -1,7 +1,7 @@
 // src/components/paciente/AnamneseForm.js
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { fetchApi } from '../../utils/api';
 
 const AnamneseForm = ({ prontuario, onSave }) => {
@@ -59,7 +59,7 @@ const AnamneseForm = ({ prontuario, onSave }) => {
                 <div className="form-grid">
                     <div className="form-group">
                         <label>Data de Nascimento</label>
-                        <input type="date" name="dadosPessoais.dataNascimento" value={formData.dadosPessoais?.dataNascimento ? format(new Date(formData.dadosPessoais.dataNascimento), 'yyyy-MM-dd') : ''} onChange={handleChange} />
+                        <input type="date" name="dadosPessoais.dataNascimento" value={formData.dadosPessoais?.dataNascimento ? format(parseISO(formData.dadosPessoais.dataNascimento), 'yyyy-MM-dd') : ''} onChange={handleChange} />
                     </div>
                     <div className="form-group"><label>Telefone</label><input type="tel" name="dadosPessoais.telefone" value={formData.dadosPessoais?.telefone || ''} onChange={handleChange} /></div>
                     <div className="form-group"><label>Profissão</label><input type="text" name="dadosPessoais.profissao" value={formData.dadosPessoais?.profissao || ''} onChange={handleChange} /></div>

@@ -43,6 +43,7 @@ const Layout = ({ nutricionista }) => {
                     <NavLink to="/" end onClick={handleLinkClick}>Dashboard</NavLink>
                     <NavLink to="/pacientes" onClick={handleLinkClick}>Meus Pacientes</NavLink>
                     <NavLink to="/meus-alimentos" onClick={handleLinkClick}>Meus Alimentos</NavLink>
+                    <NavLink to="/minhas-receitas" onClick={handleLinkClick}>Minhas Receitas</NavLink>
                     <NavLink to="/agenda" onClick={handleLinkClick}>Agenda</NavLink>
                     <NavLink to="/assinatura" onClick={handleLinkClick}>Minha Assinatura</NavLink>
                 </nav>
