@@ -24,6 +24,12 @@ const AvaliacaoSchema = new mongoose.Schema({
         coxa: Number,
         panturrilha: Number
     },
+    composicaoCorporal: {
+        percentualGordura: Number, // %
+        massaMagraKg: Number,     // kg
+        massaGordaKg: Number,      // kg
+        taxaMetabolicaBasal: Number // kcal
+    },
     observacoes: String
 }, { _id: true, timestamps: true });
 
@@ -70,6 +76,14 @@ const ProntuarioSchema = new mongoose.Schema({
         recordatorio24h: [RecordatorioItemSchema]
     },
     objetivo: String,
+
+    examesBioquimicos: [{
+        nomeExame: String, // Ex: "Vitamina B12"
+        data: Date,
+        valor: String, // String para aceitar valores como "< 0.1"
+        unidade: String, // Ex: "pg/mL"
+        valorReferencia: String // Ex: "200-900"
+    }],
     
     // EVOLUÇÃO E AVALIAÇÕES
     avaliacoes: [AvaliacaoSchema],

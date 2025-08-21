@@ -2,7 +2,19 @@
 const express = require('express');
 const router = express.Router();
 const { protectNutri } = require('../middlewares/authNutri');
-const { getProntuario, updateAnamnese, addAvaliacao, addEvolucao, enviarRelatorioAvaliacoes, updateAvaliacao, deleteAvaliacao, enviarAvaliacaoUnicaPorEmail } = require('../controllers/prontuarioController');
+
+// ✅ CORREÇÃO: A importação da função com o nome antigo foi removida.
+const { 
+    getProntuario, 
+    updateAnamnese, 
+    addAvaliacao, 
+    updateAvaliacao,
+    deleteAvaliacao,
+    addEvolucao,
+    enviarAvaliacaoUnicaPorEmail,
+    addExameBioquimico,
+    deleteExameBioquimico
+} = require('../controllers/prontuarioController');
 
 // Todas as rotas aqui são protegidas
 router.use(protectNutri);
@@ -13,13 +25,18 @@ router.get('/:pacienteId', getProntuario);
 // Rota para atualizar a anamnese
 router.put('/:pacienteId/anamnese', updateAnamnese);
 
-// Rota para adicionar uma nova avaliação
+// Rotas para avaliações físicas
 router.post('/:pacienteId/avaliacoes', addAvaliacao);
-router.post('/:pacienteId/avaliacoes/enviar-relatorio', enviarRelatorioAvaliacoes);
 router.put('/:pacienteId/avaliacoes/:avaliacaoId', updateAvaliacao);
 router.delete('/:pacienteId/avaliacoes/:avaliacaoId', deleteAvaliacao);
 router.post('/:pacienteId/avaliacoes/:avaliacaoId/enviar-email', enviarAvaliacaoUnicaPorEmail);
-// ✅ 2. ADICIONE A NOVA ROTA
+
+// Rotas para notas de evolução
 router.post('/:pacienteId/evolucao', addEvolucao);
+
+// Rotas para exames bioquímicos
+router.post('/:pacienteId/exames', addExameBioquimico);
+router.delete('/:pacienteId/exames/:exameId', deleteExameBioquimico);
+
 
 module.exports = router;

@@ -1,19 +1,24 @@
 // src/components/paciente/AvaliacoesTab.js
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { toast } from 'react-toastify';
 import { fetchApi } from '../../utils/api';
 import AddAvaliacaoModal from './AddAvaliacaoModal';
-import ViewAvaliacaoModal from './ViewAvaliacaoModal'; // Vamos criar este
+import ViewAvaliacaoModal from './ViewAvaliacaoModal';
+import AvaliacaoReportPDF from './AvaliacaoReportPDF';
 import '../../pages/ProntuarioPage.css';
 
 const AvaliacoesTab = ({ prontuario, onUpdate }) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [viewingAvaliacao, setViewingAvaliacao] = useState(null); // Para ver detalhes
-    const [editingAvaliacao, setEditingAvaliacao] = useState(null); // Para editar
-
-    const avaliacoesOrdenadas = [...prontuario.avaliacoes].sort((a, b) => new Date(b.data) - new Date(a.data));
+    const [viewingAvaliacao, setViewingAvaliacao] = useState(null);
+    const [editingAvaliacao, setEditingAvaliacao] = useState(null);
+    
+    // ... (o resto do componente continua igual)
+    const avaliacoesOrdenadas = useMemo(() => 
+        [...prontuario.avaliacoes].sort((a, b) => new Date(b.data) - new Date(a.data)),
+    [prontuario.avaliacoes]);
 
     const handleDelete = async (avaliacaoId) => {
         if (window.confirm("Tem a certeza que quer apagar esta avaliação?")) {
@@ -26,19 +31,23 @@ const AvaliacoesTab = ({ prontuario, onUpdate }) => {
             }
         }
     };
-
-    const handleEdit = (avaliacao) => {
-        setEditingAvaliacao(avaliacao);
-        setIsAddModalOpen(true); // Reutiliza o modal de adicionar para editar
-    };
-
+    
     return (
         <div>
             <div className="card-header-action">
                 <h3>Histórico de Avaliações</h3>
-                <button className="action-btn-positive" onClick={() => { setEditingAvaliacao(null); setIsAddModalOpen(true); }}>
-                    + Nova Avaliação
-                </button>
+                <div className="header-buttons">
+                    <PDFDownloadLink
+                        document={<AvaliacaoReportPDF prontuario={prontuario} />}
+                        fileName={`Relatorio_Avaliacoes_${prontuario.pacienteId}.pdf`}
+                        className="secondary-btn"
+                    >
+                        {({ loading }) => (loading ? 'A gerar...' : 'Baixar Histórico')}
+                    </PDFDownloadLink>
+                    <button className="action-btn-positive" onClick={() => { setEditingAvaliacao(null); setIsAddModalOpen(true); }}>
+                        + Nova Avaliação
+                    </button>
+                </div>
             </div>
 
             {avaliacoesOrdenadas.length > 0 ? (

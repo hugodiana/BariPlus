@@ -7,8 +7,14 @@
     border-radius: var(--border-radius);
     box-shadow: var(--shadow-md);
 }
-.resumo-nutricional-card h4 { margin-top: 0; }
-.resumo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-md); }
-.resumo-item { text-align: center; }
-.resumo-item span { font-size: 1.5rem; font-weight: bold; color: var(--color-primary); display: block; }
-.resumo-item label { font-size: 0.8rem; color: var(--color-text-secondary); }
+.resumo-nutricional-card h4 { margin-top: 0; color: var(--color-text-strong); }
+
+.resumo-item-principal { text-align: center; margin-bottom: var(--space-lg); }
+.valor-principal { font-size: 2.5rem; font-weight: bold; color: var(--color-primary); }
+.meta-principal { font-size: 1.2rem; color: var(--color-text-secondary); }
+
+.resumo-macros { display: flex; flex-direction: column; gap: var(--space-md); }
+.macro-item { display: flex; flex-direction: column; gap: var(--space-xs); }
+.macro-info { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 500; }
+.macro-progress-bar { background-color: var(--color-border); border-radius: 10px; height: 8px; overflow: hidden; }
+.macro-progress-fill { background-color: var(--color-primary); height: 100%; border-radius: 10px; transition: width 0.3s ease; }

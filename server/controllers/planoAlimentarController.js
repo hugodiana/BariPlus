@@ -12,18 +12,17 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // @route   POST /api/nutri/planos/criar
 exports.criarPlanoAlimentar = async (req, res) => {
   const nutricionistaId = req.nutricionista.id;
-  const { pacienteId, titulo, refeicoes, observacoesGerais } = req.body;
+  // ✅ 1. RECEBER AS NOVAS METAS DO CORPO DA REQUISIÇÃO
+  const { pacienteId, titulo, refeicoes, observacoesGerais, metas } = req.body;
 
-  if (!pacienteId || !titulo || !refeicoes || refeicoes.length === 0) {
+  if (!pacienteId || !titulo || !refeicoes) {
     return res.status(400).json({ message: 'Dados insuficientes para criar o plano.' });
   }
 
   try {
-    const nutri = await Nutricionista.findById(nutricionistaId);
+    const nutri = await Nutricionista.findById(nutricionistaId).populate('pacientes');
     
-    // ✅ CORREÇÃO: Verifica na lista unificada 'pacientes'
-    const isMyPatient = nutri.pacientes.some(pId => pId.toString() === pacienteId);
-
+    const isMyPatient = nutri.pacientes.some(p => p._id.toString() === pacienteId);
     if (!isMyPatient) {
       return res.status(403).json({ message: 'Acesso negado. Este paciente não está vinculado a você.' });
     }
@@ -38,7 +37,8 @@ exports.criarPlanoAlimentar = async (req, res) => {
         titulo, 
         refeicoes, 
         observacoesGerais,
-        ativo: true // Garante que o novo plano seja o ativo
+        metas: metas || {}, // ✅ 2. GUARDA AS METAS NO NOVO PLANO
+        ativo: true
     });
     res.status(201).json({ message: 'Plano alimentar criado com sucesso!', plano: novoPlano });
 

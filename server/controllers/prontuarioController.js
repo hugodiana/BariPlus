@@ -6,8 +6,6 @@ const { Resend } = require('resend');
 const emailTemplate = require('../utils/emailTemplate');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ✅ 1. ADICIONE ESTA FUNÇÃO AUXILIAR NO TOPO DO FICHEIRO
-// Esta função é a chave para corrigir o problema do fuso horário.
 const fixDateTimezone = (dateString) => {
     if (!dateString || typeof dateString !== 'string') return null;
     const date = new Date(`${dateString}T12:00:00Z`);
@@ -37,7 +35,8 @@ exports.getProntuario = async (req, res) => {
                 dadosPessoais: {},
                 historicoClinico: { doencasPrevias: [] },
                 habitosDeVida: {},
-                historicoAlimentar: { recordatorio24h: [] }
+                historicoAlimentar: { recordatorio24h: [] },
+                examesBioquimicos: [] // ✅ INICIA O NOVO CAMPO
             });
         }
         
@@ -46,6 +45,7 @@ exports.getProntuario = async (req, res) => {
         res.status(500).json({ message: 'Erro ao buscar prontuário.' });
     }
 };
+
 
 exports.updateAnamnese = async (req, res) => {
     try {
@@ -56,14 +56,13 @@ exports.updateAnamnese = async (req, res) => {
         
         const updateData = req.body;
 
-        // ✅ 2. APLIQUE A CORREÇÃO NA DATA DE NASCIMENTO
         if (updateData.dadosPessoais && updateData.dadosPessoais.dataNascimento) {
             updateData.dadosPessoais.dataNascimento = fixDateTimezone(updateData.dadosPessoais.dataNascimento);
         }
 
         const updatedProntuario = await Prontuario.findOneAndUpdate(
             { pacienteId },
-            { $set: updateData },
+            { $set: updateData }, // O $set agora vai guardar a estrutura completa da anamnese
             { new: true, upsert: true }
         );
         res.json(updatedProntuario);
@@ -86,14 +85,18 @@ exports.addAvaliacao = async (req, res) => {
         
         const avaliacaoData = req.body;
         
-        // ✅ 3. APLIQUE A CORREÇÃO NA DATA DA AVALIAÇÃO
         if (avaliacaoData.data) {
             avaliacaoData.data = fixDateTimezone(avaliacaoData.data);
         }
 
+        // ✅ CÁLCULO ATUALIZADO para incluir massa gorda
         if (avaliacaoData.peso && avaliacaoData.altura) {
             const alturaEmMetros = Number(avaliacaoData.altura) / 100;
             avaliacaoData.imc = (Number(avaliacaoData.peso) / (alturaEmMetros * alturaEmMetros)).toFixed(2);
+        }
+        if (avaliacaoData.peso && avaliacaoData.composicaoCorporal?.percentualGordura) {
+            avaliacaoData.composicaoCorporal.massaGordaKg = (Number(avaliacaoData.peso) * (Number(avaliacaoData.composicaoCorporal.percentualGordura) / 100)).toFixed(2);
+            avaliacaoData.composicaoCorporal.massaMagraKg = (Number(avaliacaoData.peso) - avaliacaoData.composicaoCorporal.massaGordaKg).toFixed(2);
         }
         
         prontuario.avaliacoes.push(avaliacaoData);
@@ -290,5 +293,45 @@ exports.enviarAvaliacaoUnicaPorEmail = async (req, res) => {
     } catch (error) {
         console.error("Erro ao enviar e-mail de avaliação:", error);
         res.status(500).json({ message: 'Erro ao enviar e-mail da avaliação.' });
+    }
+};
+
+// @desc    Adicionar um novo exame bioquímico
+// @route   POST /api/nutri/prontuarios/:pacienteId/exames
+exports.addExameBioquimico = async (req, res) => {
+    try {
+        const { pacienteId } = req.params;
+        if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        const prontuario = await Prontuario.findOneAndUpdate(
+            { pacienteId },
+            { $push: { examesBioquimicos: req.body } },
+            { new: true, upsert: true }
+        );
+        res.status(201).json(prontuario);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao adicionar exame.' });
+    }
+};
+
+// @desc    Apagar um exame bioquímico
+// @route   DELETE /api/nutri/prontuarios/:pacienteId/exames/:exameId
+exports.deleteExameBioquimico = async (req, res) => {
+     try {
+        const { pacienteId, exameId } = req.params;
+        if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        const prontuario = await Prontuario.findOneAndUpdate(
+            { pacienteId },
+            { $pull: { examesBioquimicos: { _id: exameId } } },
+            { new: true }
+        );
+        res.json(prontuario);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao apagar exame.' });
     }
 };

@@ -84,6 +84,10 @@ const ProntuarioPage = () => {
             <Card>
                 <div className="tab-buttons">
                     {/* ✅ 3. RENDERIZAÇÃO CONDICIONAL DE TODAS AS ABAS */}
+                    <button className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`} onClick={() => setActiveTab('anamnese')}>Anamnese</button>
+                    <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos</button>
+                    <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações</button>
+                    <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
                     {paciente.statusConta === 'ativo' && (
                         <>
                             <button className={`tab-btn ${activeTab === 'acompanhamento' ? 'active' : ''}`} onClick={() => setActiveTab('acompanhamento')}>Acompanhamento</button>
@@ -91,19 +95,16 @@ const ProntuarioPage = () => {
                             <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>Chat</button>
                         </>
                     )}
-                    <button className={`tab-btn ${activeTab === 'anamnese' ? 'active' : ''}`} onClick={() => setActiveTab('anamnese')}>Anamnese</button>
-                    <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos</button>
-                    <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações</button>
-                    <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
+                    
                 </div>
                 <div className="tab-content">
-                    {activeTab === 'acompanhamento' && <AcompanhamentoTab paciente={paciente} nutricionista={nutricionista} />}
-                    {activeTab === 'metas' && <MetasTab />}
-                    {activeTab === 'chat' && <ChatTab paciente={paciente} nutricionista={nutricionista} />}
                     {activeTab === 'anamnese' && <AnamneseForm prontuario={prontuario} onSave={setProntuario} />}
                     {activeTab === 'planos' && <PlanosTab />}
                     {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}
                     {activeTab === 'evolucoes' && <EvolucaoTab prontuario={prontuario} onUpdate={setProntuario} />}
+                    {activeTab === 'acompanhamento' && <AcompanhamentoTab paciente={paciente} nutricionista={nutricionista} />}
+                    {activeTab === 'metas' && <MetasTab />}
+                    {activeTab === 'chat' && <ChatTab paciente={paciente} nutricionista={nutricionista} />}
                 </div>
             </Card>
         </div>

@@ -32,7 +32,7 @@ const messages = {
 
 const AgendaPage = () => {
     const [events, setEvents] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [setLoading] = useState(true);
     const [modalInfo, setModalInfo] = useState({ isOpen: false, slot: null, event: null });
 
     const fetchAgendamentos = useCallback(async () => {

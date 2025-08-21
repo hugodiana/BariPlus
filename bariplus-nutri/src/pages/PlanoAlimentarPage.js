@@ -7,6 +7,7 @@ import Card from '../components/ui/Card';
 import Modal from '../components/Modal';
 import ResumoNutricional from '../components/plano/ResumoNutricional';
 import BuscaAlimentos from '../components/BuscaAlimentos';
+import DefinirMetasModal from '../components/plano/DefinirMetasModal'; 
 import './PlanoAlimentarPage.css';
 
 const PlanoAlimentarPage = () => {
@@ -14,13 +15,15 @@ const PlanoAlimentarPage = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [isFoodModalOpen, setIsFoodModalOpen] = useState(false);
+    const [isMetasModalOpen, setIsMetasModalOpen] = useState(true);
+    const [metas, setMetas] = useState(null);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
     const [planoTemplates, setPlanoTemplates] = useState([]);
     const [currentRefIndex, setCurrentRefIndex] = useState(null);
     const [plano, setPlano] = useState({
         titulo: '',
         observacoesGerais: '',
-        refeicoes: [{ nome: 'Pequeno-almoço', horario: '08:00', itens: [] }]
+        refeicoes: [{ nome: 'Café da Manhã', horario: '08:00', itens: [] }]
     });
 
     const fetchTemplates = useCallback(async () => {
@@ -83,13 +86,18 @@ const PlanoAlimentarPage = () => {
         setPlano(p => ({ ...p, refeicoes: novasRefeicoes }));
     };
 
+    const handleSaveMetas = (metasDefinidas) => {
+        setMetas(metasDefinidas);
+        setIsMetasModalOpen(false);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         try {
+            const planoData = { ...plano, pacienteId, metas };
             await fetchApi('/api/nutri/planos/criar', {
-                method: 'POST',
-                body: JSON.stringify({ ...plano, pacienteId })
+                method: 'POST', body: JSON.stringify(planoData)
             });
             toast.success('Plano alimentar criado com sucesso!');
             navigate(`/prontuario/${pacienteId}`);
@@ -99,6 +107,11 @@ const PlanoAlimentarPage = () => {
             setLoading(false);
         }
     };
+
+    if (!metas) {
+        return isMetasModalOpen && <DefinirMetasModal onSave={handleSaveMetas} onClose={() => navigate(`/prontuario/${pacienteId}`)} />;
+    }
+
 
     return (
         <div className="page-container plano-alimentar-layout">
@@ -144,7 +157,7 @@ const PlanoAlimentarPage = () => {
                 </form>
             </div>
             <div className="plano-resumo-coluna">
-                <ResumoNutricional refeicoes={plano.refeicoes} />
+                <ResumoNutricional refeicoes={plano.refeicoes} metas={metas} />
             </div>
 
             <Modal isOpen={isFoodModalOpen} onClose={() => setIsFoodModalOpen(false)}>

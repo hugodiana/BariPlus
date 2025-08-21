@@ -85,8 +85,18 @@ const AnamneseForm = ({ prontuario, onSave }) => {
                 <div className="form-grid">
                     <div className="form-group"><label>Alergias</label><textarea name="historicoClinico.alergias" value={formData.historicoClinico?.alergias || ''} onChange={handleChange} rows="2" /></div>
                     <div className="form-group"><label>Intolerâncias</label><textarea name="historicoClinico.intolerancias" value={formData.historicoClinico?.intolerancias || ''} onChange={handleChange} rows="2" /></div>
-                    <div className="form-group"><label>Medicamentos em Uso</label><textarea name="historicoClinico.medicamentosEmUso" value={formData.historicoClinico?.medicamentosEmUso || ''} onChange={handleChange} rows="2" /></div>
+                    <div className="form-group"><label>Medicamentos e Suplementos em Uso</label><textarea name="historicoClinico.medicamentosEmUso" value={formData.historicoClinico?.medicamentosEmUso || ''} onChange={handleChange} rows="2" /></div>
                     <div className="form-group"><label>Histórico Familiar</label><textarea name="historicoClinico.historicoFamiliar" value={formData.historicoClinico?.historicoFamiliar || ''} onChange={handleChange} rows="2" /></div>
+                </div>
+            </div>
+            
+             <div className="form-section">
+                <h4>Hábitos de Vida e Sociais</h4>
+                <div className="form-grid">
+                    <div className="form-group"><label>Atividade Física (Tipo, Frequência)</label><input type="text" name="habitosDeVida.atividadeFisica" value={formData.habitosDeVida?.atividadeFisica || ''} onChange={handleChange} /></div>
+                    <div className="form-group"><label>Qualidade do Sono</label><input type="text" name="habitosDeVida.qualidadeSono" value={formData.habitosDeVida?.qualidadeSono || ''} onChange={handleChange} /></div>
+                    <div className="form-group"><label>Consumo de Álcool</label><input type="text" name="habitosDeVida.consumoAlcool" value={formData.habitosDeVida?.consumoAlcool || ''} onChange={handleChange} /></div>
+                    <div className="form-group"><label>Tabagismo</label><input type="text" name="habitosDeVida.tabagismo" value={formData.habitosDeVida?.tabagismo || ''} onChange={handleChange} /></div>
                 </div>
             </div>
 

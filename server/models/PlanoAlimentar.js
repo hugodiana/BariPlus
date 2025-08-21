@@ -27,6 +27,12 @@ const PlanoAlimentarSchema = new mongoose.Schema({
     nutricionistaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Nutricionista', required: true },
     pacienteId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, 
     titulo: { type: String, required: true },
+    metas: {
+        vet: { type: Number, default: 0 }, // Valor Energético Total (Kcal)
+        carboidratos_percent: { type: Number, default: 40 },
+        proteinas_percent: { type: Number, default: 30 },
+        gorduras_percent: { type: Number, default: 30 }
+    },
     refeicoes: [refeicaoSchema],
     observacoesGerais: String,
     ativo: { type: Boolean, default: true },
