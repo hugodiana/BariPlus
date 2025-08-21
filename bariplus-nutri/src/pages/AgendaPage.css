@@ -100,3 +100,36 @@
     border-color: var(--color-border);
     color: var(--color-text-secondary);
 }
+
+/* Cores dos Eventos com Base no Status */
+.rbc-event.status-agendado {
+    background-color: var(--color-accent) !important;
+    border-color: #0056b3 !important;
+}
+.rbc-event.status-confirmado {
+    background-color: var(--color-success) !important;
+    border-color: #218838 !important;
+}
+.rbc-event.status-realizado {
+    background-color: var(--color-text-faint) !important;
+    border-color: #6c757d !important;
+    opacity: 0.8;
+}
+.rbc-event.status-cancelado {
+    background-color: var(--color-danger) !important;
+    border-color: #a02d23 !important;
+    text-decoration: line-through;
+}
+
+.evolucao-section {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-lg);
+    border-top: 2px solid var(--color-border);
+}
+.evolucao-section h4 {
+    margin-top: 0;
+    color: var(--color-primary);
+}
+.evolucao-section .form-actions {
+    margin-top: 0; /* Remove a margem extra */
+}

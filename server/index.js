@@ -37,6 +37,7 @@ const metaRoutes = require('./routes/metaRoutes');
 const refeicaoTemplateRoutes = require('./routes/refeicaoTemplateRoutes');
 const prontuarioRoutes = require('./routes/prontuarioRoutes');
 const alimentoRoutes = require('./routes/alimentoRoutes');
+const publicRoutes = require('./routes/publicRoutes');
 
 // IMPORTAÇÃO DE MIDDLEWARES E MODELOS (APENAS O NECESSÁRIO)
 const errorHandler = require('./middlewares/errorHandler');
@@ -111,6 +112,7 @@ cloudinary.config({
 // --- 4. ROTAS DA API (ORDEM CORRIGIDA) ---
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPlus API está saudável!' }));
 app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPlus API está a correr!' }));
+app.use('/api/public', publicRoutes);
 
 // Rotas do Portal do Nutricionista (mais específicas, vêm primeiro)
 app.use('/api/nutri/auth', nutriAuthRoutes);

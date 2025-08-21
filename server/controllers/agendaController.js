@@ -1,7 +1,6 @@
 // server/controllers/agendaController.js
 const Agendamento = require('../models/Agendamento');
 const User = require('../models/userModel');
-// A linha 'const PacienteNutri = require('../models/PacienteNutri');' foi REMOVIDA
 
 // @desc    Buscar todos os agendamentos de um nutricionista
 // @route   GET /api/nutri/agenda
@@ -20,7 +19,8 @@ exports.getAgendamentos = async (req, res) => {
 exports.createAgendamento = async (req, res) => {
     try {
         const nutricionistaId = req.nutricionista.id;
-        const { pacienteId, pacienteModel, title, start, end } = req.body;
+        // ✅ O campo 'status' agora é recebido do frontend
+        const { pacienteId, pacienteModel, title, start, end, status } = req.body;
 
         const novoAgendamento = await Agendamento.create({
             nutricionistaId,
@@ -28,7 +28,8 @@ exports.createAgendamento = async (req, res) => {
             pacienteModel,
             title,
             start,
-            end
+            end,
+            status: status || 'Agendado' // Define 'Agendado' como padrão se não for fornecido
         });
         res.status(201).json(novoAgendamento);
     } catch (error) {
@@ -36,13 +37,14 @@ exports.createAgendamento = async (req, res) => {
     }
 };
 
-// @desc    Atualizar um agendamento (ex: arrastar e soltar no calendário)
+// @desc    Atualizar um agendamento
 // @route   PUT /api/nutri/agenda/:id
 exports.updateAgendamento = async (req, res) => {
     try {
         const { id } = req.params;
         const nutricionistaId = req.nutricionista.id;
-        const { start, end } = req.body;
+        // ✅ O 'status' agora também pode ser atualizado
+        const { start, end, status } = req.body;
 
         const agendamento = await Agendamento.findById(id);
 
@@ -50,8 +52,11 @@ exports.updateAgendamento = async (req, res) => {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
 
-        agendamento.start = start;
-        agendamento.end = end;
+        // Atualiza apenas os campos que foram fornecidos
+        if (start) agendamento.start = start;
+        if (end) agendamento.end = end;
+        if (status) agendamento.status = status;
+        
         await agendamento.save();
         
         res.json(agendamento);

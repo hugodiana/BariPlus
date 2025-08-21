@@ -2,6 +2,9 @@
 const Prontuario = require('../models/Prontuario');
 const Nutricionista = require('../models/Nutricionista');
 const User = require('../models/userModel');
+const { Resend } = require('resend');
+const emailTemplate = require('../utils/emailTemplate');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ✅ 1. ADICIONE ESTA FUNÇÃO AUXILIAR NO TOPO DO FICHEIRO
 // Esta função é a chave para corrigir o problema do fuso horário.
@@ -230,14 +233,30 @@ const formatarAvaliacaoUnicaParaEmail = (avaliacao, paciente) => {
     corpoHtml += `<h3 style="color: #37715b;">Resultados Principais</h3>`;
     corpoHtml += `<p><strong>Peso:</strong> ${avaliacao.peso || '-'} kg</p>`;
     corpoHtml += `<p><strong>Altura:</strong> ${avaliacao.altura || '-'} cm</p>`;
-    corpoHtml += `<p><strong>IMC:</strong> ${avaliacao.imc || '-'}</p>`;
-    corpoHtml += `</div>`;
+    corpoHtml += `<p><strong>IMC:</strong> ${avaliacao.imc || '-'}</p></div>`;
 
-    if (avaliacao.circunferencias) {
+    // Adiciona a secção de Circunferências dinamicamente
+    if (avaliacao.circunferencias && Object.keys(avaliacao.circunferencias).length > 0) {
         corpoHtml += `<div style="margin-top: 20px;"><h4 style="color: #37715b;">Circunferências (cm)</h4>`;
-        corpoHtml += `<p><strong>Cintura:</strong> ${avaliacao.circunferencias.cintura || '-'}</p>`;
-        corpoHtml += `<p><strong>Abdómen:</strong> ${avaliacao.circunferencias.abdomen || '-'}</p>`;
-        corpoHtml += `<p><strong>Quadril:</strong> ${avaliacao.circunferencias.quadril || '-'}</p></div>`;
+        for (const [key, value] of Object.entries(avaliacao.circunferencias)) {
+            if(value) { // Só mostra se tiver um valor
+                const label = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1'); // Converte "bracoDireito" para "Braco Direito"
+                corpoHtml += `<p><strong>${label}:</strong> ${value}</p>`;
+            }
+        }
+        corpoHtml += `</div>`;
+    }
+
+    // Adiciona a secção de Dobras Cutâneas dinamicamente
+    if (avaliacao.dobrasCutaneas && Object.keys(avaliacao.dobrasCutaneas).length > 0) {
+        corpoHtml += `<div style="margin-top: 20px;"><h4 style="color: #37715b;">Dobras Cutâneas (mm)</h4>`;
+        for (const [key, value] of Object.entries(avaliacao.dobrasCutaneas)) {
+             if(value) {
+                const label = key.charAt(0).toUpperCase() + key.slice(1);
+                corpoHtml += `<p><strong>${label}:</strong> ${value}</p>`;
+            }
+        }
+        corpoHtml += `</div>`;
     }
 
     if (avaliacao.observacoes) {
@@ -255,25 +274,21 @@ exports.enviarAvaliacaoUnicaPorEmail = async (req, res) => {
         if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
-        
         const prontuario = await Prontuario.findOne({ pacienteId });
         const paciente = await User.findById(pacienteId);
         const avaliacao = prontuario?.avaliacoes.id(avaliacaoId);
-
         if (!paciente || !paciente.email) return res.status(400).json({ message: 'Paciente sem e-mail cadastrado.' });
         if (!avaliacao) return res.status(404).json({ message: 'Avaliação não encontrada.' });
-
         const emailHtml = formatarAvaliacaoUnicaParaEmail(avaliacao, paciente);
-        
         await resend.emails.send({
             from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
             to: [paciente.email],
             subject: `Sua Avaliação Física de ${new Date(avaliacao.data).toLocaleDateString('pt-BR')}`,
             html: emailHtml,
         });
-        
         res.status(200).json({ message: 'Avaliação enviada com sucesso!' });
     } catch (error) {
+        console.error("Erro ao enviar e-mail de avaliação:", error);
         res.status(500).json({ message: 'Erro ao enviar e-mail da avaliação.' });
     }
 };

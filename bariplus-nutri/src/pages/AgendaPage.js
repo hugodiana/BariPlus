@@ -2,59 +2,33 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import ptBR from 'date-fns/locale/pt-BR';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { toast } from 'react-toastify';
-
 import { fetchApi } from '../utils/api';
-import LoadingSpinner from '../components/LoadingSpinner';
-// CORREÇÃO: Importa o modal do seu novo ficheiro
-import AddAgendamentoModal from '../components/agenda/AddAgendamentoModal'; 
+import AddAgendamentoModal from '../components/agenda/AddAgendamentoModal';
 import './AgendaPage.css';
 
 const locales = { 'pt-BR': ptBR };
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
-
-const messages = {
-  allDay: 'Dia Inteiro',
-  previous: '‹ Anterior',
-  next: 'Próximo ›',
-  today: 'Hoje',
-  month: 'Mês',
-  week: 'Semana',
-  day: 'Dia',
-  agenda: 'Agenda',
-  date: 'Data',
-  time: 'Hora',
-  event: 'Evento',
-  noEventsInRange: 'Não há eventos neste período.',
-  showMore: total => `+ Ver mais (${total})`
-};
+const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
 
 const AgendaPage = () => {
-    const [agendamentos, setAgendamentos] = useState([]);
+    const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedSlot, setSelectedSlot] = useState(null);
+    const [modalInfo, setModalInfo] = useState({ isOpen: false, slot: null, event: null });
 
     const fetchAgendamentos = useCallback(async () => {
         setLoading(true);
         try {
             const data = await fetchApi('/api/nutri/agenda');
-            const eventosFormatados = data.map(evt => ({
-                ...evt,
-                start: new Date(evt.start),
-                end: new Date(evt.end),
+            const formattedEvents = data.map(ag => ({
+                ...ag,
+                start: new Date(ag.start),
+                end: new Date(ag.end),
             }));
-            setAgendamentos(eventosFormatados);
+            setEvents(formattedEvents);
         } catch (error) {
-            toast.error("Erro ao carregar a agenda.");
+            toast.error("Erro ao carregar agendamentos.");
         } finally {
             setLoading(false);
         }
@@ -63,61 +37,60 @@ const AgendaPage = () => {
     useEffect(() => {
         fetchAgendamentos();
     }, [fetchAgendamentos]);
-    
+
     const handleSelectSlot = useCallback((slotInfo) => {
-        setSelectedSlot(slotInfo);
-        setIsModalOpen(true);
+        setModalInfo({ isOpen: true, slot: slotInfo, event: null });
     }, []);
 
-    const handleEventDrop = useCallback(async ({ event, start, end }) => {
-        try {
-            await fetchApi(`/api/nutri/agenda/${event._id}`, {
-                method: 'PUT',
-                body: JSON.stringify({ start, end })
-            });
-            toast.success("Consulta reagendada com sucesso!");
-            fetchAgendamentos();
-        } catch (error) {
-            toast.error("Erro ao reagendar a consulta.");
-        }
-    }, [fetchAgendamentos]);
-    
-    if (loading) return <LoadingSpinner />;
+    const handleSelectEvent = useCallback((event) => {
+        setModalInfo({ isOpen: true, slot: null, event: event });
+    }, []);
+
+    const eventStyleGetter = (event) => {
+        const className = `status-${event.status?.toLowerCase() || 'agendado'}`;
+        return { className };
+    };
+
+    const closeModal = () => setModalInfo({ isOpen: false, slot: null, event: null });
 
     return (
         <div className="page-container">
             <div className="page-header">
-                <h1>Minha Agenda</h1>
-                <p>Gira as suas consultas e horários.</p>
+                <h1>Agenda de Consultas</h1>
+                <p>Clique num horário para criar um novo agendamento ou num evento existente para o editar.</p>
             </div>
             <div className="calendar-container">
                 <Calendar
                     localizer={localizer}
-                    events={agendamentos}
+                    events={events}
                     startAccessor="start"
                     endAccessor="end"
-                    style={{ height: '70vh' }}
+                    style={{ height: '75vh' }}
                     selectable
                     onSelectSlot={handleSelectSlot}
-                    onEventDrop={handleEventDrop}
-                    messages={messages}
-                    culture='pt-BR'
-                    formats={{
-                        timeGutterFormat: 'HH:mm',
-                        eventTimeRangeFormat: ({ start, end }, culture, local) =>
-                            `${local.format(start, 'HH:mm', culture)} - ${local.format(end, 'HH:mm', culture)}`,
-                        agendaTimeRangeFormat: ({ start, end }, culture, local) =>
-                            `${local.format(start, 'HH:mm', culture)} - ${local.format(end, 'HH:mm', culture)}`
+                    onSelectEvent={handleSelectEvent}
+                    eventPropGetter={eventStyleGetter}
+                    messages={{
+                        next: "Próximo",
+                        previous: "Anterior",
+                        today: "Hoje",
+                        month: "Mês",
+                        week: "Semana",
+                        day: "Dia",
+                        agenda: "Agenda",
+                        noEventsInRange: "Não há eventos neste período.",
                     }}
                 />
             </div>
-            {isModalOpen && (
-                <AddAgendamentoModal 
-                    slot={selectedSlot}
-                    onClose={() => setIsModalOpen(false)}
+
+            {modalInfo.isOpen && (
+                <AddAgendamentoModal
+                    slot={modalInfo.slot}
+                    eventToEdit={modalInfo.event}
+                    onClose={closeModal}
                     onSave={() => {
-                        setIsModalOpen(false);
-                        fetchAgendamentos();
+                        closeModal();
+                        fetchAgendamentos(); // Recarrega os eventos
                     }}
                 />
             )}
