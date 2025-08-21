@@ -222,3 +222,58 @@ exports.deleteAvaliacao = async (req, res) => {
         res.status(500).json({ message: 'Erro ao apagar avaliação.' });
     }
 };
+
+const formatarAvaliacaoUnicaParaEmail = (avaliacao, paciente) => {
+    let corpoHtml = `<p>Olá, ${paciente.nome}! Segue o resumo da sua avaliação física realizada em ${new Date(avaliacao.data).toLocaleDateString('pt-BR')}.</p>`;
+    
+    corpoHtml += `<div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">`;
+    corpoHtml += `<h3 style="color: #37715b;">Resultados Principais</h3>`;
+    corpoHtml += `<p><strong>Peso:</strong> ${avaliacao.peso || '-'} kg</p>`;
+    corpoHtml += `<p><strong>Altura:</strong> ${avaliacao.altura || '-'} cm</p>`;
+    corpoHtml += `<p><strong>IMC:</strong> ${avaliacao.imc || '-'}</p>`;
+    corpoHtml += `</div>`;
+
+    if (avaliacao.circunferencias) {
+        corpoHtml += `<div style="margin-top: 20px;"><h4 style="color: #37715b;">Circunferências (cm)</h4>`;
+        corpoHtml += `<p><strong>Cintura:</strong> ${avaliacao.circunferencias.cintura || '-'}</p>`;
+        corpoHtml += `<p><strong>Abdómen:</strong> ${avaliacao.circunferencias.abdomen || '-'}</p>`;
+        corpoHtml += `<p><strong>Quadril:</strong> ${avaliacao.circunferencias.quadril || '-'}</p></div>`;
+    }
+
+    if (avaliacao.observacoes) {
+        corpoHtml += `<div style="margin-top: 20px;"><h4 style="color: #37715b;">Observações do Nutricionista:</h4><p>${avaliacao.observacoes}</p></div>`;
+    }
+
+    return emailTemplate(`Sua Avaliação Física - ${new Date(avaliacao.data).toLocaleDateString('pt-BR')}`, corpoHtml, null, null);
+};
+
+// @desc    Enviar uma avaliação específica por e-mail
+// @route   POST /api/nutri/prontuarios/:pacienteId/avaliacoes/:avaliacaoId/enviar-email
+exports.enviarAvaliacaoUnicaPorEmail = async (req, res) => {
+    try {
+        const { pacienteId, avaliacaoId } = req.params;
+        if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+        
+        const prontuario = await Prontuario.findOne({ pacienteId });
+        const paciente = await User.findById(pacienteId);
+        const avaliacao = prontuario?.avaliacoes.id(avaliacaoId);
+
+        if (!paciente || !paciente.email) return res.status(400).json({ message: 'Paciente sem e-mail cadastrado.' });
+        if (!avaliacao) return res.status(404).json({ message: 'Avaliação não encontrada.' });
+
+        const emailHtml = formatarAvaliacaoUnicaParaEmail(avaliacao, paciente);
+        
+        await resend.emails.send({
+            from: `BariPlus <${process.env.MAIL_FROM_ADDRESS}>`,
+            to: [paciente.email],
+            subject: `Sua Avaliação Física de ${new Date(avaliacao.data).toLocaleDateString('pt-BR')}`,
+            html: emailHtml,
+        });
+        
+        res.status(200).json({ message: 'Avaliação enviada com sucesso!' });
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao enviar e-mail da avaliação.' });
+    }
+};

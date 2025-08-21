@@ -267,6 +267,13 @@
     font-weight: 500;
     font-size: 0.9rem;
 }
+
+.card-header-action .header-buttons {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
 .action-btn-view { border: 1px solid var(--color-border); background-color: var(--color-surface); }
 .action-btn-delete { border: 1px solid var(--color-danger); background-color: transparent; color: var(--color-danger); }
 

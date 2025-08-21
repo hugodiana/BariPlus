@@ -1,8 +1,10 @@
 // src/components/paciente/ViewAvaliacaoModal.js
-import React from 'react';
+import React, { useState } from 'react';
 import Modal from '../Modal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'react-toastify';
+import { fetchApi } from '../../utils/api';
 
 const DetailRow = ({ title, children }) => (
     <div className="detail-row">
@@ -12,6 +14,23 @@ const DetailRow = ({ title, children }) => (
 );
 
 const ViewAvaliacaoModal = ({ avaliacao, pacienteId, onClose, onEdit }) => {
+    const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+    const handleSendEmail = async () => {
+        setIsSendingEmail(true);
+        try {
+            const data = await fetchApi(`/api/nutri/prontuarios/${pacienteId}/avaliacoes/${avaliacao._id}/enviar-email`, {
+                method: 'POST'
+            });
+            toast.success(data.message);
+            onClose(); // Fecha o modal após o envio
+        } catch (error) {
+            toast.error(error.message || "Não foi possível enviar o e-mail.");
+        } finally {
+            setIsSendingEmail(false);
+        }
+    };
+
     return (
         <Modal isOpen={true} onClose={onClose}>
             <h2>Avaliação de {format(new Date(avaliacao.data), 'dd/MM/yyyy', { locale: ptBR })}</h2>
@@ -32,11 +51,15 @@ const ViewAvaliacaoModal = ({ avaliacao, pacienteId, onClose, onEdit }) => {
                     <p>Subescapular: {avaliacao.dobrasCutaneas?.subescapular || '-'}</p>
                     <p>Supra-ilíaca: {avaliacao.dobrasCutaneas?.suprailiaca || '-'}</p>
                 </DetailRow>
+                {avaliacao.observacoes && (
+                    <DetailRow title="Observações"><p>{avaliacao.observacoes}</p></DetailRow>
+                )}
             </div>
             <div className="form-actions">
                 <button type="button" className="secondary-btn" onClick={onEdit}>Editar Avaliação</button>
-                {/* O botão de enviar e-mail foi movido para aqui, mas será implementado depois */}
-                <button type="button" className="submit-btn">Enviar por E-mail</button>
+                <button type="button" className="submit-btn" onClick={handleSendEmail} disabled={isSendingEmail}>
+                    {isSendingEmail ? 'A enviar...' : 'Enviar por E-mail'}
+                </button>
             </div>
         </Modal>
     );
