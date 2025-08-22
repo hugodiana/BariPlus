@@ -4,6 +4,7 @@ const Nutricionista = require('../models/Nutricionista');
 const User = require('../models/userModel'); // ✅ Importar User
 const { v2: cloudinary } = require('cloudinary');
 const { Resend } = require('resend'); // ✅ Importar Resend
+const axios = require('axios');
 const emailTemplate = require('../utils/emailTemplate'); // ✅ Importar Template
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -143,5 +144,32 @@ exports.sendDocumentoPorEmail = async (req, res) => {
         res.status(200).json({ message: 'Documento enviado por e-mail com sucesso!' });
     } catch (error) {
         res.status(500).json({ message: 'Erro ao enviar e-mail do documento.' });
+    }
+};
+
+exports.downloadDocumento = async (req, res) => {
+    try {
+        const { pacienteId, docId } = req.params;
+        if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+        const prontuario = await Prontuario.findOne({ pacienteId });
+        const documento = prontuario.documentos.id(docId);
+        if (!documento) return res.status(404).json({ message: 'Documento não encontrado.' });
+
+        // Define o nome do ficheiro para o download
+        res.setHeader('Content-Disposition', `attachment; filename="${documento.nome}"`);
+        
+        // Faz o download do ficheiro da Cloudinary e transmite-o para o utilizador
+        const response = await axios({
+            method: 'get',
+            url: documento.url,
+            responseType: 'stream'
+        });
+        response.data.pipe(res);
+
+    } catch (error) {
+        console.error("Erro no download do documento:", error);
+        res.status(500).json({ message: 'Não foi possível baixar o documento.' });
     }
 };

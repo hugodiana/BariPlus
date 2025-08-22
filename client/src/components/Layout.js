@@ -70,6 +70,7 @@ const Layout = ({ usuario, onLogout }) => {
                         <>
                             <NavItem to="/meu-plano" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
                             <NavItem to="/chat" icon="💬" text="Chat com Nutri" onClick={handleLinkClick} />
+                            <NavLink to="/documentos" onClick={handleLinkClick}>Meus Documentos</NavLink>
                         </>
                     )}
                     <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />

@@ -118,7 +118,7 @@ const DocumentosTab = ({ prontuario, onUpdate }) => {
                         <ul className="documentos-list">
                             {docs.map(doc => (
                                 <li key={doc._id}>
-                                    <a href={doc.url} target="_blank" rel="noopener noreferrer">📄 {doc.nome}</a>
+                                    <a href={`${process.env.REACT_APP_API_URL}/api/nutri/prontuarios/${prontuario.pacienteId}/documentos/${doc._id}/download`} target="_blank" rel="noopener noreferrer">📄 {doc.nome}</a>
                                     <span>{format(new Date(doc.dataUpload), 'dd/MM/yyyy', { locale: ptBR })}</span>
                                     {/* ✅ NOVOS BOTÕES DE AÇÃO */}
                                     <div className="actions-cell">

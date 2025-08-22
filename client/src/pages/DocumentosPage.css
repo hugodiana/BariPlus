@@ -1,0 +1,47 @@
+/* src/pages/DocumentosPage.css */
+
+.documentos-list-paciente {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.documentos-list-paciente li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.documentos-list-paciente li:last-child {
+    border-bottom: none;
+}
+
+.doc-info {
+    flex-grow: 1;
+}
+.doc-info strong {
+    display: block;
+    color: var(--text-strong);
+    font-weight: var(--font-weight-medium);
+}
+.doc-info span {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.download-btn {
+    background-color: var(--action-blue);
+    color: white;
+    padding: 8px 16px;
+    border-radius: var(--border-radius);
+    text-decoration: none;
+    font-weight: var(--font-weight-bold);
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+.download-btn:hover {
+    opacity: 0.9;
+}

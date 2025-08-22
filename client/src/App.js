@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingSpinner from './components/LoadingSpinner';
 
+// Lazy load de todas as páginas
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
@@ -39,9 +40,9 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const GanheRendaExtraPage = lazy(() => import('./pages/GanheRendaExtraPage'));
 const PaymentStatusPage = lazy(() => import('./pages/PaymentStatusPage'));
 const MeuPlanoPage = lazy(() => import('./pages/MeuPlanoPage'));
+const DocumentosPage = lazy(() => import('./pages/DocumentosPage')); // ✅ ROTA QUE FALTAVA
 
 function App() {
-    // ... (O resto do seu App.js continua igual)
     const [auth, setAuth] = useState({
         isAuthenticated: false,
         user: null,
@@ -85,6 +86,7 @@ function App() {
             <Suspense fallback={<LoadingSpinner fullPage />}>
                 <ToastContainer position="bottom-right" autoClose={4000} hideProgressBar={false} />
                 <Routes>
+                    {/* Rotas Públicas */}
                     <Route path="/landing" element={<LandingPage />} />
                     <Route path="/login" element={!auth.isAuthenticated ? <LoginPage onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" />} />
                     <Route path="/register" element={!auth.isAuthenticated ? <RegisterPage /> : <Navigate to="/" />} />
@@ -105,10 +107,12 @@ function App() {
                             : <Navigate to={auth.isAuthenticated ? "/" : "/login"} />
                     }/>
                     
+                    {/* ✅ CORREÇÃO: A prop foi renomeada para 'usuario' para ser consistente com o seu Layout.js */}
                     <Route path="/" element={<ProtectedRoute auth={auth}><Layout usuario={auth.user} onLogout={handleLogout} /></ProtectedRoute>}>
                         <Route index element={<DashboardPage />} />
                         <Route path="meu-plano" element={<MeuPlanoPage />} />
                         <Route path="chat" element={<ChatPage />} />
+                        <Route path="documentos" element={<DocumentosPage />} /> {/* ✅ ROTA QUE FALTAVA */}
                         <Route path="progresso" element={<ProgressoPage />} />
                         <Route path="diario" element={<FoodDiaryPage />} />
                         <Route path="hidratacao" element={<HydrationPage />} />
