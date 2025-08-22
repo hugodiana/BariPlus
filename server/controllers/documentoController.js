@@ -22,12 +22,14 @@ exports.uploadDocumento = async (req, res) => {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
 
-        // Faz o upload para a Cloudinary a partir do buffer do ficheiro
         const b64 = Buffer.from(req.file.buffer).toString("base64");
         const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+        
+        // ✅ CORREÇÃO: Adicionamos access_mode: 'public' para garantir que o ficheiro seja acessível
         const result = await cloudinary.uploader.upload(dataURI, {
-            folder: `bariplus_documentos/${pacienteId}`, // Organiza os ficheiros por paciente
-            resource_type: 'auto' // Permite o upload de PDFs, imagens, etc.
+            folder: `bariplus_documentos/${pacienteId}`,
+            resource_type: 'auto',
+            access_mode: 'public' 
         });
 
         const novoDocumento = {
@@ -71,11 +73,14 @@ exports.deleteDocumento = async (req, res) => {
         // Apaga o ficheiro da Cloudinary
         await cloudinary.uploader.destroy(documento.publicId);
         
-        // Remove a referência do documento da base de dados
-        documento.remove();
-        await prontuario.save();
+        // ✅ CORREÇÃO: Usamos o operador $pull do MongoDB para remover o documento do array
+        const updatedProntuario = await Prontuario.findOneAndUpdate(
+            { pacienteId },
+            { $pull: { documentos: { _id: docId } } },
+            { new: true }
+        );
 
-        res.json(prontuario);
+        res.json(updatedProntuario);
     } catch (error) {
         console.error("Erro ao apagar documento:", error);
         res.status(500).json({ message: 'Erro ao apagar o documento.' });
