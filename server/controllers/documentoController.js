@@ -21,7 +21,7 @@ exports.uploadDocumento = async (req, res) => {
         const b64 = Buffer.from(req.file.buffer).toString("base64");
         const dataURI = `data:${req.file.mimetype};base64,${b64}`;
         
-        // ✅ CORREÇÃO: Identifica o tipo de recurso correto. PDFs são 'raw'.
+        // PDFs devem ser tratados como 'raw', imagens como 'image'.
         const resource_type = req.file.mimetype === 'application/pdf' ? 'raw' : 'image';
 
         const result = await cloudinary.uploader.upload(dataURI, {
@@ -29,12 +29,22 @@ exports.uploadDocumento = async (req, res) => {
             resource_type: resource_type,
         });
 
+        let finalUrl = result.secure_url;
+
+        // ✅ A CORREÇÃO DEFINITIVA ESTÁ AQUI
+        // Se for um ficheiro 'raw' (como PDF), modificamos a URL para forçar o download.
+        if (resource_type === 'raw') {
+            const urlParts = finalUrl.split('/upload/');
+            // Insere a flag 'fl_attachment' na URL.
+            finalUrl = `${urlParts[0]}/upload/fl_attachment/${urlParts[1]}`;
+        }
+        
         const novoDocumento = {
             nome: nome || req.file.originalname,
             categoria: categoria || 'Geral',
-            url: result.secure_url,
+            url: finalUrl,
             publicId: result.public_id,
-            resourceType: resource_type // Guarda o tipo de recurso na base de dados
+            resourceType: resource_type
         };
 
         const prontuario = await Prontuario.findOneAndUpdate(
@@ -61,7 +71,7 @@ exports.deleteDocumento = async (req, res) => {
         const documento = prontuario.documentos.id(docId);
         if (!documento) return res.status(404).json({ message: 'Documento não encontrado.' });
         
-        // ✅ CORREÇÃO: Usa o resourceType guardado para apagar o ficheiro corretamente.
+        // Usa o resourceType guardado para apagar o ficheiro corretamente.
         await cloudinary.uploader.destroy(documento.publicId, { resource_type: documento.resourceType });
         
         const updatedProntuario = await Prontuario.findOneAndUpdate(
