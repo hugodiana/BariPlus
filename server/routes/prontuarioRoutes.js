@@ -2,21 +2,19 @@
 const express = require('express');
 const router = express.Router();
 const { protectNutri } = require('../middlewares/authNutri');
+const multer = require('multer');
 
-// ✅ CORREÇÃO: A importação da função com o nome antigo foi removida.
 const { 
-    getProntuario, 
-    updateAnamnese, 
-    addAvaliacao, 
-    updateAvaliacao,
-    deleteAvaliacao,
-    addEvolucao,
-    enviarAvaliacaoUnicaPorEmail,
-    addExameBioquimico,
-    deleteExameBioquimico
+    getProntuario, updateAnamnese, addAvaliacao, updateAvaliacao,
+    deleteAvaliacao, addEvolucao, enviarAvaliacaoUnicaPorEmail,
+    addExameBioquimico, deleteExameBioquimico
 } = require('../controllers/prontuarioController');
+const { uploadDocumento, deleteDocumento } = require('../controllers/documentoController');
 
-// Todas as rotas aqui são protegidas
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
+// ✅ CORREÇÃO: Aplicamos o middleware de proteção a TODAS as rotas deste ficheiro.
 router.use(protectNutri);
 
 // Rota para buscar o prontuário completo
@@ -38,5 +36,8 @@ router.post('/:pacienteId/evolucao', addEvolucao);
 router.post('/:pacienteId/exames', addExameBioquimico);
 router.delete('/:pacienteId/exames/:exameId', deleteExameBioquimico);
 
+// Rotas para documentos
+router.post('/:pacienteId/documentos', upload.single('documento'), uploadDocumento);
+router.delete('/:pacienteId/documentos/:docId', deleteDocumento);
 
 module.exports = router;

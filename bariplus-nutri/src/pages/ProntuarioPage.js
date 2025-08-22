@@ -13,6 +13,7 @@ import AcompanhamentoTab from '../components/paciente/AcompanhamentoTab';
 import ExamesTab from '../components/paciente/ExamesTab';
 import MetasTab from '../components/paciente/MetasTab';
 import ChatTab from '../components/paciente/ChatTab';
+import DocumentosTab from '../components/paciente/DocumentosTab';
 import './ProntuarioPage.css';
 
 const ProntuarioPage = () => {
@@ -96,6 +97,7 @@ const ProntuarioPage = () => {
                     <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos</button>
                     <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações</button>
                     <button className={`tab-btn ${activeTab === 'exames' ? 'active' : ''}`} onClick={() => setActiveTab('exames')}>Exames</button>
+                    <button className={`tab-btn ${activeTab === 'documentos' ? 'active' : ''}`} onClick={() => setActiveTab('documentos')}>Documentos</button>
                     <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
                 </div>
                 <div className="tab-content">
@@ -106,6 +108,7 @@ const ProntuarioPage = () => {
                     {activeTab === 'planos' && <PlanosTab />}
                     {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}
                     {activeTab === 'exames' && <ExamesTab prontuario={prontuario} onUpdate={setProntuario} />}
+                    {activeTab === 'documentos' && <DocumentosTab prontuario={prontuario} onUpdate={setProntuario} />}
                     {activeTab === 'evolucoes' && <EvolucaoTab prontuario={prontuario} onUpdate={setProntuario} />}
                 </div>
             </Card>

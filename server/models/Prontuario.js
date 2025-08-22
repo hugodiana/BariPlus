@@ -90,6 +90,14 @@ const ProntuarioSchema = new mongoose.Schema({
     evolucao: [{
         data: { type: Date, default: Date.now },
         nota: { type: String, required: true }
+    }],
+
+    documentos: [{
+        nome: { type: String, required: true },
+        url: { type: String, required: true }, // URL segura da Cloudinary
+        publicId: { type: String, required: true }, // ID da Cloudinary para permitir apagar
+        categoria: { type: String, default: 'Geral' },
+        dataUpload: { type: Date, default: Date.now }
     }]
 
 }, { timestamps: true });
