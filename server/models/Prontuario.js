@@ -99,7 +99,8 @@ const ProntuarioSchema = new mongoose.Schema({
         // NOVO CAMPO para guardar o tipo de recurso (image, raw, etc.)
         resourceType: { type: String, required: true, default: 'image' },
         categoria: { type: String, default: 'Geral' },
-        dataUpload: { type: Date, default: Date.now }
+        dataUpload: { type: Date, default: Date.now },
+         partilhado: { type: Boolean, default: false }
     }]
 }, { timestamps: true });
 

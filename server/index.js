@@ -39,6 +39,7 @@ const prontuarioRoutes = require('./routes/prontuarioRoutes');
 const alimentoRoutes = require('./routes/alimentoRoutes');
 const publicRoutes = require('./routes/publicRoutes');
 const receitaRoutes = require('./routes/receitaRoutes')
+const documentoPacienteRoutes = require('./routes/documentoPacienteRoutes');
 
 // IMPORTAÇÃO DE MIDDLEWARES E MODELOS (APENAS O NECESSÁRIO)
 const errorHandler = require('./middlewares/errorHandler');
@@ -144,6 +145,7 @@ app.use('/api', reportRoutes);
 app.use('/api', mealPlanRoutes);
 app.use('/api', pagamentoRoutes);
 app.use('/api', metaRoutes);
+app.use('/api', documentoPacienteRoutes);
 
 // Rota de Admin (geralmente por último antes do errorHandler)
 app.use('/api', adminRoutes);

@@ -5,12 +5,12 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { fetchApi } from '../../utils/api';
 import Modal from '../Modal';
-import LoadingSpinner from '../LoadingSpinner';
 import '../../pages/ProntuarioPage.css';
 
 const DocumentosTab = ({ prontuario, onUpdate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState(null); // Para loading de botões específicos
     const [formData, setFormData] = useState({
         nome: '',
         categoria: 'Laudos',
@@ -70,8 +70,33 @@ const DocumentosTab = ({ prontuario, onUpdate }) => {
             }
         }
     };
+
+    // ✅ NOVA FUNÇÃO PARA COMPARTILHAR
+    const handleToggleShare = async (docId) => {
+        setActionLoading(`share-${docId}`);
+        try {
+            const updatedProntuario = await fetchApi(`/api/nutri/prontuarios/${prontuario.pacienteId}/documentos/${docId}/toggle-share`, { method: 'POST' });
+            onUpdate(updatedProntuario);
+        } catch (error) {
+            toast.error("Erro ao alterar o compartilhamento.");
+        } finally {
+            setActionLoading(null);
+        }
+    };
+
+    // ✅ NOVA FUNÇÃO PARA ENVIAR E-MAIL
+    const handleSendEmail = async (docId) => {
+        setActionLoading(`email-${docId}`);
+        try {
+            const data = await fetchApi(`/api/nutri/prontuarios/${prontuario.pacienteId}/documentos/${docId}/send-email`, { method: 'POST' });
+            toast.success(data.message);
+        } catch (error) {
+            toast.error(error.message || "Não foi possível enviar o e-mail.");
+        } finally {
+            setActionLoading(null);
+        }
+    };
     
-    // Agrupa os documentos por categoria
     const documentosAgrupados = prontuario.documentos.reduce((acc, doc) => {
         const cat = doc.categoria || 'Geral';
         if (!acc[cat]) acc[cat] = [];
@@ -95,7 +120,24 @@ const DocumentosTab = ({ prontuario, onUpdate }) => {
                                 <li key={doc._id}>
                                     <a href={doc.url} target="_blank" rel="noopener noreferrer">📄 {doc.nome}</a>
                                     <span>{format(new Date(doc.dataUpload), 'dd/MM/yyyy', { locale: ptBR })}</span>
-                                    <button className="action-btn-delete" onClick={() => handleDelete(doc._id)}>Apagar</button>
+                                    {/* ✅ NOVOS BOTÕES DE AÇÃO */}
+                                    <div className="actions-cell">
+                                        <button 
+                                            className={`action-btn-share ${doc.partilhado ? 'active' : ''}`} 
+                                            onClick={() => handleToggleShare(doc._id)}
+                                            disabled={actionLoading === `share-${doc._id}`}
+                                        >
+                                            {doc.partilhado ? 'No App ✓' : 'Compartilhar no App'}
+                                        </button>
+                                        <button 
+                                            className="action-btn-email"
+                                            onClick={() => handleSendEmail(doc._id)}
+                                            disabled={actionLoading === `email-${doc._id}`}
+                                        >
+                                            {actionLoading === `email-${doc._id}` ? 'Enviando...' : 'E-mail'}
+                                        </button>
+                                        <button className="action-btn-delete" onClick={() => handleDelete(doc._id)}>Apagar</button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>

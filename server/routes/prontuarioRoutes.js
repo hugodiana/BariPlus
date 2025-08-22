@@ -9,7 +9,7 @@ const {
     deleteAvaliacao, addEvolucao, enviarAvaliacaoUnicaPorEmail,
     addExameBioquimico, deleteExameBioquimico, gerarAtestado, getAtestados
 } = require('../controllers/prontuarioController');
-const { uploadDocumento, deleteDocumento } = require('../controllers/documentoController');
+const { uploadDocumento, deleteDocumento, toggleShareDocumento, sendDocumentoPorEmail } = require('../controllers/documentoController');
 
 
 const storage = multer.memoryStorage();
@@ -42,7 +42,9 @@ router.post('/:pacienteId/documentos', upload.single('documento'), uploadDocumen
 router.delete('/:pacienteId/documentos/:docId', deleteDocumento);
 
 // Rota para gerar atestado
-router.get('/:pacienteId/atestados', getAtestados);
-router.post('/:pacienteId/gerar-atestado', gerarAtestado);
+router.post('/:pacienteId/documentos', upload.single('documento'), uploadDocumento);
+router.delete('/:pacienteId/documentos/:docId', deleteDocumento);
+router.post('/:pacienteId/documentos/:docId/toggle-share', toggleShareDocumento); // Partilhar no App
+router.post('/:pacienteId/documentos/:docId/send-email', sendDocumentoPorEmail); // Enviar por E-mail
 
 module.exports = router;
