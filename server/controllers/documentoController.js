@@ -21,27 +21,20 @@ exports.uploadDocumento = async (req, res) => {
         const b64 = Buffer.from(req.file.buffer).toString("base64");
         const dataURI = `data:${req.file.mimetype};base64,${b64}`;
         
-        // ✅ CORREÇÃO APLICADA AQUI
-        // Para PDFs, forçamos a Cloudinary a tratá-los como imagens para garantir o acesso público.
-        const resource_type = req.file.mimetype === 'application/pdf' ? 'image' : 'auto';
+        // ✅ CORREÇÃO: Identifica o tipo de recurso correto. PDFs são 'raw'.
+        const resource_type = req.file.mimetype === 'application/pdf' ? 'raw' : 'image';
 
         const result = await cloudinary.uploader.upload(dataURI, {
             folder: `bariplus_documentos/${pacienteId}`,
             resource_type: resource_type,
-            // A flag access_mode: 'public' pode não ser necessária, mas mantemo-la por segurança.
         });
-        
-        let finalUrl = result.secure_url;
-        // Se for PDF, e a URL terminar com uma extensão de imagem, removemo-la para o link de download direto.
-        if (req.file.mimetype === 'application/pdf' && (finalUrl.endsWith('.jpg') || finalUrl.endsWith('.png'))) {
-            finalUrl = finalUrl.slice(0, -4);
-        }
 
         const novoDocumento = {
             nome: nome || req.file.originalname,
             categoria: categoria || 'Geral',
-            url: finalUrl,
-            publicId: result.public_id
+            url: result.secure_url,
+            publicId: result.public_id,
+            resourceType: resource_type // Guarda o tipo de recurso na base de dados
         };
 
         const prontuario = await Prontuario.findOneAndUpdate(
@@ -49,7 +42,6 @@ exports.uploadDocumento = async (req, res) => {
             { $push: { documentos: novoDocumento } },
             { new: true, upsert: true }
         );
-
         res.status(201).json(prontuario);
 
     } catch (error) {
@@ -64,17 +56,13 @@ exports.deleteDocumento = async (req, res) => {
         if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
+
         const prontuario = await Prontuario.findOne({ pacienteId });
         const documento = prontuario.documentos.id(docId);
-        if (!documento) {
-            return res.status(404).json({ message: 'Documento não encontrado.' });
-        }
-
-        // Para apagar, precisamos de saber o tipo de recurso original.
-        const publicId = documento.publicId;
-        const resourceType = publicId.endsWith('.pdf') ? 'raw' : 'image';
+        if (!documento) return res.status(404).json({ message: 'Documento não encontrado.' });
         
-        await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+        // ✅ CORREÇÃO: Usa o resourceType guardado para apagar o ficheiro corretamente.
+        await cloudinary.uploader.destroy(documento.publicId, { resource_type: documento.resourceType });
         
         const updatedProntuario = await Prontuario.findOneAndUpdate(
             { pacienteId },

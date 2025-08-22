@@ -94,12 +94,13 @@ const ProntuarioSchema = new mongoose.Schema({
 
     documentos: [{
         nome: { type: String, required: true },
-        url: { type: String, required: true }, // URL segura da Cloudinary
-        publicId: { type: String, required: true }, // ID da Cloudinary para permitir apagar
+        url: { type: String, required: true },
+        publicId: { type: String, required: true },
+        // NOVO CAMPO para guardar o tipo de recurso (image, raw, etc.)
+        resourceType: { type: String, required: true, default: 'image' },
         categoria: { type: String, default: 'Geral' },
         dataUpload: { type: Date, default: Date.now }
     }]
-
 }, { timestamps: true });
 
 const Prontuario = mongoose.model('Prontuario', ProntuarioSchema);
