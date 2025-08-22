@@ -7,9 +7,10 @@ const multer = require('multer');
 const { 
     getProntuario, updateAnamnese, addAvaliacao, updateAvaliacao,
     deleteAvaliacao, addEvolucao, enviarAvaliacaoUnicaPorEmail,
-    addExameBioquimico, deleteExameBioquimico
+    addExameBioquimico, deleteExameBioquimico, gerarAtestado, getAtestados
 } = require('../controllers/prontuarioController');
 const { uploadDocumento, deleteDocumento } = require('../controllers/documentoController');
+
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -39,5 +40,9 @@ router.delete('/:pacienteId/exames/:exameId', deleteExameBioquimico);
 // Rotas para documentos
 router.post('/:pacienteId/documentos', upload.single('documento'), uploadDocumento);
 router.delete('/:pacienteId/documentos/:docId', deleteDocumento);
+
+// Rota para gerar atestado
+router.get('/:pacienteId/atestados', getAtestados);
+router.post('/:pacienteId/gerar-atestado', gerarAtestado);
 
 module.exports = router;

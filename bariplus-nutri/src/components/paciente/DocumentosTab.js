@@ -11,47 +11,49 @@ import '../../pages/ProntuarioPage.css';
 const DocumentosTab = ({ prontuario, onUpdate }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [file, setFile] = useState(null);
-    const [formData, setFormData] = useState({ nome: '', categoria: 'Laudos' });
-
-    const handleFileChange = (e) => {
-        setFile(e.target.files[0]);
-    };
+    const [formData, setFormData] = useState({
+        nome: '',
+        categoria: 'Laudos',
+        ficheiro: null
+    });
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleFileChange = (e) => {
+        setFormData(prev => ({ ...prev, ficheiro: e.target.files[0] }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!file) return toast.warn("Por favor, selecione um ficheiro.");
-        
+        if (!formData.ficheiro) return toast.warn("Por favor, selecione um ficheiro.");
         setLoading(true);
+
         const data = new FormData();
-        data.append('documento', file);
-        data.append('nome', formData.nome || file.name);
+        data.append('documento', formData.ficheiro);
+        data.append('nome', formData.nome || formData.ficheiro.name);
         data.append('categoria', formData.categoria);
 
         try {
             const token = localStorage.getItem('nutri_token');
-            // Usamos o fetch nativo aqui porque o nosso fetchApi é para JSON, não para FormData
             const response = await fetch(`${process.env.REACT_APP_API_URL}/api/nutri/prontuarios/${prontuario.pacienteId}/documentos`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
-                body: data,
+                body: data
             });
-            
-            const updatedProntuario = await response.json();
-            if (!response.ok) throw new Error(updatedProntuario.message || 'Erro no servidor');
 
+            const updatedProntuario = await response.json();
+            if (!response.ok) {
+                throw new Error(updatedProntuario.message || 'Falha no upload.');
+            }
+            
             onUpdate(updatedProntuario);
             setIsModalOpen(false);
-            setFile(null);
-            setFormData({ nome: '', categoria: 'Laudos' });
-            toast.success("Documento enviado com sucesso!");
+            toast.success("Documento carregado com sucesso!");
         } catch (error) {
-            toast.error(error.message || "Erro ao enviar documento.");
+            toast.error(error.message);
         } finally {
             setLoading(false);
         }
@@ -68,62 +70,64 @@ const DocumentosTab = ({ prontuario, onUpdate }) => {
             }
         }
     };
+    
+    // Agrupa os documentos por categoria
+    const documentosAgrupados = prontuario.documentos.reduce((acc, doc) => {
+        const cat = doc.categoria || 'Geral';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(doc);
+        return acc;
+    }, {});
 
     return (
         <div>
             <div className="card-header-action">
-                <h3>Documentos do Paciente</h3>
+                <h3>Central de Documentos</h3>
                 <button className="action-btn-positive" onClick={() => setIsModalOpen(true)}>+ Adicionar Documento</button>
             </div>
 
-            <div className="admin-table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nome do Ficheiro</th>
-                            <th>Categoria</th>
-                            <th>Data de Upload</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {prontuario.documentos.map(doc => (
-                            <tr key={doc._id}>
-                                <td>{doc.nome}</td>
-                                <td>{doc.categoria}</td>
-                                <td>{format(new Date(doc.dataUpload), 'dd/MM/yyyy', { locale: ptBR })}</td>
-                                <td className="actions-cell">
-                                    <a href={doc.url} target="_blank" rel="noopener noreferrer" className="action-btn-view">Baixar</a>
+            {Object.keys(documentosAgrupados).length > 0 ? (
+                Object.entries(documentosAgrupados).map(([categoria, docs]) => (
+                    <div key={categoria} className="documentos-categoria-section">
+                        <h4>{categoria}</h4>
+                        <ul className="documentos-list">
+                            {docs.map(doc => (
+                                <li key={doc._id}>
+                                    <a href={doc.url} target="_blank" rel="noopener noreferrer">📄 {doc.nome}</a>
+                                    <span>{format(new Date(doc.dataUpload), 'dd/MM/yyyy', { locale: ptBR })}</span>
                                     <button className="action-btn-delete" onClick={() => handleDelete(doc._id)}>Apagar</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))
+            ) : (
+                <p>Nenhum documento carregado para este paciente.</p>
+            )}
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-                <h2>Adicionar Novo Documento</h2>
+                <h2>Carregar Novo Documento</h2>
                 <form onSubmit={handleSubmit} className="modal-form">
                     <div className="form-group">
                         <label>Ficheiro (PDF, JPG, PNG)</label>
-                        <input type="file" onChange={handleFileChange} required />
+                        <input type="file" name="ficheiro" onChange={handleFileChange} required />
                     </div>
                     <div className="form-group">
-                        <label>Nome do Documento (opcional)</label>
-                        <input type="text" name="nome" value={formData.nome} onChange={handleInputChange} placeholder="Se deixar em branco, usa o nome do ficheiro" />
+                        <label>Nome do Documento (Opcional)</label>
+                        <input type="text" name="nome" placeholder="Se vazio, usa o nome do ficheiro" onChange={handleInputChange} />
                     </div>
                     <div className="form-group">
                         <label>Categoria</label>
                         <select name="categoria" value={formData.categoria} onChange={handleInputChange}>
                             <option>Laudos</option>
                             <option>Pedidos de Exame</option>
-                            <option>Geral</option>
+                            <option>Resultados de Exame</option>
+                            <option>Outros</option>
                         </select>
                     </div>
                     <div className="form-actions">
                         <button type="button" className="secondary-btn" onClick={() => setIsModalOpen(false)}>Cancelar</button>
-                        <button type="submit" className="submit-btn" disabled={loading}>{loading ? 'A enviar...' : 'Enviar'}</button>
+                        <button type="submit" className="submit-btn" disabled={loading}>{loading ? 'A carregar...' : 'Guardar Documento'}</button>
                     </div>
                 </form>
             </Modal>

@@ -2,6 +2,7 @@
 const Prontuario = require('../models/Prontuario');
 const Nutricionista = require('../models/Nutricionista');
 const User = require('../models/userModel');
+const Atestado = require('../models/Atestado');
 const { Resend } = require('resend');
 const emailTemplate = require('../utils/emailTemplate');
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -333,5 +334,77 @@ exports.deleteExameBioquimico = async (req, res) => {
         res.json(prontuario);
     } catch (error) {
         res.status(500).json({ message: 'Erro ao apagar exame.' });
+    }
+};
+
+// @desc    Gerar o texto de um atestado
+// @route   POST /api/nutri/prontuarios/:pacienteId/gerar-atestado
+exports.gerarAtestado = async (req, res) => {
+    try {
+        const { pacienteId } = req.params;
+        const nutricionistaId = req.nutricionista.id;
+        const { tipo, motivo, nomeAcompanhante, dataConsulta, horaInicio, horaFim } = req.body;
+
+        if (!await checkOwnership(nutricionistaId, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        const paciente = await User.findById(pacienteId);
+        const nutricionista = await Nutricionista.findById(nutricionistaId);
+        const dataFormatada = new Date(dataConsulta).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' });
+
+        let textoAtestado = '';
+
+        if (tipo === 'simples') {
+            textoAtestado = `Atesto para os devidos fins que o(a) paciente ${paciente.nome} ${paciente.sobrenome} esteve em consulta nutricional nesta data, das ${horaInicio || ''} às ${horaFim || ''}, sob meus cuidados profissionais.\n\nMotivo: ${motivo || 'Acompanhamento nutricional.'}`;
+        } else if (tipo === 'acompanhante') {
+            if (!nomeAcompanhante) return res.status(400).json({ message: 'O nome do acompanhante é obrigatório.' });
+            textoAtestado = `Atesto para os devidos fins que o(a) Sr(a). ${nomeAcompanhante} esteve presente como acompanhante na consulta nutricional do(a) paciente ${paciente.nome} ${paciente.sobrenome}, realizada nesta data, das ${horaInicio || ''} às ${horaFim || ''}.`;
+        } else {
+            return res.status(400).json({ message: 'Tipo de atestado inválido.' });
+        }
+
+        const atestadoCompleto = `
+ATestado Nutricional
+
+${textoAtestado}
+
+${nutricionista.clinica || 'Consultório'}
+${dataFormatada}.
+
+_______________________________________
+${nutricionista.nome}
+Nutricionista
+CRN: ${nutricionista.crn}
+        `.trim();
+
+        // Guarda o atestado gerado no histórico
+        await Atestado.create({
+            nutricionistaId, pacienteId, tipo,
+            dataConsulta: fixDateTimezone(dataConsulta),
+            horaInicio, horaFim, nomeAcompanhante, motivo,
+            textoCompleto: atestadoCompleto
+        });
+
+        res.json({ atestado: atestadoCompleto });
+
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao gerar atestado.' });
+    }
+};
+
+// @desc    Listar os atestados de um paciente
+// @route   GET /api/nutri/prontuarios/:pacienteId/atestados
+exports.getAtestados = async (req, res) => {
+    try {
+        const { pacienteId } = req.params;
+        if (!await checkOwnership(req.nutricionista.id, pacienteId)) {
+            return res.status(403).json({ message: 'Acesso negado.' });
+        }
+
+        const atestados = await Atestado.find({ pacienteId }).sort({ createdAt: -1 });
+        res.json(atestados);
+    } catch (error) {
+        res.status(500).json({ message: 'Erro ao buscar histórico de atestados.' });
     }
 };
