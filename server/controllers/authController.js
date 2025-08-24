@@ -10,6 +10,7 @@ const asyncHandler = require('express-async-handler');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// A função de registo e outras permanecem iguais
 exports.register = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -39,7 +40,7 @@ exports.register = async (req, res) => {
             whatsapp, 
             password: hashedPassword,
             emailVerificationToken: verificationToken,
-            emailVerificationExpires: new Date(Date.now() + 3600000), // 1 hora
+            emailVerificationExpires: new Date(Date.now() + 3600000),
         });
         await novoUsuario.save();
 
@@ -67,33 +68,54 @@ exports.register = async (req, res) => {
     }
 };
 
-exports.login = asyncHandler(async (req, res) => {
-    const { identifier, password } = req.body;
-    const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
+// ✅ CORREÇÃO APLICADA AQUI
+exports.login = async (req, res) => {
+    try {
+        const { identifier, password } = req.body;
+        
+        if (!identifier || !password) {
+            return res.status(400).json({ message: 'E-mail/usuário e senha são obrigatórios.' });
+        }
 
-    if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
-        res.status(401);
-        throw new Error('Credenciais inválidas.');
-    }
-    if (!usuario.isEmailVerified) {
-        res.status(403);
-        throw new Error('Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.');
-    }
-    
-    const token = jwt.sign({ userId: usuario._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
-    res.json({ 
-        token, 
-        user: {
-            _id: usuario._id,
-            nome: usuario.nome,
-            email: usuario.email,
-            isEmailVerified: usuario.isEmailVerified,
-            pagamentoEfetuado: usuario.pagamentoEfetuado,
-            onboardingCompleto: usuario.onboardingCompleto
-        } 
-    });
-});
+        const user = await User.findOne({
+            $or: [{ email: identifier }, { username: identifier }],
+        }).select('+password'); // Pede explicitamente a senha que está oculta por padrão
 
+        if (!user) {
+            return res.status(401).json({ message: 'Credenciais inválidas.' });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Credenciais inválidas.' });
+        }
+
+        if (!user.isEmailVerified) {
+            return res.status(403).json({ message: 'Sua conta ainda não foi ativada. Por favor, verifique seu e-mail.' });
+        }
+
+        const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
+
+        res.json({
+            token,
+            user: {
+                _id: user._id,
+                nome: user.nome,
+                email: user.email,
+                isEmailVerified: user.isEmailVerified,
+                pagamentoEfetuado: user.pagamentoEfetuado,
+                onboardingCompleto: user.onboardingCompleto,
+            },
+        });
+    } catch (error) {
+        console.error('Erro no login:', error);
+        res.status(500).json({ message: 'Erro interno no servidor.' });
+    }
+};
+
+
+// O restante do ficheiro (verifyEmail, forgotPassword, etc.) permanece exatamente igual...
 exports.verifyEmail = async (req, res) => {
     try {
         const { token } = req.params;
@@ -226,15 +248,8 @@ exports.resetPassword = async (req, res) => {
     }
 };
 
-
-// ✅ FUNÇÃO QUE FALTAVA
 exports.googleCallback = (req, res) => {
-    // O Passport anexa o usuário (encontrado ou criado) ao req.user
     const user = req.user;
-
-    // Geramos um token JWT para o nosso sistema
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
-
-    // Redirecionamos o utilizador para o frontend, passando o token como um parâmetro de URL
     res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
 };

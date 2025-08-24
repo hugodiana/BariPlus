@@ -4,15 +4,11 @@ const mongoose = require('mongoose');
 const UserSchema = new mongoose.Schema({
     nome: { type: String, required: true },
     sobrenome: { type: String },
-    
-    // O campo 'username' já não é obrigatório ser único a nível da base de dados.
-    // A lógica na rota de registo já garante que, quando um username é definido, ele é único.
-    // A opção 'sparse: true' é mantida para otimizar as buscas.
     username: { type: String, unique: true, sparse: true }, 
-
-    email: { type: String, unique: true, sparse: true }, // 'sparse' também é bom para o email
-    password: { type: String },
+    email: { type: String, unique: true, sparse: true, required: true },
+    password: { type: String, select: false }, // ✅ CORREÇÃO: Adicionado para segurança
     googleId: { type: String, unique: true, sparse: true },
+    fotoPerfilUrl: { type: String, default: '' },
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: String,
     emailVerificationExpires: Date,
@@ -42,7 +38,6 @@ const UserSchema = new mongoose.Schema({
         medicationReminders: { type: Boolean, default: true },
         weighInReminders: { type: Boolean, default: true }
     },
-    fotoPerfilUrl: { type: String, default: '' },
     nutricionistaId: { type: mongoose.Schema.Types.ObjectId, ref: 'Nutricionista' },
     statusConta: {
         type: String,

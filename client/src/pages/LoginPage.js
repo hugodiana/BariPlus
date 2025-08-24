@@ -3,30 +3,15 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
-import { fetchApi } from '../utils/api';
+import { fetchApi, setAuthToken } from '../utils/api';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 import './LoginPage.css';
 
 const testimonials = [
-    {
-        quote: "O BariPlus foi um divisor de águas no meu pós-operatório. Ter tudo organizado num só lugar tirou um peso enorme das minhas costas.",
-        author: "Juliana S.",
-        details: "6 meses de pós-operatório",
-        avatar: "https://i.imgur.com/L4DD8sT.png"
-    },
-    {
-        quote: "Finalmente uma ferramenta que entende as nossas necessidades. Os gráficos de progresso são a minha maior motivação diária!",
-        author: "Marcos R.",
-        details: "1 ano de pós-operatório",
-        avatar: "https://i.imgur.com/n5a2j42.png"
-    },
-    {
-        quote: "Indispensável! Uso todos os dias para controlar as minhas vitaminas e o consumo de proteína. Recomendo a todos.",
-        author: "Carla M.",
-        details: "3 meses de pós-operatório",
-        avatar: "https://i.imgur.com/7D7I6d9.png"
-    }
+    { quote: "O BariPlus foi um divisor de águas no meu pós-operatório...", author: "Juliana S.", details: "6 meses de pós-operatório", avatar: "https://i.imgur.com/L4DD8sT.png" },
+    { quote: "Finalmente uma ferramenta que entende as nossas necessidades...", author: "Marcos R.", details: "1 ano de pós-operatório", avatar: "https://i.imgur.com/n5a2j42.png" },
+    { quote: "Indispensável! Uso todos os dias para controlar as minhas vitaminas...", author: "Carla M.", details: "3 meses de pós-operatório", avatar: "https://i.imgur.com/7D7I6d9.png" }
 ];
 
 const LoginPage = () => {
@@ -53,26 +38,23 @@ const LoginPage = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const data = await fetchApi('/api/login', {
+            // ✅ CORREÇÃO: A rota correta agora é /api/auth/login
+            const data = await fetchApi('/api/auth/login', {
                 method: 'POST',
                 body: JSON.stringify(form),
             });
+            setAuthToken(data.token);
             login(data.user, data.token);
-            toast.success("Login bem-sucedido!");
-            const from = location.state?.from?.pathname || '/';
-            navigate(from, { replace: true });
+            toast.success("Login bem-sucedido! A redirecionar...");
         } catch (error) {
             toast.error(error.message || "Credenciais inválidas.");
-        } finally {
             setIsLoading(false);
         }
     };
     
     const handleGoogleLogin = () => {
-        // ✅ AGORA ESTA LINHA VAI FUNCIONAR
-       window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
+        window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
     };
-
 
     return (
         <div className="login-page-container">
@@ -85,13 +67,10 @@ const LoginPage = () => {
                         <h2>Bem-vindo(a) de volta!</h2>
                         <p>A sua jornada de sucesso continua aqui.</p>
                     </div>
-                    
                     <button onClick={handleGoogleLogin} className="social-login-btn google-btn">
                         <FontAwesomeIcon icon={faGoogle} /> Entrar com Google
                     </button>
-                    
                     <div className="divider"><span>ou entre com seu e-mail</span></div>
-
                     <form className="auth-form" onSubmit={handleSubmit}>
                         <input type="text" name="identifier" placeholder="Email ou Nome de Usuário" value={form.identifier} onChange={handleInputChange} required />
                         <input type="password" name="password" placeholder="Senha" value={form.password} onChange={handleInputChange} required />
@@ -99,13 +78,12 @@ const LoginPage = () => {
                             {isLoading ? 'A entrar...' : 'Entrar'}
                         </button>
                         <div className="form-footer">
-                            <Link to="/register">Não tem uma conta? <b>Entre agora para o BariPlus</b></Link>
+                            <Link to="/register">Não tem uma conta? **Entre agora para o BariPlus**</Link>
                             <Link to="/forgot-password">Esqueceu sua senha?</Link>
                         </div>
                     </form>
                 </div>
             </div>
-
             <div className="login-testimonial-section">
                 <div className="testimonial-content">
                     <h2 className="testimonial-title">Junte-se a milhares de pacientes na sua jornada de transformação.</h2>

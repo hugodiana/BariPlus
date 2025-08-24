@@ -1,1 +1,86 @@
-/* LegalPage.css is now handled by Bootstrap. */
+/* client/src/components/LegalPageLayout.css */
+
+.legal-page {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    min-height: 100vh;
+}
+
+.legal-header {
+    background-color: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-md) var(--space-xl);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.legal-header-content {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.legal-logo {
+    height: 35px;
+}
+
+.back-link {
+    text-decoration: none;
+    color: var(--color-primary);
+    font-weight: 500;
+}
+
+.legal-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--space-xxl) var(--space-xl);
+}
+
+.legal-content h1 {
+    font-size: 2.5rem;
+    color: var(--color-text-strong);
+    margin-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-lg);
+}
+
+.legal-text {
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
+
+.legal-text h2 {
+    font-size: 1.8rem;
+    color: var(--color-primary);
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.legal-text h3 {
+    font-size: 1.4rem;
+    color: var(--color-text-strong);
+    margin-top: 2rem;
+    margin-bottom: 0.8rem;
+}
+
+.legal-text p {
+    margin-bottom: 1.5rem;
+}
+
+.legal-text ul {
+    margin-bottom: 1.5rem;
+    padding-left: 2rem;
+}
+
+.legal-footer {
+    text-align: center;
+    padding: var(--space-xl);
+    margin-top: var(--space-xxl);
+    background-color: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+}

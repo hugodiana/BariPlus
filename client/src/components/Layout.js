@@ -1,12 +1,12 @@
 // client/src/components/Layout.js
 import React, { useState, useEffect } from 'react';
-import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'; // ✅ CORREÇÃO: Removido 'useOutletContext'
 import { useAuth } from '../context/AuthContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
     faChartPie, faWeightScale, faListCheck, faFileLines, faUtensils, faBookMedical, 
     faDollarSign, faMedkit, faGlassWater, faTrophy, faComments, faRightFromBracket, 
-    faUser, faDumbbell, faFileInvoice
+    faUser, faDumbbell, faFileInvoice, faBars, faTimes
 } from '@fortawesome/free-solid-svg-icons';
 import './Layout.css';
 
@@ -20,7 +20,7 @@ const useWindowWidth = () => {
     return width;
 };
 
-// Lista completa de links de navegação para o DESKTOP
+// Lista completa de links de navegação para Desktop e o novo Menu Mobile
 const navLinks = [
     { to: "/", icon: faChartPie, text: "Dashboard" },
     { to: "/progresso", icon: faWeightScale, text: "Progresso" },
@@ -62,7 +62,7 @@ const Sidebar = ({ user, handleLogout }) => (
     </aside>
 );
 
-const MobileBottomNav = () => (
+const MobileBottomNav = ({ onMenuClick }) => (
     <nav className="mobile-bottom-nav">
         <ul className="mobile-nav-list">
             {[
@@ -70,8 +70,6 @@ const MobileBottomNav = () => (
                 { to: "/progresso", icon: faWeightScale, text: "Progresso" },
                 { to: "/diario-alimentar", icon: faUtensils, text: "Diário" },
                 { to: "/checklist", icon: faListCheck, text: "Checklist" },
-                // ✅ CORREÇÃO: Alterado de "Perfil" para "Mais"
-                { to: "/perfil", icon: faUser, text: "Mais" }, 
             ].map(link => (
                 <li key={link.to} className="mobile-nav-item">
                     <NavLink to={link.to} end={link.to === "/"}>
@@ -80,16 +78,58 @@ const MobileBottomNav = () => (
                     </NavLink>
                 </li>
             ))}
+            <li className="mobile-nav-item">
+                <button onClick={onMenuClick} className="mobile-menu-button">
+                    <FontAwesomeIcon icon={faBars} size="lg" />
+                    <span>Menu</span>
+                </button>
+            </li>
         </ul>
     </nav>
 );
+
+const MobileMenuModal = ({ isOpen, onClose, user, handleLogout }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="mobile-menu-overlay" onClick={onClose}>
+            <div className="mobile-menu-modal" onClick={(e) => e.stopPropagation()}>
+                <div className="mobile-menu-header">
+                    <h3>Menu Completo</h3>
+                    <button onClick={onClose} className="close-menu-btn">
+                        <FontAwesomeIcon icon={faTimes} />
+                    </button>
+                </div>
+                <nav className="mobile-menu-nav">
+                    {navLinks.map(link => (
+                        <NavLink key={link.to} to={link.to} end={link.to === "/"} onClick={onClose}>
+                            <FontAwesomeIcon icon={link.icon} /> {link.text}
+                        </NavLink>
+                    ))}
+                </nav>
+                <div className="mobile-menu-footer">
+                    <div className="user-info">
+                        <span className="user-name">{user?.nome}</span>
+                        <span className="user-email">{user?.email}</span>
+                    </div>
+                    <button onClick={handleLogout} className="logout-btn">
+                        <FontAwesomeIcon icon={faRightFromBracket} /> Sair
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 const Layout = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const windowWidth = useWindowWidth();
+    const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
+        setMobileMenuOpen(false);
         logout();
         navigate('/login');
     };
@@ -99,12 +139,19 @@ const Layout = () => {
             {windowWidth > 768 ? (
                 <Sidebar user={user} handleLogout={handleLogout} />
             ) : (
-                <MobileBottomNav />
+                <MobileBottomNav onMenuClick={() => setMobileMenuOpen(true)} />
             )}
             
             <main className="main-content">
-                <Outlet context={{ user }} />
+                <Outlet />
             </main>
+
+            <MobileMenuModal 
+                isOpen={isMobileMenuOpen}
+                onClose={() => setMobileMenuOpen(false)}
+                user={user}
+                handleLogout={handleLogout}
+            />
         </div>
     );
 };

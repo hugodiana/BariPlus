@@ -1,22 +1,61 @@
 // client/src/pages/RegisterPage.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { fetchApi } from '../utils/api';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
-import './LoginPage.css'; // Reutilizando os estilos
+import './LoginPage.css'; // ✅ REUTILIZANDO O CSS DA PÁGINA DE LOGIN
+
+// Reutilizando os mesmos depoimentos da página de login para consistência
+const testimonials = [
+    {
+        quote: "O BariPlus foi um divisor de águas no meu pós-operatório. Ter tudo organizado num só lugar tirou um peso enorme das minhas costas.",
+        author: "Juliana S.",
+        details: "6 meses de pós-operatório",
+        avatar: "https://i.imgur.com/L4DD8sT.png"
+    },
+    {
+        quote: "Finalmente uma ferramenta que entende as nossas necessidades. Os gráficos de progresso são a minha maior motivação diária!",
+        author: "Marcos R.",
+        details: "1 ano de pós-operatório",
+        avatar: "https://i.imgur.com/n5a2j42.png"
+    },
+    {
+        quote: "Indispensável! Uso todos os dias para controlar as minhas vitaminas e o consumo de proteína. Recomendo a todos.",
+        author: "Carla M.",
+        details: "3 meses de pós-operatório",
+        avatar: "https://i.imgur.com/7D7I6d9.png"
+    }
+];
 
 const RegisterPage = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({
-        nome: '', sobrenome: '', username: '', email: '',
-        confirmEmail: '', password: '', confirmPassword: ''
+        nome: '', sobrenome: '', username: '', email: '', password: '', confirmPassword: ''
     });
-    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [passwordValidations, setPasswordValidations] = useState({
         length: false, uppercase: false, number: false, specialChar: false,
     });
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTestimonial(prev => (prev + 1) % testimonials.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const validatePassword = (password) => {
+        const validations = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            number: /[0-9]/.test(password),
+            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        };
+        setPasswordValidations(validations);
+        return Object.values(validations).every(Boolean);
+    };
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -26,91 +65,74 @@ const RegisterPage = () => {
         }
     };
 
-    const validatePassword = (pass) => {
-        const validations = {
-            length: pass.length >= 8,
-            uppercase: /[A-Z]/.test(pass),
-            number: /[0-9]/.test(pass),
-            specialChar: /[!@#$%^&*(),.?":{}|<>]/.test(pass),
-        };
-        setPasswordValidations(validations);
-        return Object.values(validations).every(Boolean);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        if (form.email.trim().toLowerCase() !== form.confirmEmail.trim().toLowerCase()) {
-            return toast.error("Os e-mails não coincidem.");
-        }
         if (form.password !== form.confirmPassword) {
             return toast.error("As senhas não coincidem.");
         }
         if (!validatePassword(form.password)) {
-            return toast.error("A sua senha não cumpre todos os requisitos de segurança.");
+            return toast.error("A sua senha não cumpre os requisitos de segurança.");
         }
-        if (!acceptedTerms) {
-            return toast.error("Você precisa de aceitar os Termos de Serviço.");
-        }
-
         setIsLoading(true);
-        const body = { 
-            nome: form.nome, 
-            sobrenome: form.sobrenome, 
-            username: form.username, 
-            email: form.email, 
-            password: form.password 
-        };
-
         try {
-            const response = await fetch(`${apiUrl}/api/register`, {
+            const data = await fetchApi('/api/auth/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
+                body: JSON.stringify(form),
             });
-            const data = await response.json();
-            if (!response.ok) throw new Error(data.message || 'Erro desconhecido.');
-
-            toast.success('Cadastro quase concluído! Verifique o seu e-mail para ativar a sua conta.');
-            // Navega para uma página genérica que informa o utilizador para verificar o e-mail.
-            // Poderíamos criar uma página específica para isto se quiséssemos.
-            navigate('/login'); 
+            toast.success(data.message || "Cadastro realizado com sucesso! Verifique seu e-mail.");
+            navigate('/login');
         } catch (error) {
-            toast.error(error.message);
+            toast.error(error.message || "Erro ao realizar cadastro.");
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="auth-page-container">
-            <div className="auth-form-wrapper">
-                <div className="auth-form-header">
-                    <img src="/bariplus_logo.png" alt="BariPlus Logo" className="auth-logo" />
-                    <h2>Crie a sua Conta</h2>
+        <div className="login-page-container">
+            <div className="login-form-section">
+                <div className="auth-form-wrapper">
+                    <div className="auth-form-header">
+                        <Link to="/landing">
+                            <img src="/bariplus_logo.png" alt="BariPlus Logo" className="auth-logo" />
+                        </Link>
+                        <h2>Crie a sua conta</h2>
+                        <p>Comece hoje a sua jornada de transformação.</p>
+                    </div>
+                    <form className="auth-form" onSubmit={handleSubmit}>
+                        <div className="form-row">
+                            <input type="text" name="nome" placeholder="Nome" value={form.nome} onChange={handleInputChange} required />
+                            <input type="text" name="sobrenome" placeholder="Sobrenome" value={form.sobrenome} onChange={handleInputChange} required />
+                        </div>
+                        <input type="text" name="username" placeholder="Nome de usuário (para o @)" value={form.username} onChange={handleInputChange} required />
+                        <input type="email" name="email" placeholder="Seu melhor e-mail" value={form.email} onChange={handleInputChange} required />
+                        <input type="password" name="password" placeholder="Crie uma senha forte" value={form.password} onChange={handleInputChange} required />
+                        <PasswordStrengthIndicator validations={passwordValidations} />
+                        <input type="password" name="confirmPassword" placeholder="Confirme a sua senha" value={form.confirmPassword} onChange={handleInputChange} required />
+
+                        <button type="submit" className="submit-button" disabled={isLoading}>
+                            {isLoading ? 'A criar conta...' : 'Criar Conta'}
+                        </button>
+                        <div className="form-footer">
+                            <Link to="/login">Já tem uma conta? Faça login</Link>
+                        </div>
+                    </form>
                 </div>
-                <form className="auth-form" onSubmit={handleSubmit}>
-                    <input type="text" name="nome" placeholder="Nome" value={form.nome} onChange={handleInputChange} required />
-                    <input type="text" name="sobrenome" placeholder="Sobrenome" value={form.sobrenome} onChange={handleInputChange} required />
-                    <input type="text" name="username" placeholder="Nome de usuário" value={form.username} onChange={handleInputChange} required />
-                    <input type="email" name="email" placeholder="E-mail" value={form.email} onChange={handleInputChange} required />
-                    <input type="email" name="confirmEmail" placeholder="Confirme seu E-mail" value={form.confirmEmail} onChange={handleInputChange} required />
-                    <input type="password" name="password" placeholder="Senha" value={form.password} onChange={handleInputChange} required />
-                    <PasswordStrengthIndicator validations={passwordValidations} />
-                    <input type="password" name="confirmPassword" placeholder="Confirme sua Senha" value={form.confirmPassword} onChange={handleInputChange} required />
-                    <div className="terms-container">
-                        <label>
-                            <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} />
-                            Eu li e concordo com os <Link to="/termos" target="_blank">Termos</Link> e <Link to="/privacidade" target="_blank">Privacidade</Link>.
-                        </label>
+            </div>
+            <div className="login-testimonial-section">
+                <div className="testimonial-content">
+                    <h2 className="testimonial-title">Junte-se a milhares de pacientes na sua jornada de transformação.</h2>
+                    <div className="testimonial-card">
+                        <p className="testimonial-quote">"{testimonials[currentTestimonial].quote}"</p>
+                        <div className="testimonial-author">
+                            <img src={testimonials[currentTestimonial].avatar} alt={testimonials[currentTestimonial].author} className="author-avatar" />
+                            <div className="author-info">
+                                <strong>{testimonials[currentTestimonial].author}</strong>
+                                <span>{testimonials[currentTestimonial].details}</span>
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" className="submit-button" disabled={isLoading || !acceptedTerms}>
-                        {isLoading ? 'Aguarde...' : 'Cadastrar'}
-                    </button>
-                    <div className="form-footer">
-                        <Link to="/login">Já tem uma conta? Faça login</Link>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     );
