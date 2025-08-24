@@ -1,126 +1,181 @@
-// src/pages/PacientesPage.js
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+// bariplus-nutri/src/pages/PacientesPage.js
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { fetchApi } from '../utils/api';
+import { useApi } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
 import Card from '../components/ui/Card';
-import LoadingSpinner from '../components/LoadingSpinner';
+import LoadingSpinner from '../components/ui/LoadingSpinner'; // ✅ CAMINHO CORRIGIDO
+import Modal from '../components/ui/Modal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSearch, faPlus, faUserCheck, faIdCard } from '@fortawesome/free-solid-svg-icons';
 import './PacientesPage.css';
 
 const PacientesPage = () => {
+    const { nutricionista } = useAuth();
+    const { isLoading, request } = useApi();
+    const navigate = useNavigate();
+    
     const [pacientes, setPacientes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [generatedLink, setGeneratedLink] = useState('');
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [novoPaciente, setNovoPaciente] = useState({ nomeCompleto: '', email: '', telefone: '', dataNascimento: '' });
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await fetchApi('/api/nutri/dashboard');
-            // Junta as duas listas (ativos e prontuário) numa só para exibição
-            const allPacientes = (data.pacientesBariplus || []).concat(data.pacientesLocais || []);
-            setPacientes(allPacientes.sort((a,b) => (a.nome || '').localeCompare(b.nome || ''))); // Ordena por nome
-        } catch (error) {
-            toast.error('Erro ao carregar a lista de pacientes.');
-        } finally {
-            setLoading(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeFilter, setActiveFilter] = useState('todos');
+    const [sortBy, setSortBy] = useState('nome-asc');
+
+    const fetchPacientes = useCallback(async () => {
+        if (nutricionista && nutricionista.pacientes) {
+            setPacientes(nutricionista.pacientes);
         }
-    }, []);
+    }, [nutricionista]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        fetchPacientes();
+    }, [fetchPacientes]);
 
-    const handleGenerateInvite = async () => {
-        setIsGenerating(true);
+    const handleOpenModal = () => setIsModalOpen(true);
+    const handleCloseModal = () => setIsModalOpen(false);
+
+    const handleInputChange = (e) => {
+        setNovoPaciente({ ...novoPaciente, [e.target.name]: e.target.value });
+    };
+
+    const handleAddPaciente = async (e) => {
+        e.preventDefault();
         try {
-            const data = await fetchApi('/api/nutri/convites/gerar', {
-                method: 'POST'
+            await request('/api/nutri/pacientes', {
+                method: 'POST',
+                body: JSON.stringify(novoPaciente),
             });
-            setGeneratedLink(data.url);
-            toast.success('Link de convite gerado com sucesso!');
+            toast.success("Paciente de prontuário criado com sucesso!");
+            window.location.reload(); 
         } catch (error) {
-            toast.error(error.message || 'Não foi possível gerar o convite.');
-        } finally {
-            setIsGenerating(false);
+            // O hook useApi já exibe o toast de erro
         }
     };
+    
+    const filteredAndSortedPacientes = useMemo(() => {
+        let items = [...pacientes];
 
-    const copyToClipboard = () => {
-        navigator.clipboard.writeText(generatedLink);
-        toast.info('Link copiado para a área de transferência!');
-    };
+        if (searchTerm) {
+            const lowerCaseSearchTerm = searchTerm.toLowerCase();
+            items = items.filter(p => 
+                `${p.nome || ''} ${p.sobrenome || ''}`.toLowerCase().includes(lowerCaseSearchTerm)
+            );
+        }
+        
+        if (activeFilter === 'app') {
+            items = items.filter(p => p.statusConta === 'ativo');
+        } else if (activeFilter === 'local') {
+            items = items.filter(p => p.statusConta === 'pendente_prontuario');
+        }
+        
+        switch (sortBy) {
+            case 'nome-asc':
+                items.sort((a, b) => `${a.nome} ${a.sobrenome}`.localeCompare(`${b.nome} ${b.sobrenome}`));
+                break;
+            case 'nome-desc':
+                items.sort((a, b) => `${b.nome} ${b.sobrenome}`.localeCompare(`${a.nome} ${a.sobrenome}`));
+                break;
+            case 'data-desc':
+                items.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                break;
+            default:
+                break;
+        }
 
-    if (loading) return <LoadingSpinner />;
+        return items;
+    }, [pacientes, searchTerm, activeFilter, sortBy]);
+
+    if (!nutricionista) {
+        return <LoadingSpinner fullPage />;
+    }
 
     return (
         <div className="page-container">
-            <div className="page-header-action">
+            <div className="page-header-actions">
                 <div className="page-header">
                     <h1>Meus Pacientes</h1>
-                    <p>Gira os seus pacientes e convide novos utilizadores para o BariPlus.</p>
+                    <p>Gira os seus pacientes do prontuário e do aplicativo BariPlus.</p>
                 </div>
-                <Link to="/pacientes/criar" className="action-btn-positive">
-                    + Adicionar Paciente
-                </Link>
+                <button className="add-btn" onClick={handleOpenModal}>
+                    <FontAwesomeIcon icon={faPlus} /> Novo Paciente (Prontuário)
+                </button>
             </div>
+
+            <Card className="pacientes-controls">
+                <div className="search-bar">
+                    <FontAwesomeIcon icon={faSearch} />
+                    <input 
+                        type="text" 
+                        placeholder="Buscar por nome..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="filter-buttons">
+                    <button className={activeFilter === 'todos' ? 'active' : ''} onClick={() => setActiveFilter('todos')}>Todos</button>
+                    <button className={activeFilter === 'app' ? 'active' : ''} onClick={() => setActiveFilter('app')}>Do App</button>
+                    <button className={activeFilter === 'local' ? 'active' : ''} onClick={() => setActiveFilter('local')}>Só Prontuário</button>
+                </div>
+                <div className="sort-select">
+                    <label htmlFor="sort">Ordenar por:</label>
+                    <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                        <option value="nome-asc">Nome (A-Z)</option>
+                        <option value="nome-desc">Nome (Z-A)</option>
+                        <option value="data-desc">Mais Recentes</option>
+                    </select>
+                </div>
+            </Card>
 
             <div className="pacientes-grid">
-                <div className="pacientes-coluna">
-                    <Card>
-                        <div className="card-header-action">
-                            <h3>Todos os Pacientes ({pacientes.length})</h3>
+                {isLoading && <LoadingSpinner />}
+                {!isLoading && filteredAndSortedPacientes.map(paciente => (
+                    <Card 
+                        key={paciente._id} 
+                        className="paciente-card" 
+                        onClick={() => navigate(`/pacientes/${paciente._id}`)}
+                    >
+                        <img src={paciente.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt="Foto do Paciente" className="paciente-avatar" />
+                        <div className="paciente-info">
+                            <h4>{`${paciente.nome || ''} ${paciente.sobrenome || ''}`.trim()}</h4>
+                            <span className={`paciente-status ${paciente.statusConta === 'ativo' ? 'app' : 'local'}`}>
+                                <FontAwesomeIcon icon={paciente.statusConta === 'ativo' ? faUserCheck : faIdCard} />
+                                {paciente.statusConta === 'ativo' ? 'Usa o App' : 'Só Prontuário'}
+                            </span>
                         </div>
-                        {pacientes.length > 0 ? (
-                            <ul className="pacientes-list">
-                                {pacientes.map(paciente => (
-                                    <li key={paciente._id} className="paciente-item">
-                                        <span className="paciente-avatar">
-                                            {(paciente.nome?.charAt(0) || '')}{(paciente.sobrenome?.charAt(0) || '')}
-                                        </span>
-                                        <div className="paciente-info">
-                                            <span className="paciente-name">{paciente.nome || ''} {paciente.sobrenome || ''}</span>
-                                            <span className={`status-tag ${paciente.statusConta === 'ativo' ? 'ativo' : 'prontuario'}`}>
-                                                {paciente.statusConta === 'ativo' ? 'App BariPlus' : 'Apenas Prontuário'}
-                                            </span>
-                                        </div>
-                                        <Link to={`/prontuario/${paciente._id}`} className="paciente-action-btn">
-                                            Ver Prontuário
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p>Nenhum paciente encontrado.</p>
-                        )}
                     </Card>
-                </div>
-
-                <div className="convites-coluna">
-                    <Card>
-                        <h3>Convidar Paciente para o BariPlus</h3>
-                        <p>
-                            Gere um link de convite único para que um paciente possa criar uma conta gratuita no BariPlus e vinculá-la a si.
-                        </p>
-                        <button 
-                            className="generate-btn" 
-                            onClick={handleGenerateInvite} 
-                            disabled={isGenerating}
-                        >
-                            {isGenerating ? 'A gerar...' : 'Gerar Novo Convite'}
-                        </button>
-                        {generatedLink && (
-                            <div className="generated-link-container">
-                                <p><strong>Link gerado!</strong> Envie para o seu paciente:</p>
-                                <div className="link-input-group">
-                                    <input type="text" value={generatedLink} readOnly />
-                                    <button onClick={copyToClipboard}>Copiar</button>
-                                </div>
-                            </div>
-                        )}
-                    </Card>
-                </div>
+                ))}
             </div>
+
+            <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Criar Novo Paciente (Apenas Prontuário)">
+                <form onSubmit={handleAddPaciente} className="modal-form">
+                    <p>Este paciente será adicionado apenas ao seu sistema de prontuários. Você poderá convidá-lo para o aplicativo mais tarde.</p>
+                    <div className="form-group">
+                        <label>Nome Completo</label>
+                        <input type="text" name="nomeCompleto" value={novoPaciente.nomeCompleto} onChange={handleInputChange} required />
+                    </div>
+                    <div className="form-group">
+                        <label>Email (Opcional, para convite futuro)</label>
+                        <input type="email" name="email" value={novoPaciente.email} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group">
+                        <label>Telefone (Opcional)</label>
+                        <input type="tel" name="telefone" value={novoPaciente.telefone} onChange={handleInputChange} />
+                    </div>
+                    <div className="form-group">
+                        <label>Data de Nascimento (Opcional)</label>
+                        <input type="date" name="dataNascimento" value={novoPaciente.dataNascimento} onChange={handleInputChange} />
+                    </div>
+                    <div className="modal-actions">
+                        <button type="button" className="secondary-btn" onClick={handleCloseModal}>Cancelar</button>
+                        <button type="submit" className="primary-btn" disabled={isLoading}>
+                            {isLoading ? 'A criar...' : 'Criar Paciente'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
         </div>
     );
 };

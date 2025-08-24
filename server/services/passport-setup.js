@@ -9,7 +9,6 @@ passport.use(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            // ✅ CORREÇÃO: Usar a URL completa para o callback
             callbackURL: `${process.env.API_URL || 'http://localhost:3001'}/api/auth/google/callback`,
             scope: ['profile', 'email'],
         },
@@ -32,6 +31,7 @@ passport.use(
                     return done(null, user);
                 }
 
+                // Se o usuário não existe de todo, cria um novo
                 const newUser = await new User({
                     googleId: profile.id,
                     nome: profile.name.givenName,
@@ -40,7 +40,7 @@ passport.use(
                     username: `${profile.name.givenName.toLowerCase()}${crypto.randomBytes(4).toString('hex')}`,
                     fotoPerfilUrl: profile.photos[0].value,
                     isEmailVerified: true,
-                    pagamentoEfetuado: true,
+                    pagamentoEfetuado: false, // ✅ CORREÇÃO: Usuários do Google começam como não pagos
                 }).save();
 
                 return done(null, newUser);

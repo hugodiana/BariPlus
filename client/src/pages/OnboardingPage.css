@@ -51,6 +51,7 @@
     position: relative;
     z-index: 2;
     text-align: center;
+    width: 33.33%;
 }
 .progress-step span {
     display: block;
@@ -79,7 +80,7 @@
 }
 
 .onboarding-form {
-    min-height: 250px; /* Evita que o layout "salte" */
+    min-height: 250px;
 }
 .form-step {
     text-align: center;
@@ -92,8 +93,10 @@
     margin-bottom: var(--space-xl);
 }
 
+/* ✅ CORREÇÃO DO DESIGN DOS BOTÕES */
 .radio-group {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Duas colunas iguais */
     gap: var(--space-md);
     justify-content: center;
 }
@@ -103,12 +106,14 @@
     border-radius: var(--border-radius);
     cursor: pointer;
     transition: var(--transition);
+    font-weight: bold;
+    text-align: center;
 }
 .radio-group label.active {
     border-color: var(--color-primary);
     background-color: var(--color-primary-light);
     color: var(--color-primary);
-    font-weight: bold;
+    box-shadow: 0 0 0 2px var(--color-primary);
 }
 .radio-group input {
     display: none;
@@ -139,6 +144,7 @@
     margin-top: 4px;
     width: 18px;
     height: 18px;
+    flex-shrink: 0;
 }
 .consent-box a {
     color: var(--color-primary);
