@@ -104,6 +104,12 @@ const ProntuarioSchema = new mongoose.Schema({
     }]
 }, { timestamps: true });
 
+ProntuarioSchema.index({ nutricionistaId: 1 });
+ProntuarioSchema.index({ 'avaliacoes.data': 1 });
+ProntuarioSchema.index({ 'evolucao.data': 1 });
+ProntuarioSchema.index({ 'documentos.dataUpload': 1 });
+ProntuarioSchema.index({ createdAt: 1 });
+
 const Prontuario = mongoose.model('Prontuario', ProntuarioSchema);
 
 module.exports = Prontuario;

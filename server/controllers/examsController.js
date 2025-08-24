@@ -1,4 +1,4 @@
-const Exams = require('../models/examsModel');
+const Exams = require('../models/Exam');
 
 // --- Funções do Controller ---
 

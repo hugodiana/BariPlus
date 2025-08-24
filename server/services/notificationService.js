@@ -1,6 +1,6 @@
 const admin = require('firebase-admin');
-const User = require('../models/userModel');
-const Medication = require('../models/medicationModel');
+const User = require('../models/User');
+const Medication = require('../models/Medication');
 
 const checkAndSendNotifications = async () => {
     console.log('A executar verificação de notificações de medicação...');

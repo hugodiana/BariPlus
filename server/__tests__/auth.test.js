@@ -1,7 +1,7 @@
 const request = require('supertest');
 const express = require('express');
 const mongoose = require('mongoose');
-const User = require('../models/userModel');
+const User = require('../models/User');
 const authRoutes = require('../routes/authRoutes');
 
 // Crie uma instância do Express APENAS para os testes

@@ -1,5 +1,5 @@
-const FoodLog = require('../models/foodLogModel');
-const DailyLog = require('../models/dailyLogModel');
+const FoodLog = require('../models/FoodLog');
+const DailyLog = require('../models/DailyLog');
 
 // --- Função Auxiliar Interna ---
 // Esta função calcula o total de proteínas de um diário e atualiza o DailyLog

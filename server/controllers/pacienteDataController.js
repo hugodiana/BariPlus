@@ -1,18 +1,17 @@
 // server/controllers/pacienteDataController.js
-const User = require('../models/userModel');
-const Peso = require('../models/pesoModel');
-const FoodLog = require('../models/foodLogModel');
+const User = require('../models/User');
+const Peso = require('../models/Peso');
+const FoodLog = require('../models/FoodLog');
 const Nutricionista = require('../models/Nutricionista');
-const HydrationLog = require('../models/hydrationLogModel');
-const MedicationLog = require('../models/medicationLogModel');
-const Exams = require('../models/examsModel');
+const HydrationLog = require('../models/HydrationLog');
+const MedicationLog = require('../models/MedicationLog');
+const Exams = require('../models/Exam');
 
-// ✅ FUNÇÃO AUXILIAR ATUALIZADA
-const checkBariplusPatientOwnership = async (nutricionistaId, pacienteId) => {
-    const nutri = await Nutricionista.findById(nutricionistaId).populate('pacientes', 'statusConta');
-    if (!nutri) return false;
+// ✅ FUNÇÃO AUXILIAR ATUALIZADA PARA USAR O OBJETO NUTRICIONISTA JÁ POPULADO
+const checkBariplusPatientOwnership = (nutricionista, pacienteId) => {
+    if (!nutricionista || !nutricionista.pacientes) return false; // Garante que nutricionista e pacientes estão disponíveis
     
-    const paciente = nutri.pacientes.find(p => p._id.toString() === pacienteId);
+    const paciente = nutricionista.pacientes.find(p => p._id.toString() === pacienteId);
     // Garante que o paciente pertence ao nutri E que é um utilizador ativo do app
     return paciente && paciente.statusConta === 'ativo';
 };
@@ -20,7 +19,7 @@ const checkBariplusPatientOwnership = async (nutricionistaId, pacienteId) => {
 // @desc    Obter o histórico de peso de um paciente
 exports.getProgressoPaciente = async (req, res) => {
     try {
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
+        if (!checkBariplusPatientOwnership(req.nutricionista, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
         const pesoDoc = await Peso.findOne({ userId: req.params.pacienteId });
@@ -34,7 +33,7 @@ exports.getProgressoPaciente = async (req, res) => {
 // @desc    Obter o diário alimentar de um paciente para uma data específica
 exports.getDiarioAlimentarPaciente = async (req, res) => {
     try {
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
+        if (!checkBariplusPatientOwnership(req.nutricionista, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
         const foodLog = await FoodLog.findOne({ userId: req.params.pacienteId, date: req.params.date });
@@ -47,7 +46,7 @@ exports.getDiarioAlimentarPaciente = async (req, res) => {
 // @desc    Adicionar um comentário a um item do diário
 exports.addDiaryComment = async (req, res) => {
     try {
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
+        if (!checkBariplusPatientOwnership(req.nutricionista, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
         const { mealType, itemId, text } = req.body;
@@ -68,7 +67,7 @@ exports.addDiaryComment = async (req, res) => {
 // As funções restantes seguem o mesmo padrão de verificação
 exports.getHidratacaoPaciente = async (req, res) => {
     try {
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
+        if (!checkBariplusPatientOwnership(req.nutricionista, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
         const hydrationLog = await HydrationLog.findOne({ userId: req.params.pacienteId, date: req.params.date });
@@ -77,7 +76,7 @@ exports.getHidratacaoPaciente = async (req, res) => {
 };
 exports.getMedicacaoPaciente = async (req, res) => {
     try {
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
+        if (!checkBariplusPatientOwnership(req.nutricionista, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
         const medicationLog = await MedicationLog.findOne({ userId: req.params.pacienteId, date: req.params.date });
@@ -86,7 +85,7 @@ exports.getMedicacaoPaciente = async (req, res) => {
 };
 exports.getExamesPaciente = async (req, res) => {
     try {
-        if (!await checkBariplusPatientOwnership(req.nutricionista.id, req.params.pacienteId)) {
+        if (!checkBariplusPatientOwnership(req.nutricionista, req.params.pacienteId)) {
             return res.status(403).json({ message: 'Acesso negado.' });
         }
         const examsDoc = await Exams.findOne({ userId: req.params.pacienteId });

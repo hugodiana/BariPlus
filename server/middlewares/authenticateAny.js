@@ -1,6 +1,6 @@
 // server/middlewares/authenticateAny.js
 const jwt = require('jsonwebtoken');
-const User = require('../models/userModel');
+const User = require('../models/User');
 const Nutricionista = require('../models/Nutricionista');
 
 const authenticateAny = async (req, res, next) => {

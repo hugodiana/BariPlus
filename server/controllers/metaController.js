@@ -1,7 +1,7 @@
 // server/controllers/metaController.js
 const Meta = require('../models/Meta');
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel');
+const User = require('../models/User');
 
 // Função auxiliar para verificar se o paciente pertence ao nutricionista
 const checkPatientOwnership = async (nutricionistaId, pacienteId) => {

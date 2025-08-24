@@ -36,6 +36,10 @@ const nutricionistaSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
+nutricionistaSchema.index({ pacientes: 1 });
+nutricionistaSchema.index({ 'assinatura.status': 1 });
+nutricionistaSchema.index({ createdAt: 1 });
+
 // A sua função de hash da senha (removi a duplicada)
 nutricionistaSchema.pre('save', async function(next) {
   if (!this.isModified('senha')) return next();

@@ -1,5 +1,5 @@
-const Peso = require('../models/pesoModel');
-const User = require('../models/userModel');
+const Peso = require('../models/Peso');
+const User = require('../models/User');
 const { v2: cloudinary } = require('cloudinary');
 const conquistasService = require('../services/conquistasService');
 

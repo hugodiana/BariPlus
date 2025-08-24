@@ -32,5 +32,9 @@ const ReceitaSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
+ReceitaSchema.index({ nutricionistaId: 1 });
+ReceitaSchema.index({ nome: 1 });
+ReceitaSchema.index({ createdAt: 1 });
+
 const Receita = mongoose.model('Receita', ReceitaSchema);
 module.exports = Receita;

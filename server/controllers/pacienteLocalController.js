@@ -1,6 +1,6 @@
 // server/controllers/pacienteLocalController.js
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel');
+const User = require('../models/User');
 const Prontuario = require('../models/Prontuario');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');

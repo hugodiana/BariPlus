@@ -13,5 +13,9 @@ const RefeicaoTemplateSchema = new mongoose.Schema({
     itens: [refeicaoItemSchema]
 }, { timestamps: true });
 
+RefeicaoTemplateSchema.index({ nutricionistaId: 1 });
+RefeicaoTemplateSchema.index({ nome: 1 });
+RefeicaoTemplateSchema.index({ createdAt: 1 });
+
 const RefeicaoTemplate = mongoose.model('RefeicaoTemplate', RefeicaoTemplateSchema);
 module.exports = RefeicaoTemplate;

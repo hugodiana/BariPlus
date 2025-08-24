@@ -1,4 +1,4 @@
-const Consulta = require('../models/consultaModel');
+const Consulta = require('../models/Consulta');
 
 // --- Funções do Controller ---
 

@@ -1,10 +1,10 @@
 // server/controllers/nutriController.js
 
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel');
+const User = require('../models/User');
 const Agendamento = require('../models/Agendamento');
-const FoodLog = require('../models/foodLogModel');
-const Peso = require('../models/pesoModel');
+const FoodLog = require('../models/FoodLog');
+const Peso = require('../models/Peso');
 
 
 // @desc    Obter dados do dashboard do nutricionista
@@ -55,16 +55,14 @@ exports.getDashboardData = async (req, res) => {
 // @route   GET /api/nutri/pacientes/:pacienteId
 exports.getPacienteDetails = async (req, res) => {
     try {
-        const nutricionistaId = req.nutricionista.id;
+        const nutricionista = req.nutricionista; // Usa o objeto já populado do middleware
         const { pacienteId } = req.params;
 
-        const nutricionista = await Nutricionista.findById(nutricionistaId);
-        
         // ✅ CORREÇÃO: Verifica na nova lista unificada 'pacientes'
-        const isMyPatient = nutricionista.pacientes.some(pId => pId.toString() === pacienteId);
+        const isMyPatient = nutricionista.pacientes.some(p => p._id.toString() === pacienteId && p.statusConta === 'ativo');
 
         if (!isMyPatient) {
-            return res.status(403).json({ message: 'Acesso negado. Este paciente não está na sua lista.' });
+            return res.status(403).json({ message: 'Acesso negado. Este paciente não está na sua lista ou não é um utilizador ativo do app.' });
         }
 
         const paciente = await User.findById(pacienteId).select('-password');
@@ -84,7 +82,7 @@ exports.getPacienteDetails = async (req, res) => {
 // @route   GET /api/nutri/recent-activity
 exports.getRecentActivity = async (req, res) => {
     try {
-        const nutricionista = await Nutricionista.findById(req.nutricionista.id).select('pacientes');
+        const nutricionista = req.nutricionista; // Usa o objeto já populado do middleware
         
         // ✅ CORREÇÃO: Usa a nova lista 'pacientes' e filtra apenas os que usam o app (status 'ativo')
         const activePatientIds = nutricionista.pacientes

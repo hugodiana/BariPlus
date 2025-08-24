@@ -1,4 +1,4 @@
-const Gasto = require('../models/gastoModel');
+const Gasto = require('../models/Gasto');
 const { startOfMonth, endOfMonth, parseISO } = require('date-fns'); // ✅ Importação adicionada
 
 // GET /api/gastos - Buscar gastos, com filtro opcional por mês/ano

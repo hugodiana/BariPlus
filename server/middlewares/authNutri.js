@@ -10,7 +10,7 @@ const protectNutri = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.nutricionista = await Nutricionista.findById(decoded.id).select('-senha');
+      req.nutricionista = await Nutricionista.findById(decoded.id).select('-senha').populate('pacientes', 'statusConta');
 
       if (!req.nutricionista) {
           return res.status(401).json({ message: 'Não autorizado, token inválido.' });

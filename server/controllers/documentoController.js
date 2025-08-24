@@ -1,7 +1,7 @@
 // server/controllers/documentoController.js
 const Prontuario = require('../models/Prontuario');
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel'); // ✅ Importar User
+const User = require('../models/User'); // ✅ Importar User
 const { v2: cloudinary } = require('cloudinary');
 const { Resend } = require('resend'); // ✅ Importar Resend
 const axios = require('axios');

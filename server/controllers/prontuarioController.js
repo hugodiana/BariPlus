@@ -1,7 +1,7 @@
 // server/controllers/prontuarioController.js
 const Prontuario = require('../models/Prontuario');
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel');
+const User = require('../models/User');
 const Atestado = require('../models/Atestado');
 const { Resend } = require('resend');
 const emailTemplate = require('../utils/emailTemplate');

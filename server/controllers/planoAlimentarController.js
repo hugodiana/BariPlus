@@ -2,7 +2,7 @@
 
 const PlanoAlimentar = require('../models/PlanoAlimentar');
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel');
+const User = require('../models/User');
 const { Resend } = require('resend');
 const emailTemplate = require('../utils/emailTemplate');
 const resend = new Resend(process.env.RESEND_API_KEY);

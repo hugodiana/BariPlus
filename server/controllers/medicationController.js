@@ -1,5 +1,5 @@
-const Medication = require('../models/medicationModel');
-const MedicationLog = require('../models/medicationLogModel');
+const Medication = require('../models/Medication');
+const MedicationLog = require('../models/MedicationLog');
 
 // GET /api/medication/list - Buscar apenas a lista de medicamentos
 exports.getMedicationList = async (req, res) => {

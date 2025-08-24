@@ -22,5 +22,11 @@ const agendamentoSchema = new mongoose.Schema({
 
 }, { timestamps: true });
 
+agendamentoSchema.index({ nutricionistaId: 1 });
+agendamentoSchema.index({ pacienteId: 1 });
+agendamentoSchema.index({ start: 1 });
+agendamentoSchema.index({ status: 1 });
+agendamentoSchema.index({ createdAt: 1 });
+
 const Agendamento = mongoose.model('Agendamento', agendamentoSchema);
 module.exports = Agendamento;

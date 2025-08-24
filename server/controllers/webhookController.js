@@ -1,15 +1,15 @@
 // server/controllers/webhookController.js
 
-const User = require('../models/userModel');
+const User = require('../models/User');
 const Nutricionista = require('../models/Nutricionista'); // Importa o modelo do Nutricionista
-const Checklist = require('../models/checklistModel');
-const Peso = require('../models/pesoModel');
-const Consulta = require('../models/consultaModel');
-const DailyLog = require('../models/dailyLogModel');
-const Medication = require('../models/medicationModel');
-const FoodLog = require('../models/foodLogModel');
-const Gasto = require('../models/gastoModel');
-const Exams = require('../models/examsModel');
+const Checklist = require('../models/Checklist');
+const Peso = require('../models/Peso');
+const Consulta = require('../models/Consulta');
+const DailyLog = require('../models/DailyLog');
+const Medication = require('../models/Medication');
+const FoodLog = require('../models/FoodLog');
+const Gasto = require('../models/Gasto');
+const Exams = require('../models/Exam');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { Resend } = require('resend');

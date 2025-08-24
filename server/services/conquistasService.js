@@ -1,9 +1,9 @@
-const User = require('../models/userModel');
-const Peso = require('../models/pesoModel');
-const Checklist = require('../models/checklistModel');
-const DailyLog = require('../models/dailyLogModel');
-const Consulta = require('../models/consultaModel');
-const Exams = require('../models/examsModel');
+const User = require('../models/User');
+const Peso = require('../models/Peso');
+const Checklist = require('../models/Checklist');
+const DailyLog = require('../models/DailyLog');
+const Consulta = require('../models/Consulta');
+const Exams = require('../models/Exam');
 // ✅ CORREÇÃO: A função 'format' que faltava foi importada aqui
 const { subDays, isSameDay, format } = require('date-fns');
 

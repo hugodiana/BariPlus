@@ -2,8 +2,8 @@
 const cron = require('node-cron');
 const admin = require('firebase-admin'); // ✅ 1. IMPORTAR O FIREBASE ADMIN
 const Meta = require('../models/Meta');
-const DailyLog = require('../models/dailyLogModel');
-const User = require('../models/userModel'); // ✅ 2. IMPORTAR O MODELO USER
+const DailyLog = require('../models/DailyLog');
+const User = require('../models/User'); // ✅ 2. IMPORTAR O MODELO USER
 const Agendamento = require('../models/Agendamento'); // ✅ 1. IMPORTAR O MODELO
 const { Resend } = require('resend');
 const emailTemplate = require('../utils/emailTemplate');

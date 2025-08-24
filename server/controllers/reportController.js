@@ -1,7 +1,7 @@
-const Report = require('../models/reportModel');
-const Peso = require('../models/pesoModel');
-const Exams = require('../models/examsModel');
-const User = require('../models/userModel');
+const Report = require('../models/Report');
+const Peso = require('../models/Peso');
+const Exams = require('../models/Exam');
+const User = require('../models/User');
 
 // POST /api/reports/generate - Cria um novo link partilhável
 exports.generateShareableReport = async (req, res) => {
@@ -10,7 +10,8 @@ exports.generateShareableReport = async (req, res) => {
         const userId = req.userId;
 
         let dataSnapshot;
-        const usuario = await User.findById(userId);
+        // const usuario = await User.findById(userId); // Removido: usar req.user
+        const usuario = req.user; // ✅ Otimização: usar o usuário já autenticado
         const userNameSnapshot = `${usuario.nome} ${usuario.sobrenome || ''}`.trim();
 
         if (type === 'progresso') {

@@ -1,4 +1,4 @@
-const Checklist = require('../models/checklistModel');
+const Checklist = require('../models/Checklist');
 const conquistasService = require('../services/conquistasService');
 
 // GET /api/checklist - Buscar o checklist do usuário

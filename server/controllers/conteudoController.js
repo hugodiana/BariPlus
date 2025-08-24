@@ -1,4 +1,4 @@
-const Conteudo = require('../models/conteudoModel');
+const Conteudo = require('../models/Conteudo');
 
 // --- Funções para o App (Leitura) ---
 

@@ -1,5 +1,5 @@
-const HydrationLog = require('../models/hydrationLogModel');
-const DailyLog = require('../models/dailyLogModel');
+const HydrationLog = require('../models/HydrationLog');
+const DailyLog = require('../models/DailyLog');
 
 // Função auxiliar para manter o DailyLog sincronizado
 const syncWaterWithDailyLog = async (userId, date) => {

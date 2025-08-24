@@ -1,4 +1,4 @@
-const DailyLog = require('../models/dailyLogModel');
+const DailyLog = require('../models/DailyLog');
 const conquistasService = require('../services/conquistasService');
 
 // --- Funções do Controller ---

@@ -13,5 +13,10 @@ const AtestadoSchema = new mongoose.Schema({
     textoCompleto: { type: String, required: true } // O texto final do atestado gerado
 }, { timestamps: true });
 
+AtestadoSchema.index({ nutricionistaId: 1 });
+AtestadoSchema.index({ pacienteId: 1 });
+AtestadoSchema.index({ dataConsulta: 1 });
+AtestadoSchema.index({ createdAt: 1 });
+
 const Atestado = mongoose.model('Atestado', AtestadoSchema);
 module.exports = Atestado;

@@ -1,5 +1,5 @@
-const User = require('../models/userModel');
-const Peso = require('../models/pesoModel');
+const User = require('../models/User');
+const Peso = require('../models/Peso');
 const bcrypt = require('bcryptjs');
 const admin = require('firebase-admin');
 const conquistasService = require('../services/conquistasService');

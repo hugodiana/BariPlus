@@ -1,7 +1,7 @@
 // server/controllers/conviteController.js
-const Convite = require('../models/conviteModel');
+const Convite = require('../models/Convite');
 const Nutricionista = require('../models/Nutricionista');
-const User = require('../models/userModel');
+const User = require('../models/User');
 
 exports.gerarConvite = async (req, res) => {
   try {

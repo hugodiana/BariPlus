@@ -40,5 +40,11 @@ const PlanoAlimentarSchema = new mongoose.Schema({
     templateName: { type: String, trim: true }
 }, { timestamps: true });
 
+PlanoAlimentarSchema.index({ nutricionistaId: 1 });
+PlanoAlimentarSchema.index({ pacienteId: 1 });
+PlanoAlimentarSchema.index({ ativo: 1 });
+PlanoAlimentarSchema.index({ isTemplate: 1 });
+PlanoAlimentarSchema.index({ createdAt: 1 });
+
 const PlanoAlimentar = mongoose.model('PlanoAlimentar', PlanoAlimentarSchema);
 module.exports = PlanoAlimentar;

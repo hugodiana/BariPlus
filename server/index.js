@@ -43,7 +43,7 @@ const documentoPacienteRoutes = require('./routes/documentoPacienteRoutes');
 
 // IMPORTAÇÃO DE MIDDLEWARES E MODELOS (APENAS O NECESSÁRIO)
 const errorHandler = require('./middlewares/errorHandler');
-const User = require('./models/userModel'); // Necessário para o Webhook
+const User = require('./models/User'); // Necessário para o Webhook
 const webhookController = require('./controllers/webhookController'); // Lógica do webhook movida para um controlador
 const { iniciarVerificacaoDeMetas } = require('./services/automationService');
 

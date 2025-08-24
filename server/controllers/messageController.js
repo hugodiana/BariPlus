@@ -1,6 +1,6 @@
 // server/controllers/messageController.js
-const Conversation = require('../models/ConversationModel');
-const User = require('../models/userModel');
+const Conversation = require('../models/Conversation');
+const User = require('../models/User');
 const Nutricionista = require('../models/Nutricionista');
 
 // @desc    Obter a conversa entre o profissional e um paciente específico

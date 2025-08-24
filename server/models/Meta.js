@@ -20,5 +20,11 @@ const MetaSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
+MetaSchema.index({ nutricionistaId: 1 });
+MetaSchema.index({ pacienteId: 1 });
+MetaSchema.index({ status: 1 });
+MetaSchema.index({ prazo: 1 });
+MetaSchema.index({ createdAt: 1 });
+
 const Meta = mongoose.model('Meta', MetaSchema);
 module.exports = Meta;
