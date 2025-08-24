@@ -1,233 +1,163 @@
 /* src/pages/AdminPages.css */
-.search-input {
+
+/* --- Estrutura Base e Layout --- */
+.page-container {
+    padding: 20px;
     width: 100%;
-    padding: 12px;
-    margin-bottom: var(--space-lg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box; /* Garante que o padding não aumente a largura total */
+}
+
+.page-header h1 {
+    margin: 0 0 5px 0;
+    font-size: 2rem;
+    color: #333;
+}
+
+.page-header p {
+    margin: 0;
+    color: #666;
     font-size: 1rem;
 }
 
+/* Layout para cabeçalho com botão de ação */
+.page-header-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Permite que os itens quebrem para a linha de baixo */
+    gap: 20px; /* Espaçamento entre o título e o botão */
+    margin-bottom: 20px;
+}
+
+/* --- Inputs e Botões --- */
+.search-input {
+    width: 100%;
+    max-width: 400px; /* Limita a largura em telas maiores */
+    padding: 10px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+}
+
+.action-btn, .action-btn-positive, .action-btn-neutral {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.9rem;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.action-btn-positive {
+    background-color: #28a745; /* Verde */
+    color: white;
+}
+
+.action-btn-positive:hover {
+    background-color: #218838;
+    transform: translateY(-2px);
+}
+
+/* --- Tabelas Responsivas --- */
 .admin-table-container {
     width: 100%;
-    overflow-x: auto;
+    overflow-x: auto; /* Adiciona scroll horizontal se o conteúdo ainda não couber */
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 0.95rem;
 }
 
 th, td {
-    padding: var(--space-md);
+    padding: 12px 15px;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid #ddd;
 }
 
-th {
-    color: var(--color-text-secondary);
-    font-weight: 500;
+thead th {
+    background-color: #f4f6f8;
+    font-weight: 600;
+    color: #333;
 }
 
-.status-badge {
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-weight: bold;
-    font-size: 0.8rem;
-    color: white;
+tbody tr:hover {
+    background-color: #f9f9f9;
 }
-.status-badge.pago, .status-badge.ativa { background-color: var(--color-success); }
-.status-badge.pendente, .status-badge.inativa { background-color: var(--color-warning); }
 
 .actions-cell {
     display: flex;
-    gap: var(--space-sm);
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-.action-btn {
+.actions-cell .action-btn {
     padding: 6px 12px;
-    border: none;
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-weight: 500;
-    color: white;
-}
-.action-btn.success { background-color: var(--color-success); }
-.action-btn.danger { background-color: var(--color-danger); }
-
-/* src/pages/DashboardPage.css */
-.dashboard-stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-lg);
+    font-size: 0.85rem;
 }
 
-.stat-card {
-    text-align: center;
-    padding: var(--space-xl) !important;
-}
+.success { background-color: #28a745; color: white; }
+.danger { background-color: #dc3545; color: white; }
 
-.stat-label {
-    display: block;
-    font-size: 1rem;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-sm);
-}
-
-.stat-value {
-    display: block;
-    font-size: 3rem;
+/* --- Badges de Status --- */
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
     font-weight: bold;
-    color: var(--color-primary);
-}
-
-/* src/pages/LoginPage.css */
-.auth-page-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: var(--space-lg);
-    background-color: var(--color-background);
-}
-.auth-form-wrapper {
-    width: 100%;
-    max-width: 420px;
-    background-color: var(--color-surface);
-    padding: var(--space-xl);
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-md);
-}
-.auth-form-header {
-    text-align: center;
-    margin-bottom: var(--space-lg);
-}
-.auth-logo {
-    height: 60px;
-    margin-bottom: var(--space-md);
-}
-.auth-form-header h2 {
-    color: var(--color-text-strong);
-    margin: 0;
-    font-size: var(--font-size-xl);
-}
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
-}
-.auth-form input {
-    padding: 14px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-}
-.submit-button {
-    padding: 14px;
-    border: none;
-    border-radius: var(--border-radius);
-    background-color: var(--color-primary);
     color: white;
-    font-size: 1rem;
-    font-weight: var(--font-weight-bold);
-    cursor: pointer;
-    margin-top: var(--space-sm);
-}
-.progresso-summary {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    text-align: center;
-    margin-bottom: var(--space-xl);
-    padding: var(--space-lg) !important;
-}
-
-.progresso-summary span {
-    display: block;
-    color: var(--color-text-secondary);
-    margin-bottom: var(--space-xs);
-}
-
-.progresso-summary strong {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: var(--color-text-strong);
-}
-
-.progresso-summary .perdido {
-    color: var(--color-success);
-}
-
-.pagination-controls {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: var(--space-md);
-    margin-top: var(--space-lg);
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--color-border);
-}
-
-.pagination-controls button {
-    padding: 8px 16px;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    cursor: pointer;
-    font-weight: 500;
-}
-
-.pagination-controls button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-.pagination-controls button:hover:not(:disabled) {
-    background-color: var(--color-primary-light);
-}
-
-.pagination-controls span {
-    font-size: 0.9rem;
-    color: var(--color-text-secondary);
-}
-
-.back-link {
+    text-transform: uppercase;
     display: inline-block;
-    margin-bottom: var(--space-md);
-    color: var(--color-primary);
-    text-decoration: none;
-    font-weight: 500;
 }
 
-.details-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: var(--space-xl);
+.status-badge.pago, .status-badge.ativa { background-color: #28a745; }
+.status-badge.pendente, .status-badge.inativa { background-color: #ffc107; color: #333; }
+
+
+/* --- Media Queries para Responsividade (Mobile) --- */
+@media (max-width: 768px) {
+    .page-container { padding: 15px; }
+    .page-header-action { flex-direction: column; align-items: flex-start; }
+    .search-input { max-width: 100%; }
+
+    /* Transformando a tabela em um layout de "cartões" */
+    table, thead, tbody, th, td, tr { display: block; }
+
+    thead tr { position: absolute; top: -9999px; left: -9999px; }
+
+    tr {
+        border: 1px solid #ccc;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-left: 50%;
+        text-align: right;
+        min-height: 28px; /* Garante altura mínima para alinhamento */
+    }
+
+    td:before {
+        content: attr(data-label); /* Pega o texto do atributo data-label */
+        position: absolute;
+        left: 10px;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: bold;
+    }
+
+    .actions-cell { justify-content: flex-end; }
 }
 
-.detail-item {
-    margin-bottom: var(--space-lg);
-}
-.detail-label {
-    display: block;
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
-}
-.detail-value {
-    font-size: 1.1rem;
-    font-weight: 500;
-}
-
-.patient-list {
-    list-style: none;
-    padding: 0;
-}
-.patient-list li {
-    padding: var(--space-xs) 0;
-}
-.action-btn {
-    background-color: var(--color-primary);
-    text-decoration: none;
-}
-.action-btn:hover {
-    background-color: var(--color-primary-dark);
-}

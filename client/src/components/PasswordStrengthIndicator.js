@@ -1,23 +1,23 @@
 import React from 'react';
-import './PasswordStrengthIndicator.css';
+import { ListGroup } from 'react-bootstrap';
 
 const PasswordStrengthIndicator = ({ validations }) => {
     return (
-        <div className="password-requirements">
-            <ul>
-                <li className={validations.length ? 'valid' : 'invalid'}>
-                    Pelo menos 8 caracteres
-                </li>
-                <li className={validations.uppercase ? 'valid' : 'invalid'}>
-                    Uma letra maiúscula
-                </li>
-                <li className={validations.number ? 'valid' : 'invalid'}>
-                    Um número
-                </li>
-                <li className={validations.specialChar ? 'valid' : 'invalid'}>
-                    Um caractere especial
-                </li>
-            </ul>
+        <div className="mb-3 small text-start">
+            <ListGroup variant="flush">
+                <ListGroup.Item className={validations.length ? 'text-success' : 'text-muted'}>
+                    {validations.length ? '✓' : '✗'} Pelo menos 8 caracteres
+                </ListGroup.Item>
+                <ListGroup.Item className={validations.uppercase ? 'text-success' : 'text-muted'}>
+                    {validations.uppercase ? '✓' : '✗'} Uma letra maiúscula
+                </ListGroup.Item>
+                <ListGroup.Item className={validations.number ? 'text-success' : 'text-muted'}>
+                    {validations.number ? '✓' : '✗'} Um número
+                </ListGroup.Item>
+                <ListGroup.Item className={validations.specialChar ? 'text-success' : 'text-muted'}>
+                    {validations.specialChar ? '✓' : '✗'} Um caractere especial
+                </ListGroup.Item>
+            </ListGroup>
         </div>
     );
 };

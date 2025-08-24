@@ -66,6 +66,7 @@ const whitelist = [
     'https://bariplus-app.netlify.app',
     'https://nutri.bariplus.com.br',
     /https:\/\/bariblus-nutri-.*\.vercel\.app$/, 
+    'http://192.168.5.147:3000'
 ];
 const corsOptions = {
     origin: function (origin, callback) {

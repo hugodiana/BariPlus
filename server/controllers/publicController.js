@@ -1,5 +1,6 @@
 // server/controllers/publicController.js
 const Agendamento = require('../models/Agendamento');
+const Nutricionista = require('../models/Nutricionista'); // Import Nutricionista model
 
 exports.confirmarConsultaPublico = async (req, res) => {
     try {
@@ -23,5 +24,19 @@ exports.confirmarConsultaPublico = async (req, res) => {
 
     } catch (error) {
         res.status(500).send('<h1>Ocorreu um erro ao processar a sua confirmação.</h1>');
+    }
+};
+
+exports.getNutricionistaDetailsById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const nutricionista = await Nutricionista.findById(id).select('nome email crn especializacao clinica fotoPerfilUrl'); // Select non-sensitive fields
+        if (!nutricionista) {
+            return res.status(404).json({ message: 'Nutricionista não encontrado.' });
+        }
+        res.json(nutricionista);
+    } catch (error) {
+        console.error("Erro ao buscar detalhes do nutricionista público:", error);
+        res.status(500).json({ message: 'Erro no servidor.' });
     }
 };

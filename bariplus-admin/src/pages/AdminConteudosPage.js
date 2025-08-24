@@ -37,7 +37,7 @@ const AdminConteudosPage = () => {
             try {
                 await fetchAdminApi(`/api/admin/conteudos/${id}`, { method: 'DELETE' });
                 toast.success("Conteúdo apagado com sucesso.");
-                fetchConteudos();
+                setConteudos(conteudosAtuais => conteudosAtuais.filter(item => item._id !== id));
             } catch (error) {
                 toast.error("Erro ao apagar conteúdo.");
             }

@@ -1,91 +1,69 @@
-// src/components/chat/ChatBox.js (na aplicação do PACIENTE)
 import React, { useState, useEffect, useRef } from 'react';
-import { fetchApi } from '../../utils/api';
-import { toast } from 'react-toastify';
-import './ChatBox.css';
+import { Card, Form, Button, InputGroup } from 'react-bootstrap';
 
-const ChatBox = ({ currentUser, receiver, onNewMessage }) => {
-    const [messages, setMessages] = useState([]);
+const ChatBox = ({ recipient, messages, onSendMessage }) => {
     const [newMessage, setNewMessage] = useState('');
-    const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef(null);
 
-    useEffect(() => {
-        const fetchConversation = async () => {
-            setLoading(true);
-            try {
-                // --- CORREÇÃO APLICADA AQUI ---
-                // A rota para o paciente buscar a conversa é a rota simples '/api/conversation'.
-                const endpoint = '/api/conversation'; 
-                const conversation = await fetchApi(endpoint);
-                setMessages(conversation.messages || []);
-            } catch (error) {
-                console.error("Erro ao carregar mensagens:", error);
-                if (!error.message.includes('404')) {
-                    toast.error("Não foi possível carregar o chat.");
-                }
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (currentUser && receiver) {
-            fetchConversation();
-        }
-    }, [currentUser, receiver]);
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        scrollToBottom();
     }, [messages]);
 
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (!newMessage.trim()) return;
-
-        const tempId = Date.now();
-        const sentMessage = {
-            _id: tempId,
-            senderId: currentUser._id,
-            content: newMessage,
-            createdAt: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, sentMessage]);
-        setNewMessage('');
-
-        try {
-            const data = await fetchApi(`/api/messages/send/${receiver._id}`, {
-                method: 'POST',
-                body: JSON.stringify({ content: newMessage })
-            });
-            setMessages(prev => prev.map(msg => msg._id === tempId ? data : msg));
-            if(onNewMessage) onNewMessage(data);
-        } catch (error) {
-            toast.error("Não foi possível enviar a mensagem.");
-            setMessages(prev => prev.filter(msg => msg._id !== tempId));
+    const handleSendMessage = () => {
+        if (newMessage.trim()) {
+            onSendMessage(newMessage);
+            setNewMessage('');
         }
     };
-    
-    if (loading) return <p>A carregar chat...</p>;
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    };
 
     return (
-        <div className="chat-box">
-            <div className="messages-container">
-                {messages.map((msg) => (
-                    <div key={msg._id} className={`message ${msg.senderId === currentUser._id ? 'sent' : 'received'}`}>
-                        <p>{msg.content}</p>
-                    </div>
-                ))}
-                <div ref={messagesEndRef} />
-            </div>
-            <form onSubmit={handleSendMessage} className="message-form">
-                <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Escreva uma mensagem..."
-                />
-                <button type="submit">Enviar</button>
-            </form>
-        </div>
+        <Card className="h-100 d-flex flex-column">
+            <Card.Header className="d-flex align-items-center p-3">
+                <img src={recipient.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt={recipient.nome} className="rounded-circle me-2" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
+                <h5 className="mb-0">{recipient.nome}</h5>
+            </Card.Header>
+            <Card.Body className="flex-grow-1 overflow-auto p-3">
+                <div className="d-flex flex-column">
+                    {messages.map((msg, index) => (
+                        <div key={index} className={`d-flex mb-2 ${msg.senderId === recipient._id ? 'justify-content-start' : 'justify-content-end'}`}>
+                            <div className={`p-2 rounded ${msg.senderId === recipient._id ? 'bg-light text-dark' : 'bg-primary text-white'}`} style={{ maxWidth: '75%' }}>
+                                {msg.content}
+                                <div className="text-end mt-1" style={{ fontSize: '0.7rem', opacity: 0.7 }}>
+                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                </div>
+            </Card.Body>
+            <Card.Footer className="p-3">
+                <InputGroup>
+                    <Form.Control
+                        as="textarea"
+                        placeholder="Digite sua mensagem..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        style={{ maxHeight: '100px', minHeight: '38px' }}
+                    />
+                    <Button variant="primary" onClick={handleSendMessage}>
+                        Enviar
+                    </Button>
+                </InputGroup>
+            </Card.Footer>
+        </Card>
     );
 };
 
