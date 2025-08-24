@@ -10,11 +10,10 @@ import AvaliacoesTab from '../components/paciente/AvaliacoesTab';
 import PlanosTab from '../components/paciente/PlanosTab';
 import EvolucaoTab from '../components/paciente/EvolucaoTab'; 
 import AcompanhamentoTab from '../components/paciente/AcompanhamentoTab';
-import ExamesTab from '../components/paciente/ExamesTab';
 import MetasTab from '../components/paciente/MetasTab';
 import ChatTab from '../components/paciente/ChatTab';
+import ExamesTab from '../components/paciente/ExamesTab';
 import DocumentosTab from '../components/paciente/DocumentosTab';
-import AtestadosTab from '../components/paciente/AtestadosTab';
 import './ProntuarioPage.css';
 
 const ProntuarioPage = () => {
@@ -36,7 +35,6 @@ const ProntuarioPage = () => {
             setPaciente(pacienteData);
             setProntuario(prontuarioData);
             setNutricionista(nutriData);
-
             if (pacienteData.statusConta === 'ativo') {
                 setActiveTab('acompanhamento');
             } else {
@@ -49,9 +47,7 @@ const ProntuarioPage = () => {
         }
     }, [pacienteId]);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useEffect(() => { fetchData(); }, [fetchData]);
 
     const handleConvidar = async () => {
         if (!paciente.email) {
@@ -73,11 +69,11 @@ const ProntuarioPage = () => {
 
     return (
         <div className="page-container">
-            <Link to="/pacientes" className="back-link">‹ Voltar para a lista de pacientes</Link>
+            <Link to="/pacientes" className="back-link">‹ Voltar</Link>
             <div className="page-header-action">
                 <div className="page-header">
                     <h1>Prontuário de {paciente.nome} {paciente.sobrenome}</h1>
-                    <p>Status: <span className={`status-tag ${paciente.statusConta === 'ativo' ? 'ativo' : 'prontuario'}`}>{paciente.statusConta === 'ativo' ? 'App BariPlus Ativo' : 'Apenas Prontuário'}</span></p>
+                    <p>Status: <span className={`status-tag ${paciente.statusConta === 'ativo' ? 'ativo' : 'prontuario'}`}>{paciente.statusConta === 'ativo' ? 'App Ativo' : 'Apenas Prontuário'}</span></p>
                 </div>
                 {paciente.statusConta === 'pendente_prontuario' && (
                     <button className="action-btn-positive" onClick={handleConvidar}>Convidar para o App</button>
@@ -86,12 +82,10 @@ const ProntuarioPage = () => {
 
             <Card>
                 <div className="tab-buttons">
-                    {/* ✅ CORREÇÃO: A ordem dos botões foi ajustada */}
                     {paciente.statusConta === 'ativo' && (
                         <>
                             <button className={`tab-btn ${activeTab === 'acompanhamento' ? 'active' : ''}`} onClick={() => setActiveTab('acompanhamento')}>Acompanhamento</button>
                             <button className={`tab-btn ${activeTab === 'metas' ? 'active' : ''}`} onClick={() => setActiveTab('metas')}>Metas</button>
-                            <button className={`tab-btn ${activeTab === 'atestados' ? 'active' : ''}`} onClick={() => setActiveTab('atestados')}>Atestados</button>
                             <button className={`tab-btn ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>Chat</button>
                         </>
                     )}
@@ -99,6 +93,7 @@ const ProntuarioPage = () => {
                     <button className={`tab-btn ${activeTab === 'planos' ? 'active' : ''}`} onClick={() => setActiveTab('planos')}>Planos</button>
                     <button className={`tab-btn ${activeTab === 'avaliacoes' ? 'active' : ''}`} onClick={() => setActiveTab('avaliacoes')}>Avaliações</button>
                     <button className={`tab-btn ${activeTab === 'exames' ? 'active' : ''}`} onClick={() => setActiveTab('exames')}>Exames</button>
+                    {/* ✅ O BOTÃO "ATESTADOS" FOI REMOVIDO, POIS ESTÁ DENTRO DE DOCUMENTOS */}
                     <button className={`tab-btn ${activeTab === 'documentos' ? 'active' : ''}`} onClick={() => setActiveTab('documentos')}>Documentos</button>
                     <button className={`tab-btn ${activeTab === 'evolucoes' ? 'active' : ''}`} onClick={() => setActiveTab('evolucoes')}>Evolução</button>
                 </div>
@@ -110,8 +105,7 @@ const ProntuarioPage = () => {
                     {activeTab === 'planos' && <PlanosTab />}
                     {activeTab === 'avaliacoes' && <AvaliacoesTab prontuario={prontuario} onUpdate={setProntuario} />}
                     {activeTab === 'exames' && <ExamesTab prontuario={prontuario} onUpdate={setProntuario} />}
-                    {activeTab === 'documentos' && <DocumentosTab prontuario={prontuario} onUpdate={setProntuario} />}
-                    {activeTab === 'atestados' && <AtestadosTab paciente={paciente} nutricionista={nutricionista} />}
+                    {activeTab === 'documentos' && <DocumentosTab paciente={paciente} nutricionista={nutricionista} prontuario={prontuario} onUpdate={setProntuario} />}
                     {activeTab === 'evolucoes' && <EvolucaoTab prontuario={prontuario} onUpdate={setProntuario} />}
                 </div>
             </Card>
