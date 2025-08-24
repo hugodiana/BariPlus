@@ -3,12 +3,9 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
-const { Resend } = require('resend');
-const cloudinary = require('cloudinary').v2;
-const admin = require('firebase-admin');
-
-// INICIALIZAÇÃO DOS SERVIÇOS
-const resend = new Resend(process.env.RESEND_API_KEY);
+const passport = require('passport');
+const admin = require('firebase-admin'); // ✅ CORREÇÃO: Importar o firebase-admin
+require('./services/passport-setup'); 
 
 // IMPORTAÇÃO DAS ROTAS
 const authRoutes = require('./routes/authRoutes');
@@ -38,14 +35,14 @@ const refeicaoTemplateRoutes = require('./routes/refeicaoTemplateRoutes');
 const prontuarioRoutes = require('./routes/prontuarioRoutes');
 const alimentoRoutes = require('./routes/alimentoRoutes');
 const publicRoutes = require('./routes/publicRoutes');
-const receitaRoutes = require('./routes/receitaRoutes')
+const receitaRoutes = require('./routes/receitaRoutes');
 const documentoPacienteRoutes = require('./routes/documentoPacienteRoutes');
 
-// IMPORTAÇÃO DE MIDDLEWARES E MODELOS (APENAS O NECESSÁRIO)
+// IMPORTAÇÃO DE MIDDLEWARES E MODELOS
 const errorHandler = require('./middlewares/errorHandler');
-const User = require('./models/User'); // Necessário para o Webhook
-const webhookController = require('./controllers/webhookController'); // Lógica do webhook movida para um controlador
+const webhookController = require('./controllers/webhookController');
 const { iniciarVerificacaoDeMetas } = require('./services/automationService');
+const cloudinary = require('cloudinary').v2;
 
 const app = express();
 app.set('trust proxy', 1);
@@ -83,12 +80,10 @@ app.use(helmet());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// --- 2. WEBHOOK DA KIWIFY ---
-// A lógica do webhook foi movida para o seu próprio controlador para manter o index.js limpo
-app.post('/api/kiwify-webhook', webhookController.handleKiwifyWebhook);
+// --- 2. INICIALIZAÇÃO DE SERVIÇOS DE AUTENTICAÇÃO ---
+app.use(passport.initialize());
 
-
-// --- 3. CONFIGURAÇÕES DE SERVIÇOS ---
+// --- 3. CONFIGURAÇÕES DE SERVIÇOS EXTERNOS ---
 if (process.env.FIREBASE_PROJECT_ID && !admin.apps.length) {
     try {
         const privateKey = process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
@@ -104,7 +99,6 @@ if (process.env.FIREBASE_PROJECT_ID && !admin.apps.length) {
         console.error('Erro CRÍTICO ao inicializar Firebase Admin:', error);
     }
 }
-
 cloudinary.config({ 
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
     api_key: process.env.CLOUDINARY_API_KEY, 
@@ -112,25 +106,23 @@ cloudinary.config({
 });
 
 
-// --- 4. ROTAS DA API (ORDEM CORRIGIDA) ---
+// --- 4. ROTAS DA API ---
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPlus API está saudável!' }));
-app.get('/', (req, res) => res.status(200).json({ status: 'ok', message: 'BariPlus API está a correr!' }));
+app.post('/api/kiwify-webhook', webhookController.handleKiwifyWebhook);
 app.use('/api/public', publicRoutes);
 
-// Rotas do Portal do Nutricionista (mais específicas, vêm primeiro)
+app.use('/api/auth', authRoutes);
 app.use('/api/nutri/auth', nutriAuthRoutes);
+
 app.use('/api/nutri', nutriRoutes);
 app.use('/api/convites', conviteRoutes);
 app.use('/api/nutri/refeicoes', refeicaoTemplateRoutes);
-app.use('/api', messageRoutes); 
 app.use('/api/nutri/prontuarios', prontuarioRoutes);
 app.use('/api/nutri/alimentos', alimentoRoutes);
 app.use('/api/nutri/receitas', receitaRoutes);
 app.use('/api/taco', tacoRoutes);
 
-// Rotas do Paciente/Utilizador
 app.use('/api', userRoutes);
-app.use('/api', authRoutes);
 app.use('/api', pesoRoutes);
 app.use('/api', consultaRoutes);
 app.use('/api', checklistRoutes);
@@ -147,15 +139,12 @@ app.use('/api', mealPlanRoutes);
 app.use('/api', pagamentoRoutes);
 app.use('/api', metaRoutes);
 app.use('/api', documentoPacienteRoutes);
+app.use('/api', messageRoutes);
 
-// Rota de Admin (geralmente por último antes do errorHandler)
 app.use('/api', adminRoutes);
 
-
 // --- 5. MIDDLEWARE DE TRATAMENTO DE ERROS ---
-// Deve ser a ÚLTIMA coisa a ser adicionada com app.use()
 app.use(errorHandler);
-
 
 // --- 6. INICIALIZAÇÃO DO SERVIDOR ---
 const PORT = process.env.PORT || 3001;

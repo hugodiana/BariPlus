@@ -1,3 +1,4 @@
+// server/controllers/authController.js
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -10,10 +11,8 @@ const asyncHandler = require('express-async-handler');
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 exports.register = async (req, res) => {
-    // 2. Verificar se existem erros de validação
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        // Se houver erros, retorna um status 400 com a lista de erros
         return res.status(400).json({ errors: errors.array() });
     }
 
@@ -21,14 +20,12 @@ exports.register = async (req, res) => {
     try {
         const { nome, sobrenome, username, email, password, whatsapp } = req.body;
 
-        // A validação manual da senha foi removida, pois já foi feita pelo middleware.
-
         const existingUserEmail = await User.findOne({ email: email.toLowerCase() });
         if (existingUserEmail) {
             return res.status(400).json({ message: 'Este e-mail já está em uso.' });
         }
         
-        const existingUsername = await User.findOne({ username });
+        const existingUsername = username ? await User.findOne({ username }) : null;
         if (existingUsername) {
             return res.status(400).json({ message: 'Este nome de usuário já está em uso.' });
         }
@@ -71,13 +68,12 @@ exports.register = async (req, res) => {
 };
 
 exports.login = asyncHandler(async (req, res) => {
-    // O bloco try...catch foi REMOVIDO!
     const { identifier, password } = req.body;
     const usuario = await User.findOne({ $or: [{ email: identifier }, { username: identifier }] });
 
     if (!usuario || !(await bcrypt.compare(password, usuario.password))) {
-        res.status(401); // Apenas definimos o status
-        throw new Error('Credenciais inválidas.'); // E lançamos um erro
+        res.status(401);
+        throw new Error('Credenciais inválidas.');
     }
     if (!usuario.isEmailVerified) {
         res.status(403);
@@ -97,7 +93,6 @@ exports.login = asyncHandler(async (req, res) => {
         } 
     });
 });
-
 
 exports.verifyEmail = async (req, res) => {
     try {
@@ -201,17 +196,14 @@ exports.forgotPassword = async (req, res) => {
 
 exports.resetPassword = async (req, res) => {
     try {
-        // 1. Verifica se houve erros de validação (do express-validator)
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            return res.status(400).json({ message: errors.array()[0].msg }); // Envia a primeira mensagem de erro
+            return res.status(400).json({ message: errors.array()[0].msg });
         }
 
         const { token } = req.params;
         const { password } = req.body;
         
-        // 2. A chamada antiga para 'validatePassword(password)' foi removida
-
         const usuario = await User.findOne({
             resetPasswordToken: token,
             resetPasswordExpires: { $gt: new Date() }
@@ -232,4 +224,17 @@ exports.resetPassword = async (req, res) => {
         console.error('Erro ao redefinir senha:', error);
         res.status(500).json({ message: "Erro ao redefinir senha." });
     }
+};
+
+
+// ✅ FUNÇÃO QUE FALTAVA
+exports.googleCallback = (req, res) => {
+    // O Passport anexa o usuário (encontrado ou criado) ao req.user
+    const user = req.user;
+
+    // Geramos um token JWT para o nosso sistema
+    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: '8h' });
+
+    // Redirecionamos o utilizador para o frontend, passando o token como um parâmetro de URL
+    res.redirect(`${process.env.CLIENT_URL}/auth/callback?token=${token}`);
 };

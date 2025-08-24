@@ -1,3 +1,4 @@
+// server/models/Peso.js
 const mongoose = require('mongoose');
 
 const PesoSchema = new mongoose.Schema({
@@ -11,6 +12,7 @@ const PesoSchema = new mongoose.Schema({
         peso: Number,
         data: { type: Date, default: Date.now },
         fotoUrl: String,
+        notas: String, // ✅ NOVO CAMPO ADICIONADO AQUI
         medidas: {
             // Tronco
             pescoco: Number,

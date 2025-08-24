@@ -1,4 +1,4 @@
-/* src/pages/ProgressoPage.css */
+/* client/src/pages/ProgressoPage.css */
 
 .page-header-actions {
     display: flex;
@@ -27,7 +27,6 @@
 .add-btn:hover, .pdf-link:hover {
     background-color: var(--color-primary-dark);
 }
-/* ✅ CORREÇÃO: Estilo para o botão de gerar PDF */
 .pdf-link.generate {
     background-color: var(--color-accent);
 }
@@ -58,24 +57,47 @@
     color: var(--color-text-secondary);
 }
 .highlight-value {
-    display: block;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
     font-size: 1.8rem;
-    font-weight: var(--font-weight-bold); /* A estilização fica aqui */
+    font-weight: var(--font-weight-bold);
     color: var(--color-text-strong);
 }
 .highlight-item.main .highlight-value {
     color: var(--color-primary);
 }
+.highlight-item .highlight-value.imc {
+    color: var(--color-accent);
+}
+.highlight-unit {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
 
-.chart-selector {
+/* ✅ ESTILOS PARA OS CONTROLOS DO GRÁFICO */
+.chart-controls {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     flex-wrap: wrap;
-    gap: var(--space-sm);
+    gap: var(--space-md);
     margin-bottom: var(--space-lg);
     border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--space-md);
 }
-.chart-selector-btn {
+.chart-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+}
+.time-filter {
+    display: flex;
+    gap: var(--space-sm);
+}
+.chart-selector-btn, .time-filter button {
     padding: var(--space-sm) var(--space-md);
     border: 1px solid var(--color-border);
     background: transparent;
@@ -84,11 +106,12 @@
     font-weight: var(--font-weight-medium);
     transition: var(--transition);
 }
-.chart-selector-btn.active {
+.chart-selector-btn.active, .time-filter button.active {
     background-color: var(--color-primary);
     color: white;
     border-color: var(--color-primary);
 }
+
 .chart-container {
     height: 300px;
 }
@@ -112,6 +135,7 @@
 }
 .photo-item.selected {
     border-color: var(--color-accent);
+    box-shadow: var(--shadow-sm);
 }
 .photo-item img {
     width: 100%;
@@ -126,6 +150,45 @@
     color: var(--color-text-secondary);
     margin-top: var(--space-xs);
 }
+
+.compare-slider-wrapper {
+    margin-bottom: var(--space-xl);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: var(--space-sm);
+    background-color: var(--color-background);
+}
+.compare-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-sm) var(--space-xs);
+    font-size: var(--font-size-sm);
+}
+.compare-labels div {
+    text-align: center;
+}
+.compare-labels strong {
+    display: block;
+    color: var(--color-text-strong);
+}
+.compare-labels span {
+    color: var(--color-text-secondary);
+}
+.clear-compare-btn {
+    width: 100%;
+    margin-top: var(--space-md);
+    padding: var(--space-sm);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-weight: 500;
+}
+.clear-compare-btn:hover {
+    background-color: var(--color-border);
+}
+
 
 /* Tabela */
 .table-responsive { width: 100%; overflow-x: auto; }
@@ -143,6 +206,12 @@ th {
     color: var(--color-text-secondary);
     font-weight: var(--font-weight-medium);
 }
+/* ✅ ESTILOS PARA A CÉLULA DE NOTAS */
+td.notes-cell {
+    font-size: 1.5rem; /* Aumenta o tamanho do emoji */
+    cursor: help; /* Mostra que o item é interativo */
+}
+
 .actions-cell {
     display: flex;
     justify-content: center;
@@ -168,28 +237,31 @@ th {
     display: flex;
     flex-direction: column;
 }
+/* ✅ ESTILO PARA O TEXTAREA DE NOTAS */
+.progresso-form .form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    font-family: var(--font-family);
+}
 .progresso-form h4 {
     margin-top: var(--space-lg);
     color: var(--color-primary);
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-lg);
-
 }
 
 .pdf-chart-studio {
     position: absolute;
-    left: -9999px; /* Move os gráficos para fora da tela */
+    left: -9999px;
     top: -9999px;
-    opacity: 0; /* Garante que fiquem invisíveis */
+    opacity: 0;
 }
-
-/* Modal de Comparação */
-.compare-photos-modal h2 { text-align: center; }
-.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin: var(--space-lg) 0; }
-.compare-item { text-align: center; }
-.compare-item img { width: 100%; max-height: 300px; object-fit: cover; border-radius: var(--border-radius); margin-bottom: var(--space-sm); }
-.compare-item strong { display: block; font-size: 1.1rem; }
-.compare-item span { color: var(--color-text-secondary); }
 
 .image-uploader {
     margin-top: var(--space-sm);
@@ -217,7 +289,7 @@ th {
     color: var(--color-text-secondary);
     font-weight: 500;
     transition: var(--transition);
-    overflow: hidden; /* Garante que a imagem não saia da área */
+    overflow: hidden;
 }
 
 .image-drop-zone:hover {
@@ -228,5 +300,5 @@ th {
 .image-preview {
     width: 100%;
     height: 100%;
-    object-fit: cover; /* Cobre a área sem distorcer a imagem */
+    object-fit: cover;
 }

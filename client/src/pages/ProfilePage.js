@@ -1,15 +1,22 @@
+// client/src/pages/ProfilePage.js
 import React, { useState, useEffect, useCallback } from 'react';
+import { NavLink } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { format, parseISO } from 'date-fns';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+    faChartPie, faWeightScale, faListCheck, faFileLines, faUtensils, faBookMedical, 
+    faDollarSign, faMedkit, faGlassWater, faTrophy, faComments, faUser, 
+    faDumbbell, faFileInvoice 
+} from '@fortawesome/free-solid-svg-icons';
 import { fetchApi } from '../utils/api';
-import { messaging } from '../firebase';
-import { getToken } from 'firebase/messaging';
+import { useAuth } from '../context/AuthContext';
 import Card from '../components/ui/Card';
 import LoadingSpinner from '../components/LoadingSpinner';
 import PasswordStrengthIndicator from '../components/PasswordStrengthIndicator';
 import './ProfilePage.css';
 
-// Componente auxiliar movido para dentro do ficheiro para organização
+// Componente auxiliar para os itens de informação
 const InfoItem = ({ label, value }) => (
     <div className="profile-info-item">
         <strong>{label}</strong>
@@ -17,15 +24,33 @@ const InfoItem = ({ label, value }) => (
     </div>
 );
 
+// Lista completa de links que estava no Layout, agora aqui para o menu "Mais"
+const navLinks = [
+    { to: "/", icon: faChartPie, text: "Dashboard" },
+    { to: "/progresso", icon: faWeightScale, text: "Progresso" },
+    { to: "/diario-alimentar", icon: faUtensils, text: "Diário" },
+    { to: "/meu-plano", icon: faFileLines, text: "Meu Plano" },
+    { to: "/hidratacao", icon: faGlassWater, text: "Hidratação" },
+    { to: "/checklist", icon: faListCheck, text: "Checklist" },
+    { to: "/medicacao", icon: faMedkit, text: "Medicação" },
+    { to: "/consultas", icon: faBookMedical, text: "Consultas" },
+    { to: "/exames", icon: faDumbbell, text: "Meus Exames" },
+    { to: "/documentos", icon: faFileInvoice, text: "Meus Documentos" },
+    { to: "/gastos", icon: faDollarSign, text: "Meus Gastos" },
+    { to: "/conquistas", icon: faTrophy, text: "Conquistas" },
+    { to: "/chat", icon: faComments, text: "Chat com Nutri" },
+];
+
 
 const ProfilePage = () => {
-    const [usuario, setUsuario] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const { user, updateUser } = useAuth(); // Usando o updateUser do contexto
+    const [loading, setLoading] = useState(false); // A página principal já tem um spinner
     const [isEditMode, setIsEditMode] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     
     const [formData, setFormData] = useState({
-        nome: '', sobrenome: '', whatsapp: '', metaPeso: '',
+        nome: '', sobrenome: '',
+        metaPeso: '',
         detalhesCirurgia: {
             fezCirurgia: 'nao', dataCirurgia: '', altura: '', pesoInicial: '',
         }
@@ -38,40 +63,23 @@ const ProfilePage = () => {
     const [passwordValidations, setPasswordValidations] = useState({
         length: false, uppercase: false, number: false, specialChar: false,
     });
-
-    const fetchUser = useCallback(async () => {
-        if (!loading) setLoading(true);
-        try {
-            const data = await fetchApi('/api/me');
-            setUsuario(data);
-        } catch (error) {
-            toast.error(error.message || "Falha ao carregar dados do usuário.");
-        } finally {
-            setLoading(false);
-        }
-    }, [loading]);
-
+    
+    // Sincroniza o formulário com os dados do usuário quando entra no modo de edição
     useEffect(() => {
-        fetchUser();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        if (usuario) {
+        if (user && isEditMode) {
             setFormData({
-                nome: usuario.nome || '',
-                sobrenome: usuario.sobrenome || '',
-                whatsapp: usuario.whatsapp || '',
-                metaPeso: usuario.metaPeso || '',
+                nome: user.nome || '',
+                sobrenome: user.sobrenome || '',
+                metaPeso: user.metaPeso || '',
                 detalhesCirurgia: {
-                    fezCirurgia: usuario.detalhesCirurgia?.fezCirurgia || 'nao',
-                    dataCirurgia: usuario.detalhesCirurgia?.dataCirurgia ? format(parseISO(usuario.detalhesCirurgia.dataCirurgia), 'yyyy-MM-dd') : '',
-                    altura: usuario.detalhesCirurgia?.altura || '',
-                    pesoInicial: usuario.detalhesCirurgia?.pesoInicial || '',
+                    fezCirurgia: user.detalhesCirurgia?.fezCirurgia || 'nao',
+                    dataCirurgia: user.detalhesCirurgia?.dataCirurgia ? format(parseISO(user.detalhesCirurgia.dataCirurgia), 'yyyy-MM-dd') : '',
+                    altura: user.detalhesCirurgia?.altura || '',
+                    pesoInicial: user.detalhesCirurgia?.pesoInicial || '',
                 }
             });
         }
-    }, [usuario, isEditMode]);
+    }, [user, isEditMode]);
     
     const handleFormChange = (e) => {
         const { name, value } = e.target;
@@ -85,16 +93,19 @@ const ProfilePage = () => {
     
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
+        setLoading(true);
         try {
-            const updatedUser = await fetchApi('/api/user/profile', {
+            const updatedUserData = await fetchApi('/api/user/profile', {
                 method: 'PUT',
                 body: JSON.stringify(formData)
             });
-            setUsuario(updatedUser);
+            updateUser(updatedUserData); // Atualiza o usuário no contexto global
             setIsEditMode(false);
             toast.success("Perfil atualizado com sucesso!");
         } catch (error) {
             toast.error(error.message);
+        } finally {
+            setLoading(false);
         }
     };
     
@@ -121,7 +132,7 @@ const ProfilePage = () => {
         e.preventDefault();
         if (!validatePassword(passwordData.newPassword)) return toast.error("A nova senha não cumpre os requisitos.");
         if (passwordData.newPassword !== passwordData.confirmPassword) return toast.error("As senhas não coincidem.");
-
+        setLoading(true);
         try {
             const data = await fetchApi('/api/user/change-password', {
                 method: 'PUT',
@@ -131,66 +142,17 @@ const ProfilePage = () => {
             setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (error) {
             toast.error(error.message);
+        } finally {
+            setLoading(false);
         }
     };
     
-    const handleEnableNotifications = async () => {
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-                const vapidKey = process.env.REACT_APP_FIREBASE_VAPID_KEY;
-                if (!vapidKey) return toast.error("Configuração de notificações em falta.");
-                
-                const fcmToken = await getToken(messaging, { vapidKey: vapidKey });
-                if (fcmToken) {
-                    await fetchApi('/api/user/save-fcm-token', {
-                        method: 'POST',
-                        body: JSON.stringify({ fcmToken })
-                    });
-                    toast.success("Notificações ativadas com sucesso!");
-                }
-            } else {
-                toast.warn("Permissão para notificações foi negada.");
-            }
-        } catch (error) {
-            toast.error("Ocorreu um erro ao ativar as notificações.");
-        }
-    };
-    
-    const handleSendTestNotification = async () => {
-        try {
-            await fetchApi('/api/user/send-test-notification', { method: 'POST' });
-            toast.info("Pedido de notificação de teste enviado!");
-        } catch (error) {
-            toast.error("Erro ao enviar notificação de teste.");
-        }
-    };
-
-    const handleSettingsChange = async (settingKey, value) => {
-        if (!usuario) return;
-        const currentSettings = usuario.notificationSettings || {};
-        const newSettings = { ...currentSettings, [settingKey]: value };
-        
-        setUsuario(prev => ({ ...prev, notificationSettings: newSettings }));
-        
-        try {
-            await fetchApi('/api/user/notification-settings', {
-                method: 'PUT',
-                body: JSON.stringify({ settings: newSettings })
-            });
-            toast.success("Preferência atualizada!");
-        } catch (error) {
-            toast.error("Não foi possível salvar a preferência. A reverter.");
-            setUsuario(prev => ({ ...prev, notificationSettings: currentSettings }));
-        }
-    };
-
     const handlePictureUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
 
-        const formData = new FormData();
-        formData.append('fotoPerfil', file);
+        const uploadFormData = new FormData();
+        uploadFormData.append('fotoPerfil', file);
         setIsUploading(true);
 
         try {
@@ -198,7 +160,7 @@ const ProfilePage = () => {
             const response = await fetch(`${process.env.REACT_APP_API_URL}/api/user/profile-picture`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
+                body: uploadFormData
             });
 
             if (!response.ok) {
@@ -207,7 +169,7 @@ const ProfilePage = () => {
             }
             
             const data = await response.json();
-            setUsuario(data.usuario);
+            updateUser(data.usuario); // Atualiza o usuário no contexto
             toast.success('Foto de perfil atualizada!');
         } catch (error) {
             toast.error(error.message);
@@ -216,93 +178,88 @@ const ProfilePage = () => {
         }
     };
 
-    if (loading || !usuario) return <LoadingSpinner />;
+    if (!user) return <LoadingSpinner />;
 
     return (
         <div className="page-container">
             <div className="page-header-actions">
                 <div className="page-header">
-                    <h1>Meu Perfil</h1>
-                    <p>Aqui estão os seus dados, metas e preferências.</p>
+                    <h1>Perfil e Navegação</h1>
+                    <p>Acesse as funcionalidades do app e gerencie seus dados.</p>
                 </div>
                 <button className="edit-profile-btn" onClick={() => setIsEditMode(!isEditMode)}>
-                    {isEditMode ? 'Cancelar Edição' : 'Editar Perfil e Metas'}
+                    {isEditMode ? 'Cancelar Edição' : 'Editar Dados e Metas'}
                 </button>
             </div>
             
-            {isEditMode ? (
-                <form onSubmit={handleUpdateProfile}>
-                    <div className="profile-grid">
+            <div className="profile-page-grid">
+                <Card className="profile-nav-card">
+                    <h3>Menu Principal</h3>
+                    <nav>
+                        <ul className="profile-nav-list">
+                            {navLinks.map(link => (
+                                <li key={link.to} className="profile-nav-item">
+                                    <NavLink to={link.to} className="profile-nav-link" end={link.to === "/"}>
+                                        <FontAwesomeIcon icon={link.icon} className="nav-icon" />
+                                        <span>{link.text}</span>
+                                    </NavLink>
+                                </li>
+                            ))}
+                        </ul>
+                    </nav>
+                </Card>
+
+                {isEditMode ? (
+                    <form onSubmit={handleUpdateProfile}>
+                        <div className="profile-forms-grid">
+                            <Card>
+                                <h3>Dados Pessoais</h3>
+                                <div className="form-group"><label>Nome</label><input type="text" name="nome" value={formData.nome} onChange={handleFormChange} /></div>
+                                <div className="form-group"><label>Sobrenome</label><input type="text" name="sobrenome" value={formData.sobrenome} onChange={handleFormChange} /></div>
+                            </Card>
+                            <Card>
+                                <h3>Cirurgia e Metas</h3>
+                                <div className="form-group"><label>Já fez a cirurgia?</label><select name="detalhesCirurgia.fezCirurgia" value={formData.detalhesCirurgia.fezCirurgia} onChange={handleFormChange}><option value="nao">Não</option><option value="sim">Sim</option></select></div>
+                                <div className="form-group"><label>Data da Cirurgia</label><input type="date" name="detalhesCirurgia.dataCirurgia" value={formData.detalhesCirurgia.dataCirurgia} onChange={handleFormChange} /></div>
+                                <div className="form-group"><label>Altura (cm)</label><input type="number" name="detalhesCirurgia.altura" value={formData.detalhesCirurgia.altura} onChange={handleFormChange} /></div>
+                                <div className="form-group"><label>Peso Inicial (kg)</label><input type="number" step="0.1" name="detalhesCirurgia.pesoInicial" value={formData.detalhesCirurgia.pesoInicial} onChange={handleFormChange} /></div>
+                                <div className="form-group"><label>Meta de Peso (kg)</label><input type="number" step="0.1" name="metaPeso" value={formData.metaPeso} onChange={handleFormChange} /></div>
+                            </Card>
+                        </div>
+                        <button type="submit" className="save-btn" disabled={loading}>
+                            {loading ? 'A salvar...' : 'Salvar Alterações'}
+                        </button>
+                    </form>
+                ) : (
+                    <div className="profile-info-grid">
                         <Card>
-                            <h3>Dados Pessoais</h3>
-                            <div className="form-group"><label>Nome</label><input type="text" name="nome" value={formData.nome} onChange={handleFormChange} /></div>
-                            <div className="form-group"><label>Sobrenome</label><input type="text" name="sobrenome" value={formData.sobrenome} onChange={handleFormChange} /></div>
-                            <div className="form-group"><label>WhatsApp</label><input type="tel" name="whatsapp" value={formData.whatsapp} onChange={handleFormChange} /></div>
+                            <h3>Meus Dados</h3>
+                            <div className="profile-picture-container">
+                                <img src={user.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt="Foto de Perfil" className="profile-picture" />
+                                <label htmlFor="picture-upload" className="picture-upload-label">
+                                    {isUploading ? 'A enviar...' : 'Alterar Foto'}
+                                </label>
+                                <input id="picture-upload" type="file" accept="image/png, image/jpeg" onChange={handlePictureUpload} style={{ display: 'none' }} disabled={isUploading} />
+                            </div>
+                            <InfoItem label="Nome Completo" value={`${user.nome} ${user.sobrenome || ''}`} />
+                            <InfoItem label="Nome de Usuário" value={`${user.username} (não pode ser alterado)`} />
+                            <InfoItem label="Email" value={`${user.email} (não pode ser alterado)`} />
                         </Card>
                         <Card>
-                            <h3>Cirurgia e Metas</h3>
-                            <div className="form-group"><label>Já fez a cirurgia?</label><select name="detalhesCirurgia.fezCirurgia" value={formData.detalhesCirurgia.fezCirurgia} onChange={handleFormChange}><option value="nao">Não</option><option value="sim">Sim</option></select></div>
-                            <div className="form-group"><label>Data da Cirurgia</label><input type="date" name="detalhesCirurgia.dataCirurgia" value={formData.detalhesCirurgia.dataCirurgia} onChange={handleFormChange} /></div>
-                            <div className="form-group"><label>Altura (cm)</label><input type="number" name="detalhesCirurgia.altura" value={formData.detalhesCirurgia.altura} onChange={handleFormChange} /></div>
-                            <div className="form-group"><label>Peso Inicial (kg)</label><input type="number" step="0.1" name="detalhesCirurgia.pesoInicial" value={formData.detalhesCirurgia.pesoInicial} onChange={handleFormChange} /></div>
-                            <div className="form-group"><label>Meta de Peso (kg)</label><input type="number" step="0.1" name="metaPeso" value={formData.metaPeso} onChange={handleFormChange} /></div>
+                            <h3>Alterar Senha</h3>
+                            <form onSubmit={handleChangePassword} className="password-form">
+                                <div className="form-group"><label>Senha Atual</label><input type="password" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordInputChange} required /></div>
+                                <div className="form-group"><label>Nova Senha</label><input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordInputChange} required /></div>
+                                <PasswordStrengthIndicator validations={passwordValidations} />
+                                <div className="form-group"><label>Confirmar Nova Senha</label><input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordInputChange} required /></div>
+                                <button type="submit" className="primary-btn" disabled={loading}>
+                                    {loading ? 'A alterar...' : 'Alterar Senha'}
+                                </button>
+                            </form>
                         </Card>
                     </div>
-                    <button type="submit" className="save-btn">Salvar Alterações</button>
-                </form>
-            ) : (
-                <div className="profile-grid">
-                    <Card>
-                        <h3>Dados Pessoais</h3>
-                        <div className="profile-picture-container">
-                            <img src={usuario.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt="Foto de Perfil" className="profile-picture" />
-                            <label htmlFor="picture-upload" className="picture-upload-label">
-                                {isUploading ? 'A enviar...' : 'Alterar Foto'}
-                            </label>
-                            <input id="picture-upload" type="file" accept="image/png, image/jpeg" onChange={handlePictureUpload} style={{ display: 'none' }} disabled={isUploading} />
-                        </div>
-                        <InfoItem label="Nome Completo" value={`${usuario.nome} ${usuario.sobrenome}`} />
-                        <InfoItem label="Nome de Usuário" value={`${usuario.username} (não pode ser alterado)`} />
-                        <InfoItem label="Email" value={`${usuario.email} (não pode ser alterado)`} />
-                        <InfoItem label="WhatsApp" value={usuario.whatsapp || 'Não informado'} />
-                    </Card>
-                    <Card>
-                        <h3>Segurança</h3>
-                        <form onSubmit={handleChangePassword} className="password-form">
-                            <div className="form-group"><label>Senha Atual</label><input type="password" name="currentPassword" value={passwordData.currentPassword} onChange={handlePasswordInputChange} required /></div>
-                            <div className="form-group"><label>Nova Senha</label><input type="password" name="newPassword" value={passwordData.newPassword} onChange={handlePasswordInputChange} required /></div>
-                            <PasswordStrengthIndicator validations={passwordValidations} />
-                            <div className="form-group"><label>Confirmar Nova Senha</label><input type="password" name="confirmPassword" value={passwordData.confirmPassword} onChange={handlePasswordInputChange} required /></div>
-                            <button type="submit" className="primary-btn">Alterar Senha</button>
-                        </form>
-                    </Card>
-                    <Card>
-                        <h3>Preferências de Notificação</h3>
-                        <div className="setting-item">
-                            <span>Lembretes de Consultas</span>
-                            <label className="switch">
-                                <input type="checkbox" checked={usuario.notificationSettings?.appointmentReminders ?? true} onChange={(e) => handleSettingsChange('appointmentReminders', e.target.checked)} />
-                                <span className="slider round"></span>
-                            </label>
-                        </div>
-                        <div className="setting-item">
-                            <span>Lembretes de Medicação</span>
-                            <label className="switch">
-                                <input type="checkbox" checked={usuario.notificationSettings?.medicationReminders ?? true} onChange={(e) => handleSettingsChange('medicationReminders', e.target.checked)} />
-                                <span className="slider round"></span>
-                            </label>
-                        </div>
-                        <div className="setting-item">
-                            <h3>Notificações Push</h3>
-                            <p>Ative para receber lembretes no seu dispositivo.</p>
-                            <div className="notification-actions">
-                                <button onClick={handleEnableNotifications} className="notification-btn">Ativar/Atualizar</button>
-                                <button onClick={handleSendTestNotification} className="notification-btn-test">Enviar Teste</button>
-                            </div>
-                        </div>
-                    </Card>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
 };

@@ -1,19 +1,27 @@
 // client/src/components/ProtectedRoute.js
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ auth, children }) => {
-    // Se não está autenticado, manda para o login.
-    if (!auth.isAuthenticated) {
-        return <Navigate to="/login" replace />;
+const ProtectedRoute = ({ children, requireOnboarding = true }) => {
+    const { isAuthenticated, user } = useAuth();
+    const location = useLocation();
+
+    if (!isAuthenticated) {
+        // Se não está autenticado, manda para o login guardando a página que ele tentou aceder.
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // Se está autenticado mas não completou o onboarding, manda para o onboarding.
-    if (!auth.user.onboardingCompleto) {
+    // Se a rota exige onboarding e o usuário não o completou, manda para o onboarding.
+    if (requireOnboarding && !user.onboardingCompleto) {
         return <Navigate to="/onboarding" replace />;
     }
-    
-    // Se está autenticado E com onboarding completo, renderiza o conteúdo protegido.
+
+    // Se a rota é o onboarding, mas o usuário já completou, manda para o dashboard.
+    if (!requireOnboarding && user.onboardingCompleto) {
+        return <Navigate to="/" replace />;
+    }
+
     return children ? children : <Outlet />;
 };
 

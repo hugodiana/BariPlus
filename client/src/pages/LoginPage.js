@@ -1,18 +1,48 @@
 // client/src/pages/LoginPage.js
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import Modal from '../components/Modal';
-import { fetchApi, setAuthToken } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { fetchApi } from '../utils/api';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGoogle } from '@fortawesome/free-brands-svg-icons';
 import './LoginPage.css';
 
-const LoginPage = ({ onLoginSuccess }) => {
+const testimonials = [
+    {
+        quote: "O BariPlus foi um divisor de águas no meu pós-operatório. Ter tudo organizado num só lugar tirou um peso enorme das minhas costas.",
+        author: "Juliana S.",
+        details: "6 meses de pós-operatório",
+        avatar: "https://i.imgur.com/L4DD8sT.png"
+    },
+    {
+        quote: "Finalmente uma ferramenta que entende as nossas necessidades. Os gráficos de progresso são a minha maior motivação diária!",
+        author: "Marcos R.",
+        details: "1 ano de pós-operatório",
+        avatar: "https://i.imgur.com/n5a2j42.png"
+    },
+    {
+        quote: "Indispensável! Uso todos os dias para controlar as minhas vitaminas e o consumo de proteína. Recomendo a todos.",
+        author: "Carla M.",
+        details: "3 meses de pós-operatório",
+        avatar: "https://i.imgur.com/7D7I6d9.png"
+    }
+];
+
+const LoginPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { login } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [form, setForm] = useState({ identifier: '', password: '' });
-    const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-    const [forgotEmail, setForgotEmail] = useState('');
-    const apiUrl = process.env.REACT_APP_API_URL;
+    const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTestimonial(prev => (prev + 1) % testimonials.length);
+        }, 5000);
+        return () => clearInterval(timer);
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -25,82 +55,72 @@ const LoginPage = ({ onLoginSuccess }) => {
         try {
             const data = await fetchApi('/api/login', {
                 method: 'POST',
-                body: JSON.stringify({ identifier: form.identifier, password: form.password }),
+                body: JSON.stringify(form),
             });
-            
-            setAuthToken(data.token);
-            onLoginSuccess(data.user); // Passa os dados do utilizador para o App.js
-            navigate('/'); // Navega para o destino correto
-            
+            login(data.user, data.token);
+            toast.success("Login bem-sucedido!");
+            const from = location.state?.from?.pathname || '/';
+            navigate(from, { replace: true });
         } catch (error) {
             toast.error(error.message || "Credenciais inválidas.");
         } finally {
             setIsLoading(false);
         }
     };
-
-    const handleForgotPassword = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            const response = await fetch(`${apiUrl}/api/forgot-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: forgotEmail }),
-            });
-            const data = await response.json();
-            toast.info(data.message || 'Se este e-mail estiver cadastrado, enviaremos as instruções.');
-            setIsForgotModalOpen(false);
-            setForgotEmail('');
-        } catch {
-            toast.error("Erro ao conectar com o servidor.");
-        } finally {
-            setIsLoading(false);
-        }
+    
+    const handleGoogleLogin = () => {
+        // ✅ AGORA ESTA LINHA VAI FUNCIONAR
+       window.location.href = `${process.env.REACT_APP_API_URL}/api/auth/google`;
     };
 
+
     return (
-        <div className="auth-page-container">
-            <div className="auth-form-wrapper">
-                <div className="auth-form-header">
-                    <img src="/bariplus_logo.png" alt="BariPlus Logo" className="auth-logo" />
-                    <h2>Acesse a sua Conta</h2>
-                </div>
-                <form className="auth-form" onSubmit={handleSubmit}>
-                    <input type="text" name="identifier" placeholder="E-mail ou Username" value={form.identifier} onChange={handleInputChange} required />
-                    <input type="password" name="password" placeholder="Senha" value={form.password} onChange={handleInputChange} required />
-                    <button type="submit" className="submit-button" disabled={isLoading}>
-                        {isLoading ? 'A entrar...' : 'Entrar'}
-                    </button>
-                    <div className="form-footer">
-                        <button type="button" className="link-button" onClick={() => setIsForgotModalOpen(true)}>
-                            Esqueci a minha senha
-                        </button>
-                        <Link to="/register" className="link-button">
-                            Não tem uma conta? Cadastre-se
+        <div className="login-page-container">
+            <div className="login-form-section">
+                <div className="auth-form-wrapper">
+                    <div className="auth-form-header">
+                        <Link to="/landing">
+                            <img src="/bariplus_logo.png" alt="BariPlus Logo" className="auth-logo" />
                         </Link>
+                        <h2>Bem-vindo(a) de volta!</h2>
+                        <p>A sua jornada de sucesso continua aqui.</p>
                     </div>
-                </form>
-            </div>
-            <Modal isOpen={isForgotModalOpen} onClose={() => setIsForgotModalOpen(false)}>
-                <h2>Redefinir Senha</h2>
-                <p>Digite o seu e-mail de cadastro e enviaremos um link para você criar uma nova senha.</p>
-                <form onSubmit={handleForgotPassword} className="modal-form">
-                    <input
-                        type="email"
-                        value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
-                        placeholder="seu-email@exemplo.com"
-                        required
-                    />
-                    <div className="form-actions">
-                        <button type="button" className="secondary-btn" onClick={() => setIsForgotModalOpen(false)}>Cancelar</button>
+                    
+                    <button onClick={handleGoogleLogin} className="social-login-btn google-btn">
+                        <FontAwesomeIcon icon={faGoogle} /> Entrar com Google
+                    </button>
+                    
+                    <div className="divider"><span>ou entre com seu e-mail</span></div>
+
+                    <form className="auth-form" onSubmit={handleSubmit}>
+                        <input type="text" name="identifier" placeholder="Email ou Nome de Usuário" value={form.identifier} onChange={handleInputChange} required />
+                        <input type="password" name="password" placeholder="Senha" value={form.password} onChange={handleInputChange} required />
                         <button type="submit" className="submit-button" disabled={isLoading}>
-                            {isLoading ? 'A enviar...' : 'Enviar Link'}
+                            {isLoading ? 'A entrar...' : 'Entrar'}
                         </button>
+                        <div className="form-footer">
+                            <Link to="/register">Não tem uma conta? <b>Entre agora para o BariPlus</b></Link>
+                            <Link to="/forgot-password">Esqueceu sua senha?</Link>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div className="login-testimonial-section">
+                <div className="testimonial-content">
+                    <h2 className="testimonial-title">Junte-se a milhares de pacientes na sua jornada de transformação.</h2>
+                    <div className="testimonial-card">
+                        <p className="testimonial-quote">"{testimonials[currentTestimonial].quote}"</p>
+                        <div className="testimonial-author">
+                            <img src={testimonials[currentTestimonial].avatar} alt={testimonials[currentTestimonial].author} className="author-avatar" />
+                            <div className="author-info">
+                                <strong>{testimonials[currentTestimonial].author}</strong>
+                                <span>{testimonials[currentTestimonial].details}</span>
+                            </div>
+                        </div>
                     </div>
-                </form>
-            </Modal>
+                </div>
+            </div>
         </div>
     );
 };

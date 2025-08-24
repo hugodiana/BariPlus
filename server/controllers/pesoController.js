@@ -1,3 +1,4 @@
+// server/controllers/pesoController.js
 const Peso = require('../models/Peso');
 const User = require('../models/User');
 const { v2: cloudinary } = require('cloudinary');
@@ -24,8 +25,8 @@ exports.getPesos = async (req, res) => {
 // POST /api/pesos - Adicionar um novo registro de peso
 exports.addPeso = async (req, res) => {
     try {
-        // ✅ CORREÇÃO: Lê a data diretamente do corpo da requisição
-        const { peso, data, ...medidas } = req.body;
+        // ✅ 1. ADICIONADO 'notas' À DESESTRUTURAÇÃO
+        const { peso, data, notas, ...medidas } = req.body;
         
         if (!peso) {
             return res.status(400).json({ message: 'O peso é obrigatório.' });
@@ -42,8 +43,9 @@ exports.addPeso = async (req, res) => {
 
         const novoRegistro = {
             peso: pesoNum,
-            data: data ? new Date(data) : new Date(), // Usa a data enviada ou a data atual
+            data: data ? new Date(data) : new Date(),
             fotoUrl,
+            notas: notas || '', // ✅ 2. ADICIONADO CAMPO 'notas' AO NOVO REGISTO
             medidas: {
                 pescoco: parseFloat(medidas.pescoco) || null,
                 torax: parseFloat(medidas.torax) || null,
@@ -97,6 +99,8 @@ exports.updatePeso = async (req, res) => {
         Object.keys(updates).forEach(key => {
             if (key === 'peso') {
                 registro[key] = parseFloat(updates[key]);
+            } else if (key === 'notas') { // ✅ 3. ADICIONADO LÓGICA PARA ATUALIZAR NOTAS
+                registro[key] = updates[key];
             } else if (registro.medidas && key in registro.medidas) {
                 registro.medidas[key] = parseFloat(updates[key]) || null;
             }

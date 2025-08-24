@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema({
 
     email: { type: String, unique: true, sparse: true }, // 'sparse' também é bom para o email
     password: { type: String },
+    googleId: { type: String, unique: true, sparse: true },
     isEmailVerified: { type: Boolean, default: false },
     emailVerificationToken: String,
     emailVerificationExpires: Date,

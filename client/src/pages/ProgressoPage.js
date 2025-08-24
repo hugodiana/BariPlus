@@ -1,11 +1,13 @@
+// client/src/pages/ProgressoPage.js
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-toastify';
 import html2canvas from 'html2canvas';
+import { ReactCompareSlider, ReactCompareSliderImage } from 'react-compare-slider';
 
 import './ProgressoPage.css';
 import Modal from '../components/Modal';
@@ -44,13 +46,15 @@ const allMeasures = {
     panturrilhaEsquerda: { label: 'Panturrilha E. (cm)', color: '#55efc4' },
 };
 
-const HighlightItem = ({ label, value, isMain = false }) => (
+const HighlightItem = ({ label, value, unit, status, isMain = false }) => (
     <div className={`highlight-item ${isMain ? 'main' : ''}`}>
         <span className="highlight-label">{label}</span>
-        {/* Usamos um span com classe em vez de `strong` para o valor */}
-        <span className="highlight-value">{value}</span> 
+        <span className={`highlight-value ${status || ''}`}>
+            {value} <span className="highlight-unit">{unit}</span>
+        </span>
     </div>
 );
+
 
 const DownloadPDFButton = ({ usuario, historico, chartDataSets }) => {
     const [chartImages, setChartImages] = useState(null);
@@ -65,7 +69,6 @@ const DownloadPDFButton = ({ usuario, historico, chartDataSets }) => {
             const chartIds = Object.keys(chartDataSets);
             
             for (const id of chartIds) {
-                // ✅ CORREÇÃO: Procura pelo ID correto no "estúdio" invisível
                 const chartElement = document.getElementById(`pdf-chart-${id}`);
                 if (chartElement) {
                     try {
@@ -126,12 +129,13 @@ const ProgressoPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [registroEmEdicao, setRegistroEmEdicao] = useState(null);
     const [activeChart, setActiveChart] = useState('peso');
-    const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
     const [comparePhotos, setComparePhotos] = useState({ foto1: null, foto2: null });
     const [previewImage, setPreviewImage] = useState(null);
+    const [timeFilter, setTimeFilter] = useState('all'); // ✅ NOVO ESTADO PARA O FILTRO
 
     const [formState, setFormState] = useState({
-        peso: '', data: new Date().toISOString().split('T')[0], foto: null, cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
+        peso: '', data: new Date().toISOString().split('T')[0], foto: null, notas: '', // ✅ ADICIONADO 'notas'
+        cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '',
         bracoDireito: '', bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '',
         coxaDireita: '', coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: ''
     });
@@ -139,8 +143,6 @@ const ProgressoPage = () => {
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            // CORREÇÃO APLICADA AQUI
-            // `fetchApi` agora retorna os dados diretamente. Não precisamos mais de `res.ok` ou `res.json()`.
             const [dataPesos, dataMe] = await Promise.all([ 
                 fetchApi('/api/pesos'), 
                 fetchApi('/api/me') 
@@ -149,7 +151,6 @@ const ProgressoPage = () => {
             setHistorico(dataPesos.sort((a, b) => new Date(a.data) - new Date(b.data)));
             setUsuario(dataMe);
         } catch (error) { 
-            // O erro capturado aqui agora vem diretamente da `fetchApi`, com a mensagem correta do backend.
             toast.error(error.message || "Falha ao carregar os dados."); 
         } finally { 
             setLoading(false); 
@@ -157,27 +158,60 @@ const ProgressoPage = () => {
     }, []);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+    
+    // ... (cálculos de imc, pep, etc. permanecem iguais)
+    const { imcAtual, pep, categoriaIMC } = useMemo(() => {
+        if (!usuario || !usuario.detalhesCirurgia?.pesoAtual || !usuario.detalhesCirurgia.altura) {
+            return { imcAtual: 0, pep: 0, categoriaIMC: 'Dados insuficientes' };
+        }
+        
+        const pesoAtual = usuario.detalhesCirurgia.pesoAtual;
+        const altura = usuario.detalhesCirurgia.altura;
+        const pesoInicial = usuario.detalhesCirurgia.pesoInicial;
+        const metaPeso = usuario.metaPeso;
 
-    const handleOpenCompareModal = (foto) => {
+        const alturaMetros = altura / 100;
+        const imc = altura > 0 ? (pesoAtual / (alturaMetros * alturaMetros)) : 0;
+
+        let categoria = '';
+        if (imc > 0) {
+            if (imc < 18.5) categoria = 'Abaixo do peso';
+            else if (imc < 24.9) categoria = 'Peso normal';
+            else if (imc < 29.9) categoria = 'Sobrepeso';
+            else if (imc < 34.9) categoria = 'Obesidade I';
+            else if (imc < 39.9) categoria = 'Obesidade II';
+            else categoria = 'Obesidade III';
+        }
+
+        const pesoAPerder = pesoInicial - metaPeso;
+        const pesoPerdido = pesoInicial - pesoAtual;
+        const pepCalculado = (pesoAPerder > 0 && pesoPerdido > 0) ? (pesoPerdido / pesoAPerder) * 100 : 0;
+        
+        return {
+            imcAtual: imc,
+            pep: pepCalculado,
+            categoriaIMC: categoria
+        };
+    }, [usuario]);
+
+
+    const handleSelectForCompare = (foto) => {
         if (!comparePhotos.foto1) {
             setComparePhotos({ foto1: foto, foto2: null });
-            toast.info("Selecione a segunda foto para comparar.");
-        } else {
-            setComparePhotos(prev => ({ ...prev, foto2: foto }));
-            setIsCompareModalOpen(true);
+            toast.info("Ótimo! Agora selecione a segunda foto para comparar.");
+        } else if (comparePhotos.foto1._id !== foto._id) {
+            if (new Date(foto.data) < new Date(comparePhotos.foto1.data)) {
+                setComparePhotos({ foto1: foto, foto2: comparePhotos.foto1 });
+            } else {
+                setComparePhotos(prev => ({ ...prev, foto2: foto }));
+            }
         }
     };
-
-    const handleCloseCompareModal = () => {
-        setIsCompareModalOpen(false);
-        setComparePhotos({ foto1: null, foto2: null });
-    };
-
+    const handleClearCompare = () => setComparePhotos({ foto1: null, foto2: null });
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormState(prev => ({ ...prev, [name]: value }));
     };
-
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -185,23 +219,24 @@ const ProgressoPage = () => {
             setPreviewImage(URL.createObjectURL(file));
         }
     };
-
     const handleOpenAddModal = () => {
         setRegistroEmEdicao(null);
         setFormState({
-            peso: '', data: new Date().toISOString().split('T')[0], foto: null, // ...reseta o resto do formulário
+            peso: '', data: new Date().toISOString().split('T')[0], foto: null, notas: '',
+            cintura: '', quadril: '', pescoco: '', torax: '', abdomen: '', bracoDireito: '',
+            bracoEsquerdo: '', antebracoDireito: '', antebracoEsquerdo: '', coxaDireita: '',
+            coxaEsquerda: '', panturrilhaDireita: '', panturrilhaEsquerda: ''
         });
-        setPreviewImage(null); // Limpa a pré-visualização
+        setPreviewImage(null);
         setIsModalOpen(true);
     };
-
-
     const handleOpenEditModal = (registro) => {
         setRegistroEmEdicao(registro);
         setFormState({
             peso: registro.peso || '',
             data: format(parseISO(registro.data), 'yyyy-MM-dd'),
             foto: null,
+            notas: registro.notas || '', // ✅ CARREGAR NOTAS
             cintura: registro.medidas?.cintura || '',
             quadril: registro.medidas?.quadril || '',
             pescoco: registro.medidas?.pescoco || '',
@@ -216,62 +251,64 @@ const ProgressoPage = () => {
             panturrilhaDireita: registro.medidas?.panturrilhaDireita || '',
             panturrilhaEsquerda: registro.medidas?.panturrilhaEsquerda || ''
         });
+        setPreviewImage(registro.fotoUrl || null);
         setIsModalOpen(true);
     };
-
     const handleSubmitProgresso = async (e) => {
         e.preventDefault();
         const formDataToSend = new FormData();
-        
-        // Adiciona todos os campos do formulário ao FormData
         Object.keys(formState).forEach(key => {
-            if (formState[key]) { // Garante que só envia campos preenchidos
-                formDataToSend.append(key, formState[key]);
-            }
+            if (formState[key]) formDataToSend.append(key, formState[key]);
         });
-
         const isEditing = !!registroEmEdicao;
         const url = isEditing ? `/api/pesos/${registroEmEdicao._id}` : `/api/pesos`;
         const method = isEditing ? 'PUT' : 'POST';
         const token = localStorage.getItem('bariplus_token');
-
         try {
-            // Usa o fetch padrão porque o fetchApi está configurado para JSON,
-            // e aqui precisamos enviar multipart/form-data.
             const response = await fetch(`${process.env.REACT_APP_API_URL}${url}`, { 
                 method, 
-                headers: { 'Authorization': `Bearer ${token}` }, // Sem 'Content-Type', o browser define-o automaticamente para FormData
+                headers: { 'Authorization': `Bearer ${token}` },
                 body: formDataToSend 
             });
-            
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.message || `Falha ao ${isEditing ? 'atualizar' : 'salvar'}`);
             }
-            
             toast.success(`Registro ${isEditing ? 'atualizado' : 'adicionado'}!`);
             setIsModalOpen(false);
             fetchData();
-        } catch (error) {
-            toast.error(error.message);
-        }
+        } catch (error) { toast.error(error.message); }
     };
-
-    
     const handleDeleteProgresso = async (registroId) => {
         if (!window.confirm("Tem certeza?")) return;
         try {
             await fetchApi(`/api/pesos/${registroId}`, { method: 'DELETE' });
             toast.info("Registro apagado.");
             fetchData();
-        } catch (error) {
-            toast.error("Erro ao apagar.");
-        }
+        } catch (error) { toast.error("Erro ao apagar."); }
     };
     
     const chartDataSets = useMemo(() => {
         if (historico.length < 1) return {};
-        const historicoAsc = [...historico].sort((a, b) => new Date(a.data) - new Date(b.data));
+        
+        // ✅ FILTRAR O HISTÓRICO COM BASE NO ESTADO 'timeFilter'
+        let historicoFiltrado = [...historico];
+        const hoje = new Date();
+        if (timeFilter !== 'all') {
+            let dataInicio;
+            if (timeFilter === '30d') {
+                dataInicio = subDays(hoje, 30);
+            } else if (timeFilter === '6m') {
+                dataInicio = subDays(hoje, 180);
+            } else if (timeFilter === 'surgery' && usuario?.detalhesCirurgia?.dataCirurgia) {
+                dataInicio = parseISO(usuario.detalhesCirurgia.dataCirurgia);
+            }
+            if (dataInicio) {
+                historicoFiltrado = historico.filter(h => new Date(h.data) >= dataInicio);
+            }
+        }
+        
+        const historicoAsc = historicoFiltrado.sort((a, b) => new Date(a.data) - new Date(b.data));
         
         const datasets = {};
         for (const key in allMeasures) {
@@ -285,7 +322,8 @@ const ProgressoPage = () => {
             }
         }
         return datasets;
-    }, [historico]);
+    }, [historico, timeFilter, usuario]);
+
 
     if (loading || !usuario) return <LoadingSpinner />;
     
@@ -303,27 +341,37 @@ const ProgressoPage = () => {
             </div>
 
             <Card className="summary-highlights-card">
-                <HighlightItem label="Peso Inicial" value={`${(usuario.detalhesCirurgia?.pesoInicial || 0).toFixed(1)} kg`} />
-                <HighlightItem label="Peso Atual" value={`${(usuario.detalhesCirurgia?.pesoAtual || 0).toFixed(1)} kg`} isMain={true} />
-                <HighlightItem label="Meta de Peso" value={`${(usuario.metaPeso || 0).toFixed(1)} kg`} />
-                <HighlightItem label="Total Perdido" value={`${(usuario.detalhesCirurgia?.pesoInicial - usuario.detalhesCirurgia?.pesoAtual).toFixed(1)} kg`} />
+                <HighlightItem label="Peso Atual" value={(usuario.detalhesCirurgia?.pesoAtual || 0).toFixed(1)} unit="kg" isMain />
+                <HighlightItem label="IMC Atual" value={imcAtual.toFixed(1)} unit={categoriaIMC} status="imc" />
+                <HighlightItem label="Total Perdido" value={(usuario.detalhesCirurgia?.pesoInicial - usuario.detalhesCirurgia?.pesoAtual).toFixed(1)} unit="kg" />
+                <HighlightItem label="% Perda de Excesso de Peso" value={pep.toFixed(1)} unit="%" isMain />
             </Card>
 
             <Card>
-                <div className="chart-selector">
-                    {Object.keys(chartDataSets).map(key => (
-                        <button key={key} className={`chart-selector-btn ${activeChart === key ? 'active' : ''}`} onClick={() => setActiveChart(key)}>
-                            {chartDataSets[key].label}
-                        </button>
-                    ))}
+                <div className="chart-controls">
+                    <div className="chart-selector">
+                        {Object.keys(chartDataSets).map(key => (
+                            <button key={key} className={`chart-selector-btn ${activeChart === key ? 'active' : ''}`} onClick={() => setActiveChart(key)}>
+                                {chartDataSets[key].label}
+                            </button>
+                        ))}
+                    </div>
+                    {/* ✅ BOTÕES DE FILTRO DE TEMPO */}
+                    <div className="time-filter">
+                        <button className={timeFilter === '30d' ? 'active' : ''} onClick={() => setTimeFilter('30d')}>30D</button>
+                        <button className={timeFilter === '6m' ? 'active' : ''} onClick={() => setTimeFilter('6m')}>6M</button>
+                        {usuario?.detalhesCirurgia?.dataCirurgia && <button className={timeFilter === 'surgery' ? 'active' : ''} onClick={() => setTimeFilter('surgery')}>Pós-Op</button>}
+                        <button className={timeFilter === 'all' ? 'active' : ''} onClick={() => setTimeFilter('all')}>Tudo</button>
+                    </div>
                 </div>
+
                 {chartToShow?.data.length > 1 ? (
                     <div id={`${activeChart}-chart`} className="chart-container">
                         <Line options={chartOptions(chartToShow.label)} data={createChartData(chartToShow.label, chartToShow.data, chartToShow.color)} />
                     </div>
                 ) : (
                     <div className="empty-state">
-                        <p>Adicione pelo menos dois registos com a medida selecionada para ver o gráfico de evolução.</p>
+                        <p>Adicione pelo menos dois registos com a medida e período selecionados para ver o gráfico de evolução.</p>
                     </div>
                 )}
             </Card>
@@ -331,15 +379,14 @@ const ProgressoPage = () => {
             {fotosDoHistorico.length > 0 && (
                 <Card>
                     <h3>Galeria de Fotos</h3>
-                    <p className="gallery-instructions">Clique numa foto para iniciar a comparação. Depois, clique noutra para ver o "antes e depois".</p>
-                    <div className="photo-gallery">
-                        {fotosDoHistorico.map(item => (
-                            <div key={item._id} className={`photo-item ${comparePhotos.foto1?._id === item._id ? 'selected' : ''}`} onClick={() => handleOpenCompareModal(item)}>
-                                <img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} />
-                                <time>{format(new Date(item.data), 'dd MMM yyyy', { locale: ptBR })}</time>
-                            </div>
-                        ))}
-                    </div>
+                    {comparePhotos.foto1 && comparePhotos.foto2 ? (
+                        <div className="compare-slider-wrapper">
+                            <ReactCompareSlider itemOne={<ReactCompareSliderImage src={comparePhotos.foto1.fotoUrl} alt="Antes" />} itemTwo={<ReactCompareSliderImage src={comparePhotos.foto2.fotoUrl} alt="Depois" />} />
+                            <div className="compare-labels"><div><strong>{format(new Date(comparePhotos.foto1.data), 'dd/MM/yy')}</strong><span>{comparePhotos.foto1.peso.toFixed(1)} kg</span></div><div><strong>{format(new Date(comparePhotos.foto2.data), 'dd/MM/yy')}</strong><span>{comparePhotos.foto2.peso.toFixed(1)} kg</span></div></div>
+                            <button className="clear-compare-btn" onClick={handleClearCompare}>Limpar Comparação</button>
+                        </div>
+                    ) : ( <p className="gallery-instructions">Clique em duas fotos para criar uma comparação interativa de "antes e depois".</p> )}
+                    <div className="photo-gallery">{fotosDoHistorico.map(item => (<div key={item._id} className={`photo-item ${comparePhotos.foto1?._id === item._id || comparePhotos.foto2?._id === item._id ? 'selected' : ''}`} onClick={() => handleSelectForCompare(item)}><img src={item.fotoUrl} alt={`Progresso em ${format(new Date(item.data), 'dd/MM/yyyy')}`} /><time>{format(new Date(item.data), 'dd MMM yyyy', { locale: ptBR })}</time></div>))}</div>
                 </Card>
             )}
             
@@ -351,6 +398,7 @@ const ProgressoPage = () => {
                             <tr>
                                 <th>Data</th>
                                 {Object.keys(allMeasures).map(key => <th key={key}>{allMeasures[key].label}</th>)}
+                                <th>Notas</th>{/* ✅ NOVA COLUNA */}
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -359,10 +407,10 @@ const ProgressoPage = () => {
                                 <tr key={item._id}>
                                     <td>{format(new Date(item.data), 'dd/MM/yyyy')}</td>
                                     {Object.keys(allMeasures).map(key => (
-                                        <td key={key}>
-                                            {key === 'peso' ? (item.peso?.toFixed(1) || '-') : (item.medidas?.[key] || '-')}
-                                        </td>
+                                        <td key={key}>{key === 'peso' ? (item.peso?.toFixed(1) || '-') : (item.medidas?.[key] || '-')}</td>
                                     ))}
+                                    {/* ✅ CÉLULA PARA AS NOTAS */}
+                                    <td className="notes-cell" title={item.notas}>{item.notas ? '📝' : '-'}</td>
                                     <td className="actions-cell">
                                         <button onClick={() => handleOpenEditModal(item)} className="action-btn edit-btn">✎</button>
                                         <button onClick={() => handleDeleteProgresso(item._id)} className="action-btn delete-btn">×</button>
@@ -382,32 +430,17 @@ const ProgressoPage = () => {
                         <div className="form-group"><label>Data</label><input name="data" type="date" value={formState.data} onChange={handleInputChange} required /></div>
                     </div>
                     <h4>Medidas (Opcional)</h4>
-                    <div className="medidas-grid">
-                        {Object.keys(allMeasures).filter(k => k !== 'peso').map(key => (
-                             <div className="form-group" key={key}>
-                                <label>{allMeasures[key].label}</label>
-                                <input name={key} type="number" step="0.1" value={formState[key]} onChange={handleInputChange} />
-                            </div>
-                        ))}
+                    <div className="medidas-grid">{Object.keys(allMeasures).filter(k => k !== 'peso').map(key => (<div className="form-group" key={key}><label>{allMeasures[key].label}</label><input name={key} type="number" step="0.1" value={formState[key]} onChange={handleInputChange} /></div>))}</div>
+                    {/* ✅ CAMPO DE TEXTO PARA AS NOTAS */}
+                    <div className="form-group">
+                        <label>Notas (Opcional)</label>
+                        <textarea name="notas" value={formState.notas} onChange={handleInputChange} placeholder="Como se sentiu esta semana? Alguma observação importante?" />
                     </div>
                     <div className="form-group">
                         <label>Foto de Progresso</label>
                         <div className="image-uploader">
-                            <input 
-                                type="file" 
-                                name="foto" 
-                                id="fotoUpload"
-                                accept="image/png, image/jpeg" 
-                                onChange={handleFileChange} 
-                                className="image-input"
-                            />
-                            <label htmlFor="fotoUpload" className="image-drop-zone">
-                                {previewImage ? (
-                                    <img src={previewImage} alt="Pré-visualização" className="image-preview" />
-                                ) : (
-                                    <span>Clique ou arraste uma foto aqui</span>
-                                )}
-                            </label>
+                            <input type="file" name="foto" id="fotoUpload" accept="image/png, image/jpeg" onChange={handleFileChange} className="image-input" />
+                            <label htmlFor="fotoUpload" className="image-drop-zone">{previewImage ? <img src={previewImage} alt="Pré-visualização" className="image-preview" /> : <span>Clique ou arraste uma foto aqui</span>}</label>
                         </div>
                     </div>
                     <div className="form-actions">
@@ -415,25 +448,6 @@ const ProgressoPage = () => {
                         <button type="submit" className="primary-btn">{registroEmEdicao ? 'Salvar' : 'Adicionar'}</button>
                     </div>
                 </form>
-            </Modal>
-            
-            <Modal isOpen={isCompareModalOpen} onClose={handleCloseCompareModal}>
-                <div className="compare-photos-modal">
-                    <h2>Antes e Depois</h2>
-                    <div className="compare-grid">
-                        <div className="compare-item">
-                            <img src={comparePhotos.foto1?.fotoUrl} alt="Foto 1" />
-                            <strong>{format(new Date(comparePhotos.foto1?.data || Date.now()), 'dd/MM/yyyy')}</strong>
-                            <span>{comparePhotos.foto1?.peso.toFixed(1)} kg</span>
-                        </div>
-                        <div className="compare-item">
-                            <img src={comparePhotos.foto2?.fotoUrl} alt="Foto 2" />
-                            <strong>{format(new Date(comparePhotos.foto2?.data || Date.now()), 'dd/MM/yyyy')}</strong>
-                            <span>{comparePhotos.foto2?.peso.toFixed(1)} kg</span>
-                        </div>
-                    </div>
-                    <button className="secondary-btn" onClick={handleCloseCompareModal}>Fechar</button>
-                </div>
             </Modal>
         </div>
     );

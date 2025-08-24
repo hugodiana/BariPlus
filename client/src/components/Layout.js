@@ -1,136 +1,111 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Container, Row, Col, Nav, Button, Offcanvas } from 'react-bootstrap';
-import { toast } from 'react-toastify';
+// client/src/components/Layout.js
+import React, { useState, useEffect } from 'react';
+import { NavLink, Outlet, useNavigate, useOutletContext } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+    faChartPie, faWeightScale, faListCheck, faFileLines, faUtensils, faBookMedical, 
+    faDollarSign, faMedkit, faGlassWater, faTrophy, faComments, faRightFromBracket, 
+    faUser, faDumbbell, faFileInvoice
+} from '@fortawesome/free-solid-svg-icons';
+import './Layout.css';
 
-// Componente NavItem simplificado para usar Nav.Link do react-bootstrap
-const NavItem = ({ to, icon, text, onClick, end = false }) => (
-    <Nav.Link as={NavLink} to={to} end={end} onClick={onClick} className="d-flex align-items-center gap-2 py-2 px-3 rounded text-decoration-none text-dark fw-bold">
-        <span className="fs-5">{icon}</span>
-        <span>{text}</span>
-    </Nav.Link>
+const useWindowWidth = () => {
+    const [width, setWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => setWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    return width;
+};
+
+// Lista completa de links de navegação para o DESKTOP
+const navLinks = [
+    { to: "/", icon: faChartPie, text: "Dashboard" },
+    { to: "/progresso", icon: faWeightScale, text: "Progresso" },
+    { to: "/diario-alimentar", icon: faUtensils, text: "Diário" },
+    { to: "/meu-plano", icon: faFileLines, text: "Meu Plano" },
+    { to: "/hidratacao", icon: faGlassWater, text: "Hidratação" },
+    { to: "/checklist", icon: faListCheck, text: "Checklist" },
+    { to: "/medicacao", icon: faMedkit, text: "Medicação" },
+    { to: "/consultas", icon: faBookMedical, text: "Consultas" },
+    { to: "/exames", icon: faDumbbell, text: "Meus Exames" },
+    { to: "/documentos", icon: faFileInvoice, text: "Meus Documentos" },
+    { to: "/gastos", icon: faDollarSign, text: "Meus Gastos" },
+    { to: "/conquistas", icon: faTrophy, text: "Conquistas" },
+    { to: "/chat", icon: faComments, text: "Chat com Nutri" },
+    { to: "/perfil", icon: faUser, text: "Perfil" },
+];
+
+const Sidebar = ({ user, handleLogout }) => (
+    <aside className="sidebar">
+        <div className="sidebar-header">
+            <img src="/bariplus_logo.png" alt="BariPlus Logo" className="sidebar-logo" />
+        </div>
+        <nav className="sidebar-nav">
+            {navLinks.map(link => (
+                <NavLink key={link.to} to={link.to} end={link.to === "/"}>
+                    <FontAwesomeIcon icon={link.icon} /> {link.text}
+                </NavLink>
+            ))}
+        </nav>
+        <div className="sidebar-footer">
+            <div className="user-info">
+                <span className="user-name">{user?.nome}</span>
+                <span className="user-email">{user?.email}</span>
+            </div>
+            <button onClick={handleLogout} className="logout-btn">
+                <FontAwesomeIcon icon={faRightFromBracket} /> Sair
+            </button>
+        </div>
+    </aside>
 );
 
-const Layout = ({ usuario, onLogout }) => {
-    const [showSidebar, setShowSidebar] = useState(false);
+const MobileBottomNav = () => (
+    <nav className="mobile-bottom-nav">
+        <ul className="mobile-nav-list">
+            {[
+                { to: "/", icon: faChartPie, text: "Dashboard" },
+                { to: "/progresso", icon: faWeightScale, text: "Progresso" },
+                { to: "/diario-alimentar", icon: faUtensils, text: "Diário" },
+                { to: "/checklist", icon: faListCheck, text: "Checklist" },
+                // ✅ CORREÇÃO: Alterado de "Perfil" para "Mais"
+                { to: "/perfil", icon: faUser, text: "Mais" }, 
+            ].map(link => (
+                <li key={link.to} className="mobile-nav-item">
+                    <NavLink to={link.to} end={link.to === "/"}>
+                        <FontAwesomeIcon icon={link.icon} size="lg" />
+                        <span>{link.text}</span>
+                    </NavLink>
+                </li>
+            ))}
+        </ul>
+    </nav>
+);
+
+const Layout = () => {
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
-
-    const handleCloseSidebar = () => setShowSidebar(false);
-    const handleShowSidebar = () => setShowSidebar(true);
-
-    const handleLinkClick = () => {
-        handleCloseSidebar(); // Fecha o sidebar ao clicar em um link (útil para mobile)
-    };
+    const windowWidth = useWindowWidth();
 
     const handleLogout = () => {
-        onLogout();
-        toast.info("Sessão encerrada.");
-        navigate('/landing');
+        logout();
+        navigate('/login');
     };
 
     return (
-        <Container fluid className="p-0 d-flex">
-            {/* Botão Hamburger para Mobile */}
-            <Button variant="light" className="d-lg-none position-fixed top-0 start-0 m-3 z-index-1000" onClick={handleShowSidebar}>
-                &#9776;
-            </Button>
-
-            {/* Sidebar para Desktop */}
-            <Col lg={2} className="d-none d-lg-flex flex-column vh-100 border-end p-3 shadow-sm">
-                <div className="sidebar-header text-center mb-4">
-                    <img src="/bariplus_logo.png" alt="BariPlus Logo" className="img-fluid" style={{ maxHeight: '50px' }} />
-                </div>
-                
-                <Nav className="flex-column flex-grow-1">
-                    <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} end={true} />
-                    {usuario?.nutricionistaId && (
-                        <>
-                            <NavItem to="/meu-plano" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
-                            <NavItem to="/chat" icon="💬" text="Chat com Nutri" onClick={handleLinkClick} />
-                            <NavItem to="/documentos" icon="📄" text="Meus Documentos" onClick={handleLinkClick} />
-                        </>
-                    )}
-                    <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
-                    <NavItem to="/diario" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
-                    <NavItem to="/hidratacao" icon="💧" text="Hidratação" onClick={handleLinkClick} />
-                    <NavItem to="/checklist" icon="✅" text="Checklist" onClick={handleLinkClick} />
-                    <NavItem to="/medicacao" icon="💊" text="Medicação" onClick={handleLinkClick} />
-                    <NavItem to="/consultas" icon="🗓️" text="Consultas" onClick={handleLinkClick} />
-                    <NavItem to="/exames" icon="⚕️" text="Meus Exames" onClick={handleLinkClick} />
-                    <NavItem to="/gastos" icon="💳" text="Meus Gastos" onClick={handleLinkClick} />
-                    <NavItem to="/conquistas" icon="🏆" text="Conquistas" onClick={handleLinkClick} />
-                    <NavItem to="/artigos" icon="📚" text="Conteúdo" onClick={handleLinkClick} />
-                    <NavItem to="/relatorios" icon="🔗" text="Relatórios" onClick={handleLinkClick} />
-                    <NavItem to="/ganhe-renda-extra" icon="💰" text="Renda Extra" onClick={handleLinkClick} />
-                </Nav>
-
-                <div className="mt-auto pt-3 border-top">
-                    <Nav.Link as={NavLink} to="/perfil" className="d-flex align-items-center gap-2 p-2 rounded text-decoration-none text-dark mb-2 bg-light" onClick={handleLinkClick}>
-                        <img src={usuario?.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt="Perfil" className="rounded-circle" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
-                        <div className="d-flex flex-column overflow-hidden">
-                            <span className="fw-bold text-truncate">{usuario?.nome}</span>
-                            <span className="text-muted" style={{ fontSize: '0.8rem' }}>{usuario?.email}</span>
-                        </div>
-                    </Nav.Link>
-                    <Button variant="outline-danger" className="w-100 d-flex align-items-center justify-content-center gap-2" onClick={handleLogout}>
-                        <span className="fs-5">🚪</span>
-                        <span>Sair</span>
-                    </Button>
-                </div>
-            </Col>
-
-            {/* Offcanvas Sidebar para Mobile */}
-            <Offcanvas show={showSidebar} onHide={handleCloseSidebar} responsive="lg">
-                <Offcanvas.Header closeButton>
-                    <Offcanvas.Title>
-                        <img src="/bariplus_logo.png" alt="BariPlus Logo" className="img-fluid" style={{ maxHeight: '50px' }} />
-                    </Offcanvas.Title>
-                </Offcanvas.Header>
-                <Offcanvas.Body className="d-flex flex-column">
-                    <Nav className="flex-column flex-grow-1">
-                        <NavItem to="/" icon="🏠" text="Painel" onClick={handleLinkClick} end={true} />
-                        {usuario?.nutricionistaId && (
-                            <>
-                                <NavItem to="/meu-plano" icon="🍎" text="Plano Alimentar" onClick={handleLinkClick} />
-                                <NavItem to="/chat" icon="💬" text="Chat com Nutri" onClick={handleLinkClick} />
-                                <NavItem to="/documentos" icon="📄" text="Meus Documentos" onClick={handleLinkClick} />
-                            </>
-                        )}
-                        <NavItem to="/progresso" icon="📊" text="Meu Progresso" onClick={handleLinkClick} />
-                        <NavItem to="/diario" icon="🥗" text="Diário Alimentar" onClick={handleLinkClick} />
-                        <NavItem to="/hidratacao" icon="💧" text="Hidratação" onClick={handleLinkClick} />
-                        <NavItem to="/checklist" icon="✅" text="Checklist" onClick={handleLinkClick} />
-                        <NavItem to="/medicacao" icon="💊" text="Medicação" onClick={handleLinkClick} />
-                        <NavItem to="/consultas" icon="🗓️" text="Consultas" onClick={handleLinkClick} />
-                        <NavItem to="/exames" icon="⚕️" text="Meus Exames" onClick={handleLinkClick} />
-                        <NavItem to="/gastos" icon="💳" text="Meus Gastos" onClick={handleLinkClick} />
-                        <NavItem to="/conquistas" icon="🏆" text="Conquistas" onClick={handleLinkClick} />
-                        <NavItem to="/artigos" icon="📚" text="Conteúdo" onClick={handleLinkClick} />
-                        <NavItem to="/relatorios" icon="🔗" text="Relatórios" onClick={handleLinkClick} />
-                        <NavItem to="/ganhe-renda-extra" icon="💰" text="Renda Extra" onClick={handleLinkClick} />
-                    </Nav>
-
-                    <div className="mt-auto pt-3 border-top">
-                        <Nav.Link as={NavLink} to="/perfil" className="d-flex align-items-center gap-2 p-2 rounded text-decoration-none text-dark mb-2 bg-light" onClick={handleLinkClick}>
-                            <img src={usuario?.fotoPerfilUrl || 'https://i.imgur.com/V4RclNb.png'} alt="Perfil" className="rounded-circle" style={{ width: '40px', height: '40px', objectFit: 'cover' }} />
-                            <div className="d-flex flex-column overflow-hidden">
-                                <span className="fw-bold text-truncate">{usuario?.nome}</span>
-                                <span className="text-muted" style={{ fontSize: '0.8rem' }}>{usuario?.email}</span>
-                            </div>
-                        </Nav.Link>
-                        <Button variant="outline-danger" className="w-100 d-flex align-items-center justify-content-center gap-2" onClick={handleLogout}>
-                            <span className="fs-5">🚪</span>
-                            <span>Sair</span>
-                        </Button>
-                    </div>
-                </Offcanvas.Body>
-            </Offcanvas>
-
-            {/* Main Content */}
-            <Col lg={10} className="p-3">
-                <Outlet context={{ user: usuario }} />
-            </Col>
-        </Container>
+        <div className="layout-container">
+            {windowWidth > 768 ? (
+                <Sidebar user={user} handleLogout={handleLogout} />
+            ) : (
+                <MobileBottomNav />
+            )}
+            
+            <main className="main-content">
+                <Outlet context={{ user }} />
+            </main>
+        </div>
     );
 };
 

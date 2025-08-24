@@ -1,10 +1,11 @@
 // server/routes/authRoutes.js
 const express = require('express');
 const router = express.Router();
+const passport = require('passport'); // ✅ CORREÇÃO: Importar o passport
 const authController = require('../controllers/authController');
 const { body } = require('express-validator');
 
-// Regras de validação para o registo
+// Validações...
 const registerValidation = [
     body('nome', 'O nome é obrigatório').notEmpty().trim().escape(),
     body('sobrenome', 'O sobrenome é obrigatório').notEmpty().trim().escape(),
@@ -14,22 +15,34 @@ const registerValidation = [
         .isLength({ min: 8 })
         .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>*]).{8,}$/)
 ];
-
-// --- CORREÇÃO APLICADA AQUI ---
-// Novas regras de validação, apenas para o campo de senha
 const passwordValidation = [
     body('password', 'A nova senha não cumpre os requisitos de segurança.')
         .isLength({ min: 8 })
         .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>*]).{8,}$/)
 ];
 
-// --- ROTAS PÚBLICAS DE AUTENTICAÇÃO ---
+
+// --- ROTAS DE AUTENTICAÇÃO PADRÃO ---
 router.post('/register', registerValidation, authController.register);
 router.post('/login', authController.login);
 router.get('/verify-email/:token', authController.verifyEmail);
 router.post('/resend-verification', authController.resendVerification);
 router.post('/forgot-password', authController.forgotPassword);
-// A rota agora usa o middleware de validação de senha
 router.post('/reset-password/:token', passwordValidation, authController.resetPassword);
+
+// --- ROTAS PARA O LOGIN COM GOOGLE ---
+router.get('/google', passport.authenticate('google', { 
+    scope: ['profile', 'email'], 
+    session: false 
+}));
+
+router.get(
+    '/google/callback', 
+    passport.authenticate('google', { 
+        failureRedirect: `${process.env.CLIENT_URL}/login?error=google-auth-failed`,
+        session: false 
+    }), 
+    authController.googleCallback
+);
 
 module.exports = router;
